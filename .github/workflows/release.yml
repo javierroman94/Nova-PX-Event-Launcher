@@ -1,0 +1,37 @@
+# Compila los instaladores y los publica en "Releases" cada vez que subes una versión nueva.
+# Los launchers instalados detectan ese Release y se actualizan solos.
+#
+# Cómo publicar una versión (desde tu computadora):
+#   npm version patch
+#   git push --follow-tags
+name: Publicar versión
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Compilar y publicar
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

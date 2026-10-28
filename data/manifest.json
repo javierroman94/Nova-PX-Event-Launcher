@@ -1,0 +1,17 @@
+{
+  "event": {
+    "name": "Evento de temporada",
+    "tagline": "Instala el evento, entra al servidor y juega con todo el equipo.",
+    "image": ""
+  },
+  "minecraftVersion": "1.20.4",
+  "loader": {
+    "type": "fabric",
+    "version": ""
+  },
+  "server": {
+    "host": "play.tuservidor.com",
+    "port": 25565
+  },
+  "mods": []
+}

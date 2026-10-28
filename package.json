@@ -1,0 +1,58 @@
+{
+  "name": "nova-px-event-launcher",
+  "version": "0.1.0",
+  "description": "Nova PX - Event Launcher: launcher de Minecraft para los eventos del equipo (premium y no premium)",
+  "main": "main.js",
+  "author": "Nova PX",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/javierroman94/Nova-PX-Event-Launcher.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "mods": "node tools/generar-mods.js",
+    "test": "node test/run-all.js"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "minecraft-launcher-core": "^3.18.2",
+    "msmc": "^5.0.5"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.novapx.eventlauncher",
+    "productName": "Nova PX Event Launcher",
+    "files": [
+      "main.js",
+      "preload.js",
+      "config/**",
+      "lib/**",
+      "data/**",
+      "renderer/**",
+      "build/icon.png"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "javierroman94",
+        "repo": "Nova-PX-Event-Launcher"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png"
+    }
+  }
+}

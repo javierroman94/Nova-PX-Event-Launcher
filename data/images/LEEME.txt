@@ -1,0 +1,10 @@
+Pon aquí las imágenes del evento actual y del historial (.png o .jpg).
+
+En los JSON se escribe solo la ruta, por ejemplo:
+  "image": "images/evento-navidad.png"
+
+Cuando subas la imagen a GitHub, todos los launchers la descargan solos al abrirse.
+
+Tamaños recomendados:
+- Portada del evento actual (data/manifest.json > event.image): 1600 x 600 px.
+- Imagen de cada evento del historial (data/events.json > image): 1280 x 720 px (16:9).

@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Evento de ejemplo 1",
+    "date": "2026-09-15",
+    "image": "",
+    "description": "Descripción corta del evento que ya se realizó.",
+    "participants": 32,
+    "winner": "Miembro1"
+  },
+  {
+    "name": "Evento de ejemplo 2",
+    "date": "2026-08-01",
+    "image": "",
+    "description": "Otro evento pasado. Agrega aquí todos los que hagan.",
+    "participants": 20,
+    "winner": "Miembro2"
+  }
+]

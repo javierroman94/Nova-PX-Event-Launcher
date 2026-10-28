@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.DS_Store
+
+# Los .jar de los mods pesan mucho: se suben a un Release de GitHub, no al repositorio
+mods-evento/*.jar

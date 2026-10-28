@@ -1,0 +1,679 @@
+/* Interfaz del launcher. Todo el texto remoto se inserta con textContent (nunca innerHTML). */
+
+const $ = (id) => document.getElementById(id);
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// Skins por nick (sirve para premium y no premium; si no existe, muestra la skin de Steve).
+const skinBust = (nick) => `https://minotar.net/armor/bust/${encodeURIComponent(nick)}/160.png`;
+const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}/64.png`;
+
+/* ---------- animación de inicio ---------- */
+// Dura unos 4 segundos (lo que tarda la barra de carga). Se puede saltar con clic o cualquier tecla.
+(function splash() {
+  const s = document.getElementById('splash');
+  if (!s) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    s.classList.add('hide');
+    setTimeout(() => s.remove(), 700);
+  }
+  setTimeout(close, reduceMotion ? 700 : 3900);
+  s.addEventListener('click', close);
+  document.addEventListener('keydown', close, { once: true });
+})();
+
+/* ---------- skin 3D del jugador ---------- */
+let homeViewer = null;
+try {
+  homeViewer = window.SkinViewer.create($('player3d'));
+} catch {}
+if (!homeViewer) {
+  $('player3d').hidden = true;
+  $('player-bust').hidden = false;
+}
+window.addEventListener('nova-fx', (e) => homeViewer && homeViewer.setAnimated(e.detail));
+
+function loadImageUrl(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+let skinLoadSeq = 0;
+async function loadHomeSkin(nick, fresh) {
+  if (!homeViewer) return;
+  const seq = ++skinLoadSeq;
+  if (!nick) return homeViewer.setSkin(null, false);
+  try {
+    const r = await window.api.skinTexture(nick, !!fresh);
+    if (seq !== skinLoadSeq) return;
+    if (!r) {
+      homeViewer.setSkin(null, false);
+      homeViewer.setCape(null);
+      return;
+    }
+    homeViewer.setSkin(await loadImageUrl(r.dataUrl), r.slim);
+    homeViewer.setCape(r.cape ? await loadImageUrl(r.cape) : null);
+  } catch {
+    if (seq === skinLoadSeq) homeViewer.setSkin(null, false);
+  }
+}
+window.addEventListener('nova-skin-changed', () => currentUser && loadHomeSkin(currentUser.name, true));
+
+let loggedIn = false;
+let currentUser = null;
+
+let remoteBase = '';
+
+// Las imágenes de los JSON pueden ser un enlace https completo o una ruta relativa (ej. images/evento1.png).
+// Con remoteBase (GitHub) la ruta relativa se descarga de data/ en el repositorio, así se actualiza sola.
+// Sin remoteBase se busca dentro de renderer/ (útil al probar en tu computadora).
+function imageUrl(path) {
+  const p = String(path || '').trim();
+  if (!p) return '';
+  if (/^https:\/\//i.test(p)) return p;
+  if (/^[a-z]+:/i.test(p) || p.includes('..') || p.startsWith('/')) return ''; // ignora otros esquemas y rutas raras
+  if (remoteBase) return `${remoteBase}/${p.split('/').map(encodeURIComponent).join('/')}`;
+  return new URL(p, document.baseURI).href;
+}
+
+// Si una skin no carga (sin internet, nick inexistente), oculta el icono de imagen rota.
+document.addEventListener('error', (e) => {
+  if (e.target.tagName === 'IMG') e.target.style.visibility = 'hidden';
+}, true);
+document.addEventListener('load', (e) => {
+  if (e.target.tagName === 'IMG') e.target.style.visibility = '';
+}, true);
+
+function cleanError(err) {
+  // Electron antepone "Error invoking remote method ...: Error: " al mensaje real.
+  return String(err && err.message ? err.message : err).replace(
+    /^Error invoking remote method '[^']+': (Error: )?/,
+    ''
+  );
+}
+
+/* ---------- navegación ---------- */
+function moveIndicator() {
+  const active = document.querySelector('.tab-btn.active');
+  const ind = $('tab-ind');
+  if (!active) {
+    ind.style.width = '0px';
+    return;
+  }
+  ind.style.width = `${active.offsetWidth - 24}px`;
+  ind.style.transform = `translateX(${active.offsetLeft + 12}px)`;
+}
+window.addEventListener('resize', moveIndicator);
+
+function goTo(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+  $(`page-${tab}`).classList.add('active');
+  moveIndicator();
+  if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
+}
+document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
+
+/* ---------- inicio: hero ---------- */
+async function renderHero() {
+  try {
+    const m = await window.api.getData('manifest');
+    if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
+    $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
+    const heroImg = imageUrl(m.event && m.event.image);
+    const hero = document.querySelector('.hero');
+    if (heroImg) hero.style.setProperty('--hero-image', `url(${JSON.stringify(heroImg)})`);
+    else hero.style.removeProperty('--hero-image');
+    const chips = $('hero-chips');
+    chips.replaceChildren();
+    chips.append(el('span', 'chip', `Minecraft ${m.minecraftVersion}`));
+    const loader = String((m.loader && m.loader.type) || 'vanilla').toLowerCase();
+    const loaderNames = { vanilla: 'Vanilla', fabric: 'Fabric', forge: 'Forge' };
+    chips.append(el('span', 'chip', loaderNames[loader] || loader));
+    const mods = (m.mods || []).length;
+    if (mods) chips.append(el('span', 'chip', `${mods} ${mods === 1 ? 'mod' : 'mods'}`));
+    if (m.protected) chips.append(el('span', 'chip', 'Protegido'));
+    startCountdown(m.event && m.event.startsAt);
+    renderLinks(m.links);
+  } catch {
+    $('hero-tagline').textContent = 'No se pudo leer la configuración del evento.';
+  }
+}
+
+/* ---------- cuenta atrás y enlaces ---------- */
+let countdownTimer = 0;
+function startCountdown(iso) {
+  clearInterval(countdownTimer);
+  const box = $('countdown');
+  const target = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(target) || target <= Date.now()) {
+    box.classList.remove('show');
+    return;
+  }
+  const tick = () => {
+    if (document.hidden) return; // no gasta nada si la ventana no se ve
+    const left = Math.max(0, target - Date.now());
+    if (left === 0) {
+      clearInterval(countdownTimer);
+      box.textContent = '¡El evento ya empezó!';
+      return;
+    }
+    const d = Math.floor(left / 86400000);
+    const h = String(Math.floor(left / 3600000) % 24).padStart(2, '0');
+    const mi = String(Math.floor(left / 60000) % 60).padStart(2, '0');
+    const se = String(Math.floor(left / 1000) % 60).padStart(2, '0');
+    box.replaceChildren(document.createTextNode('Empieza en '), el('b', '', `${d} d ${h}:${mi}:${se}`));
+  };
+  box.classList.add('show');
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
+
+function renderLinks(links) {
+  const card = $('links-card');
+  const box = $('links');
+  box.replaceChildren();
+  const valid = (Array.isArray(links) ? links : []).filter((l) => l && l.name && /^https:\/\//i.test(String(l.url || ''))).slice(0, 8);
+  card.hidden = valid.length === 0;
+  valid.forEach((l) => {
+    const b = el('button', '', String(l.name).slice(0, 30));
+    b.type = 'button';
+    b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
+    box.append(b);
+  });
+}
+
+function formatPlaytime(seconds) {
+  const mins = Math.floor((seconds || 0) / 60);
+  if (mins < 1) return 'Aún no has jugado';
+  const h = Math.floor(mins / 60);
+  return h ? `Has jugado ${h} h ${mins % 60} min` : `Has jugado ${mins} min`;
+}
+async function refreshPlaytime() {
+  try {
+    $('playtime').textContent = formatPlaytime((await window.api.getSettings()).playSeconds);
+  } catch {}
+}
+
+async function renderNews() {
+  const box = $('news-list');
+  box.replaceChildren();
+  try {
+    const news = await window.api.getData('news');
+    if (!news.length) box.append(el('p', 'muted', 'Todavía no hay novedades.'));
+    news.forEach((n) => {
+      const item = el('article', 'news-item');
+      const time = el('time', '', n.date);
+      item.append(el('h3', '', n.title), time, el('p', '', n.text));
+      box.append(item);
+    });
+  } catch {
+    box.append(el('p', 'muted', 'No se pudieron cargar las novedades. Revisa tu conexión.'));
+  }
+}
+
+async function renderEvents() {
+  const list = $('events-list');
+  list.replaceChildren();
+  try {
+    const events = (await window.api.getData('events')).sort((a, b) => (a.date < b.date ? 1 : -1));
+    if (!events.length) list.append(el('p', 'muted', 'Aún no hay eventos en el historial.'));
+    events.forEach((ev) => {
+      const li = el('li');
+      const facts = el('div', 'facts');
+      if (ev.participants) facts.append(el('span', 'fact', `${ev.participants} participantes`));
+      if (ev.winner) facts.append(el('span', 'fact', `Ganó ${ev.winner}`));
+      const src = imageUrl(ev.image);
+      if (src) {
+        const img = el('img', 'event-img');
+        img.alt = `Imagen de ${ev.name}`;
+        img.loading = 'lazy';
+        img.src = src;
+        li.append(img);
+      }
+      li.append(el('time', '', ev.date), el('h3', '', ev.name), el('p', '', ev.description || ''), facts);
+      list.append(li);
+    });
+  } catch {
+    list.append(el('p', 'muted', 'No se pudo cargar el historial. Revisa tu conexión.'));
+  }
+}
+
+async function renderTeam() {
+  const grid = $('team-grid');
+  grid.replaceChildren();
+  try {
+    const team = await window.api.getData('team');
+    team.forEach((m) => {
+      const card = el('div', 'member');
+      const img = el('img');
+      img.alt = `Skin de ${m.nick}`;
+      img.src = skinBust(m.nick);
+      card.append(img, el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
+      grid.append(card);
+    });
+  } catch {
+    grid.append(el('p', 'muted', 'No se pudo cargar el equipo.'));
+  }
+}
+
+/* ---------- estado del servidor ---------- */
+async function refreshServer() {
+  if (document.hidden) return;
+  const dot = $('server-dot');
+  const detail = $('server-detail');
+  const s = await window.api.serverStatus();
+  dot.className = 'dot';
+  if (!s.configured) {
+    detail.textContent = 'Aún no hay servidor configurado.';
+  } else if (s.unknown) {
+    detail.textContent = 'No se pudo consultar el estado ahora mismo.';
+  } else if (s.online) {
+    dot.classList.add('on');
+    const players = s.players ? `${s.players.online} de ${s.players.max} jugadores conectados` : 'En línea';
+    detail.textContent = `${s.host}: ${players}`;
+  } else {
+    dot.classList.add('off');
+    detail.textContent = `${s.host} está desconectado.`;
+  }
+}
+
+/* ---------- sesión ---------- */
+function showMsg(text, isError = false) {
+  const m = $('account-msg');
+  m.textContent = text;
+  m.className = isError ? 'msg error' : 'msg';
+}
+
+function setSession(info) {
+  currentUser = info;
+  if (window.NovaSkins) window.NovaSkins.setUser(info);
+  loggedIn = !!info;
+  const chipAvatar = $('chip-avatar');
+  const bust = $('player-bust');
+  if (info) {
+    const label = info.mode === 'premium' ? 'Cuenta premium' : 'Cuenta no premium';
+    $('chip-name').textContent = info.name;
+    $('chip-mode').textContent = label;
+    chipAvatar.src = skinHead(info.name);
+    chipAvatar.hidden = false;
+    bust.src = skinBust(info.name);
+    loadHomeSkin(info.name);
+    $('player-name').textContent = info.name;
+    $('player-mode').textContent = label;
+    $('player-action').textContent = 'Cambiar de cuenta';
+    $('logout-btn').hidden = false;
+    showMsg(`Sesión iniciada como ${info.name}.`);
+  } else {
+    $('chip-name').textContent = 'Iniciar sesión';
+    $('chip-mode').textContent = '';
+    chipAvatar.hidden = true;
+    bust.src = skinBust('Steve');
+    loadHomeSkin(null);
+    $('player-name').textContent = 'Sin sesión';
+    $('player-mode').textContent = 'Elige cómo quieres entrar';
+    $('player-action').textContent = 'Iniciar sesión';
+    $('logout-btn').hidden = true;
+    showMsg('');
+  }
+}
+
+$('player-action').addEventListener('click', () => goTo('account'));
+
+$('login-offline').addEventListener('click', async () => {
+  try {
+    const nick = $('offline-nick').value;
+    const info = await window.api.loginOffline(nick);
+    await window.api.saveSettings({ lastNick: nick.trim() });
+    setSession(info);
+    goTo('home');
+  } catch (err) {
+    showMsg(cleanError(err), true);
+  }
+});
+
+$('login-ms').addEventListener('click', async () => {
+  const btn = $('login-ms');
+  btn.disabled = true;
+  showMsg('Se abrirá la ventana de Microsoft para iniciar sesión.');
+  try {
+    setSession(await window.api.loginMicrosoft());
+    goTo('home');
+  } catch (err) {
+    showMsg(cleanError(err) || 'No se completó el inicio de sesión. Inténtalo de nuevo.', true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('logout-btn').addEventListener('click', async () => {
+  await window.api.logout();
+  setSession(null);
+});
+
+/* ---------- jugar ---------- */
+function setPlaying(value) {
+  $('play-btn').disabled = value;
+  $('play-btn').textContent = value ? 'Iniciando…' : 'Jugar';
+}
+
+/* ---------- contraseña de instalación ---------- */
+function askPassword(wrong) {
+  return new Promise((resolve) => {
+    const modal = $('pw-modal');
+    const input = $('pw-input');
+    input.value = '';
+    $('pw-msg').textContent = wrong ? 'La contraseña no es correcta. Inténtalo otra vez.' : '';
+    modal.hidden = false;
+    input.focus();
+    const done = (value) => {
+      modal.hidden = true;
+      $('pw-form').removeEventListener('submit', onSubmit);
+      $('pw-cancel').removeEventListener('click', onCancel);
+      input.value = '';
+      resolve(value);
+    };
+    const onSubmit = (e) => {
+      e.preventDefault();
+      if (input.value) done(input.value);
+    };
+    const onCancel = () => done(null);
+    $('pw-form').addEventListener('submit', onSubmit);
+    $('pw-cancel').addEventListener('click', onCancel);
+  });
+}
+
+function showCrash(list) {
+  const box = $('crash');
+  box.replaceChildren();
+  if (!list || !list.length) {
+    box.hidden = true;
+    return;
+  }
+  list.forEach((c) => {
+    box.append(el('strong', '', c.title), el('p', '', c.advice));
+  });
+  const more = el('button', '', 'Ver consola');
+  more.type = 'button';
+  more.addEventListener('click', () => goTo('console'));
+  box.append(more);
+  box.hidden = false;
+}
+
+async function startGame() {
+  let password = '';
+  let wrong = false;
+  for (;;) {
+    try {
+      await window.api.launch({ password });
+      return;
+    } catch (err) {
+      const text = cleanError(err);
+      if (/NEEDS_PASSWORD|WRONG_PASSWORD/.test(text)) {
+        wrong = /WRONG_PASSWORD/.test(text);
+        $('status').textContent = 'Esperando la contraseña de instalación…';
+        const typed = await askPassword(wrong);
+        if (typed === null) throw new Error('Instalación cancelada.');
+        password = typed;
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+$('play-btn').addEventListener('click', async () => {
+  if (!loggedIn) {
+    goTo('account');
+    showMsg('Inicia sesión como premium o no premium para jugar.', true);
+    return;
+  }
+  setPlaying(true);
+  showCrash(null);
+  $('status').textContent = 'Preparando…';
+  try {
+    await startGame();
+  } catch (err) {
+    $('status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
+    $('progress').hidden = true;
+    setPlaying(false);
+  }
+});
+
+window.api.onStatus((d) => {
+  $('status').textContent = d.text;
+});
+
+window.api.onProgress((d) => {
+  const bar = $('progress');
+  if (d.total) {
+    bar.hidden = false;
+    bar.max = d.total;
+    bar.value = d.task;
+    $('status').textContent =
+      d.type === 'java' ? `Instalando Java… ${Math.round(d.task)}%` : `Descargando archivos del juego (${d.task} de ${d.total})`;
+  }
+});
+
+window.api.onClose((d) => {
+  $('progress').hidden = true;
+  $('status').textContent =
+    d.code === 0 ? 'Minecraft se cerró' : `Minecraft se cerró con el código ${d.code}. Revisa la consola.`;
+  setPlaying(false);
+  showCrash(d.code === 0 ? null : d.crash);
+  refreshPlaytime();
+});
+
+/* ---------- consola ---------- */
+const logLines = [];
+const MAX_LOG_LINES = 2000;
+const logBox = $('log');
+let logEmpty = true;
+
+window.api.onLog((d) => {
+  if (logEmpty) {
+    logBox.textContent = '';
+    logEmpty = false;
+  }
+  logLines.push(`[${d.source}] ${d.line}`);
+  if (logLines.length > MAX_LOG_LINES) logLines.shift();
+  const atBottom = logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 40;
+  logBox.textContent = logLines.join('\n');
+  if (atBottom) logBox.scrollTop = logBox.scrollHeight;
+});
+
+$('log-clear').addEventListener('click', () => {
+  logLines.length = 0;
+  logBox.textContent = 'Registro limpio.';
+  logEmpty = true;
+});
+
+$('log-copy').addEventListener('click', async () => {
+  const btn = $('log-copy');
+  try {
+    await navigator.clipboard.writeText(logLines.join('\n'));
+    btn.textContent = 'Copiado';
+  } catch {
+    btn.textContent = 'No se pudo copiar';
+  }
+  setTimeout(() => (btn.textContent = 'Copiar'), 1500);
+});
+
+/* ---------- ajustes ---------- */
+function readSettingsForm() {
+  return {
+    ramGb: Number($('ram').value),
+    javaPath: $('java-path').value,
+    jvmArgs: $('jvm-args').value,
+    width: Number($('res-w').value),
+    height: Number($('res-h').value),
+    fullscreen: $('fullscreen').checked,
+    joinServer: $('join-server').checked,
+    autoJava: $('auto-java').checked,
+    gameBehavior: $('behavior').value
+  };
+}
+
+function fillSettingsForm(s) {
+  $('ram').value = s.ramGb;
+  $('ram-out').textContent = `${s.ramGb} GB`;
+  $('java-path').value = s.javaPath;
+  $('jvm-args').value = s.jvmArgs;
+  $('res-w').value = s.width;
+  $('res-h').value = s.height;
+  $('fullscreen').checked = s.fullscreen;
+  $('join-server').checked = s.joinServer;
+  $('auto-java').checked = s.autoJava;
+  $('behavior').value = s.gameBehavior;
+  $('res-w').disabled = $('res-h').disabled = s.fullscreen;
+}
+
+$('ram').addEventListener('input', () => {
+  $('ram-out').textContent = `${$('ram').value} GB`;
+});
+
+$('fullscreen').addEventListener('change', () => {
+  $('res-w').disabled = $('res-h').disabled = $('fullscreen').checked;
+});
+
+$('java-browse').addEventListener('click', async () => {
+  const p = await window.api.browseJava();
+  if (p) $('java-path').value = p;
+});
+
+$('open-folder').addEventListener('click', async () => {
+  try {
+    await window.api.openGameFolder();
+  } catch (err) {
+    $('settings-msg').textContent = cleanError(err);
+    $('settings-msg').className = 'msg error';
+  }
+});
+
+$('save-settings').addEventListener('click', async () => {
+  const msg = $('settings-msg');
+  try {
+    const saved = await window.api.saveSettings(readSettingsForm());
+    fillSettingsForm(saved);
+    msg.textContent = 'Ajustes guardados.';
+    msg.className = 'msg';
+  } catch (err) {
+    msg.textContent = `No se pudieron guardar los ajustes: ${cleanError(err)}`;
+    msg.className = 'msg error';
+  }
+  setTimeout(() => (msg.textContent = ''), 3000);
+});
+
+/* ---------- actualizaciones del programa ---------- */
+function renderUpdate(s) {
+  const banner = $('update-banner');
+  const text = $('update-text');
+  const install = $('update-install');
+  const line = $('update-line');
+  install.hidden = true;
+
+  if (s.state === 'downloading') {
+    banner.hidden = false;
+    text.textContent = `Descargando la versión ${s.version || 'nueva'}… ${s.percent || 0}%`;
+    line.textContent = `Descargando la versión ${s.version || 'nueva'} (${s.percent || 0}%).`;
+  } else if (s.state === 'ready') {
+    banner.hidden = false;
+    install.hidden = false;
+    text.textContent = `La versión ${s.version} está lista. Reinicia el launcher para instalarla.`;
+    line.textContent = `La versión ${s.version} está lista para instalar.`;
+  } else {
+    banner.hidden = true;
+    line.textContent = {
+      checking: 'Buscando actualizaciones…',
+      none: 'Tienes la última versión.',
+      dev: 'Las actualizaciones automáticas solo funcionan en la versión instalada.',
+      error: 'No se pudo buscar actualizaciones. Revisa tu conexión.',
+      idle: ''
+    }[s.state] || '';
+  }
+}
+
+window.api.onUpdate(renderUpdate);
+
+$('update-install').addEventListener('click', async () => {
+  try {
+    await window.api.installUpdate();
+  } catch (err) {
+    $('update-text').textContent = cleanError(err);
+  }
+});
+
+$('update-check').addEventListener('click', async () => {
+  const btn = $('update-check');
+  btn.disabled = true;
+  try {
+    renderUpdate(await window.api.checkUpdates());
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- arranque ---------- */
+(async function init() {
+  const [cfg, settings, sys] = await Promise.all([
+    window.api.getConfig(),
+    window.api.getSettings(),
+    window.api.systemInfo()
+  ]);
+
+  // "Nova PX - Event Launcher" se muestra en dos líneas: nombre y subtítulo.
+  const [brandName, ...brandRest] = cfg.launcherName.split(' - ');
+  $('brand-name').textContent = brandName;
+  $('brand-sub').textContent = brandRest.join(' - ');
+  document.title = cfg.launcherName;
+  $('hero-title').textContent = cfg.launcherName;
+  remoteBase = cfg.remoteBase || '';
+  $('app-version').textContent = `Versión ${cfg.version}`;
+  window.api.getUpdateState().then(renderUpdate);
+  moveIndicator();
+
+  const maxRam = Math.min(16, sys.totalRamGb);
+  $('ram').max = String(maxRam);
+  $('ram-hint').textContent = `Tu equipo tiene ${sys.totalRamGb} GB en total. Deja al menos 2 GB libres para el sistema.`;
+  $('game-dir').textContent = sys.gameDir;
+  fillSettingsForm({ ...settings, ramGb: Math.min(settings.ramGb, maxRam) });
+  $('offline-nick').value = settings.lastNick || '';
+
+  window.NovaTheme.init(settings);
+  refreshPlaytime();
+
+  // Si la ventana se cerró mientras jugabas (modo bandeja), recupera sesión, estado y consola.
+  const st = await window.api.appState();
+  if (st.session) setSession(st.session);
+  else setSession(null);
+  if (st.playing) {
+    setPlaying(true);
+    $('status').textContent = 'Minecraft en ejecución';
+  }
+  if (st.log && st.log.length) {
+    logEmpty = false;
+    st.log.forEach((l) => logLines.push(l));
+    logBox.textContent = logLines.join('\n');
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+  renderHero();
+  renderNews();
+  renderEvents();
+  renderTeam();
+  refreshServer();
+  setInterval(refreshServer, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
+})();

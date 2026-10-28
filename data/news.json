@@ -1,0 +1,12 @@
+[
+  {
+    "title": "¡Bienvenido al launcher de eventos!",
+    "date": "2026-10-20",
+    "text": "Aquí verás las noticias de los próximos eventos. Edita data/news.json para cambiar este texto."
+  },
+  {
+    "title": "Próximo evento: por anunciar",
+    "date": "2026-10-27",
+    "text": "Pronto publicaremos fecha, modalidad y premios del siguiente evento."
+  }
+]

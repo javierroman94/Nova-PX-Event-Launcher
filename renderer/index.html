@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' https: data:; style-src 'self'; script-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nova PX - Event Launcher</title>
+  <link rel="icon" href="images/logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app-bg" aria-hidden="true"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
+
+  <div id="splash" class="splash" role="status" aria-label="Cargando Nova PX - Event Launcher">
+    <div class="sp-aurora a1" aria-hidden="true"></div>
+    <div class="sp-aurora a2" aria-hidden="true"></div>
+    <div class="sp-grid" aria-hidden="true"></div>
+    <div class="splash-content">
+      <div class="sp-stage" aria-hidden="true">
+        <span class="sp-wave w1"></span><span class="sp-wave w2"></span>
+        <span class="sp-ring"></span>
+        <span class="sp-sparks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <img class="splash-logo" src="images/logo.png" alt="" width="132" height="132" />
+      </div>
+      <h1 class="splash-name" aria-hidden="true">
+        <span>N</span><span>o</span><span>v</span><span>a</span><span class="gap"></span><span>P</span><span>X</span>
+      </h1>
+      <p class="splash-sub">Event Launcher</p>
+      <div class="splash-bar" aria-hidden="true"><i></i></div>
+      <div class="sp-pct" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="images/logo.png" alt="" width="36" height="36" />
+      <span class="brand-text">
+        <span id="brand-name">Nova PX</span>
+        <span id="brand-sub" class="brand-sub">Event Launcher</span>
+      </span>
+    </div>
+
+    <nav class="tabs" aria-label="Secciones" id="tabs">
+      <button class="tab-btn active" data-tab="home">Inicio</button>
+      <button class="tab-btn" data-tab="events">Eventos</button>
+      <button class="tab-btn" data-tab="team">Equipo</button>
+      <button class="tab-btn" data-tab="skins">Skins</button>
+      <button class="tab-btn" data-tab="settings">Ajustes</button>
+      <button class="tab-btn" data-tab="console">Consola</button>
+      <span class="tab-ind" id="tab-ind" aria-hidden="true"></span>
+    </nav>
+
+    <button class="account-chip" id="account-chip" data-tab="account" aria-label="Cuenta">
+      <img id="chip-avatar" alt="" width="32" height="32" hidden />
+      <span class="chip-text">
+        <span id="chip-name">Iniciar sesión</span>
+        <span id="chip-mode" class="chip-mode"></span>
+      </span>
+    </button>
+  </header>
+
+  <div id="update-banner" class="update-banner" role="status" hidden>
+    <span id="update-text"></span>
+    <button id="update-install" class="primary" type="button" hidden>Reiniciar e instalar</button>
+  </div>
+
+  <main>
+    <!-- INICIO -->
+    <section class="page active" id="page-home">
+      <div class="hero">
+        <div class="hero-body">
+          <div class="chips" id="hero-chips"></div>
+          <h1 id="hero-title">Evento de temporada</h1>
+          <p id="hero-tagline" class="hero-tagline"></p>
+          <div id="countdown" class="countdown" role="timer"></div>
+        </div>
+        <div class="hero-play">
+          <div class="play-status">
+            <span id="status">Listo para jugar</span>
+            <progress id="progress" value="0" max="100" hidden></progress>
+          </div>
+          <button id="play-btn" class="play">Jugar</button>
+        </div>
+      </div>
+
+      <div id="crash" class="crash" role="alert" hidden></div>
+
+      <div class="home-grid">
+        <section aria-labelledby="news-title">
+          <h2 id="news-title">Novedades</h2>
+          <div id="news-list" class="stack"></div>
+        </section>
+
+        <aside aria-label="Tu jugador">
+          <div class="player-card" data-tilt>
+            <div class="player-skin"><canvas id="player3d" class="skin3d" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas><img id="player-bust" alt="" width="120" height="120" hidden /></div>
+            <div class="player-info">
+              <div id="player-name" class="player-name">Sin sesión</div>
+              <div id="player-mode" class="player-mode">Elige cómo quieres entrar</div>
+              <div id="playtime" class="playtime"></div>
+              <button id="player-action" class="ghost">Iniciar sesión</button>
+            </div>
+          </div>
+          <div class="server-card" id="server-card">
+            <div class="server-head">
+              <span class="dot" id="server-dot"></span>
+              <strong id="server-title">Servidor del evento</strong>
+            </div>
+            <div id="server-detail" class="muted">Consultando estado…</div>
+          </div>
+          <div class="side-card" id="links-card" hidden>
+            <h3>Enlaces</h3>
+            <div class="links" id="links"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- EVENTOS -->
+    <section class="page" id="page-events">
+      <h2 class="page-title">Eventos anteriores</h2>
+      <ol id="events-list" class="timeline"></ol>
+    </section>
+
+    <!-- EQUIPO -->
+    <section class="page" id="page-team">
+      <h2 class="page-title">El equipo</h2>
+      <div id="team-grid" class="team-grid"></div>
+    </section>
+
+    <!-- SKINS -->
+    <section class="page" id="page-skins">
+      <h2 class="page-title">Skins y capas</h2>
+      <div id="skins-notice" class="notice" hidden></div>
+      <div class="skins-grid" id="skins-grid">
+        <div>
+          <div class="skin-stage">
+            <canvas id="skin3d" class="skin3d big" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas>
+            <figure class="flat" hidden><canvas id="skin-front" width="128" height="256" aria-label="Skin vista de frente"></canvas><figcaption>Frente</figcaption></figure>
+            <figure class="flat" hidden><canvas id="skin-back" width="128" height="256" aria-label="Skin vista de espalda"></canvas><figcaption>Espalda</figcaption></figure>
+          </div>
+          <div id="skin-name" class="muted skin-name"></div>
+        </div>
+        <div class="skin-panel" id="skin-panel">
+          <fieldset>
+            <legend>Cambiar skin</legend>
+            <div class="field">
+              <small class="muted">Elige un PNG de 64x64 píxeles. Verás cómo queda antes de aplicarlo.</small>
+              <div class="btn-row">
+                <button id="skin-pick" type="button">Elegir archivo…</button>
+                <button id="skin-apply" class="primary" type="button" disabled>Aplicar skin</button>
+              </div>
+              <div class="radio-row" role="radiogroup" aria-label="Modelo de brazos">
+                <label><input type="radio" name="skin-variant" value="classic" checked /> Brazos normales (Steve)</label>
+                <label><input type="radio" name="skin-variant" value="slim" /> Brazos finos (Alex)</label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Capa</legend>
+            <div class="field">
+              <div id="capes" class="capes"></div>
+              <small id="capes-empty" class="muted" hidden>Tu cuenta no tiene capas.</small>
+            </div>
+          </fieldset>
+          <div id="skins-msg" class="msg" role="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section class="page" id="page-settings">
+      <h2 class="page-title">Ajustes</h2>
+      <div class="settings">
+        <fieldset>
+          <legend>Memoria y Java</legend>
+          <div class="field">
+            <label for="ram">Memoria RAM para Minecraft</label>
+            <div class="range-row">
+              <input id="ram" type="range" min="1" max="16" step="1" value="4" />
+              <output id="ram-out">4 GB</output>
+            </div>
+            <small id="ram-hint" class="muted">Para modpacks con muchos mods se recomiendan 4 a 6 GB.</small>
+          </div>
+          <div class="field">
+            <label for="java-path">Ruta de Java</label>
+            <div class="input-row">
+              <input id="java-path" type="text" placeholder="Automática (usa el Java instalado)" />
+              <button id="java-browse" type="button">Buscar</button>
+            </div>
+            <small class="muted">Déjala vacía para usar el Java automático.</small>
+          </div>
+          <label class="check"><input id="auto-java" type="checkbox" /> Instalar Java automáticamente</label>
+          <small class="muted">Si falta el Java que pide el evento, el launcher lo descarga (Temurin, verificado) y lo guarda solo para él. No toca tu Java del sistema.</small>
+          <div class="field">
+            <label for="jvm-args">Argumentos de Java</label>
+            <input id="jvm-args" type="text" placeholder="-XX:+UseG1GC" />
+            <small class="muted">Opcional. Solo para usuarios avanzados.</small>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Apariencia</legend>
+          <div class="field">
+            <label>Tema</label>
+            <div class="seg" id="theme-seg">
+              <button type="button" data-theme-value="dark">Oscuro</button>
+              <button type="button" data-theme-value="light">Claro</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Color principal</label>
+            <div class="swatches" id="swatches"></div>
+          </div>
+          <div class="field">
+            <label>Imagen de fondo</label>
+            <div class="btn-row">
+              <button id="bg-pick" type="button">Elegir imagen…</button>
+              <button id="bg-clear" type="button">Quitar</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="bg-dim">Oscurecer el fondo</label>
+            <input id="bg-dim" type="range" min="0" max="90" step="5" />
+          </div>
+          <div class="field">
+            <label for="bg-blur">Desenfoque del fondo</label>
+            <input id="bg-blur" type="range" min="0" max="24" step="1" />
+          </div>
+          <label class="check"><input id="effects" type="checkbox" /> Efectos animados (partículas y transiciones)</label>
+          <small id="theme-msg" class="msg" role="status"></small>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ventana del juego</legend>
+          <div class="field inline">
+            <div>
+              <label for="res-w">Ancho</label>
+              <input id="res-w" type="number" min="640" max="7680" />
+            </div>
+            <div>
+              <label for="res-h">Alto</label>
+              <input id="res-h" type="number" min="360" max="4320" />
+            </div>
+          </div>
+          <label class="check"><input id="fullscreen" type="checkbox" /> Iniciar en pantalla completa</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Al jugar</legend>
+          <label class="check"><input id="join-server" type="checkbox" /> Entrar directo al servidor del evento</label>
+          <div class="field">
+            <label for="behavior">Launcher mientras juego</label>
+            <select id="behavior">
+              <option value="tray">Cerrar la ventana y dejar un icono (ahorra más memoria)</option>
+              <option value="minimize">Minimizar</option>
+              <option value="keep">No hacer nada</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Actualizaciones</legend>
+          <div class="field">
+            <div id="app-version" class="path"></div>
+            <small id="update-line" class="muted" role="status"></small>
+            <button id="update-check" type="button">Buscar actualizaciones</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Archivos del juego</legend>
+          <div class="field">
+            <div id="game-dir" class="path"></div>
+            <button id="open-folder" type="button">Abrir carpeta</button>
+          </div>
+        </fieldset>
+      </div>
+      <div class="save-row">
+        <button id="save-settings" class="primary">Guardar ajustes</button>
+        <span id="settings-msg" class="msg" role="status"></span>
+      </div>
+    </section>
+
+    <!-- CONSOLA -->
+    <section class="page" id="page-console">
+      <div class="console-head">
+        <h2 class="page-title">Consola</h2>
+        <div class="console-actions">
+          <button id="log-copy" type="button">Copiar</button>
+          <button id="log-clear" type="button">Limpiar</button>
+        </div>
+      </div>
+      <pre id="log" class="log" tabindex="0" aria-live="off">Aquí aparecerá el registro cuando inicies el juego.</pre>
+    </section>
+
+    <!-- CUENTA -->
+    <section class="page" id="page-account">
+      <h2 class="page-title">Cuenta</h2>
+      <div class="account-grid">
+        <div class="card">
+          <h3>Cuenta premium</h3>
+          <p>Inicia sesión con tu cuenta de Microsoft si compraste Minecraft Java.</p>
+          <button id="login-ms" class="primary">Iniciar sesión con Microsoft</button>
+        </div>
+        <div class="card">
+          <h3>Cuenta no premium</h3>
+          <p>Elige un nick de 3 a 16 caracteres con letras, números o guion bajo. Usa siempre el mismo para conservar tu progreso.</p>
+          <input id="offline-nick" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
+          <button id="login-offline">Entrar con este nick</button>
+        </div>
+      </div>
+      <div id="account-msg" class="msg" role="status"></div>
+      <button id="logout-btn" class="ghost" hidden>Cerrar sesión</button>
+    </section>
+  </main>
+
+  <div id="pw-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pw-title" hidden>
+    <form class="modal-box" id="pw-form">
+      <h3 id="pw-title">Contraseña de instalación</h3>
+      <p id="pw-text">Este modpack está protegido. Pide la contraseña al equipo del evento. Solo se pregunta una vez: después ya queda instalado.</p>
+      <input id="pw-input" type="password" autocomplete="off" placeholder="Contraseña" aria-label="Contraseña" />
+      <div id="pw-msg" class="msg error" role="alert"></div>
+      <div class="modal-actions">
+        <button id="pw-cancel" type="button">Cancelar</button>
+        <button id="pw-ok" class="primary" type="submit">Instalar</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="theme.js"></script>
+  <script src="viewer3d.js"></script>
+  <script src="skins.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
