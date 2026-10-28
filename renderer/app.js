@@ -109,11 +109,52 @@ function moveIndicator() {
   const active = document.querySelector('.tab-btn.active');
   const ind = $('tab-ind');
   if (!active) {
-    ind.style.width = '0px';
+    ind.style.height = '0px';
     return;
   }
-  ind.style.width = `${active.offsetWidth - 24}px`;
-  ind.style.transform = `translateX(${active.offsetLeft + 12}px)`;
+  const h = Math.round(active.offsetHeight * 0.56);
+  ind.style.height = `${h}px`;
+  ind.style.transform = `translateY(${active.offsetTop + Math.round((active.offsetHeight - h) / 2)}px)`;
+}
+
+const PAGE_TITLES = {
+  home: ['Inicio', 'Todo listo para tu próximo evento'],
+  events: ['Eventos', 'El historial de los eventos del equipo'],
+  team: ['Equipo', 'Las personas que hacen posible cada evento'],
+  skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
+  settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
+  console: ['Consola', 'El registro del juego, para resolver problemas'],
+  account: ['Cuenta', 'Inicia sesión como premium o no premium']
+};
+
+/* ---------- avisos emergentes ---------- */
+function toast(text, kind) {
+  const box = $('toasts');
+  const t = el('div', kind === 'error' ? 'toast error' : 'toast', text);
+  box.append(t);
+  setTimeout(() => {
+    t.classList.add('out');
+    setTimeout(() => t.remove(), 320);
+  }, kind === 'error' ? 5200 : 3200);
+}
+window.toast = toast;
+
+// Anima un número hasta su valor final (solo si los efectos están activos).
+function countUp(node, to, suffix) {
+  const text = (v) => `${v}${suffix || ''}`;
+  if (document.documentElement.classList.contains('no-fx') || !Number.isFinite(to)) {
+    node.textContent = text(to);
+    return;
+  }
+  const from = Number(node.dataset.v || 0);
+  node.dataset.v = String(to);
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / 700);
+    node.textContent = text(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 window.addEventListener('resize', moveIndicator);
 
@@ -121,6 +162,9 @@ function goTo(tab) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   $(`page-${tab}`).classList.add('active');
+  const [title, sub] = PAGE_TITLES[tab] || ['', ''];
+  $('top-title').textContent = title;
+  $('top-sub').textContent = sub;
   moveIndicator();
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
 }
@@ -145,6 +189,8 @@ async function renderHero() {
     const mods = (m.mods || []).length;
     if (mods) chips.append(el('span', 'chip', `${mods} ${mods === 1 ? 'mod' : 'mods'}`));
     if (m.protected) chips.append(el('span', 'chip', 'Protegido'));
+    $('stat-ver').textContent = m.minecraftVersion;
+    $('stat-ver-label').textContent = loaderNames[loader] || loader;
     startCountdown(m.event && m.event.startsAt);
     renderLinks(m.links);
   } catch {
@@ -156,27 +202,30 @@ async function renderHero() {
 let countdownTimer = 0;
 function startCountdown(iso) {
   clearInterval(countdownTimer);
-  const box = $('countdown');
+  const box = $('stat-next');
+  const label = $('stat-next-label');
   const target = iso ? Date.parse(iso) : NaN;
   if (!Number.isFinite(target) || target <= Date.now()) {
-    box.classList.remove('show');
+    box.textContent = Number.isFinite(target) ? '¡Ya empezó!' : 'Por anunciar';
+    label.textContent = 'Próximo evento';
     return;
   }
+  label.textContent = 'Empieza en';
   const tick = () => {
     if (document.hidden) return; // no gasta nada si la ventana no se ve
     const left = Math.max(0, target - Date.now());
     if (left === 0) {
       clearInterval(countdownTimer);
-      box.textContent = '¡El evento ya empezó!';
+      box.textContent = '¡Ya empezó!';
+      label.textContent = 'Próximo evento';
       return;
     }
     const d = Math.floor(left / 86400000);
     const h = String(Math.floor(left / 3600000) % 24).padStart(2, '0');
     const mi = String(Math.floor(left / 60000) % 60).padStart(2, '0');
     const se = String(Math.floor(left / 1000) % 60).padStart(2, '0');
-    box.replaceChildren(document.createTextNode('Empieza en '), el('b', '', `${d} d ${h}:${mi}:${se}`));
+    box.textContent = `${d} d ${h}:${mi}:${se}`;
   };
-  box.classList.add('show');
   tick();
   countdownTimer = setInterval(tick, 1000);
 }
@@ -203,15 +252,19 @@ function formatPlaytime(seconds) {
 }
 async function refreshPlaytime() {
   try {
-    $('playtime').textContent = formatPlaytime((await window.api.getSettings()).playSeconds);
+    const secs = (await window.api.getSettings()).playSeconds;
+    $('playtime').textContent = formatPlaytime(secs);
+    const mins = Math.floor((secs || 0) / 60);
+    $('stat-play').textContent = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h ${mins % 60} min`;
   } catch {}
 }
 
 async function renderNews() {
   const box = $('news-list');
-  box.replaceChildren();
+  box.replaceChildren(el('div', 'skeleton'), el('div', 'skeleton'));
   try {
     const news = await window.api.getData('news');
+    box.replaceChildren();
     if (!news.length) box.append(el('p', 'muted', 'Todavía no hay novedades.'));
     news.forEach((n) => {
       const item = el('article', 'news-item');
@@ -220,6 +273,7 @@ async function renderNews() {
       box.append(item);
     });
   } catch {
+    box.replaceChildren();
     box.append(el('p', 'muted', 'No se pudieron cargar las novedades. Revisa tu conexión.'));
   }
 }
@@ -276,6 +330,25 @@ async function refreshServer() {
   const detail = $('server-detail');
   const s = await window.api.serverStatus();
   dot.className = 'dot';
+  const topDot = $('top-dot');
+  const topText = $('top-server-text');
+  topDot.className = 'dot';
+  if (!s.configured) {
+    topText.textContent = 'Sin servidor';
+    $('stat-players').textContent = '–';
+  } else if (s.unknown) {
+    topText.textContent = 'Sin datos del servidor';
+    $('stat-players').textContent = '–';
+  } else if (s.online) {
+    topDot.classList.add('on');
+    topText.textContent = s.players ? `${s.players.online} / ${s.players.max} en línea` : 'Servidor en línea';
+    if (s.players) countUp($('stat-players'), s.players.online);
+    else $('stat-players').textContent = 'En línea';
+  } else {
+    topDot.classList.add('off');
+    topText.textContent = 'Servidor desconectado';
+    $('stat-players').textContent = '0';
+  }
   if (!s.configured) {
     detail.textContent = 'Aún no hay servidor configurado.';
   } else if (s.unknown) {
@@ -366,7 +439,7 @@ $('logout-btn').addEventListener('click', async () => {
 /* ---------- jugar ---------- */
 function setPlaying(value) {
   $('play-btn').disabled = value;
-  $('play-btn').textContent = value ? 'Iniciando…' : 'Jugar';
+  $('play-label').textContent = value ? 'Iniciando…' : 'Jugar';
 }
 
 /* ---------- contraseña de instalación ---------- */
@@ -569,6 +642,7 @@ $('save-settings').addEventListener('click', async () => {
     fillSettingsForm(saved);
     msg.textContent = 'Ajustes guardados.';
     msg.className = 'msg';
+    toast('Ajustes guardados');
   } catch (err) {
     msg.textContent = `No se pudieron guardar los ajustes: ${cleanError(err)}`;
     msg.className = 'msg error';
@@ -592,6 +666,10 @@ function renderUpdate(s) {
     banner.hidden = false;
     install.hidden = false;
     text.textContent = `La versión ${s.version} está lista. Reinicia el launcher para instalarla.`;
+    if (!window.__readyToast) {
+      window.__readyToast = true;
+      toast(`Nueva versión ${s.version} lista para instalar`);
+    }
     line.textContent = `La versión ${s.version} está lista para instalar.`;
   } else {
     banner.hidden = true;
@@ -641,6 +719,7 @@ $('update-check').addEventListener('click', async () => {
   $('hero-title').textContent = cfg.launcherName;
   remoteBase = cfg.remoteBase || '';
   $('app-version').textContent = `Versión ${cfg.version}`;
+  $('side-version').textContent = `v${cfg.version}`;
   window.api.getUpdateState().then(renderUpdate);
   moveIndicator();
 

@@ -28,6 +28,7 @@
   }
 
   function msg(text, isError) {
+    if (text && window.toast && (isError || /cambiad|quitada/i.test(text))) window.toast(text, isError ? 'error' : undefined);
     const m = g('skins-msg');
     m.textContent = text;
     m.className = isError ? 'msg error' : 'msg';
