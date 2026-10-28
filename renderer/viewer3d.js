@@ -108,7 +108,7 @@
   /* ---------- animaciones ---------- */
   // Cada estado devuelve el ángulo objetivo de cada parte (radianes). t = segundos dentro del estado.
   const STATES = [
-    { name: 'idle', len: 3.2 },
+    { name: 'idle', len: 2.2 },
     { name: 'walk', len: 3.6 },
     { name: 'wave', len: 2.6 },
     { name: 'mine', len: 4.4 },
@@ -120,10 +120,10 @@
     const p = { cape: 0.08, headY: 0, headX: 0, rax: 0, raz: 0, lax: 0, laz: 0, rlx: 0, llx: 0, twist: 0, bob: 0, spin: 0 };
     switch (name) {
       case 'idle':
-        p.rax = Math.sin(t * 1.6) * 0.05; p.lax = -p.rax;
+        p.rax = Math.sin(t * 2.2) * 0.12; p.lax = -p.rax;
         p.raz = -0.04; p.laz = 0.04;
-        p.headY = Math.sin(t * 0.9) * 0.55; p.headX = Math.sin(t * 1.3) * 0.08;
-        p.bob = Math.sin(t * 2.2) * 0.25;
+        p.headY = Math.sin(t * 1.4) * 0.6; p.headX = Math.sin(t * 2.0) * 0.1;
+        p.bob = Math.abs(Math.sin(t * 3.0)) * 0.5;
         break;
       case 'walk': {
         const s = Math.sin(t * 6.5);
@@ -309,7 +309,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
 
     /* ---------- estado de la animación ---------- */
     const pose = targetPose('idle', 0);
-    let stateIdx = 0;
+    let stateIdx = 2; // al abrir, el muñeco saluda
     let stateT = 0;
     let override = null; // { name, t, len } al hacer clic
     let yawUser = 0;

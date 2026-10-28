@@ -3,7 +3,7 @@
   const root = document.documentElement;
   const g = (id) => document.getElementById(id);
   const PRESETS = ['#f2b84b', '#9d6bff', '#4cc9f0', '#5fd38d', '#ff6b8b', '#ff8a3d'];
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Las animaciones se controlan con la casilla "Efectos animados" de Ajustes (no con la opción del sistema).
 
   let state = { theme: 'dark', accent: '#f2b84b', bgDim: 55, bgBlur: 6, effects: true };
   let saveTimer = 0;
@@ -22,7 +22,7 @@
     root.style.setProperty('--accent-ink', inkFor(state.accent));
     root.style.setProperty('--bg-dim', String(state.bgDim / 100));
     root.style.setProperty('--bg-blur', `${state.bgBlur}px`);
-    root.classList.toggle('no-fx', !state.effects || reduceMotion);
+    root.classList.toggle('no-fx', !state.effects);
     document.querySelectorAll('[data-theme-value]').forEach((b) => b.classList.toggle('active', b.dataset.themeValue === state.theme));
     document.querySelectorAll('.swatch').forEach((b) => b.classList.toggle('active', b.dataset.color === state.accent));
     const picker = g('accent-picker');
@@ -31,7 +31,7 @@
     if (g('bg-blur')) g('bg-blur').value = state.bgBlur;
     if (g('effects')) g('effects').checked = state.effects;
     fx.sync();
-    window.dispatchEvent(new CustomEvent('nova-fx', { detail: state.effects && !reduceMotion }));
+    window.dispatchEvent(new CustomEvent('nova-fx', { detail: state.effects }));
   }
 
   function persist(extra) {
@@ -124,7 +124,7 @@
       ctx.clearRect(0, 0, w, h);
     }
     function sync() {
-      const on = state.effects && !reduceMotion && !document.hidden;
+      const on = state.effects && !document.hidden;
       if (on) start();
       else stop();
     }

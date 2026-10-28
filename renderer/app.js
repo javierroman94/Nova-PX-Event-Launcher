@@ -18,7 +18,6 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
 (function splash() {
   const s = document.getElementById('splash');
   if (!s) return;
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let closed = false;
   function close() {
     if (closed) return;
@@ -26,7 +25,7 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
     s.classList.add('hide');
     setTimeout(() => s.remove(), 700);
   }
-  setTimeout(close, reduceMotion ? 700 : 3900);
+  setTimeout(close, 3900);
   s.addEventListener('click', close);
   document.addEventListener('keydown', close, { once: true });
 })();
