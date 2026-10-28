@@ -20,6 +20,7 @@ const GAME_DIR = path.join(app.getPath('appData'), config.gameFolderName);
 const RUNTIME_DIR = path.join(GAME_DIR, 'runtime');
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 const KEYS_FILE = path.join(app.getPath('userData'), 'unlock.json');
+const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
 const ALLOWED_DATA = ['news', 'events', 'team', 'manifest'];
@@ -494,6 +495,7 @@ function setupUpdater() {
 
 app.whenReady().then(() => {
   if (!gotLock) return;
+  restoring = restoreSession();
   createWindow();
   setupUpdater();
 });
@@ -541,11 +543,14 @@ ipcMain.handle('system:info', () => ({
 }));
 
 // Estado que la interfaz recupera al abrirse (también cuando la ventana se vuelve a abrir tras jugar).
-ipcMain.handle('app:state', () => ({
+ipcMain.handle('app:state', async () => {
+  if (restoring) await Promise.race([restoring, new Promise((r) => setTimeout(r, 15000))]);
+  return {
   session: session ? { mode: session.mode, name: session.name, uuid: session.uuid } : null,
   playing: launching,
   log: logBuffer
-}));
+  };
+});
 
 ipcMain.handle('folder:open', async () => {
   fs.mkdirSync(GAME_DIR, { recursive: true });
@@ -624,45 +629,101 @@ ipcMain.handle('theme:clearBackground', () => {
 
 /* ---------- IPC: cuentas ---------- */
 
-// Cuenta NO premium: nick local. El servidor debe tener online-mode=false + plugin de login.
-ipcMain.handle('auth:offline', (_e, nick) => {
-  const name = String(nick || '').trim();
-  if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
-    throw new Error('El nick debe tener de 3 a 16 caracteres: letras, números o guion bajo.');
-  }
+function makeOfflineSession(name) {
   // UUID offline estándar de Minecraft (igual al que calcula el servidor).
   const hash = crypto.createHash('md5').update(`OfflinePlayer:${name}`).digest();
   hash[6] = (hash[6] & 0x0f) | 0x30;
   hash[8] = (hash[8] & 0x3f) | 0x80;
   const hex = hash.toString('hex');
   const uuid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-
-  session = {
+  return {
     mode: 'offline',
     name,
     uuid,
     auth: { access_token: uuid, client_token: uuid, uuid, name, user_properties: '{}', meta: { type: 'mojang', demo: false } }
   };
+}
+
+/* ---------- sesión guardada (para no iniciar sesión cada vez) ---------- */
+
+// Cuenta no premium: se guarda solo el nick. Premium: se guarda el token de renovación de Microsoft,
+// cifrado con el almacén del sistema (nunca en texto plano). Si el sistema no tiene almacén seguro, no se guarda.
+function saveAccount(data) {
+  try {
+    let out = null;
+    if (data.mode === 'offline') out = { mode: 'offline', name: data.name };
+    else if (data.mode === 'premium' && data.refresh && safeStorage.isEncryptionAvailable()) {
+      out = { mode: 'premium', refresh: safeStorage.encryptString(String(data.refresh)).toString('base64') };
+    }
+    if (!out) return clearAccount();
+    fs.mkdirSync(path.dirname(ACCOUNT_FILE), { recursive: true });
+    fs.writeFileSync(ACCOUNT_FILE, JSON.stringify(out));
+  } catch {}
+}
+
+function clearAccount() {
+  try {
+    fs.unlinkSync(ACCOUNT_FILE);
+  } catch {}
+}
+
+async function premiumSessionFrom(xbox) {
+  const mc = await xbox.getMinecraft();
+  session = { mode: 'premium', name: mc.profile.name, uuid: mc.profile.id, auth: mc.mclc() };
   lastProfile = null;
-  return { mode: 'offline', name, uuid };
+  let refresh = null;
+  try {
+    refresh = xbox.save();
+  } catch {}
+  if (refresh) saveAccount({ mode: 'premium', refresh });
+}
+
+async function restoreSession() {
+  let saved;
+  try {
+    saved = JSON.parse(fs.readFileSync(ACCOUNT_FILE, 'utf8'));
+  } catch {
+    return;
+  }
+  try {
+    if (saved.mode === 'offline' && /^[A-Za-z0-9_]{3,16}$/.test(String(saved.name))) {
+      session = makeOfflineSession(saved.name);
+    } else if (saved.mode === 'premium' && saved.refresh && safeStorage.isEncryptionAvailable()) {
+      const token = safeStorage.decryptString(Buffer.from(saved.refresh, 'base64'));
+      const xbox = await new Auth('select_account').refresh(token);
+      await premiumSessionFrom(xbox);
+    }
+  } catch {
+    // Sin internet o sesión caducada: se pide iniciar sesión de nuevo (el archivo se conserva si solo falló la red).
+    session = null;
+  }
+}
+
+// La interfaz espera (hasta 15 s) a que termine de restaurar la sesión.
+let restoring = null;
+
+// Cuenta NO premium: nick local. El servidor debe tener online-mode=false + plugin de login.
+ipcMain.handle('auth:offline', (_e, nick) => {
+  const name = String(nick || '').trim();
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+    throw new Error('El nick debe tener de 3 a 16 caracteres: letras, números o guion bajo.');
+  }
+  session = makeOfflineSession(name);
+  lastProfile = null;
+  saveAccount({ mode: 'offline', name });
+  return { mode: 'offline', name, uuid: session.uuid };
 });
 
 // Cuenta PREMIUM: login oficial de Microsoft/Xbox.
 ipcMain.handle('auth:microsoft', async () => {
   const authManager = new Auth('select_account');
   const xbox = await authManager.launch('electron');
-  const mc = await xbox.getMinecraft();
-  session = {
-    mode: 'premium',
-    name: mc.profile.name,
-    uuid: mc.profile.id,
-    auth: mc.mclc()
-  };
-  lastProfile = null;
+  await premiumSessionFrom(xbox);
   return { mode: 'premium', name: session.name, uuid: session.uuid };
 });
 
 ipcMain.handle('auth:logout', () => {
+  clearAccount();
   session = null;
   lastProfile = null;
   pendingSkin = null;

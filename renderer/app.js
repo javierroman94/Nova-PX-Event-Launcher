@@ -733,7 +733,14 @@ $('update-check').addEventListener('click', async () => {
   window.NovaTheme.init(settings);
   refreshPlaytime();
 
-  // Si la ventana se cerró mientras jugabas (modo bandeja), recupera sesión, estado y consola.
+  renderHero();
+  renderNews();
+  renderEvents();
+  renderTeam();
+  refreshServer();
+
+  // Recupera la sesión guardada (o, si la ventana se cerró mientras jugabas, la sesión, el estado y la consola).
+  $('chip-name').textContent = 'Conectando…';
   const st = await window.api.appState();
   if (st.session) setSession(st.session);
   else setSession(null);
@@ -747,11 +754,6 @@ $('update-check').addEventListener('click', async () => {
     logBox.textContent = logLines.join('\n');
     logBox.scrollTop = logBox.scrollHeight;
   }
-  renderHero();
-  renderNews();
-  renderEvents();
-  renderTeam();
-  refreshServer();
   setInterval(refreshServer, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
 })();
