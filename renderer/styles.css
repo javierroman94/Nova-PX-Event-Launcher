@@ -865,8 +865,22 @@ button.primary { border-radius: 10px; }
   z-index: 0 !important;
   pointer-events: none;
 }
-.hero-art[hidden] { display: none; }
+.hero-art[hidden] { display: none !important; }
 @media (max-width: 1040px) { .hero-art { display: none; } }
 .hero-body { max-width: 60%; }
 .hero h1 { font-size: clamp(34px, 4.3vw, 54px); }
 .hero-art { width: min(32%, 360px); right: 36px; }
+
+/* ---------- portada "Próximamente" ---------- */
+.hero.soon { background:
+  radial-gradient(600px circle at 78% 40%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 65%),
+  linear-gradient(135deg, #15182b 0%, #1d1838 55%, #121426 100%); }
+.hero.soon .hero-badge { animation: dot-pulse 2s ease-in-out infinite; }
+.soon-art svg { width: 100%; height: auto; display: block; }
+.soon-art .cube-top { fill: color-mix(in srgb, var(--accent) 70%, #fff); }
+.soon-art .cube-left { fill: color-mix(in srgb, var(--accent) 55%, #000); }
+.soon-art .cube-right { fill: var(--accent); }
+.soon-art .cube-q { fill: var(--accent-ink); font-family: var(--font); font-weight: 900; opacity: .85; }
+.timeline time:empty { display: none; }
+.play:disabled { animation: none; }
+.soon-art { width: min(24%, 230px) !important; right: 90px !important; max-height: none !important; }

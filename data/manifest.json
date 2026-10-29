@@ -1,9 +1,9 @@
 {
   "event": {
-    "name": "OneBlock 1000 días",
-    "tagline": "by LaosOneView · Instala el evento, entra al servidor y juega con todo el equipo.",
-    "image": "",
-    "logo": "images/oneblock-logo.png"
+    "active": false,
+    "name": "Próximo evento",
+    "tagline": "Estamos preparando el siguiente evento. Pronto verás aquí todos los detalles.",
+    "startsAt": ""
   },
   "minecraftVersion": "1.21.11",
   "loader": {

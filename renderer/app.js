@@ -171,9 +171,17 @@ function goTo(tab) {
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
 
 /* ---------- inicio: hero ---------- */
+let eventActive = true;
+
 async function renderHero() {
   try {
     const m = await window.api.getData('manifest');
+    eventActive = !(m.event && m.event.active === false);
+    const heroBox = document.querySelector('.hero');
+    heroBox.classList.toggle('soon', !eventActive);
+    $('hero-badge-text').textContent = eventActive ? 'Evento actual' : 'Próximamente';
+    $('soon-art').hidden = eventActive;
+    setPlaying(playing);
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
     $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
     // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
@@ -187,15 +195,15 @@ async function renderHero() {
     else hero.style.removeProperty('--hero-image');
     const chips = $('hero-chips');
     chips.replaceChildren();
-    chips.append(el('span', 'chip', `Minecraft ${m.minecraftVersion}`));
+    if (eventActive) chips.append(el('span', 'chip', `Minecraft ${m.minecraftVersion}`));
     const loader = String((m.loader && m.loader.type) || 'vanilla').toLowerCase();
     const loaderNames = { vanilla: 'Vanilla', fabric: 'Fabric', forge: 'Forge' };
-    chips.append(el('span', 'chip', loaderNames[loader] || loader));
+    if (eventActive) chips.append(el('span', 'chip', loaderNames[loader] || loader));
     const mods = (m.mods || []).length;
-    if (mods) chips.append(el('span', 'chip', `${mods} ${mods === 1 ? 'mod' : 'mods'}`));
-    if (m.protected) chips.append(el('span', 'chip', 'Protegido'));
-    $('stat-ver').textContent = m.minecraftVersion;
-    $('stat-ver-label').textContent = loaderNames[loader] || loader;
+    if (mods && eventActive) chips.append(el('span', 'chip', `${mods} ${mods === 1 ? 'mod' : 'mods'}`));
+    if (m.protected && eventActive) chips.append(el('span', 'chip', 'Protegido'));
+    $('stat-ver').textContent = eventActive ? m.minecraftVersion : '–';
+    $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
     startCountdown(m.event && m.event.startsAt);
     renderLinks(m.links);
   } catch {
@@ -442,9 +450,12 @@ $('logout-btn').addEventListener('click', async () => {
 });
 
 /* ---------- jugar ---------- */
+let playing = false;
 function setPlaying(value) {
-  $('play-btn').disabled = value;
-  $('play-label').textContent = value ? 'Iniciando…' : 'Jugar';
+  playing = value;
+  $('play-btn').disabled = value || !eventActive;
+  $('play-label').textContent = value ? 'Iniciando…' : eventActive ? 'Jugar' : 'Próximamente';
+  if (!value && !eventActive) $('status').textContent = 'Todavía no hay un evento activo';
 }
 
 /* ---------- contraseña de instalación ---------- */

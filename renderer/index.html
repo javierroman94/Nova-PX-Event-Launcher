@@ -87,8 +87,17 @@
     <section class="page active" id="page-home">
       <div class="hero">
         <img id="hero-art" class="hero-art" alt="" hidden />
+        <div id="soon-art" class="hero-art soon-art" aria-hidden="true" hidden>
+          <svg viewBox="0 0 200 220">
+            <polygon class="cube-top" points="100,10 185,58 100,106 15,58" />
+            <polygon class="cube-left" points="15,58 100,106 100,206 15,158" />
+            <polygon class="cube-right" points="185,58 100,106 100,206 185,158" />
+            <text class="cube-q" transform="translate(32 116) matrix(1 .565 0 1 0 0)" font-size="86">?</text>
+            <text class="cube-q" transform="translate(120 148) matrix(1 -.565 0 1 0 0)" font-size="86">?</text>
+          </svg>
+        </div>
         <div class="hero-body">
-          <div class="hero-badge"><span class="live-dot"></span>Evento actual</div>
+          <div class="hero-badge"><span class="live-dot"></span><span id="hero-badge-text">Evento actual</span></div>
           <div class="chips" id="hero-chips"></div>
           <h1 id="hero-title">Evento de temporada</h1>
           <p id="hero-tagline" class="hero-tagline"></p>

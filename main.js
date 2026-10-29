@@ -877,6 +877,10 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     send('game:status', { text: 'Leyendo configuración del evento…' });
     const manifest = await loadData('manifest');
 
+    if (manifest.event && manifest.event.active === false) {
+      throw new Error('Todavía no hay un evento activo. ¡Pronto habrá novedades!');
+    }
+
     const loaderType = String((manifest.loader && manifest.loader.type) || 'vanilla').toLowerCase();
     if (!loaders.SUPPORTED_LOADERS.includes(loaderType)) {
       throw new Error(
