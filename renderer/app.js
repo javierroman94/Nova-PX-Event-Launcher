@@ -176,6 +176,11 @@ async function renderHero() {
     const m = await window.api.getData('manifest');
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
     $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
+    // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
+    const art = $('hero-art');
+    const artUrl = imageUrl(m.event && m.event.logo);
+    art.hidden = !artUrl;
+    if (artUrl) art.src = artUrl;
     const heroImg = imageUrl(m.event && m.event.image);
     const hero = document.querySelector('.hero');
     if (heroImg) hero.style.setProperty('--hero-image', `url(${JSON.stringify(heroImg)})`);

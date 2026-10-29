@@ -213,6 +213,7 @@ body {
 @keyframes grid-move { from { background-position: 0 0; } to { background-position: 48px 48px; } }
 @keyframes logo-in { 0% { opacity: 0; transform: scale(.3) rotate(-18deg); filter: blur(10px); } 60% { filter: none; } 100% { opacity: 1; transform: none; } }
 @keyframes logo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes art-float { 0%, 100% { transform: translateY(-50%); } 50% { transform: translateY(calc(-50% - 8px)); } }
 @keyframes ring-in { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
 @keyframes ring-spin { to { transform: rotate(360deg); } }
 @keyframes wave { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.6); } }
@@ -852,3 +853,20 @@ button.primary { border-radius: 10px; }
   .hero h1 { font-size: 40px; }
 }
 .seg { align-self: flex-start; }
+
+.hero-art {
+  position: absolute !important;
+  right: 44px; top: 50%;
+  width: min(40%, 430px); height: auto; max-height: 62%;
+  object-fit: contain;
+  transform: translateY(-50%);
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, .55));
+  animation: art-float 3.6s ease-in-out infinite;
+  z-index: 0 !important;
+  pointer-events: none;
+}
+.hero-art[hidden] { display: none; }
+@media (max-width: 1040px) { .hero-art { display: none; } }
+.hero-body { max-width: 60%; }
+.hero h1 { font-size: clamp(34px, 4.3vw, 54px); }
+.hero-art { width: min(32%, 360px); right: 36px; }

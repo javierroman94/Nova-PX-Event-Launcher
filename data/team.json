@@ -1,5 +1,34 @@
 [
-  { "nick": "Miembro1", "role": "Fundador / Desarrollo" },
-  { "nick": "Miembro2", "role": "Mods y plugins" },
-  { "nick": "Miembro3", "role": "Organización de eventos" }
+  {
+    "nick": "PandraxInLive",
+    "role": "Founder & CEO / Creative Director"
+  },
+  {
+    "nick": "MegaDeker",
+    "role": "Co-Founder / Art & Operations Director"
+  },
+  {
+    "nick": "javierroman94",
+    "role": "Lead Systems Architect & Software Engineer"
+  },
+  {
+    "nick": "Scueryo",
+    "role": "Full-Stack Web Developer / System Admin"
+  },
+  {
+    "nick": "DARIUSH_YT",
+    "role": "Project Coordinator & Voice Talent"
+  },
+  {
+    "nick": "Kyoukster",
+    "role": "Lead Concept Artist & Motion Designer"
+  },
+  {
+    "nick": "EzLuiiz",
+    "role": "Lead Level Designer / Community Moderator"
+  },
+  {
+    "nick": "MaurizioPG_",
+    "role": "Community Support / Level Designer"
+  }
 ]
