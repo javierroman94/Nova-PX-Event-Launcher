@@ -939,3 +939,15 @@ button.primary { border-radius: 10px; }
 .event-modal-body h3 { margin: 0; font-size: 20px; }
 .event-modal-body p { margin: 0; }
 .event-modal-body button { justify-self: end; margin-top: 6px; }
+
+/* ---------- Consola: filtros y colores ---------- */
+.console-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; margin: 4px 0 12px; }
+.console-tools .check { margin-top: 0; }
+.console-tools .seg { align-self: auto; }
+.log { height: calc(100vh - 270px); }
+.log-line { padding: 1px 0; border-left: 3px solid transparent; padding-left: 8px; }
+.log-line:hover { background: rgba(255, 255, 255, .04); }
+.log-warn { color: #f2b84b; border-left-color: #f2b84b; }
+.log-error { color: #ff7b8b; border-left-color: #ff6b8b; }
+.log-empty { margin: 0; color: var(--muted); font-family: inherit; }
+.console-head { justify-content: flex-end; }

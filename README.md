@@ -155,6 +155,13 @@ Límite honesto: quien conozca la contraseña puede instalar el modpack y sacar 
 - **Ayuda ante fallos**: si Minecraft se cierra con error, el launcher explica la causa más probable (poca RAM, Java incorrecto, mods incompatibles...).
 - Se muestra el tiempo jugado en tu tarjeta de jugador.
 
+## 4d. Reparar, avisos y consola (v1.0.11)
+
+- **Reparar instalación** (Ajustes → Juego): borra los mods del evento actual y sus marcas; la próxima vez que pulses Jugar se descargan de nuevo. No toca ajustes, cuenta ni mundos. Si el modpack tiene contraseña, el launcher ya la recuerda.
+- **Avisos de evento:** si `event.startsAt` en `data/manifest.json` tiene fecha (por ejemplo `2026-11-07T20:00:00-05:00`), el launcher avisa 1 hora antes y cuando empieza. Se apaga en Ajustes.
+- **Consola:** filtros Todo/Avisos/Errores, búsqueda, seguir el final y botón Guardar (descarga un .txt).
+- **Errores de actualización:** el mensaje dice la causa real (sin internet, límite de GitHub, sin versión publicada…).
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).

@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
   // actualizaciones del programa
   getUpdateState: () => ipcRenderer.invoke('update:state'),
   checkUpdates: () => ipcRenderer.invoke('update:check'),
+  repairInstall: () => ipcRenderer.invoke('game:repair'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
 
   // eventos

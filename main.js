@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, safeStorage, Notification } = require('electron');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
@@ -13,6 +13,8 @@ const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
 const skinsApi = require('./lib/skins');
+const { classifyNetworkError } = require('./lib/errors');
+const { repairInstance } = require('./lib/repair');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
 const config = JSON.parse(
@@ -68,6 +70,7 @@ function defaultSettings() {
     bgBlur: 6,
     effects: true,
     discordRpc: true,
+    notifyEvents: true,
     playSeconds: 0
   };
 }
@@ -107,6 +110,7 @@ function cleanSettings(s) {
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
     effects: s.effects !== false,
     discordRpc: s.discordRpc !== false,
+    notifyEvents: s.notifyEvents !== false,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
 }
@@ -491,7 +495,7 @@ function setupUpdater() {
   autoUpdater.on('update-downloaded', (i) => setUpdate({ state: 'ready', version: i.version }));
   autoUpdater.on('update-not-available', () => setUpdate({ state: 'none' }));
   autoUpdater.on('error', (e) =>
-    setUpdate({ state: 'error', message: String((e && e.message) || e).slice(0, 200) })
+    setUpdate({ state: 'error', reason: classifyNetworkError(e), message: String((e && e.message) || e).slice(0, 200) })
   );
   checkForUpdates();
   setInterval(checkForUpdates, 30 * 60 * 1000);
@@ -523,6 +527,8 @@ app.whenReady().then(() => {
   restoring = restoreSession();
   createWindow();
   setupUpdater();
+  setTimeout(checkEventNotifications, 15000);
+  setInterval(checkEventNotifications, 60000);
 });
 
 app.on('window-all-closed', () => {
@@ -548,6 +554,36 @@ ipcMain.handle('update:install', () => {
   if (launching) throw new Error('Cierra Minecraft antes de actualizar el launcher.');
   autoUpdater.quitAndInstall();
 });
+
+// Reinstala los mods del evento actual la próxima vez que se juegue. No toca ajustes, cuenta ni mundos.
+ipcMain.handle('game:repair', async () => {
+  if (launching) throw new Error('Cierra Minecraft antes de reparar la instalación.');
+  const manifest = await loadData('manifest');
+  const removed = repairInstance(instanceDir(GAME_DIR, manifest));
+  return { removed };
+});
+
+// Aviso de escritorio cuando el evento está por empezar (1 hora antes y al empezar). Cada aviso se da una sola vez.
+const notified = new Set();
+async function checkEventNotifications() {
+  try {
+    if (!readSettings().notifyEvents || !Notification.isSupported()) return;
+    const manifest = await loadData('manifest');
+    const ev = manifest.event || {};
+    const at = Date.parse(ev.startsAt || '');
+    if (!at) return;
+    const left = at - Date.now();
+    const name = ev.name || 'El evento';
+    const fire = (key, title, body) => {
+      const id = `${at}:${key}`;
+      if (notified.has(id)) return;
+      notified.add(id);
+      new Notification({ title, body, silent: false }).show();
+    };
+    if (left <= 0 && left > -30 * 60000) fire('start', `${name} ya empezó`, 'Abre el launcher y entra a jugar.');
+    else if (left > 0 && left <= 60 * 60000) fire('hour', `${name} empieza en menos de 1 hora`, 'Ve preparando el launcher.');
+  } catch {}
+}
 
 ipcMain.handle('data:get', async (_e, name) => {
   if (!ALLOWED_DATA.includes(name)) throw new Error('Dato no permitido');

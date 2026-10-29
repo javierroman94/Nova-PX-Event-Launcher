@@ -312,6 +312,7 @@
           <legend>Al jugar</legend>
           <label class="check"><input id="join-server" type="checkbox" /> Entrar directo al servidor del evento</label>
           <label class="check"><input id="discord-rpc" type="checkbox" /> Mostrar mi actividad en Discord</label>
+          <label class="check"><input id="notify-events" type="checkbox" /> Avisarme cuando un evento esté por empezar</label>
           <div class="field">
             <label for="behavior">Launcher mientras juego</label>
             <select id="behavior">
@@ -336,6 +337,8 @@
           <div class="field">
             <div id="game-dir" class="path"></div>
             <button id="open-folder" type="button">Abrir carpeta</button>
+            <button id="repair-install" type="button">Reparar instalación</button>
+            <small class="muted">Si el juego no abre o falta un mod, vuelve a descargar los mods del evento. No borra tus ajustes ni tus mundos.</small>
           </div>
         </fieldset>
       </div>
@@ -351,10 +354,21 @@
         <h2 class="page-title">Consola</h2>
         <div class="console-actions">
           <button id="log-copy" type="button">Copiar</button>
+          <button id="log-save" type="button">Guardar</button>
           <button id="log-clear" type="button">Limpiar</button>
         </div>
       </div>
-      <pre id="log" class="log" tabindex="0" aria-live="off">Aquí aparecerá el registro cuando inicies el juego.</pre>
+      <div class="console-tools">
+        <div class="seg" role="group" aria-label="Filtrar el registro">
+          <button type="button" class="seg-btn active" data-log-filter="all">Todo</button>
+          <button type="button" class="seg-btn" data-log-filter="warn">Avisos</button>
+          <button type="button" class="seg-btn" data-log-filter="error">Errores</button>
+        </div>
+        <input id="log-search" class="events-search" type="search" placeholder="Buscar en el registro…" aria-label="Buscar en el registro" autocomplete="off" />
+        <label class="check"><input id="log-follow" type="checkbox" checked /> Seguir el final</label>
+        <span id="log-count" class="muted"></span>
+      </div>
+      <div id="log" class="log" tabindex="0" aria-live="off"><p class="log-empty">Aquí aparecerá el registro cuando inicies el juego.</p></div>
     </section>
 
     <!-- CUENTA -->

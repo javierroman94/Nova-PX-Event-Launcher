@@ -666,24 +666,77 @@ window.api.onClose((d) => {
 const logLines = [];
 const MAX_LOG_LINES = 2000;
 const logBox = $('log');
-let logEmpty = true;
+let logFilter = 'all';
 
-window.api.onLog((d) => {
-  if (logEmpty) {
-    logBox.textContent = '';
-    logEmpty = false;
+function logLevel(line) {
+  if (/\b(ERROR|FATAL|SEVERE)\b|Exception|Caused by|\bat [\w.$]+\(/.test(line)) return 'error';
+  if (/\bWARN(ING)?\b/.test(line)) return 'warn';
+  return 'info';
+}
+
+function logVisible(line) {
+  const q = $('log-search').value.trim().toLowerCase();
+  if (q && !line.toLowerCase().includes(q)) return false;
+  const lv = logLevel(line);
+  if (logFilter === 'error') return lv === 'error';
+  if (logFilter === 'warn') return lv !== 'info';
+  return true;
+}
+
+function logRow(line) {
+  const row = el('div', `log-line log-${logLevel(line)}`, line);
+  return row;
+}
+
+function logCount() {
+  const n = logBox.querySelectorAll('.log-line').length;
+  $('log-count').textContent = logLines.length ? `${n} de ${logLines.length} líneas` : '';
+}
+
+function logFollow() {
+  if ($('log-follow').checked) logBox.scrollTop = logBox.scrollHeight;
+}
+
+function logRender() {
+  logBox.replaceChildren();
+  if (!logLines.length) {
+    logBox.append(el('p', 'log-empty', 'Aquí aparecerá el registro cuando inicies el juego.'));
+  } else {
+    const frag = document.createDocumentFragment();
+    logLines.filter(logVisible).forEach((l) => frag.append(logRow(l)));
+    if (!frag.childNodes.length) frag.append(el('p', 'log-empty', 'Ninguna línea coincide con el filtro.'));
+    logBox.append(frag);
   }
-  logLines.push(`[${d.source}] ${d.line}`);
+  logCount();
+  logFollow();
+}
+
+function logAdd(line) {
+  logLines.push(line);
   if (logLines.length > MAX_LOG_LINES) logLines.shift();
-  const atBottom = logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 40;
-  logBox.textContent = logLines.join('\n');
-  if (atBottom) logBox.scrollTop = logBox.scrollHeight;
-});
+  if (logLines.length === 1 || logBox.querySelector('.log-empty')) return logRender();
+  if (logVisible(line)) {
+    logBox.append(logRow(line));
+    while (logBox.childNodes.length > MAX_LOG_LINES) logBox.removeChild(logBox.firstChild);
+  }
+  logCount();
+  logFollow();
+}
+
+window.api.onLog((d) => logAdd(`[${d.source}] ${d.line}`));
+
+document.querySelectorAll('[data-log-filter]').forEach((b) =>
+  b.addEventListener('click', () => {
+    logFilter = b.dataset.logFilter;
+    document.querySelectorAll('[data-log-filter]').forEach((x) => x.classList.toggle('active', x === b));
+    logRender();
+  })
+);
+$('log-search').addEventListener('input', logRender);
 
 $('log-clear').addEventListener('click', () => {
   logLines.length = 0;
-  logBox.textContent = 'Registro limpio.';
-  logEmpty = true;
+  logRender();
 });
 
 $('log-copy').addEventListener('click', async () => {
@@ -695,6 +748,17 @@ $('log-copy').addEventListener('click', async () => {
     btn.textContent = 'No se pudo copiar';
   }
   setTimeout(() => (btn.textContent = 'Copiar'), 1500);
+});
+
+$('log-save').addEventListener('click', () => {
+  if (!logLines.length) return toast('No hay registro para guardar todavía.', 'error');
+  const url = URL.createObjectURL(new Blob([logLines.join('\n')], { type: 'text/plain' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `novapx-registro-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.txt`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('Registro guardado en Descargas.');
 });
 
 /* ---------- ajustes ---------- */
@@ -709,6 +773,7 @@ function readSettingsForm() {
     joinServer: $('join-server').checked,
     autoJava: $('auto-java').checked,
     discordRpc: $('discord-rpc').checked,
+    notifyEvents: $('notify-events').checked,
     gameBehavior: $('behavior').value
   };
 }
@@ -724,6 +789,7 @@ function fillSettingsForm(s) {
   $('join-server').checked = s.joinServer;
   $('auto-java').checked = s.autoJava;
   $('discord-rpc').checked = s.discordRpc;
+  $('notify-events').checked = s.notifyEvents;
   $('behavior').value = s.gameBehavior;
   $('res-w').disabled = $('res-h').disabled = s.fullscreen;
 }
@@ -750,6 +816,19 @@ $('open-folder').addEventListener('click', async () => {
   }
 });
 
+$('repair-install').addEventListener('click', async () => {
+  const btn = $('repair-install');
+  btn.disabled = true;
+  try {
+    await window.api.repairInstall();
+    toast('Listo. Los mods se volverán a descargar la próxima vez que pulses Jugar.');
+  } catch (err) {
+    toast(cleanError(err), 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 $('save-settings').addEventListener('click', async () => {
   const msg = $('settings-msg');
   try {
@@ -766,6 +845,16 @@ $('save-settings').addEventListener('click', async () => {
 });
 
 /* ---------- actualizaciones del programa ---------- */
+const UPDATE_ERRORS = {
+  offline: 'No hay conexión con internet. Revisa tu red e inténtalo de nuevo.',
+  ratelimit: 'GitHub recibió demasiadas consultas desde tu red. Espera unos minutos y vuelve a intentarlo.',
+  notfound: 'Todavía no hay una versión publicada para actualizar.',
+  denied: 'GitHub no permitió la consulta. Inténtalo más tarde.',
+  server: 'El servidor de actualizaciones tiene problemas ahora mismo. Inténtalo más tarde.',
+  tls: 'No se pudo verificar la conexión segura. Revisa la fecha y hora de tu equipo y tu antivirus.',
+  other: 'No se pudo buscar actualizaciones por un error inesperado. Si se repite, copia el registro de la Consola.'
+};
+
 function renderUpdate(s) {
   const banner = $('update-banner');
   const text = $('update-text');
@@ -792,7 +881,7 @@ function renderUpdate(s) {
       checking: 'Buscando actualizaciones…',
       none: 'Tienes la última versión.',
       dev: 'Las actualizaciones automáticas solo funcionan en la versión instalada.',
-      error: 'No se pudo buscar actualizaciones. Revisa tu conexión.',
+      error: UPDATE_ERRORS[s.reason] || UPDATE_ERRORS.other,
       idle: ''
     }[s.state] || '';
   }
@@ -864,10 +953,8 @@ $('update-check').addEventListener('click', async () => {
     $('status').textContent = 'Minecraft en ejecución';
   }
   if (st.log && st.log.length) {
-    logEmpty = false;
     st.log.forEach((l) => logLines.push(l));
-    logBox.textContent = logLines.join('\n');
-    logBox.scrollTop = logBox.scrollHeight;
+    logRender();
   }
   setInterval(refreshServer, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
