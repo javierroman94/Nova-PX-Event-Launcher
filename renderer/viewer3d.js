@@ -175,8 +175,9 @@ void main(){gl_Position=m*vec4(p,1.0);v_uv=uv;v_sh=sh;}`;
   const FS = `precision mediump float;uniform sampler2D tex;uniform float cut;uniform float light;varying vec2 v_uv;varying float v_sh;
 void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rgb*mix(1.0,v_sh,light),c.a);}`;
 
-  function create(canvas, opts = {}) {
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: false });
+  // Entorno WebGL (programa, buffers del escenario). Se puede compartir entre varios visores.
+  function makeEnv(glCanvas) {
+    const gl = glCanvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: false });
     if (!gl) return null;
 
     function compile(type, src) {
@@ -244,6 +245,21 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     const blockMesh = makeMesh(buildBox(0.5, 0.5, 0.5, { front: tile(0), back: tile(0), left: tile(0), right: tile(0), top: tile(1), bottom: tile(0) }, 48, 16, false));
     const shadowMesh = makeMesh(buildBox(7, 0.05, 7, { front: tile(2), back: tile(2), left: tile(2), right: tile(2), top: tile(2), bottom: tile(2) }, 48, 16, false));
 
+    return { gl, canvas: glCanvas, atlas, blockMesh, shadowMesh, makeTexture, makeMesh, drawMesh };
+  }
+
+  function createEnv() {
+    return makeEnv(document.createElement('canvas'));
+  }
+
+  function create(canvas, opts = {}) {
+    const shared = !!opts.env;
+    const env = opts.env || makeEnv(canvas);
+    if (!env) return null;
+    const { gl, atlas, blockMesh, shadowMesh, makeTexture, makeMesh, drawMesh } = env;
+    const out2d = shared ? canvas.getContext('2d') : null;
+    const states = opts.states ? STATES.filter((s) => opts.states.includes(s.name)) : STATES;
+
     let skinTex = null;
     let capeTex = null;
     let capeMesh = null;
@@ -309,7 +325,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
 
     /* ---------- estado de la animación ---------- */
     const pose = targetPose('idle', 0);
-    let stateIdx = 2; // al abrir, el muñeco saluda
+    let stateIdx = Math.min(opts.start != null ? opts.start : 2, states.length - 1); // al abrir, el muñeco saluda
     let stateT = 0;
     let override = null; // { name, t, len } al hacer clic
     let yawUser = 0;
@@ -326,23 +342,33 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     let clock = 0;
     let alive = true;
 
+    let onscreen = true;
+    if (window.IntersectionObserver) new IntersectionObserver((e) => { onscreen = e[0].isIntersecting; if (onscreen) requestDraw(); }).observe(canvas);
+
     function visible() {
-      return alive && !document.hidden && canvas.offsetParent !== null;
+      return alive && onscreen && !document.hidden && canvas.offsetParent !== null;
     }
 
+    let W = 1;
+    let H = 1;
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w;
-        canvas.height = h;
+      W = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      H = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== W || canvas.height !== H) {
+        canvas.width = W;
+        canvas.height = H;
       }
-      gl.viewport(0, 0, canvas.width, canvas.height);
+      if (shared && (env.canvas.width < W || env.canvas.height < H)) {
+        // el lienzo compartido solo crece (así no se reasigna memoria al alternar tamaños)
+        env.canvas.width = Math.max(env.canvas.width, W);
+        env.canvas.height = Math.max(env.canvas.height, H);
+      }
+      gl.viewport(0, 0, W, H);
     }
 
     function update(dt) {
-      let cur = STATES[stateIdx];
+      let cur = states[stateIdx];
       let name = cur.name;
       let t = stateT;
       if (override) { name = override.name; t = override.t; }
@@ -358,7 +384,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
           if (override.t >= override.len) override = null;
         } else {
           stateT += dt;
-          if (stateT >= cur.len) { stateT = 0; stateIdx = (stateIdx + 1) % STATES.length; }
+          if (stateT >= cur.len) { stateT = 0; stateIdx = (stateIdx + 1) % states.length; }
         }
       }
       // bloque y partículas durante "mine"
@@ -387,13 +413,19 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
       if (!dragging && performance.now() - lastDrag > 2500) yawUser *= Math.exp(-dt * 1.6);
     }
 
+    function copyOut() {
+      if (!out2d) return;
+      out2d.clearRect(0, 0, W, H);
+      out2d.drawImage(env.canvas, 0, env.canvas.height - H, W, H, 0, 0, W, H);
+    }
+
     function draw() {
       resize();
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      if (!skinTex) return;
-      const aspect = canvas.width / canvas.height;
+      if (!skinTex) { copyOut(); return; }
+      const aspect = W / H;
       const proj = persp((28 * Math.PI) / 180, aspect, 10, 400);
-      const dist = aspect < 0.85 ? 108 : 92; // en pantallas estrechas se aleja para que quepan los saltos
+      const dist = opts.distance || (aspect < 0.85 ? 108 : 92); // en pantallas estrechas se aleja para que quepan los saltos
       const view = mul(proj, mul(T(0, -2, -dist), RX(0.18)));
       const sway = Math.sin(clock * 0.5) * 0.12;
       const world = mul(view, mul(RY(0.5 + sway + yawUser + pose.spin), T(0, -14, 0)));
@@ -434,6 +466,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
         const s = 1.8;
         drawMesh(blockMesh, atlas, mul(world, mul(T(p.x, p.y, p.z), mul(RX(p.rx), mul(RY(p.ry), S(s, s, s))))), 0.5, 1);
       }
+          copyOut();
     }
 
     function frame(now) {
@@ -497,5 +530,5 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     };
   }
 
-  window.SkinViewer = { create };
+  window.SkinViewer = { create, createEnv };
 })();

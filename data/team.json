@@ -1,15 +1,18 @@
 [
   {
     "nick": "PandraxInLive",
-    "role": "Founder & CEO / Creative Director"
+    "role": "Founder & CEO / Creative Director",
+    "featured": true
   },
   {
     "nick": "MegaDeker",
-    "role": "Co-Founder / Art & Operations Director"
+    "role": "Co-Founder / Art & Operations Director",
+    "featured": true
   },
   {
     "nick": "javierroman94",
-    "role": "Lead Systems Architect & Software Engineer"
+    "role": "Lead Systems Architect & Software Engineer",
+    "featured": true
   },
   {
     "nick": "Scueryo",

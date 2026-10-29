@@ -318,18 +318,75 @@ async function renderEvents() {
   }
 }
 
+// Todas las skins del equipo se dibujan con UN solo contexto WebGL compartido (ahorra memoria).
+let teamEnv = null;
+let teamViewers = [];
+const TEAM_STATES = ['idle', 'wave', 'walk', 'jump', 'spin'];
+
+window.addEventListener('nova-fx', (e) => teamViewers.forEach((v) => v.setAnimated(e.detail)));
+
+function teamCard(m, index, featured) {
+  const card = el('div', featured ? 'member featured' : 'member');
+  card.dataset.tilt = '';
+  const stage = el('div', 'member-stage');
+  const canvas = el('canvas', 'member-3d');
+  canvas.setAttribute('aria-label', `Skin 3D de ${m.nick}`);
+  stage.append(canvas);
+
+  let viewer = null;
+  try {
+    teamEnv = teamEnv || window.SkinViewer.createEnv();
+    if (teamEnv) {
+      viewer = window.SkinViewer.create(canvas, {
+        env: teamEnv,
+        distance: 106,
+        states: TEAM_STATES,
+        start: index % TEAM_STATES.length, // cada uno empieza con una animación distinta
+        animated: !document.documentElement.classList.contains('no-fx')
+      });
+    }
+  } catch {}
+
+  if (viewer) {
+    teamViewers.push(viewer);
+    // la skin se pide de a poco para no saturar a Mojang
+    setTimeout(async () => {
+      try {
+        const r = await window.api.skinTexture(m.nick);
+        if (!r) return;
+        viewer.setSkin(await loadImageUrl(r.dataUrl), r.slim);
+        viewer.setCape(r.cape ? await loadImageUrl(r.cape) : null);
+      } catch {}
+    }, 150 * index);
+    card.addEventListener('mouseenter', () => viewer.trigger('wave'));
+  } else {
+    // sin WebGL: busto plano
+    canvas.remove();
+    const img = el('img');
+    img.alt = `Skin de ${m.nick}`;
+    img.src = skinBust(m.nick);
+    stage.append(img);
+  }
+
+  const info = el('div', 'member-info');
+  info.append(el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
+  card.append(stage, info);
+  return card;
+}
+
 async function renderTeam() {
   const grid = $('team-grid');
+  const top = $('team-featured');
   grid.replaceChildren();
+  top.replaceChildren();
+  teamViewers.forEach((v) => v.destroy());
+  teamViewers = [];
   try {
     const team = await window.api.getData('team');
+    let i = 0;
     team.forEach((m) => {
-      const card = el('div', 'member');
-      const img = el('img');
-      img.alt = `Skin de ${m.nick}`;
-      img.src = skinBust(m.nick);
-      card.append(img, el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
-      grid.append(card);
+      const featured = !!m.featured;
+      (featured ? top : grid).append(teamCard(m, i++, featured));
     });
   } catch {
     grid.append(el('p', 'muted', 'No se pudo cargar el equipo.'));
