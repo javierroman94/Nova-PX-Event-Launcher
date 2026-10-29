@@ -165,8 +165,22 @@
 
     <!-- EVENTOS -->
     <section class="page" id="page-events">
-      <h2 class="page-title">Eventos anteriores</h2>
-      <ol id="events-list" class="timeline"></ol>
+      <div class="events-head">
+        <h2 class="page-title">Eventos anteriores</h2>
+        <input id="events-search" class="events-search" type="search" placeholder="Buscar evento…" aria-label="Buscar evento" autocomplete="off" />
+      </div>
+      <p id="events-count" class="muted"></p>
+      <div id="events-list" class="events-grid"></div>
+      <dialog id="event-modal" class="event-modal" aria-label="Detalle del evento">
+        <img id="event-modal-img" class="event-modal-img" alt="" />
+        <div class="event-modal-body">
+          <h3 id="event-modal-name"></h3>
+          <p id="event-modal-date" class="muted"></p>
+          <p id="event-modal-desc"></p>
+          <div id="event-modal-facts" class="facts"></div>
+          <button id="event-modal-close" type="button">Cerrar</button>
+        </div>
+      </dialog>
     </section>
 
     <!-- EQUIPO -->

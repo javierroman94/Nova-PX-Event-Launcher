@@ -296,23 +296,63 @@ async function renderEvents() {
   list.replaceChildren();
   try {
     const events = (await window.api.getData('events')).sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
-    if (!events.length) list.append(el('p', 'muted', 'Aún no hay eventos en el historial.'));
-    events.forEach((ev) => {
-      const li = el('li');
-      const facts = el('div', 'facts');
-      if (ev.participants) facts.append(el('span', 'fact', `${ev.participants} participantes`));
-      if (ev.winner) facts.append(el('span', 'fact', `Ganó ${ev.winner}`));
+    const modal = $('event-modal');
+    const facts = (ev) => {
+      const box = el('div', 'facts');
+      if (ev.participants) box.append(el('span', 'fact', `${ev.participants} participantes`));
+      if (ev.winner) box.append(el('span', 'fact', `Ganó ${ev.winner}`));
+      return box;
+    };
+    const open = (ev) => {
+      const src = imageUrl(ev.image);
+      $('event-modal-img').hidden = !src;
+      if (src) $('event-modal-img').src = src;
+      $('event-modal-name').textContent = ev.name;
+      $('event-modal-date').textContent = ev.date || '';
+      $('event-modal-desc').textContent = ev.description || '';
+      $('event-modal-facts').replaceChildren(...facts(ev).childNodes);
+      if (!modal.open) modal.showModal();
+    };
+    if (!modal.dataset.bound) {
+      modal.dataset.bound = '1';
+      $('event-modal-close').addEventListener('click', () => modal.close());
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+    }
+    const cards = events.map((ev) => {
+      const card = el('button', 'event-card');
+      card.type = 'button';
+      card.dataset.tilt = '';
       const src = imageUrl(ev.image);
       if (src) {
-        const img = el('img', 'event-img');
-        img.alt = `Imagen de ${ev.name}`;
+        const img = el('img', 'event-card-img');
+        img.alt = '';
         img.loading = 'lazy';
         img.src = src;
-        li.append(img);
+        card.append(img);
       }
-      li.append(el('time', '', ev.date), el('h3', '', ev.name), el('p', '', ev.description || ''), facts);
-      list.append(li);
+      const body = el('div', 'event-card-body');
+      body.append(el('h3', '', ev.name));
+      if (ev.date) body.append(el('span', 'muted', ev.date));
+      body.append(facts(ev));
+      card.append(body);
+      card.addEventListener('click', () => open(ev));
+      return { ev, card };
     });
+    list.append(...cards.map((c) => c.card));
+    const count = $('events-count');
+    const filter = () => {
+      const q = $('events-search').value.trim().toLowerCase();
+      let n = 0;
+      cards.forEach(({ ev, card }) => {
+        const show = !q || ev.name.toLowerCase().includes(q);
+        card.hidden = !show;
+        if (show) n++;
+      });
+      count.textContent = events.length ? `${n} de ${events.length} eventos` : '';
+    };
+    $('events-search').oninput = filter;
+    filter();
+    if (!events.length) list.append(el('p', 'muted', 'Aún no hay eventos en el historial.'));
   } catch {
     list.append(el('p', 'muted', 'No se pudo cargar el historial. Revisa tu conexión.'));
   }
