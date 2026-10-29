@@ -38,6 +38,7 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 | 🎨 **Temas y efectos** | Tema oscuro/claro, color principal, fondo propio y efectos que se pueden apagar. |
 | 💬 **Discord Rich Presence** | Muestra en Discord a qué evento estás jugando y cuánto tiempo llevas. |
 | 🔄 **Actualizaciones automáticas** | El contenido se lee de GitHub al abrir; el programa se actualiza solo con cada versión. |
+| 🧰 **Lista de mods** | Pestaña con nombre, icono y versión de cada mod instalado (datos de [Modrinth](https://modrinth.com)). |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y botón de **Reparar instalación**. |
 | 🔔 **Avisos de evento** | Notificación de escritorio una hora antes de que empiece un evento. |
 | 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |

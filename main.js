@@ -15,6 +15,7 @@ const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
 const skinsApi = require('./lib/skins');
 const { classifyNetworkError } = require('./lib/errors');
 const { repairInstance } = require('./lib/repair');
+const modrinth = require('./lib/modrinth');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
 const config = JSON.parse(
@@ -561,6 +562,53 @@ ipcMain.handle('game:repair', async () => {
   const manifest = await loadData('manifest');
   const removed = repairInstance(instanceDir(GAME_DIR, manifest));
   return { removed };
+});
+
+// Lista de mods instalados del evento, reconocidos con Modrinth (nombre, icono y versión).
+// Con modpack protegido solo se muestra si el manifest lo permite ("showMods": true).
+const MODS_CACHE = path.join(app.getPath('userData'), 'mods-cache.json');
+async function modrinthRequest(url, opts = {}) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const res = await fetch(url, {
+      method: opts.method || 'GET',
+      headers: {
+        'User-Agent': `javierroman94/Nova-PX-Event-Launcher/${app.getVersion()} (discord.gg/VAfuFEQtjv)`,
+        ...(opts.body ? { 'Content-Type': 'application/json' } : {})
+      },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      signal: ctl.signal
+    });
+    if (!res.ok) throw new Error(`Modrinth respondió ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+ipcMain.handle('mods:list', async () => {
+  const manifest = await loadData('manifest');
+  const eventName = (manifest.event && manifest.event.name) || 'Evento';
+  const dir = path.join(instanceDir(GAME_DIR, manifest), 'mods');
+  const jars = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.jar$/i.test(f)).sort() : [];
+  if (manifest.protected && manifest.showMods !== true) return { hidden: true, count: jars.length, eventName };
+  const files = jars.map((f) => ({ file: f, hash: modrinth.sha1File(path.join(dir, f)) }));
+  const key = crypto.createHash('sha1').update(files.map((f) => f.hash).join(',')).digest('hex');
+  let mods;
+  let offline = false;
+  try {
+    const { byHash, projects } = files.length ? await modrinth.lookup(files, modrinthRequest) : { byHash: {}, projects: {} };
+    mods = modrinth.buildModList(files, byHash, projects);
+    try { fs.writeFileSync(MODS_CACHE, JSON.stringify({ key, mods })); } catch {}
+  } catch {
+    offline = true;
+    try {
+      const c = JSON.parse(fs.readFileSync(MODS_CACHE, 'utf8'));
+      mods = c.key === key ? c.mods : null;
+    } catch {}
+    if (!mods) mods = modrinth.buildModList(files, {}, {});
+  }
+  return { hidden: false, count: jars.length, mods, offline, eventName };
 });
 
 // Aviso de escritorio cuando el evento está por empezar (1 hora antes y al empezar). Cada aviso se da una sola vez.

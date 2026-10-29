@@ -122,6 +122,7 @@ const PAGE_TITLES = {
   events: ['Eventos', 'El historial de los eventos del equipo'],
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
+  mods: ['Mods', 'Lo que lleva instalado el evento'],
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
   console: ['Consola', 'El registro del juego, para resolver problemas'],
   account: ['Cuenta', 'Inicia sesión como premium o no premium']
@@ -167,6 +168,7 @@ function goTo(tab) {
   $('top-sub').textContent = sub;
   moveIndicator();
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
+  if (tab === 'mods') renderMods();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
 
@@ -355,6 +357,65 @@ async function renderEvents() {
     if (!events.length) list.append(el('p', 'muted', 'Aún no hay eventos en el historial.'));
   } catch {
     list.append(el('p', 'muted', 'No se pudo cargar el historial. Revisa tu conexión.'));
+  }
+}
+
+/* ---------- mods del evento (nombres e iconos de Modrinth) ---------- */
+let modsSeq = 0;
+async function renderMods() {
+  const seq = ++modsSeq;
+  const list = $('mods-list');
+  const note = $('mods-note');
+  note.textContent = 'Cargando mods…';
+  list.replaceChildren();
+  try {
+    const r = await window.api.modsList();
+    if (seq !== modsSeq) return;
+    if (r.hidden) {
+      note.textContent = `${r.eventName} mantiene su lista de mods privada. Tienes ${r.count} mods instalados.`;
+      return;
+    }
+    if (!r.count) {
+      note.textContent = 'Todavía no hay mods instalados. Se descargan la primera vez que pulses Jugar.';
+      return;
+    }
+    const cards = r.mods.map((m) => {
+      const row = el(m.url ? 'button' : 'div', 'mod-card');
+      if (m.url) {
+        row.type = 'button';
+        row.addEventListener('click', () => window.api.openLink(m.url));
+      }
+      if (m.icon) {
+        const img = el('img', 'mod-icon');
+        img.alt = '';
+        img.loading = 'lazy';
+        img.src = m.icon;
+        row.append(img);
+      } else {
+        row.append(el('div', 'mod-icon mod-icon-empty', m.name.slice(0, 1).toUpperCase()));
+      }
+      const body = el('div', 'mod-body');
+      body.append(el('strong', '', m.name));
+      body.append(el('span', 'muted', m.summary || m.file));
+      row.append(body);
+      if (m.version) row.append(el('span', 'fact', m.version));
+      return { m, row };
+    });
+    list.append(...cards.map((c) => c.row));
+    const count = () => {
+      const q = $('mods-search').value.trim().toLowerCase();
+      let n = 0;
+      cards.forEach(({ m, row }) => {
+        const show = !q || m.name.toLowerCase().includes(q) || m.file.toLowerCase().includes(q);
+        row.hidden = !show;
+        if (show) n++;
+      });
+      note.textContent = `${n} de ${r.count} mods${r.offline ? ' · sin conexión: nombres e iconos pueden faltar' : ''}`;
+    };
+    $('mods-search').oninput = count;
+    count();
+  } catch (err) {
+    note.textContent = cleanError(err);
   }
 }
 

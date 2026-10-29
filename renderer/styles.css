@@ -951,3 +951,14 @@ button.primary { border-radius: 10px; }
 .log-error { color: #ff7b8b; border-left-color: #ff6b8b; }
 .log-empty { margin: 0; color: var(--muted); font-family: inherit; }
 .console-head { justify-content: flex-end; }
+
+/* ---------- Mods del evento ---------- */
+.mods-list { display: grid; gap: 10px; margin-top: 12px; }
+.mod-card { display: flex; align-items: center; gap: 14px; padding: 10px 14px; text-align: left; border-radius: var(--r-md, 14px); border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; }
+button.mod-card { cursor: pointer; transition: border-color .2s ease, transform .2s ease; }
+button.mod-card:hover, button.mod-card:focus-visible { border-color: var(--accent); transform: translateX(3px); outline: none; }
+.mod-card[hidden] { display: none; }
+.mod-icon { width: 44px; height: 44px; flex: none; border-radius: 10px; object-fit: cover; background: var(--bg-2, #111); }
+.mod-icon-empty { display: grid; place-items: center; font-weight: 700; font-size: 18px; color: var(--accent); }
+.mod-body { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.mod-body span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }

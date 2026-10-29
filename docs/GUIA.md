@@ -162,6 +162,12 @@ Límite honesto: quien conozca la contraseña puede instalar el modpack y sacar 
 - **Consola:** filtros Todo/Avisos/Errores, búsqueda, seguir el final y botón Guardar (descarga un .txt).
 - **Errores de actualización:** el mensaje dice la causa real (sin internet, límite de GitHub, sin versión publicada…).
 
+## 4e. Pestaña Mods (Modrinth)
+
+La pestaña **Mods** lista los `.jar` instalados del evento con nombre, icono y versión, reconocidos por su huella en la API pública de [Modrinth](https://modrinth.com). Los mods que Modrinth no conoce aparecen con el nombre del archivo.
+
+Si el modpack es **protegido** (con contraseña), la lista se mantiene privada y solo se muestra el total. Para mostrarla, agrega `"showMods": true` en `data/manifest.json`.
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).
