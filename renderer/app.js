@@ -295,7 +295,7 @@ async function renderEvents() {
   const list = $('events-list');
   list.replaceChildren();
   try {
-    const events = (await window.api.getData('events')).sort((a, b) => (a.date < b.date ? 1 : -1));
+    const events = (await window.api.getData('events')).sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
     if (!events.length) list.append(el('p', 'muted', 'Aún no hay eventos en el historial.'));
     events.forEach((ev) => {
       const li = el('li');

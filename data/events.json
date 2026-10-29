@@ -1,8 +1,62 @@
 [
   {
+    "name": "Ant-Over: El legado de las hojas",
+    "date": "",
+    "image": "images/antover.jpg",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "BetterChain",
+    "date": "",
+    "image": "images/betterchain.png",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "DeadCraft: The Nightmare",
+    "date": "",
+    "image": "images/deadcraft.jpg",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "InFunaZone by Tutuca",
+    "date": "",
+    "image": "images/infunazone.png",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
     "name": "OneBlock 1000 días by LaosOneView",
     "date": "",
     "image": "images/oneblock.png",
     "description": "El evento de supervivencia con un solo bloque. ¡Gracias a todos los que jugaron!"
+  },
+  {
+    "name": "OneBlock 2 1000 días by LaosOneView",
+    "date": "",
+    "image": "images/oneblock2.png",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "OneBlock Deathmatch",
+    "date": "",
+    "image": "images/oneblock-deathmatch.png",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "RubroCraft 1.20 SMP",
+    "date": "",
+    "image": "images/rubrocraft-120.jpg",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "RubroCraft IV: Last Assembly",
+    "date": "",
+    "image": "images/rubrocraft-iv.png",
+    "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "Sylpharos: Lumen Invasion by kityevil",
+    "date": "",
+    "image": "images/sylpharos.png",
+    "description": "Evento organizado por Nova PX."
   }
 ]
