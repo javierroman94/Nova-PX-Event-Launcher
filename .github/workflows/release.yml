@@ -31,6 +31,17 @@ jobs:
       - name: Instalar dependencias
         run: npm install
 
+      # La versión del programa sale SIEMPRE de la etiqueta (v1.0.12 -> 1.0.12).
+      # Así nunca puede haber una etiqueta que no coincida con package.json.
+      - name: Fijar la versión según la etiqueta
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "La etiqueta '$GITHUB_REF_NAME' no tiene el formato vX.Y.Z"; exit 1
+          fi
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
       - name: Compilar y publicar
         run: npx electron-builder --publish always
         env:
