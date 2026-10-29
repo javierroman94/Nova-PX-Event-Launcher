@@ -10,6 +10,7 @@ const { execFile } = require('child_process');
 const loaders = require('./lib/loaders');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
+const { instanceDir } = require('./lib/instance');
 const skinsApi = require('./lib/skins');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
@@ -216,13 +217,13 @@ async function downloadBuffer(url) {
 
 // Instala o actualiza los mods. Con modpack protegido pide la contraseña solo si hace falta
 // (primera instalación o actualización); quien ya lo tiene instalado juega sin escribirla.
-async function installMods(manifest, password) {
+async function installMods(manifest, password, gameDir) {
   const onStatus = (text) => send('game:status', { text });
   if (manifest.protected) {
     const r = await packInstall.installProtected({
       prot: manifest.protected,
       password,
-      gameDir: GAME_DIR,
+      gameDir,
       download: downloadBuffer,
       keyStore,
       onStatus
@@ -237,8 +238,8 @@ async function installMods(manifest, password) {
     return;
   }
   await packInstall.syncMods({
-    modsDir: path.join(GAME_DIR, 'mods'),
-    stateFile: path.join(GAME_DIR, '.managed-mods.json'),
+    modsDir: path.join(gameDir, 'mods'),
+    stateFile: path.join(gameDir, '.managed-mods.json'),
     mods: manifest.mods || [],
     download: downloadBuffer,
     onStatus
@@ -890,7 +891,10 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
 
     // Primero lo que puede fallar rápido: la contraseña (solo si falta instalar mods cifrados).
     const password = typeof opts.password === 'string' ? opts.password : '';
-    await installMods(manifest, password); // la contraseña se comprueba antes de descargar Java
+    // Cada evento vive en su propia carpeta: los mods de un evento no chocan con los de otro.
+    const eventDir = instanceDir(GAME_DIR, manifest);
+    fs.mkdirSync(eventDir, { recursive: true });
+    await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
     const javaPath = await resolveJava(manifest, loaderType);
 
     let customId = null;
@@ -913,6 +917,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         type: 'release',
         ...(customId ? { custom: customId } : {})
       },
+      overrides: { gameDirectory: eventDir },
       memory: { max: `${st.ramGb}G`, min: '1G' },
       ...(forgeInstaller ? { forge: forgeInstaller } : {}),
       window: st.fullscreen
