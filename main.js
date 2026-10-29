@@ -11,6 +11,7 @@ const loaders = require('./lib/loaders');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
+const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
 const skinsApi = require('./lib/skins');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
@@ -66,6 +67,7 @@ function defaultSettings() {
     bgDim: 55,
     bgBlur: 6,
     effects: true,
+    discordRpc: true,
     playSeconds: 0
   };
 }
@@ -104,6 +106,7 @@ function cleanSettings(s) {
     bgDim: num(s.bgDim, 0, 90, d.bgDim),
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
     effects: s.effects !== false,
+    discordRpc: s.discordRpc !== false,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
 }
@@ -494,8 +497,29 @@ function setupUpdater() {
   setInterval(checkForUpdates, 30 * 60 * 1000);
 }
 
+/* ---------- Discord Rich Presence ---------- */
+const rpc = new DiscordRpc({ clientId: config.discordAppId });
+function discordIdle() {
+  rpc.setActivity(buildActivity({ mode: 'idle', invite: config.discordInvite, largeImage: config.discordLargeImage }));
+}
+function discordPlaying(eventName, startedAt) {
+  rpc.setActivity(
+    buildActivity({ mode: 'playing', eventName, startedAt, invite: config.discordInvite, largeImage: config.discordLargeImage })
+  );
+}
+function applyDiscordSetting() {
+  if (readSettings().discordRpc) {
+    discordIdle();
+    rpc.start();
+  } else {
+    rpc.stop();
+  }
+}
+app.on('before-quit', () => rpc.stop());
+
 app.whenReady().then(() => {
   if (!gotLock) return;
+  applyDiscordSetting();
   restoring = restoreSession();
   createWindow();
   setupUpdater();
@@ -534,6 +558,7 @@ ipcMain.handle('settings:get', () => readSettings());
 ipcMain.handle('settings:save', (_e, s) => {
   const clean = cleanSettings({ ...readSettings(), ...s, playSeconds: readSettings().playSeconds });
   writeSettings(clean);
+  applyDiscordSetting();
   return clean;
 });
 
@@ -949,6 +974,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       }
       // Si la ventana estaba cerrada (modo bandeja), se recrea y recibe el aviso cuando termina de cargar.
       const windowWasOpen = !!mainWindow && !mainWindow.isDestroyed();
+      if (readSettings().discordRpc) discordIdle();
       pendingClose = { code, crash: code === 0 ? [] : analyzeCrash(logBuffer) };
       leaveGameMode();
       if (windowWasOpen) {
@@ -963,6 +989,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       throw new Error('No se pudo iniciar Minecraft. Revisa la consola para ver el motivo.');
     }
     gameStartedAt = Date.now();
+    if (readSettings().discordRpc) discordPlaying((manifest.event && manifest.event.name) || 'Evento', gameStartedAt);
     send('game:status', { text: 'Minecraft en ejecución' });
     enterGameMode();
     return true;

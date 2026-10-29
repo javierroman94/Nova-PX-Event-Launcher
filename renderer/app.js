@@ -668,6 +668,7 @@ function readSettingsForm() {
     fullscreen: $('fullscreen').checked,
     joinServer: $('join-server').checked,
     autoJava: $('auto-java').checked,
+    discordRpc: $('discord-rpc').checked,
     gameBehavior: $('behavior').value
   };
 }
@@ -682,6 +683,7 @@ function fillSettingsForm(s) {
   $('fullscreen').checked = s.fullscreen;
   $('join-server').checked = s.joinServer;
   $('auto-java').checked = s.autoJava;
+  $('discord-rpc').checked = s.discordRpc;
   $('behavior').value = s.gameBehavior;
   $('res-w').disabled = $('res-h').disabled = s.fullscreen;
 }

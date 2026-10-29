@@ -3,5 +3,8 @@
   "gameFolderName": ".novapx-event-launcher",
   "remoteBase": "https://raw.githubusercontent.com/javierroman94/Nova-PX-Event-Launcher/main/data",
   "javaPath": "",
-  "defaultRamGb": 4
+  "defaultRamGb": 4,
+  "discordAppId": "1458487098389696734",
+  "discordInvite": "https://discord.gg/VAfuFEQtjv",
+  "discordLargeImage": "logo"
 }
