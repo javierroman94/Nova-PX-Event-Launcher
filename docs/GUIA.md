@@ -177,7 +177,12 @@ La pestaña **Modpacks** permite a cualquier jugador buscar, instalar y jugar mo
 - Los modpacks que usan **NeoForge o Quilt** aparecen marcados como "no compatible".
 - Algunos autores de CurseForge bloquean la descarga fuera de su web: esos archivos se omiten y el launcher avisa cuántos faltaron.
 - Seguridad: solo se descargan archivos de los sitios oficiales de cada plataforma, se comprueba su huella (SHA) y se rechaza cualquier ruta que intente salir de la carpeta del modpack.
-- Los modpacks instalados se pueden **jugar**, **abrir en su carpeta** y **eliminar** (borra mods, mundos y ajustes de ese modpack).
+- Los modpacks instalados forman tu **Biblioteca**. Al abrir uno ves sus pestañas:
+  - **Contenido:** lista de mods, shaders y texturas con nombre e icono (de Modrinth). Cada uno se puede **activar/desactivar** con el interruptor (el archivo pasa a `.disabled`) o **quitar**. Con **Explorar contenido** buscas en Modrinth solo lo compatible con la versión de Minecraft y el loader del modpack; al instalar un mod se añaden también sus dependencias obligatorias. **Cargar archivos** copia tus propios `.jar` o `.zip`.
+  - **Mundos:** los mundos guardados de ese modpack.
+  - **Registros:** el final de `logs/latest.log`, para resolver problemas.
+- Desde la ficha del modpack puedes **jugar**, **abrir su carpeta** y **eliminarlo** (borra mods, mundos y ajustes de ese modpack).
+- Mientras Minecraft está abierto no se puede cambiar el contenido.
 
 ## 5. Límites de esta primera versión
 

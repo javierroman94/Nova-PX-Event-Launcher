@@ -195,27 +195,92 @@
       <div id="mods-list" class="mods-list"></div>
     </section>
 
-    <!-- MODPACKS (Modrinth y CurseForge) -->
+    <!-- MODPACKS: biblioteca, explorar e instancia -->
     <section class="page" id="page-modpacks">
-      <div class="events-head">
-        <h2 class="page-title">Modpacks</h2>
-        <div class="seg" id="mp-providers" role="group" aria-label="Proveedor">
-          <button type="button" class="active" data-mp-provider="modrinth">Modrinth</button>
-          <button type="button" data-mp-provider="curseforge">CurseForge</button>
+      <!-- Biblioteca -->
+      <div id="mp-view-library">
+        <div class="events-head">
+          <h2 class="mp-heading">Biblioteca</h2>
+          <button id="mp-go-discover" type="button" class="primary">+ Explorar modpacks</button>
+        </div>
+        <p id="mp-lib-note" class="muted"></p>
+        <div id="mp-library" class="events-grid"></div>
+      </div>
+
+      <!-- Explorar (Modrinth y CurseForge) -->
+      <div id="mp-view-discover" hidden>
+        <div class="events-head">
+          <div class="mp-title-row">
+            <button id="mp-back-lib" type="button">← Biblioteca</button>
+            <h2 class="mp-heading">Explorar</h2>
+          </div>
+          <div class="seg" id="mp-providers" role="group" aria-label="Proveedor">
+            <button type="button" class="active" data-mp-provider="modrinth">Modrinth</button>
+            <button type="button" data-mp-provider="curseforge">CurseForge</button>
+          </div>
+        </div>
+        <form id="mp-search-form" class="mp-search">
+          <input id="mp-search" class="events-search" type="search" placeholder="Buscar modpacks…" aria-label="Buscar modpacks" autocomplete="off" />
+          <button type="submit" class="primary">Buscar</button>
+        </form>
+        <p id="mp-note" class="muted"></p>
+        <div id="mp-results" class="events-grid"></div>
+        <button id="mp-more" type="button" hidden>Cargar más</button>
+      </div>
+
+      <!-- Instancia -->
+      <div id="mp-view-detail" hidden>
+        <button id="mp-detail-back" type="button">← Biblioteca</button>
+        <div class="mp-detail-head">
+          <img id="mp-detail-icon" class="mp-detail-icon" alt="" hidden />
+          <div class="mod-body">
+            <h2 id="mp-detail-title" class="mp-heading"></h2>
+            <span id="mp-detail-meta" class="muted"></span>
+          </div>
+          <div class="mp-detail-actions">
+            <button id="mp-detail-play" type="button" class="primary">Jugar</button>
+            <button id="mp-detail-folder" type="button">Carpeta</button>
+            <button id="mp-detail-delete" type="button">Eliminar</button>
+          </div>
+        </div>
+        <div class="seg" id="mp-tabs" role="group" aria-label="Secciones del modpack">
+          <button type="button" class="active" data-mp-tab="content">Contenido</button>
+          <button type="button" data-mp-tab="worlds">Mundos</button>
+          <button type="button" data-mp-tab="logs">Registros</button>
+        </div>
+
+        <div id="mp-tab-content">
+          <div class="mp-toolbar">
+            <input id="mp-content-search" class="events-search" type="search" placeholder="Buscar en este modpack…" aria-label="Buscar en este modpack" autocomplete="off" />
+            <div class="seg" id="mp-filter" role="group" aria-label="Filtrar por tipo">
+              <button type="button" class="active" data-mp-filter="all">Todo</button>
+              <button type="button" data-mp-filter="mod">Mods</button>
+              <button type="button" data-mp-filter="shader">Shaders</button>
+              <button type="button" data-mp-filter="resourcepack">Texturas</button>
+            </div>
+          </div>
+          <div class="mp-toolbar">
+            <select id="mp-add-type" aria-label="Tipo de contenido a añadir">
+              <option value="mod">Mods</option>
+              <option value="shader">Shaders</option>
+              <option value="resourcepack">Texturas</option>
+            </select>
+            <button id="mp-add-local" type="button">Cargar archivos</button>
+            <button id="mp-add-explore" type="button" class="primary">Explorar contenido</button>
+          </div>
+          <p id="mp-content-note" class="muted"></p>
+          <div id="mp-content-list" class="mods-list"></div>
+        </div>
+        <div id="mp-tab-worlds" hidden>
+          <p id="mp-worlds-note" class="muted"></p>
+          <div id="mp-worlds-list" class="mods-list"></div>
+        </div>
+        <div id="mp-tab-logs" hidden>
+          <div id="mp-log" class="log" tabindex="0"></div>
         </div>
       </div>
-      <div id="mp-installed-box" hidden>
-        <h3 class="mp-section">Instalados</h3>
-        <div id="mp-installed" class="mp-installed"></div>
-      </div>
-      <h3 class="mp-section">Explorar</h3>
-      <form id="mp-search-form" class="mp-search">
-        <input id="mp-search" class="events-search" type="search" placeholder="Buscar modpacks…" aria-label="Buscar modpacks" autocomplete="off" />
-        <button type="submit" class="primary">Buscar</button>
-      </form>
-      <p id="mp-note" class="muted"></p>
-      <div id="mp-results" class="events-grid"></div>
-      <button id="mp-more" type="button" hidden>Cargar más</button>
+
+      <!-- Instalar un modpack -->
       <dialog id="mp-modal" class="event-modal" aria-label="Instalar modpack">
         <div class="event-modal-body">
           <div class="mp-head">
@@ -233,6 +298,23 @@
             <button id="mp-close" type="button">Cerrar</button>
             <button id="mp-install" type="button" class="primary" disabled>Instalar</button>
           </div>
+        </div>
+      </dialog>
+
+      <!-- Añadir contenido a un modpack -->
+      <dialog id="mp-add-modal" class="event-modal mp-wide" aria-label="Añadir contenido">
+        <div class="event-modal-body">
+          <h3 id="mp-add-title">Añadir contenido</h3>
+          <div class="seg" id="mp-add-types" role="group" aria-label="Tipo">
+            <button type="button" class="active" data-add-type="mod">Mods</button>
+            <button type="button" data-add-type="shader">Shaders</button>
+            <button type="button" data-add-type="resourcepack">Texturas</button>
+          </div>
+          <input id="mp-add-search" class="events-search" type="search" placeholder="Buscar en Modrinth…" aria-label="Buscar contenido" autocomplete="off" />
+          <small id="mp-add-info" class="muted"></small>
+          <div id="mp-add-results" class="mods-list mp-add-results"></div>
+          <p id="mp-add-status" class="muted" role="status"></p>
+          <div class="mp-actions"><button id="mp-add-close" type="button">Cerrar</button></div>
         </div>
       </dialog>
     </section>

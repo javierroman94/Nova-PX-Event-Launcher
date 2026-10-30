@@ -18,6 +18,7 @@ const { repairInstance } = require('./lib/repair');
 const modrinth = require('./lib/modrinth');
 const modpacks = require('./lib/modpacks');
 const providers = require('./lib/providers');
+const content = require('./lib/content');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
 const config = JSON.parse(
@@ -737,6 +738,122 @@ ipcMain.handle('modpacks:folder', async (_e, id) => {
   fs.mkdirSync(dir, { recursive: true });
   const err = await shell.openPath(dir);
   if (err) throw new Error(err);
+});
+
+/* ---------- contenido de cada modpack (mods, shaders, texturas, mundos, registros) ---------- */
+
+const hashCache = new Map();
+async function cachedSha1(file) {
+  const st = fs.statSync(file);
+  const key = `${file}|${st.size}|${st.mtimeMs}`;
+  if (!hashCache.has(key)) hashCache.set(key, await content.sha1Stream(file));
+  return hashCache.get(key);
+}
+
+function packRoot(id) {
+  const entry = readModpacks().find((x) => x.id === cleanStr(id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  return { entry, root: instanceDir(GAME_DIR, { event: { id: entry.id } }) };
+}
+function typeOf(t) {
+  content.typeInfo(t);
+  return t;
+}
+function assertEditable() {
+  if (launching) throw new Error('Cierra Minecraft antes de cambiar el contenido del modpack.');
+}
+
+ipcMain.handle('instance:content', async (_e, id) => {
+  const { root } = packRoot(id);
+  const items = [];
+  for (const type of Object.keys(content.TYPES)) {
+    for (const it of content.listContent(root, type)) {
+      items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, type), it.file)) });
+    }
+  }
+  let byHash = {};
+  let projects = {};
+  let offline = false;
+  try {
+    if (items.length) ({ byHash, projects } = await modrinth.lookup(items, apiRequest));
+  } catch {
+    offline = true;
+  }
+  return { items: content.buildContentList(items, byHash, projects), offline };
+});
+
+ipcMain.handle('instance:toggle', (_e, p = {}) => {
+  assertEditable();
+  const { root } = packRoot(p.id);
+  return content.toggleContent(root, typeOf(p.type), cleanStr(p.file, 200));
+});
+ipcMain.handle('instance:remove', (_e, p = {}) => {
+  assertEditable();
+  const { root } = packRoot(p.id);
+  content.removeContent(root, typeOf(p.type), cleanStr(p.file, 200));
+});
+ipcMain.handle('instance:addLocal', async (_e, p = {}) => {
+  assertEditable();
+  const { root } = packRoot(p.id);
+  const type = typeOf(p.type);
+  const info = content.typeInfo(type);
+  const res = await dialog.showOpenDialog(mainWindow, {
+    title: `Elige archivos ${info.ext} para ${info.label.toLowerCase()}`,
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: info.label, extensions: [info.ext.slice(1)] }]
+  });
+  if (res.canceled) return { added: [], errors: [] };
+  const added = [];
+  const errors = [];
+  for (const f of res.filePaths) {
+    try {
+      added.push(content.addLocalFile(root, type, f));
+    } catch (err) {
+      errors.push(err.message);
+    }
+  }
+  return { added, errors };
+});
+
+function searchTarget(p) {
+  const { entry, root } = packRoot(p.id);
+  const type = typeOf(p.type);
+  if (type === 'mod' && (!entry.loader || entry.loader.type === 'vanilla')) {
+    throw new Error('Este modpack es Vanilla (sin Fabric ni Forge), así que no admite mods.');
+  }
+  return { entry, root, type, loader: entry.loader && entry.loader.type };
+}
+ipcMain.handle('instance:search', async (_e, p = {}) => {
+  const t = searchTarget(p);
+  return content.searchContent(apiRequest, { type: t.type, mc: t.entry.mcVersion, loader: t.loader, query: cleanStr(p.query, 80), offset: p.offset });
+});
+ipcMain.handle('instance:install', async (_e, p = {}) => {
+  assertEditable();
+  const t = searchTarget(p);
+  const progress = (text) => send('modpack:progress', { text });
+  const r = await content.installFromModrinth({
+    request: apiRequest, download: (u) => downloadBuffer(u), root: t.root, type: t.type,
+    projectId: cleanStr(p.projectId, 40), mc: t.entry.mcVersion, loader: t.loader, onStatus: progress
+  });
+  return r;
+});
+
+ipcMain.handle('instance:worlds', (_e, id) => {
+  const { root } = packRoot(id);
+  const dir = path.join(root, 'saves');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => ({ name: d.name, mtime: fs.statSync(path.join(dir, d.name)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime);
+});
+ipcMain.handle('instance:log', (_e, id) => {
+  const { root } = packRoot(id);
+  const file = path.join(root, 'logs', 'latest.log');
+  if (!fs.existsSync(file)) return '';
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  return lines.slice(-500).join('\n');
 });
 
 // Aviso de escritorio cuando el evento está por empezar (1 hora antes y al empezar). Cada aviso se da una sola vez.

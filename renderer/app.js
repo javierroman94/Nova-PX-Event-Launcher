@@ -421,62 +421,75 @@ async function renderMods() {
   }
 }
 
-/* ---------- modpacks de Modrinth y CurseForge ---------- */
-const mp = { provider: 'modrinth', query: '', offset: 0, total: 0, enabled: { modrinth: true, curseforge: false }, installed: [], current: null, seq: 0, busy: false };
+/* ---------- modpacks: biblioteca, explorar e instancia ---------- */
+const mp = { view: 'library', provider: 'modrinth', query: '', offset: 0, total: 0, enabled: { modrinth: true, curseforge: false }, installed: [], current: null, seq: 0, busy: false, pack: null, filter: 'all', items: [], addType: 'mod', addSeq: 0 };
 const compact = new Intl.NumberFormat('es', { notation: 'compact' });
 const LOADER_NAMES = { fabric: 'Fabric', forge: 'Forge', vanilla: 'Vanilla' };
+const TYPE_NAMES = { mod: 'Mod', shader: 'Shader', resourcepack: 'Textura' };
+const packMeta = (p) => `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}${p.version ? ' · ' + p.version : ''}`;
+
+function iconEl(src, name, cls = 'mod-icon') {
+  if (src) {
+    const img = el('img', cls);
+    img.alt = '';
+    img.loading = 'lazy';
+    img.src = src;
+    return img;
+  }
+  return el('div', `${cls} mod-icon-empty`, (name || '?').slice(0, 1).toUpperCase());
+}
+
+function showView(name) {
+  mp.view = name;
+  ['library', 'discover', 'detail'].forEach((v) => ($(`mp-view-${v}`).hidden = v !== name));
+}
 
 async function openModpacks() {
   try {
     mp.enabled = await window.api.modpackProviders();
   } catch {}
-  document.querySelectorAll('[data-mp-provider]').forEach((b) => b.classList.toggle('active', b.dataset.mpProvider === mp.provider));
-  await renderInstalledPacks();
-  if (!$('mp-results').childNodes.length) searchPacks(true);
+  if (mp.view === 'detail' && mp.pack) return; // vuelve a la instancia que estabas viendo
+  showView('library');
+  renderLibrary();
 }
 
-async function renderInstalledPacks() {
+/* --- biblioteca --- */
+async function loadInstalled() {
   try {
     mp.installed = await window.api.modpackInstalled();
   } catch {
     mp.installed = [];
   }
-  const box = $('mp-installed');
-  box.replaceChildren();
-  $('mp-installed-box').hidden = !mp.installed.length;
+  return mp.installed;
+}
+
+async function renderLibrary() {
+  const grid = $('mp-library');
+  await loadInstalled();
+  grid.replaceChildren();
+  $('mp-lib-note').textContent = mp.installed.length
+    ? `${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'} instalado${mp.installed.length === 1 ? '' : 's'}`
+    : 'Aún no tienes modpacks. Pulsa "Explorar modpacks" para instalar uno de Modrinth o CurseForge.';
   mp.installed.forEach((p) => {
-    const row = el('div', 'mod-card');
-    if (p.icon) {
-      const img = el('img', 'mod-icon');
-      img.alt = '';
-      img.src = p.icon;
-      row.append(img);
-    } else row.append(el('div', 'mod-icon mod-icon-empty', p.title.slice(0, 1).toUpperCase()));
-    const body = el('div', 'mod-body');
-    body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}${p.version ? ' · ' + p.version : ''}`));
-    row.append(body);
-    const play = el('button', 'primary', 'Jugar');
-    play.type = 'button';
-    play.addEventListener('click', () => playPack(p.id));
-    const folder = el('button', '', 'Carpeta');
-    folder.type = 'button';
-    folder.addEventListener('click', () => window.api.modpackFolder(p.id).catch((e) => toast(cleanError(e), 'error')));
-    const del = el('button', '', 'Eliminar');
-    del.type = 'button';
-    del.addEventListener('click', async () => {
-      if (!confirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
-      try {
-        await window.api.modpackRemove(p.id);
-        toast('Modpack eliminado');
-        renderInstalledPacks();
-      } catch (e) {
-        toast(cleanError(e), 'error');
-      }
-    });
-    row.append(play, folder, del);
-    box.append(row);
+    const card = el('button', 'event-card');
+    card.type = 'button';
+    card.dataset.tilt = '';
+    card.append(iconEl(p.icon, p.title, 'event-card-img mp-card-img'));
+    const body = el('div', 'event-card-body');
+    body.append(el('h3', '', p.title), el('span', 'muted', packMeta(p)));
+    card.append(body);
+    card.addEventListener('click', () => openDetail(p));
+    grid.append(card);
   });
 }
+
+$('mp-go-discover').addEventListener('click', () => {
+  showView('discover');
+  document.querySelectorAll('[data-mp-provider]').forEach((b) => b.classList.toggle('active', b.dataset.mpProvider === mp.provider));
+  if (!$('mp-results').childNodes.length) searchPacks(true);
+});
+$('mp-back-lib').addEventListener('click', () => { showView('library'); renderLibrary(); });
+$('mp-detail-back').addEventListener('click', () => { mp.pack = null; showView('library'); renderLibrary(); });
 
 async function playPack(id) {
   if (!loggedIn) {
@@ -497,6 +510,239 @@ async function playPack(id) {
   }
 }
 
+/* --- instancia --- */
+function setTab(tab) {
+  document.querySelectorAll('[data-mp-tab]').forEach((b) => b.classList.toggle('active', b.dataset.mpTab === tab));
+  ['content', 'worlds', 'logs'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
+  if (tab === 'content') renderContent();
+  if (tab === 'worlds') renderWorlds();
+  if (tab === 'logs') renderPackLog();
+}
+document.querySelectorAll('[data-mp-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.mpTab)));
+
+function openDetail(p) {
+  mp.pack = p;
+  mp.filter = 'all';
+  $('mp-content-search').value = '';
+  document.querySelectorAll('[data-mp-filter]').forEach((b) => b.classList.toggle('active', b.dataset.mpFilter === 'all'));
+  const icon = $('mp-detail-icon');
+  icon.hidden = !p.icon;
+  if (p.icon) icon.src = p.icon;
+  $('mp-detail-title').textContent = p.title;
+  $('mp-detail-meta').textContent = packMeta(p);
+  showView('detail');
+  setTab('content');
+}
+
+$('mp-detail-play').addEventListener('click', () => mp.pack && playPack(mp.pack.id));
+$('mp-detail-folder').addEventListener('click', () => mp.pack && window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')));
+$('mp-detail-delete').addEventListener('click', async () => {
+  const p = mp.pack;
+  if (!p || !confirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
+  try {
+    await window.api.modpackRemove(p.id);
+    toast('Modpack eliminado');
+    mp.pack = null;
+    showView('library');
+    renderLibrary();
+  } catch (e) {
+    toast(cleanError(e), 'error');
+  }
+});
+
+const fmtSize = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+async function renderContent() {
+  const p = mp.pack;
+  if (!p) return;
+  const list = $('mp-content-list');
+  const note = $('mp-content-note');
+  note.textContent = 'Cargando contenido…';
+  try {
+    const r = await window.api.instanceContent(p.id);
+    if (mp.pack !== p) return;
+    mp.items = r.items;
+    paintContent(r.offline);
+  } catch (err) {
+    list.replaceChildren();
+    note.textContent = cleanError(err);
+  }
+}
+
+function paintContent(offline) {
+  const list = $('mp-content-list');
+  const q = $('mp-content-search').value.trim().toLowerCase();
+  const shown = mp.items.filter((it) => (mp.filter === 'all' || it.type === mp.filter) && (!q || it.name.toLowerCase().includes(q) || it.file.toLowerCase().includes(q)));
+  list.replaceChildren();
+  const count = (t) => mp.items.filter((i) => i.type === t).length;
+  $('mp-content-note').textContent = mp.items.length
+    ? `${shown.length} de ${mp.items.length} · ${count('mod')} mods · ${count('shader')} shaders · ${count('resourcepack')} texturas${offline ? ' · sin conexión: nombres e iconos pueden faltar' : ''}`
+    : 'Este modpack todavía no tiene mods, shaders ni texturas. Usa "Explorar contenido" o "Cargar archivos".';
+  shown.forEach((it) => {
+    const row = el('div', `mod-card${it.enabled ? '' : ' mod-off'}`);
+    row.append(iconEl(it.icon, it.name));
+    const body = el('div', 'mod-body');
+    body.append(el('strong', '', it.name), el('span', 'muted', `${TYPE_NAMES[it.type]}${it.version ? ' · ' + it.version : ''} · ${it.file.replace(/\.disabled$/i, '')} · ${fmtSize(it.size)}`));
+    row.append(body);
+    const sw = el('input', 'switch');
+    sw.type = 'checkbox';
+    sw.checked = it.enabled;
+    sw.setAttribute('aria-label', `${it.enabled ? 'Desactivar' : 'Activar'} ${it.name}`);
+    sw.addEventListener('change', async () => {
+      sw.disabled = true;
+      try {
+        await window.api.instanceToggle({ id: mp.pack.id, type: it.type, file: it.file });
+        await renderContent();
+      } catch (e) {
+        toast(cleanError(e), 'error');
+        sw.checked = !sw.checked;
+        sw.disabled = false;
+      }
+    });
+    const del = el('button', '', 'Quitar');
+    del.type = 'button';
+    del.addEventListener('click', async () => {
+      if (!confirm(`¿Quitar "${it.name}" de este modpack?`)) return;
+      try {
+        await window.api.instanceRemove({ id: mp.pack.id, type: it.type, file: it.file });
+        await renderContent();
+      } catch (e) {
+        toast(cleanError(e), 'error');
+      }
+    });
+    row.append(sw, del);
+    list.append(row);
+  });
+}
+
+$('mp-content-search').addEventListener('input', () => paintContent(false));
+document.querySelectorAll('[data-mp-filter]').forEach((b) =>
+  b.addEventListener('click', () => {
+    mp.filter = b.dataset.mpFilter;
+    document.querySelectorAll('[data-mp-filter]').forEach((x) => x.classList.toggle('active', x === b));
+    if (mp.filter !== 'all') $('mp-add-type').value = mp.filter;
+    paintContent(false);
+  })
+);
+
+$('mp-add-local').addEventListener('click', async () => {
+  try {
+    const r = await window.api.instanceAddLocal({ id: mp.pack.id, type: $('mp-add-type').value });
+    if (r.added.length) toast(`${r.added.length} archivo(s) añadido(s)`);
+    r.errors.forEach((m) => toast(m, 'error'));
+    if (r.added.length) renderContent();
+  } catch (e) {
+    toast(cleanError(e), 'error');
+  }
+});
+
+async function renderWorlds() {
+  const list = $('mp-worlds-list');
+  list.replaceChildren();
+  $('mp-worlds-note').textContent = 'Cargando…';
+  try {
+    const worlds = await window.api.instanceWorlds(mp.pack.id);
+    $('mp-worlds-note').textContent = worlds.length ? `${worlds.length} mundo${worlds.length === 1 ? '' : 's'}` : 'Todavía no hay mundos. Se crean la primera vez que juegues.';
+    worlds.forEach((w) => {
+      const row = el('div', 'mod-card');
+      const body = el('div', 'mod-body');
+      body.append(el('strong', '', w.name), el('span', 'muted', `Última vez: ${new Date(w.mtime).toLocaleString('es')}`));
+      row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), body);
+      list.append(row);
+    });
+  } catch (e) {
+    $('mp-worlds-note').textContent = cleanError(e);
+  }
+}
+
+async function renderPackLog() {
+  const box = $('mp-log');
+  box.replaceChildren();
+  try {
+    const text = await window.api.instanceLog(mp.pack.id);
+    if (!text.trim()) return box.append(el('p', 'log-empty', 'Todavía no hay registro. Aparece después de jugar este modpack.'));
+    const frag = document.createDocumentFragment();
+    text.split('\n').forEach((line) => frag.append(logRow(line)));
+    box.append(frag);
+    box.scrollTop = box.scrollHeight;
+  } catch (e) {
+    box.append(el('p', 'log-empty', cleanError(e)));
+  }
+}
+
+/* --- añadir contenido desde Modrinth --- */
+let addTimer = 0;
+function openAddModal() {
+  const p = mp.pack;
+  $('mp-add-title').textContent = `Añadir a ${p.title}`;
+  $('mp-add-info').textContent = `Solo se muestra lo compatible con Minecraft ${p.mcVersion}${p.loader && p.loader.type !== 'vanilla' ? ' y ' + LOADER_NAMES[p.loader.type] : ''}.`;
+  $('mp-add-status').textContent = '';
+  $('mp-add-search').value = '';
+  mp.addType = $('mp-add-type').value;
+  document.querySelectorAll('[data-add-type]').forEach((b) => b.classList.toggle('active', b.dataset.addType === mp.addType));
+  if (!$('mp-add-modal').open) $('mp-add-modal').showModal();
+  searchContent();
+}
+$('mp-add-explore').addEventListener('click', openAddModal);
+$('mp-add-close').addEventListener('click', () => { if (!mp.busy) $('mp-add-modal').close(); });
+$('mp-add-modal').addEventListener('cancel', (e) => { if (mp.busy) e.preventDefault(); });
+$('mp-add-modal').addEventListener('close', () => renderContent());
+document.querySelectorAll('[data-add-type]').forEach((b) =>
+  b.addEventListener('click', () => {
+    mp.addType = b.dataset.addType;
+    document.querySelectorAll('[data-add-type]').forEach((x) => x.classList.toggle('active', x === b));
+    searchContent();
+  })
+);
+$('mp-add-search').addEventListener('input', () => {
+  clearTimeout(addTimer);
+  addTimer = setTimeout(searchContent, 350);
+});
+
+async function searchContent() {
+  const seq = ++mp.addSeq;
+  const box = $('mp-add-results');
+  box.replaceChildren();
+  $('mp-add-status').textContent = 'Buscando…';
+  try {
+    const r = await window.api.instanceSearch({ id: mp.pack.id, type: mp.addType, query: $('mp-add-search').value, offset: 0 });
+    if (seq !== mp.addSeq) return;
+    $('mp-add-status').textContent = r.items.length ? '' : 'No hay resultados compatibles.';
+    r.items.forEach((it) => {
+      const row = el('div', 'mod-card');
+      row.append(iconEl(it.icon, it.title));
+      const body = el('div', 'mod-body');
+      body.append(el('strong', '', it.title), el('span', 'muted', it.summary));
+      row.append(body, el('span', 'muted mp-dl', `${compact.format(it.downloads)} desc.`));
+      const btn = el('button', 'primary', 'Instalar');
+      btn.type = 'button';
+      btn.addEventListener('click', async () => {
+        if (mp.busy) return;
+        mp.busy = true;
+        btn.disabled = true;
+        btn.textContent = 'Instalando…';
+        try {
+          const res = await window.api.instanceInstall({ id: mp.pack.id, type: mp.addType, projectId: it.id });
+          btn.textContent = res.installed.length ? 'Instalado' : 'Ya lo tenías';
+          if (res.installed.length > 1) toast(`${res.installed.length} archivos instalados (con sus dependencias)`);
+          else if (res.installed.length) toast(`${it.title} instalado`);
+        } catch (e) {
+          btn.textContent = 'Instalar';
+          btn.disabled = false;
+          $('mp-add-status').textContent = cleanError(e);
+        } finally {
+          mp.busy = false;
+        }
+      });
+      row.append(btn);
+      box.append(row);
+    });
+  } catch (e) {
+    if (seq === mp.addSeq) $('mp-add-status').textContent = cleanError(e);
+  }
+}
+
+/* --- explorar modpacks --- */
 async function searchPacks(reset) {
   const seq = ++mp.seq;
   const note = $('mp-note');
@@ -518,13 +764,7 @@ async function searchPacks(reset) {
     r.items.forEach((it) => {
       const card = el('button', 'event-card');
       card.type = 'button';
-      if (it.icon) {
-        const img = el('img', 'event-card-img mp-card-img');
-        img.alt = '';
-        img.loading = 'lazy';
-        img.src = it.icon;
-        card.append(img);
-      }
+      card.append(iconEl(it.icon, it.title, 'event-card-img mp-card-img'));
       const body = el('div', 'event-card-body');
       body.append(el('h3', '', it.title));
       body.append(el('span', 'muted', `${it.author ? 'por ' + it.author + ' · ' : ''}${compact.format(it.downloads)} descargas`));
@@ -603,7 +843,9 @@ $('mp-install').addEventListener('click', async () => {
     }
     mp.busy = false;
     $('mp-modal').close();
-    renderInstalledPacks();
+    mp.pack = null;
+    showView('library');
+    renderLibrary();
   } catch (err) {
     $('mp-status').textContent = cleanError(err);
     $('mp-progress').hidden = true;
@@ -613,7 +855,9 @@ $('mp-install').addEventListener('click', async () => {
   }
 });
 window.api.onModpackProgress((d) => {
-  $('mp-status').textContent = d.text || '';
+  const text = d.text || '';
+  if ($('mp-add-modal').open) $('mp-add-status').textContent = text;
+  $('mp-status').textContent = text;
   const bar = $('mp-progress');
   if (d.total) {
     bar.max = d.total;
