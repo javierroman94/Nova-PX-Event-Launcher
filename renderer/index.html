@@ -49,6 +49,7 @@
       <button class="tab-btn" data-tab="team"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 010 6.4M18.5 14.8c1.8.7 3 2.4 3.4 5"/></svg><span class="nav-label">Equipo</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
       <button class="tab-btn" data-tab="mods"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.8"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.8"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.8"/><path d="M16.75 13v7.5M13 16.75h7.5"/></svg><span class="nav-label">Mods</span></button>
+      <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="nav-label">Ajustes</span></button>
       <button class="tab-btn" data-tab="console"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 9.5l3 2.5-3 2.5M13 15h4"/></svg><span class="nav-label">Consola</span></button>
       <span class="tab-ind" id="tab-ind" aria-hidden="true"></span>
@@ -192,6 +193,48 @@
       </div>
       <p id="mods-note" class="muted"></p>
       <div id="mods-list" class="mods-list"></div>
+    </section>
+
+    <!-- MODPACKS (Modrinth y CurseForge) -->
+    <section class="page" id="page-modpacks">
+      <div class="events-head">
+        <h2 class="page-title">Modpacks</h2>
+        <div class="seg" id="mp-providers" role="group" aria-label="Proveedor">
+          <button type="button" class="active" data-mp-provider="modrinth">Modrinth</button>
+          <button type="button" data-mp-provider="curseforge">CurseForge</button>
+        </div>
+      </div>
+      <div id="mp-installed-box" hidden>
+        <h3 class="mp-section">Instalados</h3>
+        <div id="mp-installed" class="mp-installed"></div>
+      </div>
+      <h3 class="mp-section">Explorar</h3>
+      <form id="mp-search-form" class="mp-search">
+        <input id="mp-search" class="events-search" type="search" placeholder="Buscar modpacks…" aria-label="Buscar modpacks" autocomplete="off" />
+        <button type="submit" class="primary">Buscar</button>
+      </form>
+      <p id="mp-note" class="muted"></p>
+      <div id="mp-results" class="events-grid"></div>
+      <button id="mp-more" type="button" hidden>Cargar más</button>
+      <dialog id="mp-modal" class="event-modal" aria-label="Instalar modpack">
+        <div class="event-modal-body">
+          <div class="mp-head">
+            <img id="mp-modal-icon" class="mod-icon" alt="" hidden />
+            <div class="mod-body"><h3 id="mp-modal-title"></h3><span id="mp-modal-author" class="muted"></span></div>
+          </div>
+          <p id="mp-modal-summary"></p>
+          <label for="mp-version">Versión</label>
+          <select id="mp-version"></select>
+          <small id="mp-version-info" class="muted"></small>
+          <progress id="mp-progress" max="1" value="0" hidden></progress>
+          <p id="mp-status" class="muted" role="status"></p>
+          <div class="mp-actions">
+            <button id="mp-web" type="button">Ver en la web</button>
+            <button id="mp-close" type="button">Cerrar</button>
+            <button id="mp-install" type="button" class="primary" disabled>Instalar</button>
+          </div>
+        </div>
+      </dialog>
     </section>
 
     <!-- EQUIPO -->

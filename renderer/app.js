@@ -123,6 +123,7 @@ const PAGE_TITLES = {
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
   mods: ['Mods', 'Lo que lleva instalado el evento'],
+  modpacks: ['Modpacks', 'Descarga e instala modpacks de Modrinth y CurseForge'],
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
   console: ['Consola', 'El registro del juego, para resolver problemas'],
   account: ['Cuenta', 'Inicia sesión como premium o no premium']
@@ -169,6 +170,7 @@ function goTo(tab) {
   moveIndicator();
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
   if (tab === 'mods') renderMods();
+  if (tab === 'modpacks') openModpacks();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
 
@@ -418,6 +420,220 @@ async function renderMods() {
     note.textContent = cleanError(err);
   }
 }
+
+/* ---------- modpacks de Modrinth y CurseForge ---------- */
+const mp = { provider: 'modrinth', query: '', offset: 0, total: 0, enabled: { modrinth: true, curseforge: false }, installed: [], current: null, seq: 0, busy: false };
+const compact = new Intl.NumberFormat('es', { notation: 'compact' });
+const LOADER_NAMES = { fabric: 'Fabric', forge: 'Forge', vanilla: 'Vanilla' };
+
+async function openModpacks() {
+  try {
+    mp.enabled = await window.api.modpackProviders();
+  } catch {}
+  document.querySelectorAll('[data-mp-provider]').forEach((b) => b.classList.toggle('active', b.dataset.mpProvider === mp.provider));
+  await renderInstalledPacks();
+  if (!$('mp-results').childNodes.length) searchPacks(true);
+}
+
+async function renderInstalledPacks() {
+  try {
+    mp.installed = await window.api.modpackInstalled();
+  } catch {
+    mp.installed = [];
+  }
+  const box = $('mp-installed');
+  box.replaceChildren();
+  $('mp-installed-box').hidden = !mp.installed.length;
+  mp.installed.forEach((p) => {
+    const row = el('div', 'mod-card');
+    if (p.icon) {
+      const img = el('img', 'mod-icon');
+      img.alt = '';
+      img.src = p.icon;
+      row.append(img);
+    } else row.append(el('div', 'mod-icon mod-icon-empty', p.title.slice(0, 1).toUpperCase()));
+    const body = el('div', 'mod-body');
+    body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}${p.version ? ' · ' + p.version : ''}`));
+    row.append(body);
+    const play = el('button', 'primary', 'Jugar');
+    play.type = 'button';
+    play.addEventListener('click', () => playPack(p.id));
+    const folder = el('button', '', 'Carpeta');
+    folder.type = 'button';
+    folder.addEventListener('click', () => window.api.modpackFolder(p.id).catch((e) => toast(cleanError(e), 'error')));
+    const del = el('button', '', 'Eliminar');
+    del.type = 'button';
+    del.addEventListener('click', async () => {
+      if (!confirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
+      try {
+        await window.api.modpackRemove(p.id);
+        toast('Modpack eliminado');
+        renderInstalledPacks();
+      } catch (e) {
+        toast(cleanError(e), 'error');
+      }
+    });
+    row.append(play, folder, del);
+    box.append(row);
+  });
+}
+
+async function playPack(id) {
+  if (!loggedIn) {
+    goTo('account');
+    showMsg('Inicia sesión como premium o no premium para jugar.', true);
+    return;
+  }
+  setPlaying(true);
+  showCrash(null);
+  goTo('home');
+  $('status').textContent = 'Preparando el modpack…';
+  try {
+    await window.api.launch({ modpackId: id });
+  } catch (err) {
+    $('status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
+    $('progress').hidden = true;
+    setPlaying(false);
+  }
+}
+
+async function searchPacks(reset) {
+  const seq = ++mp.seq;
+  const note = $('mp-note');
+  const grid = $('mp-results');
+  if (reset) {
+    mp.offset = 0;
+    grid.replaceChildren();
+  }
+  $('mp-more').hidden = true;
+  if (!mp.enabled[mp.provider]) {
+    note.textContent = 'CurseForge necesita una clave de API para funcionar. El equipo puede activarla en config/launcher.config.json (curseforgeApiKey).';
+    return;
+  }
+  note.textContent = 'Buscando…';
+  try {
+    const r = await window.api.modpackSearch({ provider: mp.provider, query: mp.query, offset: mp.offset });
+    if (seq !== mp.seq) return;
+    mp.total = r.total;
+    r.items.forEach((it) => {
+      const card = el('button', 'event-card');
+      card.type = 'button';
+      if (it.icon) {
+        const img = el('img', 'event-card-img mp-card-img');
+        img.alt = '';
+        img.loading = 'lazy';
+        img.src = it.icon;
+        card.append(img);
+      }
+      const body = el('div', 'event-card-body');
+      body.append(el('h3', '', it.title));
+      body.append(el('span', 'muted', `${it.author ? 'por ' + it.author + ' · ' : ''}${compact.format(it.downloads)} descargas`));
+      body.append(el('p', 'mp-summary', it.summary));
+      card.append(body);
+      card.addEventListener('click', () => openPackModal(it));
+      grid.append(card);
+    });
+    mp.offset += r.items.length;
+    note.textContent = r.items.length || grid.childNodes.length ? `${grid.childNodes.length} de ${compact.format(mp.total)} modpacks` : 'No se encontró ningún modpack con ese nombre.';
+    $('mp-more').hidden = mp.offset >= mp.total || !r.items.length;
+  } catch (err) {
+    if (seq === mp.seq) note.textContent = `No se pudo buscar: ${cleanError(err)}`;
+  }
+}
+
+async function openPackModal(it) {
+  mp.current = it;
+  const modal = $('mp-modal');
+  $('mp-modal-title').textContent = it.title;
+  $('mp-modal-author').textContent = it.author ? `por ${it.author}` : '';
+  $('mp-modal-summary').textContent = it.summary;
+  $('mp-modal-icon').hidden = !it.icon;
+  if (it.icon) $('mp-modal-icon').src = it.icon;
+  $('mp-web').hidden = !it.url;
+  $('mp-progress').hidden = true;
+  $('mp-status').textContent = '';
+  $('mp-version-info').textContent = 'Cargando versiones…';
+  $('mp-version').replaceChildren();
+  $('mp-install').disabled = true;
+  $('mp-install').textContent = mp.installed.some((p) => p.provider === it.provider && p.projectId === it.id) ? 'Actualizar' : 'Instalar';
+  if (!modal.open) modal.showModal();
+  try {
+    const versions = await window.api.modpackVersions({ provider: it.provider, id: it.id });
+    if (mp.current !== it) return;
+    const sel = $('mp-version');
+    let first = -1;
+    versions.forEach((v, i) => {
+      const ok = v.supported && v.downloadUrl;
+      const label = `${v.name || v.number}${v.mcVersions[0] ? ' · MC ' + v.mcVersions[0] : ''}${v.loaders.length ? ' · ' + v.loaders.map((l) => LOADER_NAMES[l] || l).join('/') : ''}${!v.supported ? ' (no compatible)' : !v.downloadUrl ? ' (descarga bloqueada)' : ''}`;
+      const o = el('option', '', label);
+      o.value = v.id;
+      o.disabled = !ok;
+      sel.append(o);
+      if (ok && first < 0) first = i;
+    });
+    if (first >= 0) {
+      sel.selectedIndex = first;
+      $('mp-install').disabled = false;
+      $('mp-version-info').textContent = 'Se instala en su propia carpeta, sin tocar tu evento ni tus otros modpacks.';
+    } else {
+      $('mp-version-info').textContent = versions.length
+        ? 'Ninguna versión se puede instalar desde aquí (loader no soportado o descarga bloqueada por su autor).'
+        : 'Este modpack no tiene versiones disponibles.';
+    }
+  } catch (err) {
+    $('mp-version-info').textContent = `No se pudieron cargar las versiones: ${cleanError(err)}`;
+  }
+}
+
+$('mp-close').addEventListener('click', () => { if (!mp.busy) $('mp-modal').close(); });
+$('mp-modal').addEventListener('cancel', (e) => { if (mp.busy) e.preventDefault(); });
+$('mp-web').addEventListener('click', () => mp.current && mp.current.url && window.api.openLink(mp.current.url));
+$('mp-install').addEventListener('click', async () => {
+  const it = mp.current;
+  if (!it || mp.busy) return;
+  mp.busy = true;
+  $('mp-install').disabled = true;
+  $('mp-progress').hidden = false;
+  $('mp-progress').removeAttribute('value');
+  try {
+    const entry = await window.api.modpackInstall({ provider: it.provider, id: it.id, versionId: $('mp-version').value, title: it.title, icon: it.icon });
+    toast(`${entry.title} instalado`);
+    if (entry.skipped && entry.skipped.length) {
+      toast(`${entry.skipped.length} archivo(s) no se pudieron descargar porque su autor lo bloquea. El modpack puede no funcionar completo.`, 'error');
+    }
+    mp.busy = false;
+    $('mp-modal').close();
+    renderInstalledPacks();
+  } catch (err) {
+    $('mp-status').textContent = cleanError(err);
+    $('mp-progress').hidden = true;
+    $('mp-install').disabled = false;
+  } finally {
+    mp.busy = false;
+  }
+});
+window.api.onModpackProgress((d) => {
+  $('mp-status').textContent = d.text || '';
+  const bar = $('mp-progress');
+  if (d.total) {
+    bar.max = d.total;
+    bar.value = d.done;
+  } else bar.removeAttribute('value');
+});
+
+document.querySelectorAll('[data-mp-provider]').forEach((b) =>
+  b.addEventListener('click', () => {
+    mp.provider = b.dataset.mpProvider;
+    document.querySelectorAll('[data-mp-provider]').forEach((x) => x.classList.toggle('active', x === b));
+    searchPacks(true);
+  })
+);
+$('mp-search-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  mp.query = $('mp-search').value.trim();
+  searchPacks(true);
+});
+$('mp-more').addEventListener('click', () => searchPacks(false));
 
 // Todas las skins del equipo se dibujan con UN solo contexto WebGL compartido (ahorra memoria).
 let teamEnv = null;

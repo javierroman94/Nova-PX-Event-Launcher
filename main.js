@@ -16,6 +16,8 @@ const skinsApi = require('./lib/skins');
 const { classifyNetworkError } = require('./lib/errors');
 const { repairInstance } = require('./lib/repair');
 const modrinth = require('./lib/modrinth');
+const modpacks = require('./lib/modpacks');
+const providers = require('./lib/providers');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
 const config = JSON.parse(
@@ -567,25 +569,27 @@ ipcMain.handle('game:repair', async () => {
 // Lista de mods instalados del evento, reconocidos con Modrinth (nombre, icono y versión).
 // Con modpack protegido solo se muestra si el manifest lo permite ("showMods": true).
 const MODS_CACHE = path.join(app.getPath('userData'), 'mods-cache.json');
-async function modrinthRequest(url, opts = {}) {
+async function apiRequest(url, opts = {}) {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 10000);
+  const timer = setTimeout(() => ctl.abort(), 15000);
   try {
     const res = await fetch(url, {
       method: opts.method || 'GET',
       headers: {
         'User-Agent': `javierroman94/Nova-PX-Event-Launcher/${app.getVersion()} (discord.gg/VAfuFEQtjv)`,
-        ...(opts.body ? { 'Content-Type': 'application/json' } : {})
+        ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(opts.headers || {})
       },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
       signal: ctl.signal
     });
-    if (!res.ok) throw new Error(`Modrinth respondió ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status} en ${new URL(url).hostname}`);
     return await res.json();
   } finally {
     clearTimeout(timer);
   }
 }
+const modrinthRequest = apiRequest;
 ipcMain.handle('mods:list', async () => {
   const manifest = await loadData('manifest');
   const eventName = (manifest.event && manifest.event.name) || 'Evento';
@@ -609,6 +613,130 @@ ipcMain.handle('mods:list', async () => {
     if (!mods) mods = modrinth.buildModList(files, {}, {});
   }
   return { hidden: false, count: jars.length, mods, offline, eventName };
+});
+
+/* ---------- modpacks de Modrinth y CurseForge ---------- */
+
+const MODPACKS_FILE = path.join(app.getPath('userData'), 'modpacks.json');
+const CURSE_KEY = String(process.env.NOVAPX_CURSEFORGE_KEY || config.curseforgeApiKey || '').trim();
+let installingPack = false;
+
+function readModpacks() {
+  try {
+    const list = JSON.parse(fs.readFileSync(MODPACKS_FILE, 'utf8'));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+function writeModpacks(list) {
+  fs.writeFileSync(MODPACKS_FILE, JSON.stringify(list, null, 2));
+}
+function providerFor(name) {
+  if (name === 'modrinth') return providers.modrinth(apiRequest);
+  if (name === 'curseforge') {
+    if (!CURSE_KEY) throw new Error('CurseForge no está activado: falta la clave de API (curseforgeApiKey en config/launcher.config.json).');
+    return providers.curseforge(apiRequest, CURSE_KEY);
+  }
+  throw new Error('Proveedor desconocido.');
+}
+const cleanStr = (v, max = 200) => String(v == null ? '' : v).slice(0, max);
+
+// Descarga un archivo grande informando el avance (máximo 1,5 GB).
+async function downloadWithProgress(url, onProgress) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15 * 60 * 1000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': `Nova-PX-Event-Launcher/${app.getVersion()}` } });
+    if (!res.ok) throw new Error(`HTTP ${res.status} al descargar el modpack`);
+    const total = Number(res.headers.get('content-length')) || 0;
+    if (total > 1.5 * 1024 ** 3) throw new Error('El modpack es demasiado grande para instalarlo desde el launcher.');
+    const chunks = [];
+    let got = 0;
+    for await (const chunk of res.body) {
+      chunks.push(chunk);
+      got += chunk.length;
+      if (got > 1.5 * 1024 ** 3) throw new Error('El modpack es demasiado grande para instalarlo desde el launcher.');
+      onProgress(got, total);
+    }
+    return Buffer.concat(chunks);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+ipcMain.handle('modpacks:providers', () => ({ modrinth: true, curseforge: !!CURSE_KEY }));
+ipcMain.handle('modpacks:search', async (_e, p = {}) =>
+  providerFor(cleanStr(p.provider, 20)).search({ query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)) })
+);
+ipcMain.handle('modpacks:versions', async (_e, p = {}) => providerFor(cleanStr(p.provider, 20)).versions(cleanStr(p.id, 40)));
+ipcMain.handle('modpacks:installed', () => readModpacks());
+
+ipcMain.handle('modpacks:install', async (_e, p = {}) => {
+  if (installingPack) throw new Error('Ya se está instalando un modpack.');
+  if (launching) throw new Error('Cierra Minecraft antes de instalar un modpack.');
+  installingPack = true;
+  const progress = (text, done, total) => send('modpack:progress', { text, done, total });
+  try {
+    const name = cleanStr(p.provider, 20);
+    const prov = providerFor(name);
+    progress('Buscando la versión…');
+    const versions = await prov.versions(cleanStr(p.id, 40));
+    const v = versions.find((x) => x.id === cleanStr(p.versionId, 40));
+    if (!v) throw new Error('Esa versión del modpack ya no está disponible.');
+    if (!v.supported) throw new Error('Este modpack usa un loader que el launcher todavía no soporta (solo Fabric, Forge o Vanilla).');
+    if (!v.downloadUrl) throw new Error('El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de CurseForge.');
+    if (!modpacks.allowedUrl(v.downloadUrl, name === 'modrinth' ? modpacks.MODRINTH_HOSTS : modpacks.CURSE_HOSTS)) {
+      throw new Error('La dirección de descarga del modpack no es de un sitio permitido.');
+    }
+
+    const list = readModpacks();
+    const previous = list.find((x) => x.provider === name && x.projectId === cleanStr(p.id, 40));
+    const id = previous ? previous.id : modpacks.instanceIdFor(cleanStr(p.title, 80) || 'modpack', list.map((x) => x.id));
+    const root = instanceDir(GAME_DIR, { event: { id } });
+    const buffer = await downloadWithProgress(v.downloadUrl, (got, total) =>
+      progress(`Descargando el modpack… ${total ? Math.round((got / total) * 100) + '%' : Math.round(got / 1048576) + ' MB'}`, got, total)
+    );
+    // Al actualizar una versión se cambian los mods; los mundos y ajustes se conservan.
+    if (previous) fs.rmSync(path.join(root, 'mods'), { recursive: true, force: true });
+    const onFile = (done, total) => progress(`Descargando mods (${done} de ${total})…`, done, total);
+    const download = (u) => downloadBuffer(u);
+    const r =
+      name === 'modrinth'
+        ? await modpacks.installMrpack({ buffer, root, download, onProgress: onFile })
+        : await modpacks.installCurse({ buffer, root, resolveFiles: (f) => prov.resolveFiles(f), download, onProgress: onFile });
+
+    const entry = {
+      id, provider: name, projectId: cleanStr(p.id, 40), versionId: v.id, version: cleanStr(v.number || v.name, 80),
+      title: cleanStr(p.title, 80) || r.name || 'Modpack', icon: /^https:\/\//i.test(p.icon || '') ? cleanStr(p.icon, 300) : '',
+      mcVersion: r.mcVersion, loader: r.loader, installedAt: new Date().toISOString(), skipped: r.skipped || []
+    };
+    writeModpacks([...list.filter((x) => x.id !== id), entry]);
+    progress('Listo');
+    return entry;
+  } finally {
+    installingPack = false;
+  }
+});
+
+ipcMain.handle('modpacks:remove', (_e, id) => {
+  if (launching) throw new Error('Cierra Minecraft antes de eliminar un modpack.');
+  const list = readModpacks();
+  const entry = list.find((x) => x.id === cleanStr(id, 60));
+  if (!entry) return;
+  const dir = path.resolve(instanceDir(GAME_DIR, { event: { id: entry.id } }));
+  if (path.basename(path.dirname(dir)) !== 'instancias') throw new Error('Carpeta no válida.');
+  fs.rmSync(dir, { recursive: true, force: true });
+  writeModpacks(list.filter((x) => x.id !== entry.id));
+});
+
+ipcMain.handle('modpacks:folder', async (_e, id) => {
+  const entry = readModpacks().find((x) => x.id === cleanStr(id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  const dir = instanceDir(GAME_DIR, { event: { id: entry.id } });
+  fs.mkdirSync(dir, { recursive: true });
+  const err = await shell.openPath(dir);
+  if (err) throw new Error(err);
 });
 
 // Aviso de escritorio cuando el evento está por empezar (1 hora antes y al empezar). Cada aviso se da una sola vez.
@@ -984,11 +1112,23 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
   launching = true;
 
   try {
-    send('game:status', { text: 'Leyendo configuración del evento…' });
-    const manifest = await loadData('manifest');
-
-    if (manifest.event && manifest.event.active === false) {
-      throw new Error('Todavía no hay un evento activo. ¡Pronto habrá novedades!');
+    // Un modpack instalado desde Modrinth/CurseForge se lanza con su propia carpeta y sin servidor.
+    let pack = null;
+    let manifest;
+    if (opts.modpackId) {
+      pack = readModpacks().find((x) => x.id === String(opts.modpackId));
+      if (!pack) throw new Error('Ese modpack ya no está instalado.');
+      manifest = {
+        minecraftVersion: pack.mcVersion,
+        loader: pack.loader,
+        event: { id: pack.id, name: pack.title, active: true }
+      };
+    } else {
+      send('game:status', { text: 'Leyendo configuración del evento…' });
+      manifest = await loadData('manifest');
+      if (manifest.event && manifest.event.active === false) {
+        throw new Error('Todavía no hay un evento activo. ¡Pronto habrá novedades!');
+      }
     }
 
     const loaderType = String((manifest.loader && manifest.loader.type) || 'vanilla').toLowerCase();
@@ -1003,7 +1143,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     // Cada evento vive en su propia carpeta: los mods de un evento no chocan con los de otro.
     const eventDir = instanceDir(GAME_DIR, manifest);
     fs.mkdirSync(eventDir, { recursive: true });
-    await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
+    if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
     const javaPath = await resolveJava(manifest, loaderType);
 
     let customId = null;

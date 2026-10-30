@@ -39,6 +39,16 @@ contextBridge.exposeInMainWorld('api', {
   checkUpdates: () => ipcRenderer.invoke('update:check'),
   repairInstall: () => ipcRenderer.invoke('game:repair'),
   modsList: () => ipcRenderer.invoke('mods:list'),
+
+  // modpacks de Modrinth y CurseForge
+  modpackProviders: () => ipcRenderer.invoke('modpacks:providers'),
+  modpackSearch: (p) => ipcRenderer.invoke('modpacks:search', p),
+  modpackVersions: (p) => ipcRenderer.invoke('modpacks:versions', p),
+  modpackInstall: (p) => ipcRenderer.invoke('modpacks:install', p),
+  modpackInstalled: () => ipcRenderer.invoke('modpacks:installed'),
+  modpackRemove: (id) => ipcRenderer.invoke('modpacks:remove', id),
+  modpackFolder: (id) => ipcRenderer.invoke('modpacks:folder', id),
+  onModpackProgress: (cb) => ipcRenderer.on('modpack:progress', (_e, d) => cb(d)),
   installUpdate: () => ipcRenderer.invoke('update:install'),
 
   // eventos

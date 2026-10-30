@@ -38,6 +38,7 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 | 🎨 **Temas y efectos** | Tema oscuro/claro, color principal, fondo propio y efectos que se pueden apagar. |
 | 💬 **Discord Rich Presence** | Muestra en Discord a qué evento estás jugando y cuánto tiempo llevas. |
 | 🔄 **Actualizaciones automáticas** | El contenido se lee de GitHub al abrir; el programa se actualiza solo con cada versión. |
+| 📦 **Modpacks de Modrinth y CurseForge** | Busca, instala y juega modpacks de la comunidad, cada uno en su propia carpeta. |
 | 🧰 **Lista de mods** | Pestaña con nombre, icono y versión de cada mod instalado (datos de [Modrinth](https://modrinth.com)). |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y botón de **Reparar instalación**. |
 | 🔔 **Avisos de evento** | Notificación de escritorio una hora antes de que empiece un evento. |
@@ -53,6 +54,10 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 <tr>
 <td width="50%"><img src="docs/img/skins.png" alt="Skins y capas" /><br /><sub><b>Skins y capas</b> · vista previa antes de aplicar</sub></td>
 <td width="50%"><img src="docs/img/console.png" alt="Consola" /><br /><sub><b>Consola</b> · registro con filtros por nivel</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/modpacks.png" alt="Modpacks" /><br /><sub><b>Modpacks</b> · explora e instala desde Modrinth y CurseForge</sub></td>
+<td width="50%"></td>
 </tr>
 </table>
 

@@ -962,3 +962,16 @@ button.mod-card:hover, button.mod-card:focus-visible { border-color: var(--accen
 .mod-icon-empty { display: grid; place-items: center; font-weight: 700; font-size: 18px; color: var(--accent); }
 .mod-body { display: grid; gap: 2px; min-width: 0; flex: 1; }
 .mod-body span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+
+/* ---------- Modpacks ---------- */
+.mp-section { margin: 22px 0 10px; font-size: 16px; }
+.mp-search { display: flex; gap: 10px; flex-wrap: wrap; }
+.mp-installed { display: grid; gap: 10px; }
+.mp-installed .mod-card button { flex: none; }
+.mp-card-img { aspect-ratio: 16 / 9; }
+.mp-summary { margin: 0; font-size: 13px; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mp-head { display: flex; align-items: center; gap: 14px; }
+.mp-head h3 { margin: 0; }
+.mp-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 6px; }
+#mp-more { margin: 16px auto 0; display: block; }
+#mp-progress { width: 100%; }

@@ -168,6 +168,17 @@ La pestaña **Mods** lista los `.jar` instalados del evento con nombre, icono y 
 
 Si el modpack es **protegido** (con contraseña), la lista se mantiene privada y solo se muestra el total. Para mostrarla, agrega `"showMods": true` en `data/manifest.json`.
 
+## 4f. Modpacks de Modrinth y CurseForge
+
+La pestaña **Modpacks** permite a cualquier jugador buscar, instalar y jugar modpacks aparte del evento. Cada modpack se instala en su **propia carpeta** (`instancias/mp-…`), así no se mezcla con el evento ni con otros modpacks.
+
+- **Modrinth** funciona sin configurar nada. Soporta `.mrpack` con Fabric, Forge o Vanilla.
+- **CurseForge** necesita una clave de API gratuita: créala en https://console.curseforge.com y pégala en `config/launcher.config.json` (`"curseforgeApiKey"`). Sin clave, la pestaña explica cómo activarla. Ten en cuenta que esa clave viaja dentro del instalador; úsala solo para esto.
+- Los modpacks que usan **NeoForge o Quilt** aparecen marcados como "no compatible".
+- Algunos autores de CurseForge bloquean la descarga fuera de su web: esos archivos se omiten y el launcher avisa cuántos faltaron.
+- Seguridad: solo se descargan archivos de los sitios oficiales de cada plataforma, se comprueba su huella (SHA) y se rechaza cualquier ruta que intente salir de la carpeta del modpack.
+- Los modpacks instalados se pueden **jugar**, **abrir en su carpeta** y **eliminar** (borra mods, mundos y ajustes de ese modpack).
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).
