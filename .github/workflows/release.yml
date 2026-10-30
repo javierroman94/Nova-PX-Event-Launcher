@@ -42,6 +42,19 @@ jobs:
           fi
           npm version "$VERSION" --no-git-tag-version --allow-same-version
 
+      # La clave de CurseForge (opcional) vive en los "Secrets" del repositorio, no en el código público.
+      - name: Insertar la clave de CurseForge
+        shell: bash
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          if [ -n "$CURSEFORGE_API_KEY" ]; then
+            node -e "const fs=require('fs');const p='config/launcher.config.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));c.curseforgeApiKey=process.env.CURSEFORGE_API_KEY;fs.writeFileSync(p,JSON.stringify(c,null,2))"
+            echo "Clave de CurseForge insertada."
+          else
+            echo "Sin clave de CurseForge: esa pestaña quedará desactivada."
+          fi
+
       - name: Compilar y publicar
         run: npx electron-builder --publish always
         env:

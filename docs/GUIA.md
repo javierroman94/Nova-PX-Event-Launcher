@@ -173,7 +173,7 @@ Si el modpack es **protegido** (con contraseña), la lista se mantiene privada y
 La pestaña **Modpacks** permite a cualquier jugador buscar, instalar y jugar modpacks aparte del evento. Cada modpack se instala en su **propia carpeta** (`instancias/mp-…`), así no se mezcla con el evento ni con otros modpacks.
 
 - **Modrinth** funciona sin configurar nada. Soporta `.mrpack` con Fabric, Forge o Vanilla.
-- **CurseForge** necesita una clave de API gratuita: créala en https://console.curseforge.com y pégala en `config/launcher.config.json` (`"curseforgeApiKey"`). Sin clave, la pestaña explica cómo activarla. Ten en cuenta que esa clave viaja dentro del instalador; úsala solo para esto.
+- **CurseForge** necesita una clave de API gratuita (https://console.curseforge.com). Lo recomendado es guardarla como *secret* del repositorio, para que no quede pública: GitHub → Settings → Secrets and variables → Actions → New repository secret, nombre `CURSEFORGE_API_KEY`. Se inserta sola al compilar cada versión. Para probar en tu computadora, ponla en `config/launcher.config.json` (`"curseforgeApiKey"`) o en la variable de entorno `NOVAPX_CURSEFORGE_KEY`, sin subir ese cambio. Sin clave, la pestaña explica cómo activarla. La clave viaja dentro del instalador: úsala solo para esto.
 - Los modpacks que usan **NeoForge o Quilt** aparecen marcados como "no compatible".
 - Algunos autores de CurseForge bloquean la descarga fuera de su web: esos archivos se omiten y el launcher avisa cuántos faltaron.
 - Seguridad: solo se descargan archivos de los sitios oficiales de cada plataforma, se comprueba su huella (SHA) y se rechaza cualquier ruta que intente salir de la carpeta del modpack.
