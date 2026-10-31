@@ -19,6 +19,7 @@ const modrinth = require('./lib/modrinth');
 const modpacks = require('./lib/modpacks');
 const providers = require('./lib/providers');
 const content = require('./lib/content');
+const packs = require('./lib/packs');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
 const config = JSON.parse(
@@ -351,10 +352,9 @@ function managedJavaPath(major) {
 // Elige el Java correcto para el modpack. Orden: el que el jugador eligió en Ajustes, el que instaló
 // el launcher, el del sistema. Si ninguno sirve, lo descarga (si el jugador no lo desactivó).
 // Devuelve la ruta de Java, o undefined para usar el Java del sistema.
-async function resolveJava(manifest, loaderType) {
+async function resolveJava(manifest, loaderType, st = readSettings()) {
   const mc = manifest.minecraftVersion;
   const need = loaders.requiredJavaMajor(mc);
-  const st = readSettings();
   const explicit = st.javaPath || config.javaPath || '';
   if (!need) return explicit || undefined;
 
@@ -739,6 +739,117 @@ ipcMain.handle('modpacks:folder', async (_e, id) => {
   fs.mkdirSync(dir, { recursive: true });
   const err = await shell.openPath(dir);
   if (err) throw new Error(err);
+});
+
+/* ---------- instancias propias: crear, ajustes, duplicar, respaldos, actualizar ---------- */
+
+let mcVersionsCache = null;
+ipcMain.handle('modpacks:mcVersions', async () => {
+  try {
+    const m = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json');
+    mcVersionsCache = packs.releaseVersions(m);
+  } catch {
+    if (!mcVersionsCache) throw new Error('No se pudo consultar la lista de versiones de Minecraft. Revisa tu conexión.');
+  }
+  return mcVersionsCache;
+});
+
+ipcMain.handle('modpacks:create', (_e, p = {}) => {
+  const list = readModpacks();
+  const entry = packs.buildCustomEntry({
+    name: p.name, icon: p.icon, mcVersion: cleanStr(p.mcVersion, 20), loader: cleanStr(p.loader, 10), existingIds: list.map((x) => x.id)
+  });
+  fs.mkdirSync(instanceDir(GAME_DIR, { event: { id: entry.id } }), { recursive: true });
+  writeModpacks([...list, entry]);
+  return entry;
+});
+
+// Cambia nombre, icono, notas, ajustes propios y (solo en las propias) versión de Minecraft y loader.
+ipcMain.handle('modpacks:update', (_e, p = {}) => {
+  const list = readModpacks();
+  const entry = list.find((x) => x.id === cleanStr(p.id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  const c = p.changes || {};
+  if (c.title !== undefined) {
+    const t = cleanStr(c.title, 60).replace(/\s+/g, ' ').trim();
+    if (!t) throw new Error('El nombre no puede quedar vacío.');
+    entry.title = t;
+  }
+  if (c.emoji !== undefined) entry.emoji = packs.buildCustomEntry({ name: 'x', icon: c.emoji, mcVersion: '1.0' }).emoji;
+  if (c.notes !== undefined) entry.notes = packs.cleanNotes(c.notes);
+  if (c.settings !== undefined) entry.settings = packs.sanitizeSettings(c.settings);
+  if ((c.mcVersion !== undefined || c.loader !== undefined) && entry.provider === 'custom') {
+    if (launching) throw new Error('Cierra Minecraft antes de cambiar la versión.');
+    const t = packs.buildCustomEntry({ name: 'x', mcVersion: cleanStr(c.mcVersion ?? entry.mcVersion, 20), loader: cleanStr(c.loader ?? entry.loader.type, 10) });
+    entry.mcVersion = t.mcVersion;
+    entry.loader = { type: t.loader.type, version: '' };
+  }
+  writeModpacks(list);
+  return entry;
+});
+
+ipcMain.handle('modpacks:duplicate', (_e, p = {}) => {
+  if (launching) throw new Error('Cierra Minecraft antes de duplicar.');
+  const list = readModpacks();
+  const src = list.find((x) => x.id === cleanStr(p.id, 60));
+  if (!src) throw new Error('Ese modpack ya no está instalado.');
+  const title = `${src.title} (copia)`.slice(0, 60);
+  const id = modpacks.instanceIdFor(title, list.map((x) => x.id));
+  packs.duplicateDir(instanceDir(GAME_DIR, { event: { id: src.id } }), instanceDir(GAME_DIR, { event: { id } }), { withWorlds: !!p.withWorlds });
+  const copy = { ...JSON.parse(JSON.stringify(src)), id, title, provider: src.provider === 'custom' ? 'custom' : 'copy', installedAt: new Date().toISOString(), lastPlayedAt: undefined };
+  writeModpacks([...list, copy]);
+  return copy;
+});
+
+ipcMain.handle('instance:backup', (_e, p = {}) => {
+  const { root } = packRoot(p.id);
+  return packs.backupWorld(root, cleanStr(p.world, 200));
+});
+ipcMain.handle('instance:backups', (_e, id) => packs.listBackups(packRoot(id).root));
+ipcMain.handle('instance:openBackups', async (_e, id) => {
+  const dir = path.join(packRoot(id).root, 'backups');
+  fs.mkdirSync(dir, { recursive: true });
+  const err = await shell.openPath(dir);
+  if (err) throw new Error(err);
+});
+
+// Busca versiones nuevas de los mods (Modrinth) compatibles con la versión y loader del modpack.
+ipcMain.handle('instance:updatesCheck', async (_e, id) => {
+  const { entry, root } = packRoot(id);
+  const items = [];
+  for (const it of content.listContent(root, 'mod')) {
+    items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, 'mod'), it.file)) });
+  }
+  const plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
+  return plan.map((u) => ({ file: u.file, newFile: u.newFile, version: u.version }));
+});
+ipcMain.handle('instance:updatesApply', async (_e, id) => {
+  assertEditable();
+  const { entry, root } = packRoot(id);
+  const items = [];
+  for (const it of content.listContent(root, 'mod')) {
+    items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, 'mod'), it.file)) });
+  }
+  const plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
+  const dir = content.contentDir(root, 'mod');
+  let done = 0;
+  const errors = [];
+  for (const u of plan) {
+    try {
+      const name = content.safeFileName(u.newFile, 'mod');
+      if (!name || !modpacks.allowedUrl(u.url, ['cdn.modrinth.com'])) throw new Error('descarga no permitida');
+      send('modpack:progress', { text: `Actualizando ${name} (${done + 1} de ${plan.length})…` });
+      const data = await downloadBuffer(u.url);
+      if (crypto.createHash('sha1').update(data).digest('hex') !== u.sha1) throw new Error('la huella no coincide');
+      const dest = path.join(dir, u.enabled ? name : `${name}.disabled`);
+      fs.writeFileSync(dest, data);
+      if (path.basename(dest) !== u.file) fs.rmSync(path.join(dir, u.file), { force: true });
+      done++;
+    } catch (err) {
+      errors.push(`${u.file}: ${err.message}`);
+    }
+  }
+  return { updated: done, errors };
 });
 
 /* ---------- contenido de cada modpack (mods, shaders, texturas, mundos, registros) ---------- */
@@ -1263,7 +1374,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     const eventDir = instanceDir(GAME_DIR, manifest);
     fs.mkdirSync(eventDir, { recursive: true });
     if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
-    const javaPath = await resolveJava(manifest, loaderType);
+    // Los ajustes propios del modpack (RAM, Java, argumentos, ventana) pesan más que los de Ajustes.
+    const st = packs.mergeSettings(readSettings(), pack && pack.settings);
+    const javaPath = await resolveJava(manifest, loaderType, st);
 
     let customId = null;
     let forgeInstaller = null;
@@ -1275,7 +1388,6 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       forgeInstaller = await ensureForge(manifest.minecraftVersion, manifest.loader.version);
     }
 
-    const st = readSettings();
     const customArgs = st.jvmArgs.split(/\s+/).filter(Boolean);
     const launchOpts = {
       authorization: session.auth,

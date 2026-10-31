@@ -505,6 +505,12 @@ function iconEl(src, name, cls = 'mod-icon') {
   return el('div', `${cls} mod-icon-empty`, (name || '?').slice(0, 1).toUpperCase());
 }
 
+// Icono de una instancia: imagen del modpack, emoji elegido por el jugador o la inicial del nombre.
+function packIcon(p, cls = 'mod-icon') {
+  if (!p.icon && p.emoji) return el('div', `${cls} mod-icon-empty`, p.emoji);
+  return iconEl(p.icon, p.title, cls);
+}
+
 function showView(name) {
   mp.view = name;
   ['library', 'discover', 'detail'].forEach((v) => ($(`mp-view-${v}`).hidden = v !== name));
@@ -535,12 +541,12 @@ async function renderLibrary() {
   grid.replaceChildren();
   $('mp-lib-note').textContent = mp.installed.length
     ? `${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'} instalado${mp.installed.length === 1 ? '' : 's'}`
-    : 'Aún no tienes modpacks. Pulsa "Explorar modpacks" para instalar uno de Modrinth o CurseForge.';
+    : 'Aún no tienes modpacks. Crea tu propia instancia o pulsa "Explorar modpacks" para instalar uno de Modrinth o CurseForge.';
   mp.installed.forEach((p) => {
     const card = el('button', 'event-card');
     card.type = 'button';
     card.dataset.tilt = '';
-    card.append(iconEl(p.icon, p.title, 'event-card-img mp-card-img'));
+    card.append(packIcon(p, 'event-card-img mp-card-img'));
     const body = el('div', 'event-card-body');
     body.append(el('h3', '', p.title), el('span', 'muted', packMeta(p)));
     card.append(body);
@@ -583,23 +589,28 @@ async function playPack(id) {
 /* --- instancia --- */
 function setTab(tab) {
   document.querySelectorAll('[data-mp-tab]').forEach((b) => b.classList.toggle('active', b.dataset.mpTab === tab));
-  ['content', 'worlds', 'logs'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
+  ['content', 'worlds', 'logs', 'settings'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
   if (tab === 'content') renderContent();
   if (tab === 'worlds') renderWorlds();
   if (tab === 'logs') renderPackLog();
+  if (tab === 'settings') renderPackSettings();
 }
 document.querySelectorAll('[data-mp-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.mpTab)));
+
+function openDetailHeader(p) {
+  const icon = $('mp-detail-icon');
+  icon.hidden = !p.icon;
+  if (p.icon) icon.src = p.icon;
+  $('mp-detail-title').textContent = `${!p.icon && p.emoji ? p.emoji + ' ' : ''}${p.title}`;
+  $('mp-detail-meta').textContent = packMeta(p);
+}
 
 function openDetail(p) {
   mp.pack = p;
   mp.filter = 'all';
   $('mp-content-search').value = '';
   document.querySelectorAll('[data-mp-filter]').forEach((b) => b.classList.toggle('active', b.dataset.mpFilter === 'all'));
-  const icon = $('mp-detail-icon');
-  icon.hidden = !p.icon;
-  if (p.icon) icon.src = p.icon;
-  $('mp-detail-title').textContent = p.title;
-  $('mp-detail-meta').textContent = packMeta(p);
+  openDetailHeader(p);
   showView('detail');
   setTab('content');
 }
@@ -717,13 +728,48 @@ async function renderWorlds() {
       const row = el('div', 'mod-card');
       const body = el('div', 'mod-body');
       body.append(el('strong', '', w.name), el('span', 'muted', `Última vez: ${new Date(w.mtime).toLocaleString('es')}`));
-      row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), body);
+      const bk = el('button', '', 'Respaldar');
+      bk.type = 'button';
+      bk.addEventListener('click', async () => {
+        bk.disabled = true;
+        bk.textContent = 'Respaldando…';
+        try {
+          const r = await window.api.instanceBackup({ id: mp.pack.id, world: w.name });
+          toast(`Respaldo creado: ${r.name}`);
+          renderBackups();
+        } catch (e) {
+          toast(cleanError(e), 'error');
+        }
+        bk.disabled = false;
+        bk.textContent = 'Respaldar';
+      });
+      row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), body, bk);
       list.append(row);
     });
+    renderBackups();
   } catch (e) {
     $('mp-worlds-note').textContent = cleanError(e);
   }
 }
+
+async function renderBackups() {
+  const list = $('mp-backups-list');
+  list.replaceChildren();
+  try {
+    const items = await window.api.instanceBackups(mp.pack.id);
+    $('mp-backups-note').textContent = items.length ? `${items.length} respaldo${items.length === 1 ? '' : 's'}` : 'Aún no hay respaldos. Pulsa "Respaldar" en un mundo.';
+    items.forEach((b) => {
+      const row = el('div', 'mod-card');
+      const body = el('div', 'mod-body');
+      body.append(el('strong', '', b.name), el('span', 'muted', `${new Date(b.mtime).toLocaleString('es')} · ${fmtSize(b.size)}`));
+      row.append(el('div', 'mod-icon mod-icon-empty', '🗜'), body);
+      list.append(row);
+    });
+  } catch (e) {
+    $('mp-backups-note').textContent = cleanError(e);
+  }
+}
+$('mp-backups-open').addEventListener('click', () => window.api.instanceOpenBackups(mp.pack.id).catch((e) => toast(cleanError(e), 'error')));
 
 async function renderPackLog() {
   const box = $('mp-log');
@@ -739,6 +785,142 @@ async function renderPackLog() {
     box.append(el('p', 'log-empty', cleanError(e)));
   }
 }
+
+
+/* --- crear instancia propia --- */
+let mcList = null;
+async function loadMcVersions(...selects) {
+  try {
+    mcList = await window.api.modpackMcVersions();
+  } catch (e) {
+    mcList = mcList || [];
+    toast(cleanError(e), 'error');
+  }
+  selects.forEach((sel) => {
+    const keep = sel.value;
+    sel.replaceChildren();
+    mcList.forEach((v) => { const o = el('option', '', v); o.value = v; sel.append(o); });
+    if (keep && mcList.includes(keep)) sel.value = keep;
+  });
+}
+
+$('mp-go-create').addEventListener('click', async () => {
+  $('mc-name').value = '';
+  $('mc-emoji').value = '';
+  $('mc-status').textContent = 'Cargando versiones de Minecraft…';
+  $('mc-create').disabled = true;
+  $('mp-create-modal').showModal();
+  await loadMcVersions($('mc-version'));
+  $('mc-status').textContent = mcList.length ? '' : 'No se pudo cargar la lista de versiones.';
+  $('mc-create').disabled = !mcList.length;
+  $('mc-name').focus();
+});
+$('mc-cancel').addEventListener('click', () => $('mp-create-modal').close());
+$('mp-create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('mc-create').disabled = true;
+  try {
+    const entry = await window.api.modpackCreate({ name: $('mc-name').value, icon: $('mc-emoji').value, mcVersion: $('mc-version').value, loader: $('mc-loader').value });
+    $('mp-create-modal').close();
+    toast(`Instancia "${entry.title}" creada`);
+    await loadInstalled();
+    openDetail(entry);
+  } catch (err) {
+    $('mc-status').textContent = cleanError(err);
+  }
+  $('mc-create').disabled = false;
+});
+
+/* --- ajustes de la instancia --- */
+async function renderPackSettings() {
+  const p = mp.pack;
+  const s = p.settings || {};
+  const own = p.provider === 'custom';
+  $('ps-title').value = p.title;
+  $('ps-emoji').value = p.emoji || '';
+  $('ps-notes').value = p.notes || '';
+  $('ps-ram').value = s.ramGb || '';
+  $('ps-args').value = s.jvmArgs || '';
+  $('ps-java').value = s.javaPath || '';
+  $('ps-w').value = s.width || '';
+  $('ps-h').value = s.height || '';
+  $('ps-full').checked = !!s.fullscreen;
+  $('ps-status').textContent = '';
+  $('ps-version-box').hidden = !own;
+  $('ps-change-version').hidden = !(p.provider === 'modrinth' || p.provider === 'curseforge');
+  $('ps-version-note').textContent = own
+    ? 'Cambiar la versión o el loader no borra tus mods: revisa que sigan siendo compatibles.'
+    : `Modpack de ${p.provider === 'curseforge' ? 'CurseForge' : p.provider === 'modrinth' ? 'Modrinth' : 'otro origen'}: su versión de Minecraft y su loader los define el autor.`;
+  if (own) {
+    await loadMcVersions($('ps-mc'));
+    if (![...$('ps-mc').options].some((o) => o.value === p.mcVersion)) { const o = el('option', '', p.mcVersion); o.value = p.mcVersion; $('ps-mc').prepend(o); }
+    $('ps-mc').value = p.mcVersion;
+    $('ps-loader').value = (p.loader && p.loader.type) || 'vanilla';
+  }
+}
+
+$('ps-save').addEventListener('click', async () => {
+  const p = mp.pack;
+  const num = (id) => ($(id).value ? Number($(id).value) : undefined);
+  const changes = {
+    title: $('ps-title').value, emoji: $('ps-emoji').value, notes: $('ps-notes').value,
+    settings: { ramGb: num('ps-ram'), jvmArgs: $('ps-args').value, javaPath: $('ps-java').value, width: num('ps-w'), height: num('ps-h'), ...($('ps-full').checked ? { fullscreen: true } : {}) }
+  };
+  if (p.provider === 'custom') { changes.mcVersion = $('ps-mc').value; changes.loader = $('ps-loader').value; }
+  try {
+    mp.pack = await window.api.modpackUpdate({ id: p.id, changes });
+    $('ps-status').textContent = 'Ajustes guardados.';
+    openDetailHeader(mp.pack);
+    await loadInstalled();
+  } catch (e) {
+    $('ps-status').textContent = cleanError(e);
+  }
+});
+
+$('ps-dup').addEventListener('click', async () => {
+  const withWorlds = confirm('¿Copiar también los mundos?\n\nAceptar: copia con mundos. Cancelar: copia solo los mods y ajustes.');
+  $('ps-dup').disabled = true;
+  try {
+    const copy = await window.api.modpackDuplicate({ id: mp.pack.id, withWorlds });
+    toast(`Copia creada: ${copy.title}`);
+    await loadInstalled();
+    openDetail(copy);
+  } catch (e) {
+    $('ps-status').textContent = cleanError(e);
+  }
+  $('ps-dup').disabled = false;
+});
+
+$('ps-change-version').addEventListener('click', () => {
+  const p = mp.pack;
+  openPackModal({ provider: p.provider, id: p.projectId, title: p.title, icon: p.icon, author: '', summary: 'Elige otra versión de este modpack. Tus mundos y ajustes se conservan; los mods se reemplazan por los de la versión elegida.', url: '' });
+});
+$('mp-modal').addEventListener('close', async () => {
+  if (mp.view !== 'detail' || !mp.pack) return;
+  const fresh = (await loadInstalled()).find((x) => x.id === mp.pack.id);
+  if (fresh) { mp.pack = fresh; openDetailHeader(fresh); renderContent(); }
+});
+
+// Buscar y aplicar actualizaciones de mods.
+$('mp-check-updates').addEventListener('click', async () => {
+  const btn = $('mp-check-updates');
+  const note = $('mp-content-note');
+  btn.disabled = true;
+  try {
+    note.textContent = 'Buscando actualizaciones en Modrinth…';
+    const ups = await window.api.instanceUpdatesCheck(mp.pack.id);
+    if (!ups.length) { note.textContent = 'Todos tus mods están al día.'; return; }
+    if (!confirm(`Hay ${ups.length} mod${ups.length === 1 ? '' : 's'} para actualizar:\n\n${ups.slice(0, 15).map((u) => `• ${u.file.replace(/\.disabled$/i, '')} → ${u.newFile}`).join('\n')}${ups.length > 15 ? '\n…' : ''}\n\n¿Actualizar ahora?`)) { note.textContent = `${ups.length} actualizaciones disponibles.`; return; }
+    const r = await window.api.instanceUpdatesApply(mp.pack.id);
+    toast(`${r.updated} mod${r.updated === 1 ? '' : 's'} actualizado${r.updated === 1 ? '' : 's'}`);
+    r.errors.forEach((m) => toast(m, 'error'));
+    await renderContent();
+  } catch (e) {
+    note.textContent = cleanError(e);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 /* --- añadir contenido desde Modrinth --- */
 let addTimer = 0;

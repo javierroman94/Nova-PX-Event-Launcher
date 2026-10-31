@@ -224,7 +224,10 @@
       <div id="mp-view-library">
         <div class="events-head">
           <h2 class="mp-heading">Biblioteca</h2>
-          <button id="mp-go-discover" type="button" class="primary">+ Explorar modpacks</button>
+          <div class="mp-actions">
+            <button id="mp-go-create" type="button">+ Crear instancia</button>
+            <button id="mp-go-discover" type="button" class="primary">+ Explorar modpacks</button>
+          </div>
         </div>
         <p id="mp-lib-note" class="muted"></p>
         <div id="mp-library" class="events-grid"></div>
@@ -270,6 +273,7 @@
           <button type="button" class="active" data-mp-tab="content">Contenido</button>
           <button type="button" data-mp-tab="worlds">Mundos</button>
           <button type="button" data-mp-tab="logs">Registros</button>
+          <button type="button" data-mp-tab="settings">Ajustes</button>
         </div>
 
         <div id="mp-tab-content">
@@ -289,6 +293,7 @@
               <option value="resourcepack">Texturas</option>
             </select>
             <button id="mp-add-local" type="button">Cargar archivos</button>
+            <button id="mp-check-updates" type="button">Buscar actualizaciones</button>
             <button id="mp-add-explore" type="button" class="primary">Explorar contenido</button>
           </div>
           <p id="mp-content-note" class="muted"></p>
@@ -297,9 +302,54 @@
         <div id="mp-tab-worlds" hidden>
           <p id="mp-worlds-note" class="muted"></p>
           <div id="mp-worlds-list" class="mods-list"></div>
+          <div class="events-head">
+            <h3 class="mp-heading">Respaldos</h3>
+            <button id="mp-backups-open" type="button">Abrir carpeta</button>
+          </div>
+          <p id="mp-backups-note" class="muted"></p>
+          <div id="mp-backups-list" class="mods-list"></div>
         </div>
         <div id="mp-tab-logs" hidden>
           <div id="mp-log" class="log" tabindex="0"></div>
+        </div>
+        <div id="mp-tab-settings" hidden>
+          <div class="settings">
+            <fieldset>
+              <legend>General</legend>
+              <div class="field inline">
+                <div><label for="ps-title">Nombre</label><input id="ps-title" type="text" maxlength="60" /></div>
+                <div><label for="ps-emoji">Icono (emoji)</label><input id="ps-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
+              </div>
+              <div id="ps-version-box" class="field inline">
+                <div><label for="ps-mc">Versión de Minecraft</label><select id="ps-mc"></select></div>
+                <div><label for="ps-loader">Loader</label>
+                  <select id="ps-loader"><option value="vanilla">Vanilla</option><option value="fabric">Fabric</option><option value="forge">Forge</option></select></div>
+              </div>
+              <small id="ps-version-note" class="muted"></small>
+              <div class="field"><label for="ps-notes">Notas</label><textarea id="ps-notes" rows="3" maxlength="4000" placeholder="Para qué es este modpack, qué mods hay que probar…"></textarea></div>
+            </fieldset>
+            <fieldset>
+              <legend>Rendimiento (solo este modpack)</legend>
+              <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes.</small>
+              <div class="field inline">
+                <div><label for="ps-ram">Memoria RAM (GB)</label><input id="ps-ram" type="number" min="1" max="32" placeholder="Global" /></div>
+                <div><label for="ps-args">Argumentos de Java</label><input id="ps-args" type="text" placeholder="Global" /></div>
+              </div>
+              <div class="field"><label for="ps-java">Ruta de Java</label><input id="ps-java" type="text" placeholder="Automática" /></div>
+              <div class="field inline">
+                <div><label for="ps-w">Ancho de ventana</label><input id="ps-w" type="number" min="320" max="7680" placeholder="Global" /></div>
+                <div><label for="ps-h">Alto de ventana</label><input id="ps-h" type="number" min="240" max="4320" placeholder="Global" /></div>
+              </div>
+              <label class="check"><input id="ps-full" type="checkbox" /> Pantalla completa</label>
+              <small class="muted">Marca la casilla solo si quieres fijar pantalla completa en este modpack.</small>
+            </fieldset>
+            <p id="ps-status" class="muted" role="status"></p>
+            <div class="mp-actions">
+              <button id="ps-change-version" type="button" hidden>Cambiar versión del modpack</button>
+              <button id="ps-dup" type="button">Duplicar</button>
+              <button id="ps-save" type="button" class="primary">Guardar ajustes</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -322,6 +372,28 @@
             <button id="mp-install" type="button" class="primary" disabled>Instalar</button>
           </div>
         </div>
+      </dialog>
+
+      <!-- Crear instancia propia -->
+      <dialog id="mp-create-modal" class="event-modal" aria-label="Crear instancia">
+        <form id="mp-create-form" class="event-modal-body">
+          <h3>Crear instancia</h3>
+          <div class="field inline">
+            <div><label for="mc-name">Nombre</label><input id="mc-name" type="text" maxlength="60" required placeholder="Mi survival" autocomplete="off" /></div>
+            <div><label for="mc-emoji">Icono (emoji)</label><input id="mc-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
+          </div>
+          <div class="field inline">
+            <div><label for="mc-version">Versión de Minecraft</label><select id="mc-version"></select></div>
+            <div><label for="mc-loader">Loader</label>
+              <select id="mc-loader"><option value="fabric">Fabric</option><option value="forge">Forge</option><option value="vanilla">Vanilla</option></select></div>
+          </div>
+          <small class="muted">Se crea una carpeta vacía y propia. Después añades mods, shaders y texturas desde la instancia.</small>
+          <p id="mc-status" class="muted" role="status"></p>
+          <div class="mp-actions">
+            <button id="mc-cancel" type="button">Cancelar</button>
+            <button id="mc-create" type="submit" class="primary">Crear</button>
+          </div>
+        </form>
       </dialog>
 
       <!-- Añadir contenido a un modpack -->
