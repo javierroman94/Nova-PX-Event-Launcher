@@ -38,6 +38,7 @@ let mainWindow = null;
 let tray = null;
 let session = null; // { mode, name, uuid, auth }
 let launching = false;
+let currentTarget = null; // qué se está jugando: { kind: 'event' | 'pack', title, icon }
 let gameStartedAt = 0;
 let pendingClose = null; // resultado de la última partida, por si la ventana estaba cerrada
 let pendingSkin = null; // skin elegida en el selector, aún sin subir a Mojang
@@ -903,6 +904,7 @@ ipcMain.handle('app:state', async () => {
   return {
   session: session ? { mode: session.mode, name: session.name, uuid: session.uuid } : null,
   playing: launching,
+  target: launching ? currentTarget : null,
   log: logBuffer
   };
 });
@@ -1304,6 +1306,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     launcher.on('data', (m) => pushLog('minecraft', String(m).trimEnd()));
     launcher.on('close', (code) => {
       launching = false;
+      currentTarget = null;
       // Suma el tiempo de juego a las horas jugadas.
       if (gameStartedAt) {
         const seconds = Math.round((Date.now() - gameStartedAt) / 1000);
@@ -1330,6 +1333,12 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       throw new Error('No se pudo iniciar Minecraft. Revisa la consola para ver el motivo.');
     }
     gameStartedAt = Date.now();
+    currentTarget = pack
+      ? { kind: 'pack', title: pack.title, icon: pack.icon || '' }
+      : { kind: 'event', title: (manifest.event && manifest.event.name) || 'Evento', icon: '' };
+    if (pack) {
+      try { writeModpacks(readModpacks().map((x) => (x.id === pack.id ? { ...x, lastPlayedAt: new Date().toISOString() } : x))); } catch {}
+    }
     if (readSettings().discordRpc) discordPlaying((manifest.event && manifest.event.name) || 'Evento', gameStartedAt);
     send('game:status', { text: 'Minecraft en ejecución' });
     enterGameMode();

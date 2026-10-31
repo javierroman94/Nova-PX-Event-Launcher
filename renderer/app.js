@@ -118,8 +118,9 @@ function moveIndicator() {
 }
 
 const PAGE_TITLES = {
-  home: ['Inicio', 'Todo listo para tu próximo evento'],
-  events: ['Eventos', 'El historial de los eventos del equipo'],
+  home: ['Inicio', 'Lo que estás jugando y las novedades'],
+  event: ['Evento actual', 'Lo que prepara Nova PX para ti'],
+  events: ['Historial', 'Los eventos anteriores del equipo'],
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
   mods: ['Mods', 'Lo que lleva instalado el evento'],
@@ -161,7 +162,8 @@ function countUp(node, to, suffix) {
 window.addEventListener('resize', moveIndicator);
 
 function goTo(tab) {
-  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  const navTab = tab === 'mods' ? 'event' : tab; // los mods del evento cuelgan de la pestaña Evento
+  document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === navTab));
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   $(`page-${tab}`).classList.add('active');
   const [title, sub] = PAGE_TITLES[tab] || ['', ''];
@@ -171,11 +173,13 @@ function goTo(tab) {
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
   if (tab === 'mods') renderMods();
   if (tab === 'modpacks') openModpacks();
+  if (tab === 'home') renderContinue();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
 
 /* ---------- inicio: hero ---------- */
 let eventActive = true;
+let eventInfo = { name: 'Evento', tagline: '', logo: '' };
 
 async function renderHero() {
   try {
@@ -187,6 +191,8 @@ async function renderHero() {
     $('soon-art').hidden = eventActive;
     setPlaying(playing);
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
+    eventInfo = { name: (m.event && m.event.name) || 'Evento', logo: imageUrl(m.event && m.event.logo), mc: m.minecraftVersion, loader: String((m.loader && m.loader.type) || 'vanilla') };
+    renderContinue();
     $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
     // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
     const art = $('hero-art');
@@ -212,6 +218,66 @@ async function renderHero() {
     renderLinks(m.links);
   } catch {
     $('hero-tagline').textContent = 'No se pudo leer la configuración del evento.';
+  }
+}
+
+/* ---------- inicio: jugando ahora y continuar ---------- */
+let launchTarget = null; // { kind: 'event' | 'pack', title, icon }
+
+function nowPlayingSet(on) {
+  const np = $('np');
+  np.hidden = !on;
+  if (!on) return;
+  const t = launchTarget || { kind: 'event', title: eventInfo.name, icon: '' };
+  $('np-title').textContent = t.title;
+  $('np-icon').src = t.icon || 'images/logo.png';
+}
+
+async function renderContinue() {
+  const box = $('continue-list');
+  if (!box) return;
+  let packs = [];
+  try {
+    packs = await window.api.modpackInstalled();
+  } catch {}
+  box.replaceChildren();
+  // El evento es una tarjeta aparte, marcada, que lleva a su pestaña (no se mezcla con los modpacks).
+  const ev = el('button', 'continue-card event');
+  ev.type = 'button';
+  const evIcon = el('img', 'np-icon');
+  evIcon.alt = '';
+  evIcon.src = eventInfo.logo || 'images/logo.png';
+  const evBody = el('div', 'mod-body');
+  evBody.append(el('span', 'tag', 'Evento'), el('strong', '', eventInfo.name), el('span', 'muted', eventActive ? 'Disponible para jugar' : 'Próximamente'));
+  ev.append(evIcon, evBody);
+  ev.addEventListener('click', () => goTo('event'));
+  box.append(ev);
+
+  packs
+    .slice()
+    .sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))
+    .slice(0, 5)
+    .forEach((p) => {
+      const card = el('div', 'continue-card');
+      const img = el('img', 'np-icon');
+      img.alt = '';
+      img.src = p.icon || 'images/logo.png';
+      const body = el('div', 'mod-body');
+      body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}${p.lastPlayedAt ? ' · jugado ' + new Date(p.lastPlayedAt).toLocaleDateString('es') : ''}`));
+      const play = el('button', 'primary', 'Jugar');
+      play.type = 'button';
+      play.addEventListener('click', () => playPack(p.id));
+      card.append(img, body, play);
+      box.append(card);
+    });
+  if (!packs.length) {
+    const hint = el('div', 'continue-card empty');
+    hint.append(el('span', 'muted', 'Aún no tienes modpacks. Instala uno en la pestaña Modpacks y aparecerá aquí.'));
+    const go = el('button', '', 'Buscar modpacks');
+    go.type = 'button';
+    go.addEventListener('click', () => goTo('modpacks'));
+    hint.append(go);
+    box.append(hint);
   }
 }
 
@@ -497,16 +563,20 @@ async function playPack(id) {
     showMsg('Inicia sesión como premium o no premium para jugar.', true);
     return;
   }
+  const p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
+  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: p.icon || '' };
   setPlaying(true);
   showCrash(null);
   goTo('home');
-  $('status').textContent = 'Preparando el modpack…';
+  $('np-status').textContent = 'Preparando el modpack…';
+  $('np-progress').hidden = true;
   try {
     await window.api.launch({ modpackId: id });
   } catch (err) {
-    $('status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
-    $('progress').hidden = true;
+    $('np-status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
+    $('np-progress').hidden = true;
     setPlaying(false);
+    toast(`No se pudo iniciar: ${cleanError(err)}`, 'error');
   }
 }
 
@@ -1072,8 +1142,11 @@ let playing = false;
 function setPlaying(value) {
   playing = value;
   $('play-btn').disabled = value || !eventActive;
-  $('play-label').textContent = value ? 'Iniciando…' : eventActive ? 'Jugar' : 'Próximamente';
+  const other = value && launchTarget && launchTarget.kind === 'pack';
+  $('play-label').textContent = value ? (other ? 'Jugando otro modpack' : 'Iniciando…') : eventActive ? 'Jugar' : 'Próximamente';
   if (!value && !eventActive) $('status').textContent = 'Todavía no hay un evento activo';
+  if (!value) launchTarget = null;
+  nowPlayingSet(value);
 }
 
 /* ---------- contraseña de instalación ---------- */
@@ -1147,38 +1220,53 @@ $('play-btn').addEventListener('click', async () => {
     showMsg('Inicia sesión como premium o no premium para jugar.', true);
     return;
   }
+  launchTarget = { kind: 'event', title: eventInfo.name, icon: eventInfo.logo };
   setPlaying(true);
   showCrash(null);
   $('status').textContent = 'Preparando…';
+  $('np-status').textContent = 'Preparando…';
   try {
     await startGame();
   } catch (err) {
     $('status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
     $('progress').hidden = true;
     setPlaying(false);
+    toast(`No se pudo iniciar: ${cleanError(err)}`, 'error');
   }
 });
 
 window.api.onStatus((d) => {
-  $('status').textContent = d.text;
+  $('np-status').textContent = d.text;
+  if (!launchTarget || launchTarget.kind === 'event') $('status').textContent = d.text;
 });
 
 window.api.onProgress((d) => {
-  const bar = $('progress');
-  if (d.total) {
+  if (!d.total) return;
+  const text = d.type === 'java' ? `Instalando Java… ${Math.round(d.task)}%` : `Descargando archivos del juego (${d.task} de ${d.total})`;
+  const npBar = $('np-progress');
+  npBar.hidden = false;
+  npBar.max = d.total;
+  npBar.value = d.task;
+  $('np-status').textContent = text;
+  if (!launchTarget || launchTarget.kind === 'event') {
+    const bar = $('progress');
     bar.hidden = false;
     bar.max = d.total;
     bar.value = d.task;
-    $('status').textContent =
-      d.type === 'java' ? `Instalando Java… ${Math.round(d.task)}%` : `Descargando archivos del juego (${d.task} de ${d.total})`;
+    $('status').textContent = text;
   }
 });
 
 window.api.onClose((d) => {
   $('progress').hidden = true;
-  $('status').textContent =
+  $('np-progress').hidden = true;
+  const wasPack = launchTarget && launchTarget.kind === 'pack';
+  if (!wasPack) $('status').textContent =
     d.code === 0 ? 'Minecraft se cerró' : `Minecraft se cerró con el código ${d.code}. Revisa la consola.`;
+  else $('status').textContent = eventActive ? 'Listo para jugar' : 'Todavía no hay un evento activo';
+  if (d.code !== 0) toast(`Minecraft se cerró con el código ${d.code}. Revisa Inicio o la Consola.`, 'error');
   setPlaying(false);
+  renderContinue();
   showCrash(d.code === 0 ? null : d.crash);
   refreshPlaytime();
 });
@@ -1470,8 +1558,10 @@ $('update-check').addEventListener('click', async () => {
   if (st.session) setSession(st.session);
   else setSession(null);
   if (st.playing) {
+    if (st.target) launchTarget = { kind: st.target.kind, title: st.target.title, icon: st.target.icon || '' };
     setPlaying(true);
-    $('status').textContent = 'Minecraft en ejecución';
+    $('np-status').textContent = 'Minecraft en ejecución';
+    if (!launchTarget || launchTarget.kind === 'event') $('status').textContent = 'Minecraft en ejecución';
   }
   if (st.log && st.log.length) {
     st.log.forEach((l) => logLines.push(l));

@@ -999,3 +999,21 @@ button.mod-card:hover, button.mod-card:focus-visible { border-color: var(--accen
 .mp-toolbar select { width: auto; }
 input.switch { width: 40px; min-width: 40px; height: 22px; padding: 0; border: 0; border-radius: 99px; background: var(--line); box-shadow: none; }
 input.switch:checked { background: var(--accent); }
+
+/* ---------- Inicio: jugando ahora y continuar ---------- */
+.np { display: flex; align-items: center; gap: 16px; padding: 16px 18px; margin-bottom: 18px; border-radius: var(--r-lg, 18px); border: 1px solid var(--accent); background: linear-gradient(120deg, rgba(242, 184, 75, .14), rgba(157, 107, 255, .10)); box-shadow: 0 0 32px rgba(242, 184, 75, .12); }
+.np[hidden] { display: none; }
+.np-icon { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; background: #fff; padding: 2px; }
+.np-body { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.np-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.np-title { font-size: 20px; }
+#np-progress { width: 100%; }
+.continue { margin-bottom: 22px; }
+.continue-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.continue-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-align: left; border-radius: var(--r-md, 14px); border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; }
+button.continue-card { cursor: pointer; transition: border-color .2s ease, transform .2s ease; }
+button.continue-card:hover, button.continue-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+.continue-card.event { border-color: rgba(242, 184, 75, .45); }
+.continue-card.empty { grid-column: 1 / -1; justify-content: space-between; }
+.continue-card .tag { align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 1px 8px; border-radius: 99px; background: rgba(242, 184, 75, .16); color: var(--accent); }
+.event-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }

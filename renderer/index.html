@@ -45,10 +45,10 @@
 
     <nav class="tabs" aria-label="Secciones" id="tabs">
       <button class="tab-btn active" data-tab="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-6h4v6"/></svg><span class="nav-label">Inicio</span></button>
-      <button class="tab-btn" data-tab="events"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg><span class="nav-label">Eventos</span></button>
+      <button class="tab-btn" data-tab="event"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span class="nav-label">Evento</span></button>
+      <button class="tab-btn" data-tab="events"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg><span class="nav-label">Historial</span></button>
       <button class="tab-btn" data-tab="team"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 010 6.4M18.5 14.8c1.8.7 3 2.4 3.4 5"/></svg><span class="nav-label">Equipo</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
-      <button class="tab-btn" data-tab="mods"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.8"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.8"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.8"/><path d="M16.75 13v7.5M13 16.75h7.5"/></svg><span class="nav-label">Mods</span></button>
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="nav-label">Ajustes</span></button>
       <button class="tab-btn" data-tab="console"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 9.5l3 2.5-3 2.5M13 15h4"/></svg><span class="nav-label">Consola</span></button>
@@ -87,6 +87,56 @@
   <main>
     <!-- INICIO -->
     <section class="page active" id="page-home">
+      <section id="np" class="np" aria-live="polite" hidden>
+        <img id="np-icon" class="np-icon" alt="" />
+        <div class="np-body">
+          <div class="np-label"><span class="live-dot"></span> Jugando ahora</div>
+          <strong id="np-title" class="np-title"></strong>
+          <span id="np-status" class="muted">Preparando…</span>
+          <progress id="np-progress" value="0" max="100" hidden></progress>
+        </div>
+      </section>
+
+      <div id="crash" class="crash" role="alert" hidden></div>
+
+      <section aria-labelledby="continue-title" class="continue">
+        <h2 id="continue-title">Continuar</h2>
+        <div id="continue-list" class="continue-list"></div>
+      </section>
+
+      <div class="home-grid">
+        <section aria-labelledby="news-title">
+          <h2 id="news-title">Novedades</h2>
+          <div id="news-list" class="stack"></div>
+        </section>
+
+        <aside aria-label="Tu jugador">
+          <div class="player-card" data-tilt>
+            <div class="player-skin"><canvas id="player3d" class="skin3d" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas><img id="player-bust" alt="" width="120" height="120" hidden /></div>
+            <div class="player-info">
+              <div id="player-name" class="player-name">Sin sesión</div>
+              <div id="player-mode" class="player-mode">Elige cómo quieres entrar</div>
+              <div id="playtime" class="playtime"></div>
+              <button id="player-action" class="ghost">Iniciar sesión</button>
+            </div>
+          </div>
+          <div class="server-card" id="server-card">
+            <div class="server-head">
+              <span class="dot" id="server-dot"></span>
+              <strong id="server-title">Servidor del evento</strong>
+            </div>
+            <div id="server-detail" class="muted">Consultando estado…</div>
+          </div>
+          <div class="side-card" id="links-card" hidden>
+            <h3>Enlaces</h3>
+            <div class="links" id="links"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- EVENTO ACTUAL -->
+    <section class="page" id="page-event">
       <div class="hero">
         <img id="hero-art" class="hero-art" alt="" hidden />
         <div id="soon-art" class="hero-art soon-art" aria-hidden="true" hidden>
@@ -132,36 +182,9 @@
         </div>
       </div>
 
-      <div id="crash" class="crash" role="alert" hidden></div>
-
-      <div class="home-grid">
-        <section aria-labelledby="news-title">
-          <h2 id="news-title">Novedades</h2>
-          <div id="news-list" class="stack"></div>
-        </section>
-
-        <aside aria-label="Tu jugador">
-          <div class="player-card" data-tilt>
-            <div class="player-skin"><canvas id="player3d" class="skin3d" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas><img id="player-bust" alt="" width="120" height="120" hidden /></div>
-            <div class="player-info">
-              <div id="player-name" class="player-name">Sin sesión</div>
-              <div id="player-mode" class="player-mode">Elige cómo quieres entrar</div>
-              <div id="playtime" class="playtime"></div>
-              <button id="player-action" class="ghost">Iniciar sesión</button>
-            </div>
-          </div>
-          <div class="server-card" id="server-card">
-            <div class="server-head">
-              <span class="dot" id="server-dot"></span>
-              <strong id="server-title">Servidor del evento</strong>
-            </div>
-            <div id="server-detail" class="muted">Consultando estado…</div>
-          </div>
-          <div class="side-card" id="links-card" hidden>
-            <h3>Enlaces</h3>
-            <div class="links" id="links"></div>
-          </div>
-        </aside>
+      <div class="event-links">
+        <button type="button" class="ghost" data-tab="mods">Ver mods del evento</button>
+        <button type="button" class="ghost" data-tab="events">Ver historial de eventos</button>
       </div>
     </section>
 
