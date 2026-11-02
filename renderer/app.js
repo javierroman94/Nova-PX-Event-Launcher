@@ -126,6 +126,7 @@ const PAGE_TITLES = {
   mods: ['Mods', 'Lo que lleva instalado el evento'],
   modpacks: ['Modpacks', 'Descarga e instala modpacks de Modrinth y CurseForge'],
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
+  admin: ['Administración', 'Publica el evento, el modpack, el equipo y las noticias'],
   console: ['Consola', 'El registro del juego, para resolver problemas'],
   account: ['Cuenta', 'Inicia sesión como premium o no premium']
 };
@@ -173,6 +174,7 @@ function goTo(tab) {
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
   if (tab === 'mods') renderMods();
   if (tab === 'modpacks') openModpacks();
+  if (tab === 'admin') loadAdmin();
   if (tab === 'home') renderContinue();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
@@ -1214,6 +1216,7 @@ $('mp-install').addEventListener('click', async () => {
 });
 window.api.onModpackProgress((d) => {
   const text = d.text || '';
+  if (adminProgress) adminProgress(d);
   if ($('mp-add-modal').open) $('mp-add-status').textContent = text;
   $('mp-status').textContent = text;
   const bar = $('mp-progress');
@@ -1858,3 +1861,171 @@ $('update-check').addEventListener('click', async () => {
   setInterval(refreshServer, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
 })();
+
+
+/* ---------- modo administrador ---------- */
+let isAdmin = false;
+let adminProgress = null;
+function setAdminUi(on, repo, err) {
+  isAdmin = on;
+  $('nav-admin').hidden = !on;
+  $('adm-login-box').hidden = on;
+  $('adm-logout-box').hidden = !on;
+  $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
+  moveIndicator();
+}
+window.api.adminStatus().then((r) => setAdminUi(r.admin, r.repo, r.error)).catch(() => {});
+$('adm-login').addEventListener('click', async () => {
+  $('adm-login').disabled = true;
+  try {
+    const r = await window.api.adminLogin($('adm-token').value);
+    $('adm-token').value = '';
+    setAdminUi(true, r.repo);
+    toast('Modo administrador activado');
+  } catch (e) {
+    $('adm-state').textContent = cleanError(e);
+  }
+  $('adm-login').disabled = false;
+});
+$('adm-logout').addEventListener('click', async () => {
+  await window.api.adminLogout();
+  setAdminUi(false);
+  if ($('page-admin').classList.contains('active')) goTo('settings');
+});
+
+const adm = { team: [], news: [] };
+async function loadAdmin() {
+  if (!isAdmin) return;
+  try {
+    const d = await window.api.adminLoad();
+    const m = d.manifest;
+    const ev = m.event || {};
+    $('ad-active').checked = !!ev.active;
+    $('ad-name').value = ev.name || '';
+    $('ad-tag').value = ev.tagline || '';
+    $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
+    $('ad-host').value = (m.server && m.server.host) || '';
+    $('ad-port').value = (m.server && m.server.port) || 25565;
+    $('ad-mc').value = m.minecraftVersion || '';
+    $('ad-loader').value = (m.loader && m.loader.type) || 'fabric';
+    $('ad-new').checked = false;
+    adm.links = m.links || [];
+    adm.team = d.team;
+    adm.news = d.news;
+    paintTeam();
+    paintNews();
+    const packs = await window.api.modpackInstalled();
+    const sel = $('ad-pack');
+    sel.replaceChildren();
+    packs.forEach((p) => { const o = el('option', '', `${p.title} (Minecraft ${p.mcVersion}, ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'})`); o.value = p.id; sel.append(o); });
+    $('ad-publish').disabled = !packs.length;
+    if (!packs.length) $('ad-pack-status').textContent = 'Primero crea una instancia en Modpacks y añádele los mods del evento.';
+  } catch (e) {
+    $('ad-event-status').textContent = cleanError(e);
+  }
+}
+function toLocalInput(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+$('ad-save-event').addEventListener('click', async () => {
+  const btn = $('ad-save-event');
+  btn.disabled = true;
+  $('ad-event-status').textContent = 'Publicando…';
+  try {
+    const start = $('ad-start').value;
+    await window.api.adminSaveEvent({
+      active: $('ad-active').checked, name: $('ad-name').value, tagline: $('ad-tag').value,
+      startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked,
+      server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 },
+      minecraftVersion: $('ad-mc').value, loader: { type: $('ad-loader').value, version: '' }
+    });
+    $('ad-event-status').textContent = 'Evento publicado. Los jugadores lo verán en unos minutos.';
+    $('ad-new').checked = false;
+  } catch (e) {
+    $('ad-event-status').textContent = cleanError(e);
+  }
+  btn.disabled = false;
+});
+
+$('ad-publish').addEventListener('click', async () => {
+  const pack = $('ad-pack').selectedOptions[0];
+  if (!pack || !confirm(`¿Publicar los mods de "${pack.textContent}" como modpack del evento?\n\nLos jugadores recibirán estos mods la próxima vez que abran el launcher.`)) return;
+  const btn = $('ad-publish');
+  btn.disabled = true;
+  const bar = $('ad-progress');
+  bar.hidden = false;
+  bar.removeAttribute('value');
+  const off = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } $('ad-pack-status').textContent = d.text || ''; };
+  adminProgress = off;
+  try {
+    const r = await window.api.adminPublishPack({ id: $('ad-pack').value, password: $('ad-pass').value, newEvent: $('ad-pack-new').checked });
+    $('ad-pack-status').textContent = `Publicado: ${r.mods} mods cifrados. ${r.sameSalt ? 'Los jugadores que ya instalaron no tendrán que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'} Guarda bien la contraseña: no se puede recuperar.`;
+    $('ad-pass').value = '';
+  } catch (e) {
+    $('ad-pack-status').textContent = cleanError(e);
+  }
+  adminProgress = null;
+  bar.hidden = true;
+  btn.disabled = false;
+});
+
+function rowInputs(row, fields) {
+  const inputs = {};
+  fields.forEach(([key, ph, max, cls]) => {
+    const i = el('input', cls || '');
+    i.type = 'text'; i.placeholder = ph; i.maxLength = max; i.value = row[key] || '';
+    i.addEventListener('input', () => { row[key] = i.value; });
+    inputs[key] = i;
+  });
+  return inputs;
+}
+function paintTeam() {
+  const box = $('ad-team');
+  box.replaceChildren();
+  adm.team.forEach((m, idx) => {
+    const row = el('div', 'mod-card');
+    const f = rowInputs(m, [['nick', 'Nick de Minecraft', 16], ['role', 'Rol', 80]]);
+    const star = el('input');
+    star.type = 'checkbox'; star.checked = !!m.featured; star.title = 'Destacado';
+    star.setAttribute('aria-label', 'Destacado');
+    star.addEventListener('change', () => { m.featured = star.checked; });
+    const del = el('button', '', 'Quitar');
+    del.type = 'button';
+    del.addEventListener('click', () => { adm.team.splice(idx, 1); paintTeam(); });
+    row.append(f.nick, f.role, star, del);
+    box.append(row);
+  });
+}
+function paintNews() {
+  const box = $('ad-news');
+  box.replaceChildren();
+  adm.news.forEach((n, idx) => {
+    const row = el('div', 'mod-card');
+    const f = rowInputs(n, [['title', 'Título', 100], ['date', 'AAAA-MM-DD', 10], ['text', 'Texto', 600]]);
+    const del = el('button', '', 'Quitar');
+    del.type = 'button';
+    del.addEventListener('click', () => { adm.news.splice(idx, 1); paintNews(); });
+    row.append(f.title, f.date, f.text, del);
+    box.append(row);
+  });
+}
+$('ad-team-add').addEventListener('click', () => { adm.team.push({ nick: '', role: '' }); paintTeam(); });
+$('ad-news-add').addEventListener('click', () => { adm.news.unshift({ title: '', date: new Date().toISOString().slice(0, 10), text: '' }); paintNews(); });
+$('ad-team-save').addEventListener('click', async () => {
+  try {
+    adm.team = await window.api.adminSaveTeam(adm.team.filter((m) => (m.nick || '').trim()));
+    paintTeam();
+    $('ad-team-status').textContent = 'Equipo publicado.';
+  } catch (e) { $('ad-team-status').textContent = cleanError(e); }
+});
+$('ad-news-save').addEventListener('click', async () => {
+  try {
+    adm.news = await window.api.adminSaveNews(adm.news);
+    paintNews();
+    $('ad-news-status').textContent = 'Noticias publicadas.';
+  } catch (e) { $('ad-news-status').textContent = cleanError(e); }
+});

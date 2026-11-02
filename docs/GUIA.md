@@ -209,6 +209,20 @@ La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear
   `id` es el *slug* de la URL de Modrinth (`modrinth.com/modpack/<slug>`). Si un id no existe o no es un modpack, simplemente no se muestra.
 - **Capturas:** pestaña *Capturas* en cada modpack con las miniaturas de las 60 más recientes (se sacan con F2 dentro del juego) y botón para abrir la carpeta.
 
+## 4i. Modo administrador (v1.0.21)
+
+Solo tú (o quien tenga tu token) puede publicar. **No hay un "modo admin" escondido en el launcher**: la llave es un token de GitHub con permiso de escritura en el repositorio. Sin él, nadie puede cambiar nada, aunque modifique el programa.
+
+1. En GitHub → Settings → Developer settings → *Fine-grained personal access tokens* → crea uno **solo para este repositorio** con permiso **Contents: Read and write** (y una caducidad razonable).
+2. En el launcher → **Ajustes → Modo administrador** → pega el token y pulsa *Activar*. Se guarda cifrado en tu PC (no viaja a ningún sitio salvo a GitHub). Aparece la pestaña **Admin**.
+3. En **Admin**:
+   - **Evento actual:** activo/inactivo, nombre, frase, fecha de inicio, servidor, versión de Minecraft y loader. *Es un evento nuevo* crea una carpeta de instancia aparte para los jugadores.
+   - **Modpack del evento:** arma el modpack como instancia propia en *Modpacks*, pruébalo jugando y luego **Cifrar y publicar mods**. Se suben cifrados a un release de GitHub (`evento-<id>`, marcado como pre-release para no confundir al actualizador) y se actualiza `manifest.json`. Se publican los mods activos; configuración, shaders y texturas no viajan. Guarda bien la contraseña: no se puede recuperar.
+   - **Equipo** y **Noticias:** edita las listas y guarda.
+4. Los jugadores ven los cambios al abrir el launcher (GitHub puede tardar unos minutos en refrescar su caché).
+
+Si pierdes el token: revócalo en GitHub y crea otro. **Ver quién usa el launcher** no está incluido todavía (requiere un pequeño servidor aparte).
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).

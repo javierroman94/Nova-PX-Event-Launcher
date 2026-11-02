@@ -52,6 +52,7 @@
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="nav-label">Ajustes</span></button>
       <button class="tab-btn" data-tab="console"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 9.5l3 2.5-3 2.5M13 15h4"/></svg><span class="nav-label">Consola</span></button>
+      <button class="tab-btn" id="nav-admin" data-tab="admin" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span class="nav-label">Admin</span></button>
       <span class="tab-ind" id="tab-ind" aria-hidden="true"></span>
     </nav>
 
@@ -437,6 +438,58 @@
       </dialog>
     </section>
 
+    <!-- ADMIN -->
+    <section class="page" id="page-admin">
+      <h2 class="page-title">Administración</h2>
+      <p class="muted">Lo que guardes aquí se publica en GitHub y todos los jugadores lo ven al abrir el launcher (puede tardar unos minutos por la caché de GitHub).</p>
+      <div class="settings">
+        <fieldset>
+          <legend>Evento actual</legend>
+          <label class="check"><input id="ad-active" type="checkbox" /> Evento activo (los jugadores pueden entrar)</label>
+          <div class="field inline">
+            <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
+            <div><label for="ad-start">Empieza (fecha y hora)</label><input id="ad-start" type="datetime-local" /></div>
+          </div>
+          <div class="field"><label for="ad-tag">Frase</label><input id="ad-tag" type="text" maxlength="300" /></div>
+          <div class="field inline">
+            <div><label for="ad-host">Servidor (IP o dominio)</label><input id="ad-host" type="text" maxlength="253" /></div>
+            <div><label for="ad-port">Puerto</label><input id="ad-port" type="number" min="1" max="65535" /></div>
+          </div>
+          <div class="field inline">
+            <div><label for="ad-mc">Versión de Minecraft</label><input id="ad-mc" type="text" maxlength="20" /></div>
+            <div><label for="ad-loader">Loader</label><select id="ad-loader"><option value="vanilla">Vanilla</option><option value="fabric">Fabric</option><option value="forge">Forge</option></select></div>
+          </div>
+          <label class="check"><input id="ad-new" type="checkbox" /> Es un evento nuevo (carpeta aparte: los jugadores reinstalan sus mods)</label>
+          <div class="mp-actions"><button id="ad-save-event" type="button" class="primary">Guardar y publicar evento</button></div>
+          <p id="ad-event-status" class="muted" role="status"></p>
+        </fieldset>
+        <fieldset>
+          <legend>Modpack del evento</legend>
+          <small class="muted">Arma el modpack como una instancia propia en <b>Modpacks</b> (añade mods, pruébalo jugando) y publícalo aquí: los mods se cifran y se suben a GitHub. Se publican los <b>mods activos</b>; la configuración, shaders y texturas no viajan.</small>
+          <div class="field inline">
+            <div><label for="ad-pack">Instancia a publicar</label><select id="ad-pack"></select></div>
+            <div><label for="ad-pass">Contraseña de instalación</label><input id="ad-pass" type="password" autocomplete="off" placeholder="mínimo 10 caracteres" /></div>
+          </div>
+          <label class="check"><input id="ad-pack-new" type="checkbox" /> Evento nuevo (crea una carpeta de instancia nueva para los jugadores)</label>
+          <progress id="ad-progress" max="1" value="0" hidden></progress>
+          <div class="mp-actions"><button id="ad-publish" type="button" class="primary">Cifrar y publicar mods</button></div>
+          <p id="ad-pack-status" class="muted" role="status"></p>
+        </fieldset>
+        <fieldset>
+          <legend>Equipo</legend>
+          <div id="ad-team" class="mods-list"></div>
+          <div class="mp-actions"><button id="ad-team-add" type="button">+ Persona</button><button id="ad-team-save" type="button" class="primary">Guardar equipo</button></div>
+          <p id="ad-team-status" class="muted" role="status"></p>
+        </fieldset>
+        <fieldset>
+          <legend>Noticias</legend>
+          <div id="ad-news" class="mods-list"></div>
+          <div class="mp-actions"><button id="ad-news-add" type="button">+ Noticia</button><button id="ad-news-save" type="button" class="primary">Guardar noticias</button></div>
+          <p id="ad-news-status" class="muted" role="status"></p>
+        </fieldset>
+      </div>
+    </section>
+
     <!-- EQUIPO -->
     <section class="page" id="page-team">
       <h2 class="page-title">El equipo</h2>
@@ -513,6 +566,18 @@
             <input id="jvm-args" type="text" placeholder="-XX:+UseG1GC" />
             <small class="muted">Opcional. Solo para usuarios avanzados.</small>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Modo administrador (solo equipo)</legend>
+          <p id="adm-state" class="muted">Desactivado.</p>
+          <div id="adm-login-box">
+            <label for="adm-token">Token de GitHub</label>
+            <input id="adm-token" type="password" placeholder="github_pat_…" autocomplete="off" />
+            <small class="muted">Crea un token en GitHub → Settings → Developer settings → Fine-grained tokens, solo para este repositorio con permiso <b>Contents: Read and write</b>. Se guarda cifrado en este equipo. Sin el token nadie puede publicar nada, aunque abra el launcher.</small>
+            <div class="mp-actions"><button id="adm-login" type="button" class="primary">Activar</button></div>
+          </div>
+          <div id="adm-logout-box" hidden><div class="mp-actions"><button id="adm-logout" type="button">Desactivar y olvidar el token</button></div></div>
         </fieldset>
 
         <fieldset>

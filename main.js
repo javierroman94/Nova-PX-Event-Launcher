@@ -20,6 +20,8 @@ const modpacks = require('./lib/modpacks');
 const providers = require('./lib/providers');
 const content = require('./lib/content');
 const packs = require('./lib/packs');
+const { GithubRepo } = require('./lib/github');
+const adminLib = require('./lib/admin');
 const importers = require('./lib/importers');
 const { readZip } = require('./lib/zip');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
@@ -900,6 +902,126 @@ ipcMain.handle('instance:updatesApply', async (_e, id) => {
     }
   }
   return { updated: done, errors };
+});
+
+/* ---------- modo administrador (token de GitHub) ---------- */
+
+const ADMIN_FILE = path.join(app.getPath('userData'), 'admin.token');
+let adminToken = null;
+let adminChecked = false;
+
+function repoFromConfig() {
+  const m = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\//.exec(config.remoteBase || '');
+  if (!m) throw new Error('config.remoteBase no apunta a un repositorio de GitHub.');
+  return { owner: m[1], repo: m[2], branch: m[3] };
+}
+function readAdminToken() {
+  if (adminToken) return adminToken;
+  try {
+    if (safeStorage.isEncryptionAvailable()) adminToken = safeStorage.decryptString(fs.readFileSync(ADMIN_FILE));
+  } catch {}
+  return adminToken;
+}
+function gh() {
+  const token = readAdminToken();
+  if (!token) throw new Error('Primero activa el modo administrador en Ajustes.');
+  return new GithubRepo({ ...repoFromConfig(), token, userAgent: `Nova-PX-Event-Launcher/${app.getVersion()}` });
+}
+async function requireAdmin() {
+  const r = gh();
+  const c = await r.check();
+  if (!c.canPush) throw new Error('Ese token no tiene permiso de escritura en el repositorio.');
+  return r;
+}
+
+ipcMain.handle('admin:status', async () => {
+  if (!readAdminToken()) return { admin: false };
+  try {
+    const c = await gh().check();
+    adminChecked = c.canPush;
+    return { admin: c.canPush, repo: c.fullName };
+  } catch (err) {
+    return { admin: false, error: err.message };
+  }
+});
+ipcMain.handle('admin:login', async (_e, token) => {
+  const t = cleanStr(token, 300).trim();
+  if (!/^[A-Za-z0-9_]{20,300}$/.test(t)) throw new Error('Ese token no tiene el formato de un token de GitHub.');
+  const r = new GithubRepo({ ...repoFromConfig(), token: t });
+  const c = await r.check();
+  if (!c.canPush) throw new Error('Ese token puede ver el repositorio pero no escribir en él. Crea uno con permiso "Contents: Read and write".');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar el token de forma cifrada, así que no se activa el modo administrador.');
+  fs.writeFileSync(ADMIN_FILE, safeStorage.encryptString(t));
+  adminToken = t;
+  return { admin: true, repo: c.fullName };
+});
+ipcMain.handle('admin:logout', () => {
+  adminToken = null;
+  fs.rmSync(ADMIN_FILE, { force: true });
+});
+ipcMain.handle('admin:load', async () => {
+  const r = await requireAdmin();
+  const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
+  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [] };
+});
+ipcMain.handle('admin:saveEvent', async (_e, form = {}) => {
+  const r = await requireAdmin();
+  const cur = ((await r.getJson('data/manifest.json')) || {}).data || {};
+  const next = adminLib.mergeManifest(cur, form);
+  await r.putJson('data/manifest.json', next, `Evento: ${next.event.name} (desde el launcher)`);
+  return next;
+});
+ipcMain.handle('admin:saveTeam', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeTeam(list);
+  await r.putJson('data/team.json', clean, 'Equipo actualizado (desde el launcher)');
+  return clean;
+});
+ipcMain.handle('admin:saveNews', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeNews(list);
+  await r.putJson('data/news.json', clean, 'Noticias actualizadas (desde el launcher)');
+  return clean;
+});
+
+// Publica los mods activos de una instancia como el modpack (cifrado) del evento.
+let publishing = false;
+ipcMain.handle('admin:publishPack', async (_e, p = {}) => {
+  if (publishing) throw new Error('Ya se está publicando.');
+  if (launching) throw new Error('Cierra Minecraft antes de publicar.');
+  publishing = true;
+  const progress = (text, done, total) => send('modpack:progress', { text, done, total });
+  try {
+    const r = await requireAdmin();
+    const { entry, root } = packRoot(p.id);
+    const dir = path.join(root, 'mods');
+    const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.jar$/i.test(f)).sort() : [];
+    if (!files.length) throw new Error('Esa instancia no tiene mods activos para publicar.');
+    const cur = ((await r.getJson('data/manifest.json')) || {}).data || {};
+    const form = { minecraftVersion: entry.mcVersion, loader: { type: entry.loader.type, version: entry.loader.version || '' }, newEvent: !!p.newEvent, ...(p.newEvent ? { name: cur.event && cur.event.name } : {}) };
+    const merged = adminLib.mergeManifest(cur, form);
+    const eventId = (merged.event && merged.event.id) || modpacks.slugify((merged.event && merged.event.name) || 'evento');
+    const tag = `evento-${eventId}`.slice(0, 60);
+    progress('Cifrando los mods…');
+    const built = adminLib.buildProtectedEvent({
+      jars: files.map((file) => ({ file, data: fs.readFileSync(path.join(dir, file)) })),
+      password: typeof p.password === 'string' ? p.password : '', previous: cur.protected, baseUrl: r.downloadBase(tag)
+    });
+    const release = await r.ensureRelease(tag, `Modpack ${merged.event.name || eventId}`);
+    let n = 0;
+    for (const a of built.assets) {
+      progress(`Subiendo ${a.name} (${n + 1} de ${built.assets.length})…`, n, built.assets.length);
+      await r.uploadAsset(release, a.name, a.data);
+      n++;
+    }
+    merged.protected = built.envelope;
+    merged.mods = [];
+    await r.putJson('data/manifest.json', merged, `Modpack del evento: ${files.length} mods (desde el launcher)`);
+    progress('Listo');
+    return { mods: files.length, tag, sameSalt: built.reusedSalt, eventId };
+  } finally {
+    publishing = false;
+  }
 });
 
 /* ---------- importar de otros launchers y exportar .novapx ---------- */
