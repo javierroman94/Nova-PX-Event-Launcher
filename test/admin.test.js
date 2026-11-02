@@ -39,6 +39,16 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.throws(() => a.sanitizeTeam([]), /vacío/);
   assert.strictEqual(a.sanitizeNews([{ title: 'T', date: 'x', text: 'y' }, { title: '' }]).length, 1);
 
+  // permisos de administrador
+  const U = 'a'.repeat(32);
+  assert.deepStrictEqual(a.sanitizeAdmins([{ nick: 'Ana', uuid: 'AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA'.replace(/-/g, '') }, { nick: 'Ana', uuid: U }, { nick: 'x y', uuid: U }, { nick: 'Bob', uuid: 'zz' }]), [{ nick: 'Ana', uuid: U }]);
+  const prem = (name, uuid) => ({ mode: 'premium', name, uuid });
+  assert.ok(a.isAllowedAdmin(prem('JavierRoman94', 'x'), ['javierroman94'], []));
+  assert.ok(a.isAllowedAdmin(prem('Ana', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'), ['dueno'], [{ nick: 'Ana', uuid: U }]));
+  assert.ok(!a.isAllowedAdmin(prem('Otro', 'b'.repeat(32)), ['dueno'], [{ nick: 'Ana', uuid: U }]));
+  assert.ok(!a.isAllowedAdmin({ mode: 'offline', name: 'javierroman94', uuid: 'x' }, ['javierroman94'], []), 'un nick no premium no cuenta');
+  assert.ok(!a.isAllowedAdmin(null, ['javierroman94'], []));
+
   // GitHub (fetch falso)
   const calls = [];
   const fake = async (url, o) => {

@@ -36,7 +36,7 @@ const KEYS_FILE = path.join(app.getPath('userData'), 'unlock.json');
 const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
-const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended'];
+const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins'];
 const ICON = path.join(__dirname, 'build', 'icon.png');
 
 let mainWindow = null;
@@ -914,12 +914,22 @@ function readAdminToken() {
   } catch {}
   return adminToken;
 }
+// Quién puede ver el modo administrador: los dueños (config) y las cuentas premium que ellos autoricen (data/admins.json).
+async function adminEligible() {
+  if (!session) return false;
+  let admins = [];
+  try {
+    admins = await loadData('admins');
+  } catch {}
+  return adminLib.isAllowedAdmin(session, config.adminOwners || [], admins);
+}
 function gh() {
   const token = readAdminToken();
   if (!token) throw new Error('Primero activa el modo administrador en Ajustes.');
   return new GithubRepo({ ...repoFromConfig(), token, userAgent: `Nova-PX-Event-Launcher/${app.getVersion()}` });
 }
 async function requireAdmin() {
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador. Inicia sesión con tu cuenta premium autorizada.');
   const r = gh();
   const c = await r.check();
   if (!c.canPush) throw new Error('Ese token no tiene permiso de escritura en el repositorio.');
@@ -927,16 +937,19 @@ async function requireAdmin() {
 }
 
 ipcMain.handle('admin:status', async () => {
-  if (!readAdminToken()) return { admin: false };
+  const eligible = await adminEligible();
+  if (!eligible) return { admin: false, eligible: false };
+  if (!readAdminToken()) return { admin: false, eligible: true };
   try {
     const c = await gh().check();
     adminChecked = c.canPush;
-    return { admin: c.canPush, repo: c.fullName };
+    return { admin: c.canPush, eligible: true, repo: c.fullName };
   } catch (err) {
-    return { admin: false, error: err.message };
+    return { admin: false, eligible: true, error: err.message };
   }
 });
 ipcMain.handle('admin:login', async (_e, token) => {
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
   const t = cleanStr(token, 300).trim();
   if (!/^[A-Za-z0-9_]{20,300}$/.test(t)) throw new Error('Ese token no tiene el formato de un token de GitHub.');
   const r = new GithubRepo({ ...repoFromConfig(), token: t });
@@ -954,12 +967,31 @@ ipcMain.handle('admin:logout', () => {
 ipcMain.handle('admin:load', async () => {
   const r = await requireAdmin();
   const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
-  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [] };
+  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
 });
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeTeam(list);
   await r.putJson('data/team.json', clean, 'Equipo actualizado (desde el launcher)');
+  return clean;
+});
+// Dar o quitar permiso: se resuelve el uuid del nick en Mojang (así no sirve un nick prestado).
+ipcMain.handle('admin:resolveNick', async (_e, nick) => {
+  const n = cleanStr(nick, 16).trim();
+  if (!/^[A-Za-z0-9_]{1,16}$/.test(n)) throw new Error('Ese nick no es válido.');
+  let found;
+  try {
+    found = await fetchJson(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(n)}`);
+  } catch {
+    throw new Error('No se pudo comprobar ese nick. Debe ser una cuenta premium y necesitas internet.');
+  }
+  if (!found || !found.id) throw new Error('Ese nick no es una cuenta premium.');
+  return { nick: found.name, uuid: found.id };
+});
+ipcMain.handle('admin:saveAdmins', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeAdmins(list);
+  await r.putJson('data/admins.json', clean, 'Permisos de administrador actualizados (desde el launcher)');
   return clean;
 });
 ipcMain.handle('admin:saveNews', async (_e, list) => {

@@ -1354,6 +1354,7 @@ function setSession(info) {
   currentUser = info;
   if (window.NovaSkins) window.NovaSkins.setUser(info);
   loggedIn = !!info;
+  setTimeout(() => { try { refreshAdmin(); } catch {} }, 0);
   const chipAvatar = $('chip-avatar');
   const bust = $('player-bust');
   if (info) {
@@ -1854,21 +1855,28 @@ $('update-check').addEventListener('click', async () => {
 /* ---------- modo administrador ---------- */
 let isAdmin = false;
 let adminProgress = null;
-function setAdminUi(on, repo, err) {
+function setAdminUi(on, repo, err, eligible) {
   isAdmin = on;
+  $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
   $('adm-login-box').hidden = on;
   $('adm-logout-box').hidden = !on;
   $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
   moveIndicator();
 }
-window.api.adminStatus().then((r) => setAdminUi(r.admin, r.repo, r.error)).catch(() => {});
+function refreshAdmin() {
+  window.api.adminStatus().then((r) => {
+    setAdminUi(r.admin, r.repo, r.error, r.eligible);
+    if (!r.admin && $('page-admin').classList.contains('active')) goTo('home');
+  }).catch(() => {});
+}
+refreshAdmin();
 $('adm-login').addEventListener('click', async () => {
   $('adm-login').disabled = true;
   try {
     const r = await window.api.adminLogin($('adm-token').value);
     $('adm-token').value = '';
-    setAdminUi(true, r.repo);
+    setAdminUi(true, r.repo, undefined, true);
     toast('Modo administrador activado');
   } catch (e) {
     $('adm-state').textContent = cleanError(e);
@@ -1877,7 +1885,7 @@ $('adm-login').addEventListener('click', async () => {
 });
 $('adm-logout').addEventListener('click', async () => {
   await window.api.adminLogout();
-  setAdminUi(false);
+  setAdminUi(false, undefined, undefined, true);
   if ($('page-admin').classList.contains('active')) goTo('settings');
 });
 
@@ -1888,7 +1896,7 @@ const keep = (k, v) => { try { v === undefined ? localStorage.getItem(k) : local
 document.querySelectorAll('[data-ad-tab]').forEach((b) =>
   b.addEventListener('click', () => {
     document.querySelectorAll('[data-ad-tab]').forEach((x) => x.classList.toggle('active', x === b));
-    ['event', 'team', 'news'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+    ['event', 'team', 'news', 'perms'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
   })
 );
 
@@ -1912,6 +1920,9 @@ async function loadAdmin() {
     $('ad-new').checked = false;
     adm.team = d.team;
     adm.news = d.news;
+    adm.admins = d.admins;
+    adm.owners = d.owners;
+    paintPerms();
     paintTeam();
     paintNews();
     await loadAdminPacks();
@@ -2031,6 +2042,39 @@ $('ad-publish').addEventListener('click', async () => {
   adminProgress = null;
   bar.hidden = true;
   paintChecklist();
+});
+
+function paintPerms() {
+  const box = $('ad-perms');
+  box.replaceChildren();
+  (adm.owners || []).forEach((o) => {
+    const row = el('div', 'mod-card');
+    row.append(el('strong', '', o), el('span', 'muted', 'Dueño (siempre tiene acceso)'));
+    box.append(row);
+  });
+  (adm.admins || []).forEach((a, idx) => {
+    const row = el('div', 'mod-card');
+    const del = el('button', '', 'Quitar permiso');
+    del.type = 'button';
+    del.addEventListener('click', async () => {
+      try {
+        adm.admins = await window.api.adminSaveAdmins(adm.admins.filter((_, i) => i !== idx));
+        paintPerms();
+      } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
+    });
+    row.append(el('strong', '', a.nick), el('span', 'muted', 'Puede ver el panel'), del);
+    box.append(row);
+  });
+}
+$('ad-perm-add').addEventListener('click', async () => {
+  $('ad-perm-status').textContent = 'Comprobando el nick en Mojang…';
+  try {
+    const who = await window.api.adminResolveNick($('ad-perm-nick').value);
+    adm.admins = await window.api.adminSaveAdmins([...(adm.admins || []), who]);
+    $('ad-perm-nick').value = '';
+    $('ad-perm-status').textContent = `${who.nick} ya puede ver el modo administrador.`;
+    paintPerms();
+  } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
 });
 
 function rowInputs(row, fields) {
