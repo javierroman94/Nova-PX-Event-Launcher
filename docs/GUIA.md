@@ -168,14 +168,13 @@ La pestaña **Mods** lista los `.jar` instalados del evento con nombre, icono y 
 
 Si el modpack es **protegido** (con contraseña), la lista se mantiene privada y solo se muestra el total. Para mostrarla, agrega `"showMods": true` en `data/manifest.json`.
 
-## 4f. Modpacks de Modrinth y CurseForge
+## 4f. Modpacks de Modrinth
 
 La pestaña **Modpacks** permite a cualquier jugador buscar, instalar y jugar modpacks aparte del evento. Cada modpack se instala en su **propia carpeta** (`instancias/mp-…`), así no se mezcla con el evento ni con otros modpacks.
 
 - **Modrinth** funciona sin configurar nada. Soporta `.mrpack` con Fabric, Forge o Vanilla.
-- **CurseForge** necesita una clave de API gratuita (https://console.curseforge.com). Lo recomendado es guardarla como *secret* del repositorio, para que no quede pública: GitHub → Settings → Secrets and variables → Actions → New repository secret, nombre `CURSEFORGE_API_KEY`. Se inserta sola al compilar cada versión. Para probar en tu computadora, ponla en `config/launcher.config.json` (`"curseforgeApiKey"`) o en la variable de entorno `NOVAPX_CURSEFORGE_KEY`, sin subir ese cambio. Sin clave, la pestaña explica cómo activarla. La clave viaja dentro del instalador: úsala solo para esto.
 - Los modpacks que usan **NeoForge o Quilt** aparecen marcados como "no compatible".
-- Algunos autores de CurseForge bloquean la descarga fuera de su web: esos archivos se omiten y el launcher avisa cuántos faltaron.
+- Si un autor de Modrinth bloquea la descarga fuera de su web, el launcher lo avisa.
 - Seguridad: solo se descargan archivos de los sitios oficiales de cada plataforma, se comprueba su huella (SHA) y se rechaza cualquier ruta que intente salir de la carpeta del modpack.
 - Los modpacks instalados forman tu **Biblioteca**. Al abrir uno ves sus pestañas:
   - **Contenido:** lista de mods, shaders y texturas con nombre e icono (de Modrinth). Cada uno se puede **activar/desactivar** con el interruptor (el archivo pasa a `.disabled`) o **quitar**. Con **Explorar contenido** buscas en Modrinth solo lo compatible con la versión de Minecraft y el loader del modpack; al instalar un mod se añaden también sus dependencias obligatorias. **Cargar archivos** copia tus propios `.jar` o `.zip`.
@@ -192,8 +191,8 @@ La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear
 - **Ajustes de cada modpack** (pestaña *Ajustes*): nombre, icono, notas, y RAM, ruta de Java, argumentos y ventana **solo para ese modpack** (lo que dejes vacío usa los Ajustes globales). En las instancias propias también se cambia la versión de Minecraft y el loader. En los de Modrinth/CurseForge, **Cambiar versión del modpack** conserva mundos y ajustes.
 - **Duplicar** (con o sin mundos), **Respaldar** cada mundo en un zip (carpeta `backups` de la instancia) y **Buscar actualizaciones** de mods (Modrinth, con comprobación de huella).
 - **Importar** (botones *Importar archivo* / *Importar carpeta*, arrastrar y soltar, o doble clic en un `.novapx`):
-  - `.novapx` (formato propio), `.mrpack` (Modrinth), `.zip` de CurseForge (necesita la clave de API), `.zip` de instancia exportada de Prism/MultiMC.
-  - Carpetas de instancia de **Prism/MultiMC** y del **CurseForge App**. Se copian sin mundos de `saves`, registros ni capturas.
+  - `.novapx` (formato propio), `.mrpack` (Modrinth), `.zip` de instancia exportada de Prism/MultiMC.
+  - Carpetas de instancia de **Prism/MultiMC** y del **CurseForge App** (solo copia la carpeta; no usa la API de CurseForge). Los `.zip` de CurseForge no se importan. Se copian sin mundos de `saves`, registros ni capturas.
   - NeoForge y Quilt aún no están soportados. El formato `.gdlpack` de GDLauncher todavía no se importa: exporta desde GDLauncher como CurseForge/Modrinth, o copia la carpeta de la instancia a una instancia propia.
 - **Exportar `.novapx`** (pestaña *Ajustes* → *Exportar*): un zip con `novapx.json` y la carpeta `overrides/` (configuración, shaders, texturas, mods propios). Los mods que Modrinth reconoce van **por enlace con huella** (el archivo pesa poco); el resto va dentro. Con *Meter todos los mods dentro* el archivo no necesita internet. Nunca incluye mundos ni cuentas.
 - Seguridad: al importar solo se aceptan descargas de `cdn.modrinth.com`, se verifica el SHA-1 de cada mod y se rechaza cualquier ruta que salga de la carpeta del modpack. Aun así, un modpack ajeno ejecuta sus mods: importa solo de gente de confianza.
@@ -209,19 +208,20 @@ La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear
   `id` es el *slug* de la URL de Modrinth (`modrinth.com/modpack/<slug>`). Si un id no existe o no es un modpack, simplemente no se muestra.
 - **Capturas:** pestaña *Capturas* en cada modpack con las miniaturas de las 60 más recientes (se sacan con F2 dentro del juego) y botón para abrir la carpeta.
 
-## 4i. Modo administrador (v1.0.21)
+## 4i. Modo administrador (v1.0.22)
 
-Solo tú (o quien tenga tu token) puede publicar. **No hay un "modo admin" escondido en el launcher**: la llave es un token de GitHub con permiso de escritura en el repositorio. Sin él, nadie puede cambiar nada, aunque modifique el programa.
+Solo tú (o quien tenga un token tuyo) puede publicar. **No hay un "modo admin" escondido en el launcher**: la llave es un token de GitHub con permiso de escritura en el repositorio. Sin él nadie puede cambiar nada, aunque modifique el programa.
 
-1. En GitHub → Settings → Developer settings → *Fine-grained personal access tokens* → crea uno **solo para este repositorio** con permiso **Contents: Read and write** (y una caducidad razonable).
-2. En el launcher → **Ajustes → Modo administrador** → pega el token y pulsa *Activar*. Se guarda cifrado en tu PC (no viaja a ningún sitio salvo a GitHub). Aparece la pestaña **Admin**.
-3. En **Admin**:
-   - **Evento actual:** activo/inactivo, nombre, frase, fecha de inicio, servidor, versión de Minecraft y loader. *Es un evento nuevo* crea una carpeta de instancia aparte para los jugadores.
-   - **Modpack del evento:** arma el modpack como instancia propia en *Modpacks*, pruébalo jugando y luego **Cifrar y publicar mods**. Se suben cifrados a un release de GitHub (`evento-<id>`, marcado como pre-release para no confundir al actualizador) y se actualiza `manifest.json`. Se publican los mods activos; configuración, shaders y texturas no viajan. Guarda bien la contraseña: no se puede recuperar.
-   - **Equipo** y **Noticias:** edita las listas y guarda.
-4. Los jugadores ven los cambios al abrir el launcher (GitHub puede tardar unos minutos en refrescar su caché).
+**Activarlo:** GitHub → Settings → Developer settings → *Fine-grained personal access tokens* → token **solo para este repositorio** con **Contents: Read and write** y caducidad razonable. En el launcher: **Ajustes → Modo administrador** → pegar y *Activar* (se guarda cifrado en tu PC). Aparece la pestaña **Admin**.
 
-Si pierdes el token: revócalo en GitHub y crea otro. **Ver quién usa el launcher** no está incluido todavía (requiere un pequeño servidor aparte).
+**Flujo para un evento**
+1. En **Modpacks → + Crear instancia** arma el modpack del evento (versión, loader, mods desde *Explorar contenido*) y pruébalo jugando. Tus compañeros pueden hacer lo mismo y pasártelo como `.novapx` (Exportar → Importar).
+2. En **Admin → Evento**: *1 Modpack* eliges la instancia; *2 Datos* nombre, fecha, servidor, activo; *3 Publicar* escribes la contraseña y pulsas **Publicar evento**. Un solo botón cifra los mods, los sube a un release de GitHub (`evento-<id>`, marcado como pre-release) y actualiza `manifest.json`. La versión de Minecraft y el loader salen de la instancia.
+3. Los jugadores lo reciben al abrir el launcher (GitHub puede tardar unos minutos en refrescar su caché).
+
+Se publican los mods activos; configuración, shaders y texturas no viajan. Guarda la contraseña: no se puede recuperar. **Equipo** y **Noticias** se editan en las otras pestañas de Admin.
+
+Si varias personas del equipo publican, cada una crea su propio token (y se las añade como colaboradoras del repo). Si pierdes un token: revócalo en GitHub y crea otro. Ver quién usa el launcher no está incluido todavía.
 
 ## 5. Límites de esta primera versión
 

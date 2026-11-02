@@ -233,20 +233,16 @@
           </div>
         </div>
         <p id="mp-lib-note" class="muted"></p>
-        <p id="mp-import-hint" class="drop-hint">Arrastra aquí un .novapx, .mrpack o .zip (CurseForge, Prism/MultiMC) para importarlo.</p>
+        <p id="mp-import-hint" class="drop-hint">Arrastra aquí un .novapx, .mrpack o .zip de Prism/MultiMC para importarlo.</p>
         <div id="mp-library" class="events-grid"></div>
       </div>
 
-      <!-- Explorar (Modrinth y CurseForge) -->
+      <!-- Explorar (Modrinth) -->
       <div id="mp-view-discover" hidden>
         <div class="events-head">
           <div class="mp-title-row">
             <button id="mp-back-lib" type="button">← Biblioteca</button>
             <h2 class="mp-heading">Explorar</h2>
-          </div>
-          <div class="seg" id="mp-providers" role="group" aria-label="Proveedor">
-            <button type="button" class="active" data-mp-provider="modrinth">Modrinth</button>
-            <button type="button" data-mp-provider="curseforge">CurseForge</button>
           </div>
         </div>
         <form id="mp-search-form" class="mp-search">
@@ -440,53 +436,85 @@
 
     <!-- ADMIN -->
     <section class="page" id="page-admin">
-      <h2 class="page-title">Administración</h2>
-      <p class="muted">Lo que guardes aquí se publica en GitHub y todos los jugadores lo ven al abrir el launcher (puede tardar unos minutos por la caché de GitHub).</p>
-      <div class="settings">
-        <fieldset>
-          <legend>Evento actual</legend>
-          <label class="check"><input id="ad-active" type="checkbox" /> Evento activo (los jugadores pueden entrar)</label>
-          <div class="field inline">
-            <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
-            <div><label for="ad-start">Empieza (fecha y hora)</label><input id="ad-start" type="datetime-local" /></div>
+      <div class="ad-hero">
+        <div>
+          <span class="ad-badge">Modo administrador</span>
+          <h2 id="ad-live-name" class="ad-live-name">Evento</h2>
+          <p id="ad-live-meta" class="muted"></p>
+        </div>
+        <div class="seg" id="ad-tabs" role="group" aria-label="Secciones de administración">
+          <button type="button" class="active" data-ad-tab="event">Evento</button>
+          <button type="button" data-ad-tab="team">Equipo</button>
+          <button type="button" data-ad-tab="news">Noticias</button>
+        </div>
+      </div>
+
+      <div id="ad-tab-event">
+        <div class="ad-grid">
+          <article class="ad-card">
+            <header><span class="ad-step">1</span><div><h3>Modpack del evento</h3><p class="muted">Lo que jugarán todos. Créalo y pruébalo en Modpacks; aquí eliges cuál se publica.</p></div></header>
+            <label for="ad-pack">Instancia</label>
+            <select id="ad-pack"></select>
+            <div id="ad-pack-card" class="ad-pack" hidden>
+              <div id="ad-pack-icon" class="mod-icon mod-icon-empty"></div>
+              <div class="mod-body">
+                <strong id="ad-pack-title"></strong>
+                <div class="ad-chips" id="ad-pack-chips"></div>
+              </div>
+            </div>
+            <p id="ad-pack-empty" class="muted" hidden>Todavía no tienes instancias. Crea una en Modpacks y añádele los mods del evento.</p>
+            <div class="ad-actions">
+              <button id="ad-pack-edit" type="button">Editar contenido</button>
+              <button id="ad-pack-play" type="button">Probar jugando</button>
+              <button id="ad-pack-new" type="button">+ Instancia nueva</button>
+            </div>
+          </article>
+
+          <article class="ad-card">
+            <header><span class="ad-step">2</span><div><h3>Datos del evento</h3><p class="muted">Lo que verán los jugadores en el launcher.</p></div></header>
+            <label class="check"><input id="ad-active" type="checkbox" /> Evento activo (los jugadores pueden entrar)</label>
+            <div class="field inline">
+              <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
+              <div><label for="ad-start">Empieza</label><input id="ad-start" type="datetime-local" /></div>
+            </div>
+            <div class="field"><label for="ad-tag">Frase</label><input id="ad-tag" type="text" maxlength="300" /></div>
+            <div class="field inline">
+              <div><label for="ad-host">Servidor (IP o dominio)</label><input id="ad-host" type="text" maxlength="253" placeholder="play.tuservidor.com" /></div>
+              <div><label for="ad-port">Puerto</label><input id="ad-port" type="number" min="1" max="65535" /></div>
+            </div>
+            <label class="check"><input id="ad-new" type="checkbox" /> Es un evento nuevo (los jugadores empiezan en una carpeta limpia)</label>
+          </article>
+        </div>
+
+        <article class="ad-card ad-publish">
+          <header><span class="ad-step">3</span><div><h3>Publicar</h3><p class="muted">Se cifran los mods, se suben a GitHub y los jugadores lo reciben al abrir el launcher.</p></div></header>
+          <ul id="ad-check" class="ad-check"></ul>
+          <div class="field">
+            <label for="ad-pass">Contraseña de instalación</label>
+            <input id="ad-pass" type="password" autocomplete="off" placeholder="Mínimo 10 caracteres. Guárdala: no se puede recuperar." />
           </div>
-          <div class="field"><label for="ad-tag">Frase</label><input id="ad-tag" type="text" maxlength="300" /></div>
-          <div class="field inline">
-            <div><label for="ad-host">Servidor (IP o dominio)</label><input id="ad-host" type="text" maxlength="253" /></div>
-            <div><label for="ad-port">Puerto</label><input id="ad-port" type="number" min="1" max="65535" /></div>
-          </div>
-          <div class="field inline">
-            <div><label for="ad-mc">Versión de Minecraft</label><input id="ad-mc" type="text" maxlength="20" /></div>
-            <div><label for="ad-loader">Loader</label><select id="ad-loader"><option value="vanilla">Vanilla</option><option value="fabric">Fabric</option><option value="forge">Forge</option></select></div>
-          </div>
-          <label class="check"><input id="ad-new" type="checkbox" /> Es un evento nuevo (carpeta aparte: los jugadores reinstalan sus mods)</label>
-          <div class="mp-actions"><button id="ad-save-event" type="button" class="primary">Guardar y publicar evento</button></div>
-          <p id="ad-event-status" class="muted" role="status"></p>
-        </fieldset>
-        <fieldset>
-          <legend>Modpack del evento</legend>
-          <small class="muted">Arma el modpack como una instancia propia en <b>Modpacks</b> (añade mods, pruébalo jugando) y publícalo aquí: los mods se cifran y se suben a GitHub. Se publican los <b>mods activos</b>; la configuración, shaders y texturas no viajan.</small>
-          <div class="field inline">
-            <div><label for="ad-pack">Instancia a publicar</label><select id="ad-pack"></select></div>
-            <div><label for="ad-pass">Contraseña de instalación</label><input id="ad-pass" type="password" autocomplete="off" placeholder="mínimo 10 caracteres" /></div>
-          </div>
-          <label class="check"><input id="ad-pack-new" type="checkbox" /> Evento nuevo (crea una carpeta de instancia nueva para los jugadores)</label>
           <progress id="ad-progress" max="1" value="0" hidden></progress>
-          <div class="mp-actions"><button id="ad-publish" type="button" class="primary">Cifrar y publicar mods</button></div>
-          <p id="ad-pack-status" class="muted" role="status"></p>
-        </fieldset>
-        <fieldset>
-          <legend>Equipo</legend>
+          <p id="ad-status" class="muted" role="status"></p>
+          <div class="mp-actions"><button id="ad-publish" type="button" class="primary ad-big">Publicar evento</button></div>
+        </article>
+      </div>
+
+      <div id="ad-tab-team" hidden>
+        <article class="ad-card">
+          <header><div><h3>Equipo</h3><p class="muted">Quién aparece en la pestaña Equipo. Marca la casilla para destacar a alguien.</p></div></header>
           <div id="ad-team" class="mods-list"></div>
           <div class="mp-actions"><button id="ad-team-add" type="button">+ Persona</button><button id="ad-team-save" type="button" class="primary">Guardar equipo</button></div>
           <p id="ad-team-status" class="muted" role="status"></p>
-        </fieldset>
-        <fieldset>
-          <legend>Noticias</legend>
+        </article>
+      </div>
+
+      <div id="ad-tab-news" hidden>
+        <article class="ad-card">
+          <header><div><h3>Noticias</h3><p class="muted">Aparecen en Inicio. Las más nuevas, arriba.</p></div></header>
           <div id="ad-news" class="mods-list"></div>
           <div class="mp-actions"><button id="ad-news-add" type="button">+ Noticia</button><button id="ad-news-save" type="button" class="primary">Guardar noticias</button></div>
           <p id="ad-news-status" class="muted" role="status"></p>
-        </fieldset>
+        </article>
       </div>
     </section>
 

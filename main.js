@@ -639,10 +639,9 @@ ipcMain.handle('mods:list', async () => {
   return { hidden: false, count: jars.length, mods, offline, eventName };
 });
 
-/* ---------- modpacks de Modrinth y CurseForge ---------- */
+/* ---------- modpacks de Modrinth ---------- */
 
 const MODPACKS_FILE = path.join(app.getPath('userData'), 'modpacks.json');
-const CURSE_KEY = String(process.env.NOVAPX_CURSEFORGE_KEY || config.curseforgeApiKey || '').trim();
 let installingPack = false;
 
 function readModpacks() {
@@ -658,10 +657,6 @@ function writeModpacks(list) {
 }
 function providerFor(name) {
   if (name === 'modrinth') return providers.modrinth(apiRequest);
-  if (name === 'curseforge') {
-    if (!CURSE_KEY) throw new Error('CurseForge no está activado: falta la clave de API (curseforgeApiKey en config/launcher.config.json).');
-    return providers.curseforge(apiRequest, CURSE_KEY);
-  }
   throw new Error('Proveedor desconocido.');
 }
 const cleanStr = (v, max = 200) => String(v == null ? '' : v).slice(0, max);
@@ -689,7 +684,7 @@ async function downloadWithProgress(url, onProgress) {
   }
 }
 
-ipcMain.handle('modpacks:providers', () => ({ modrinth: true, curseforge: !!CURSE_KEY }));
+ipcMain.handle('modpacks:providers', () => ({ modrinth: true }));
 ipcMain.handle('modpacks:search', async (_e, p = {}) =>
   providerFor(cleanStr(p.provider, 20)).search({ query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)) })
 );
@@ -709,8 +704,8 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     const v = versions.find((x) => x.id === cleanStr(p.versionId, 40));
     if (!v) throw new Error('Esa versión del modpack ya no está disponible.');
     if (!v.supported) throw new Error('Este modpack usa un loader que el launcher todavía no soporta (solo Fabric, Forge o Vanilla).');
-    if (!v.downloadUrl) throw new Error('El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de CurseForge.');
-    if (!modpacks.allowedUrl(v.downloadUrl, name === 'modrinth' ? modpacks.MODRINTH_HOSTS : modpacks.CURSE_HOSTS)) {
+    if (!v.downloadUrl) throw new Error('El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de Modrinth.');
+    if (!modpacks.allowedUrl(v.downloadUrl, modpacks.MODRINTH_HOSTS)) {
       throw new Error('La dirección de descarga del modpack no es de un sitio permitido.');
     }
 
@@ -725,10 +720,7 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     if (previous) fs.rmSync(path.join(root, 'mods'), { recursive: true, force: true });
     const onFile = (done, total) => progress(`Descargando mods (${done} de ${total})…`, done, total);
     const download = (u) => downloadBuffer(u);
-    const r =
-      name === 'modrinth'
-        ? await modpacks.installMrpack({ buffer, root, download, onProgress: onFile })
-        : await modpacks.installCurse({ buffer, root, resolveFiles: (f) => prov.resolveFiles(f), download, onProgress: onFile });
+    const r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
 
     const entry = {
       id, provider: name, projectId: cleanStr(p.id, 40), versionId: v.id, version: cleanStr(v.number || v.name, 80),
@@ -964,13 +956,6 @@ ipcMain.handle('admin:load', async () => {
   const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
   return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [] };
 });
-ipcMain.handle('admin:saveEvent', async (_e, form = {}) => {
-  const r = await requireAdmin();
-  const cur = ((await r.getJson('data/manifest.json')) || {}).data || {};
-  const next = adminLib.mergeManifest(cur, form);
-  await r.putJson('data/manifest.json', next, `Evento: ${next.event.name} (desde el launcher)`);
-  return next;
-});
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeTeam(list);
@@ -984,41 +969,61 @@ ipcMain.handle('admin:saveNews', async (_e, list) => {
   return clean;
 });
 
-// Publica los mods activos de una instancia como el modpack (cifrado) del evento.
+function enabledMods(root) {
+  const dir = path.join(root, 'mods');
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.jar$/i.test(f)).sort() : [];
+  return { dir, files, bytes: files.reduce((n, f) => n + fs.statSync(path.join(dir, f)).size, 0) };
+}
+ipcMain.handle('admin:packSummary', (_e, id) => {
+  const { entry, root } = packRoot(id);
+  const m = enabledMods(root);
+  return { title: entry.title, emoji: entry.emoji || '', icon: entry.icon || '', mcVersion: entry.mcVersion, loader: (entry.loader && entry.loader.type) || 'vanilla', mods: m.files.length, bytes: m.bytes };
+});
+
+// Publica el evento completo en un solo paso: datos del evento + (opcional) los mods activos de una instancia, cifrados.
 let publishing = false;
-ipcMain.handle('admin:publishPack', async (_e, p = {}) => {
+ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
   if (publishing) throw new Error('Ya se está publicando.');
   if (launching) throw new Error('Cierra Minecraft antes de publicar.');
   publishing = true;
   const progress = (text, done, total) => send('modpack:progress', { text, done, total });
   try {
     const r = await requireAdmin();
-    const { entry, root } = packRoot(p.id);
-    const dir = path.join(root, 'mods');
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.jar$/i.test(f)).sort() : [];
-    if (!files.length) throw new Error('Esa instancia no tiene mods activos para publicar.');
     const cur = ((await r.getJson('data/manifest.json')) || {}).data || {};
-    const form = { minecraftVersion: entry.mcVersion, loader: { type: entry.loader.type, version: entry.loader.version || '' }, newEvent: !!p.newEvent, ...(p.newEvent ? { name: cur.event && cur.event.name } : {}) };
-    const merged = adminLib.mergeManifest(cur, form);
-    const eventId = (merged.event && merged.event.id) || modpacks.slugify((merged.event && merged.event.name) || 'evento');
-    const tag = `evento-${eventId}`.slice(0, 60);
-    progress('Cifrando los mods…');
-    const built = adminLib.buildProtectedEvent({
-      jars: files.map((file) => ({ file, data: fs.readFileSync(path.join(dir, file)) })),
-      password: typeof p.password === 'string' ? p.password : '', previous: cur.protected, baseUrl: r.downloadBase(tag)
-    });
-    const release = await r.ensureRelease(tag, `Modpack ${merged.event.name || eventId}`);
-    let n = 0;
-    for (const a of built.assets) {
-      progress(`Subiendo ${a.name} (${n + 1} de ${built.assets.length})…`, n, built.assets.length);
-      await r.uploadAsset(release, a.name, a.data);
-      n++;
+    const form = { ...(p.form || {}) };
+    let pack = null;
+    if (p.id) {
+      pack = packRoot(p.id);
+      form.minecraftVersion = pack.entry.mcVersion;
+      form.loader = { type: pack.entry.loader.type, version: pack.entry.loader.version || '' };
     }
-    merged.protected = built.envelope;
-    merged.mods = [];
-    await r.putJson('data/manifest.json', merged, `Modpack del evento: ${files.length} mods (desde el launcher)`);
+    const merged = adminLib.mergeManifest(cur, form);
+    let result = { mods: 0 };
+    if (pack) {
+      const { dir, files } = enabledMods(pack.root);
+      if (!files.length) throw new Error('Esa instancia no tiene mods activos para publicar.');
+      const eventId = (merged.event && merged.event.id) || modpacks.slugify(merged.event.name || 'evento');
+      const tag = `evento-${eventId}`.slice(0, 60);
+      progress('Cifrando los mods…');
+      const built = adminLib.buildProtectedEvent({
+        jars: files.map((file) => ({ file, data: fs.readFileSync(path.join(dir, file)) })),
+        password: typeof p.password === 'string' ? p.password : '', previous: cur.protected, baseUrl: r.downloadBase(tag)
+      });
+      const release = await r.ensureRelease(tag, `Modpack ${merged.event.name || eventId}`);
+      let n = 0;
+      for (const a of built.assets) {
+        progress(`Subiendo ${a.name} (${n + 1} de ${built.assets.length})…`, n, built.assets.length);
+        await r.uploadAsset(release, a.name, a.data);
+        n++;
+      }
+      merged.protected = built.envelope;
+      merged.mods = [];
+      result = { mods: files.length, tag, sameSalt: built.reusedSalt };
+    }
+    progress('Publicando datos del evento…');
+    await r.putJson('data/manifest.json', merged, `Evento: ${merged.event.name}${pack ? `, ${result.mods} mods` : ''} (desde el launcher)`);
     progress('Listo');
-    return { mods: files.length, tag, sameSalt: built.reusedSalt, eventId };
+    return { ...result, name: merged.event.name, active: !!merged.event.active };
   } finally {
     publishing = false;
   }
@@ -1052,7 +1057,7 @@ async function importFromPath(src) {
   if (st.size > 1.5 * 1024 ** 3) throw new Error('Ese archivo es demasiado grande para importarlo.');
   const buffer = fs.readFileSync(src);
   const kind = importers.detectZip(readZip(buffer));
-  if (!kind) throw new Error('No reconozco ese archivo. Acepto .novapx, .mrpack, modpacks de CurseForge (.zip) e instancias exportadas de Prism/MultiMC (.zip).');
+  if (!kind) throw new Error('No reconozco ese archivo. Acepto .novapx, .mrpack (Modrinth) e instancias exportadas de Prism/MultiMC (.zip).');
   const download = (u) => downloadBuffer(u);
   const tmpId = idFor(path.basename(src, path.extname(src)));
   const root = instanceDir(GAME_DIR, { event: { id: tmpId } });
@@ -1063,10 +1068,8 @@ async function importFromPath(src) {
       r = await importers.installNovapx({ buffer, root, download, onProgress: onFile });
       extra = { emoji: r.emoji && packs.buildCustomEntry({ name: 'x', icon: r.emoji, mcVersion: '1.0' }).emoji, notes: r.notes, settings: r.settings };
     } else if (kind === 'mrpack') r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
-    else if (kind === 'curse') {
-      const prov = providerFor('curseforge');
-      r = await modpacks.installCurse({ buffer, root, resolveFiles: (f) => prov.resolveFiles(f), download, onProgress: onFile });
-    } else r = importers.installPrism({ buffer, root });
+    else if (kind === 'curse') throw new Error('Los modpacks .zip de CurseForge no se pueden importar. Busca el mismo modpack en Modrinth, o impórtalo desde la carpeta de su instancia en el CurseForge App.');
+    else r = importers.installPrism({ buffer, root });
     const entry = packEntryFrom(tmpId, r.name, r, extra);
     return entry;
   } catch (err) {
@@ -1644,7 +1647,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
   launching = true;
 
   try {
-    // Un modpack instalado desde Modrinth/CurseForge se lanza con su propia carpeta y sin servidor.
+    // Un modpack instalado desde Modrinth se lanza con su propia carpeta y sin servidor.
     let pack = null;
     let manifest;
     if (opts.modpackId) {

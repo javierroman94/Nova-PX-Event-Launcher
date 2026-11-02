@@ -124,7 +124,7 @@ const PAGE_TITLES = {
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
   mods: ['Mods', 'Lo que lleva instalado el evento'],
-  modpacks: ['Modpacks', 'Descarga e instala modpacks de Modrinth y CurseForge'],
+  modpacks: ['Modpacks', 'Tus modpacks, los de Modrinth y los de la comunidad'],
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
   admin: ['Administración', 'Publica el evento, el modpack, el equipo y las noticias'],
   console: ['Consola', 'El registro del juego, para resolver problemas'],
@@ -490,7 +490,7 @@ async function renderMods() {
 }
 
 /* ---------- modpacks: biblioteca, explorar e instancia ---------- */
-const mp = { view: 'library', provider: 'modrinth', query: '', offset: 0, total: 0, enabled: { modrinth: true, curseforge: false }, installed: [], current: null, seq: 0, busy: false, pack: null, filter: 'all', items: [], addType: 'mod', addSeq: 0 };
+const mp = { view: 'library', provider: 'modrinth', query: '', offset: 0, total: 0, enabled: { modrinth: true }, installed: [], current: null, seq: 0, busy: false, pack: null, filter: 'all', items: [], addType: 'mod', addSeq: 0 };
 const compact = new Intl.NumberFormat('es', { notation: 'compact' });
 const LOADER_NAMES = { fabric: 'Fabric', forge: 'Forge', vanilla: 'Vanilla' };
 const TYPE_NAMES = { mod: 'Mod', shader: 'Shader', resourcepack: 'Textura' };
@@ -543,7 +543,7 @@ async function renderLibrary() {
   grid.replaceChildren();
   $('mp-lib-note').textContent = mp.installed.length
     ? `${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'} instalado${mp.installed.length === 1 ? '' : 's'}`
-    : 'Aún no tienes modpacks. Crea tu propia instancia o pulsa "Explorar modpacks" para instalar uno de Modrinth o CurseForge.';
+    : 'Aún no tienes modpacks. Crea tu propia instancia o pulsa "Explorar modpacks" para instalar uno de Modrinth.';
   mp.installed.forEach((p) => {
     const card = el('button', 'event-card');
     card.type = 'button';
@@ -559,7 +559,6 @@ async function renderLibrary() {
 
 $('mp-go-discover').addEventListener('click', () => {
   showView('discover');
-  document.querySelectorAll('[data-mp-provider]').forEach((b) => b.classList.toggle('active', b.dataset.mpProvider === mp.provider));
   if (!$('mp-results').childNodes.length) searchPacks(true);
 });
 $('mp-back-lib').addEventListener('click', () => { showView('library'); renderLibrary(); });
@@ -876,10 +875,10 @@ async function renderPackSettings() {
   $('ps-full').checked = !!s.fullscreen;
   $('ps-status').textContent = '';
   $('ps-version-box').hidden = !own;
-  $('ps-change-version').hidden = !(p.provider === 'modrinth' || p.provider === 'curseforge');
+  $('ps-change-version').hidden = p.provider !== 'modrinth';
   $('ps-version-note').textContent = own
     ? 'Cambiar la versión o el loader no borra tus mods: revisa que sigan siendo compatibles.'
-    : `Modpack de ${p.provider === 'curseforge' ? 'CurseForge' : p.provider === 'modrinth' ? 'Modrinth' : 'otro origen'}: su versión de Minecraft y su loader los define el autor.`;
+    : `Modpack de ${p.provider === 'modrinth' ? 'Modrinth' : 'otro origen'}: su versión de Minecraft y su loader los define el autor.`;
   if (own) {
     await loadMcVersions($('ps-mc'));
     if (![...$('ps-mc').options].some((o) => o.value === p.mcVersion)) { const o = el('option', '', p.mcVersion); o.value = p.mcVersion; $('ps-mc').prepend(o); }
@@ -1112,10 +1111,6 @@ async function searchPacks(reset) {
   }
   $('mp-more').hidden = true;
   if (reset) loadRecommended();
-  if (!mp.enabled[mp.provider]) {
-    note.textContent = 'CurseForge necesita una clave de API para funcionar. El equipo puede activarla en config/launcher.config.json (curseforgeApiKey).';
-    return;
-  }
   note.textContent = 'Buscando…';
   try {
     const r = await window.api.modpackSearch({ provider: mp.provider, query: mp.query, offset: mp.offset });
@@ -1226,13 +1221,6 @@ window.api.onModpackProgress((d) => {
   } else bar.removeAttribute('value');
 });
 
-document.querySelectorAll('[data-mp-provider]').forEach((b) =>
-  b.addEventListener('click', () => {
-    mp.provider = b.dataset.mpProvider;
-    document.querySelectorAll('[data-mp-provider]').forEach((x) => x.classList.toggle('active', x === b));
-    searchPacks(true);
-  })
-);
 $('mp-search-form').addEventListener('submit', (e) => {
   e.preventDefault();
   mp.query = $('mp-search').value.trim();
@@ -1893,37 +1881,115 @@ $('adm-logout').addEventListener('click', async () => {
   if ($('page-admin').classList.contains('active')) goTo('settings');
 });
 
-const adm = { team: [], news: [] };
+const adm = { team: [], news: [], manifest: {}, summary: null };
+const AD_PACK_KEY = 'novapx.eventPack';
+const keep = (k, v) => { try { v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch {} return (() => { try { return localStorage.getItem(k); } catch { return null; } })(); };
+
+document.querySelectorAll('[data-ad-tab]').forEach((b) =>
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-ad-tab]').forEach((x) => x.classList.toggle('active', x === b));
+    ['event', 'team', 'news'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+  })
+);
+
+function chip(text, cls) { return el('span', `ad-chip${cls ? ' ' + cls : ''}`, text); }
+
 async function loadAdmin() {
   if (!isAdmin) return;
   try {
     const d = await window.api.adminLoad();
     const m = d.manifest;
+    adm.manifest = m;
     const ev = m.event || {};
+    $('ad-live-name').textContent = ev.name || 'Sin evento';
+    $('ad-live-meta').textContent = `${ev.active ? 'Activo' : 'Inactivo'} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.server && m.server.host ? ' · ' + m.server.host : ''}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
     $('ad-active').checked = !!ev.active;
     $('ad-name').value = ev.name || '';
     $('ad-tag').value = ev.tagline || '';
     $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
     $('ad-host').value = (m.server && m.server.host) || '';
     $('ad-port').value = (m.server && m.server.port) || 25565;
-    $('ad-mc').value = m.minecraftVersion || '';
-    $('ad-loader').value = (m.loader && m.loader.type) || 'fabric';
     $('ad-new').checked = false;
-    adm.links = m.links || [];
     adm.team = d.team;
     adm.news = d.news;
     paintTeam();
     paintNews();
-    const packs = await window.api.modpackInstalled();
-    const sel = $('ad-pack');
-    sel.replaceChildren();
-    packs.forEach((p) => { const o = el('option', '', `${p.title} (Minecraft ${p.mcVersion}, ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'})`); o.value = p.id; sel.append(o); });
-    $('ad-publish').disabled = !packs.length;
-    if (!packs.length) $('ad-pack-status').textContent = 'Primero crea una instancia en Modpacks y añádele los mods del evento.';
+    await loadAdminPacks();
   } catch (e) {
-    $('ad-event-status').textContent = cleanError(e);
+    $('ad-status').textContent = cleanError(e);
   }
 }
+
+async function loadAdminPacks() {
+  const packs = await window.api.modpackInstalled();
+  const sel = $('ad-pack');
+  sel.replaceChildren();
+  const none = el('option', '', 'Solo publicar los datos (sin cambiar mods)');
+  none.value = '';
+  sel.append(none);
+  packs.forEach((p) => { const o = el('option', '', p.title); o.value = p.id; sel.append(o); });
+  const saved = keep(AD_PACK_KEY);
+  sel.value = packs.some((p) => p.id === saved) ? saved : packs.length ? packs[0].id : '';
+  $('ad-pack-empty').hidden = packs.length > 0;
+  await showAdminPack();
+}
+
+async function showAdminPack() {
+  const id = $('ad-pack').value;
+  keep(AD_PACK_KEY, id);
+  adm.summary = null;
+  const card = $('ad-pack-card');
+  card.hidden = !id;
+  ['ad-pack-edit', 'ad-pack-play'].forEach((b) => ($(b).disabled = !id));
+  if (id) {
+    try {
+      const sm = await window.api.adminPackSummary(id);
+      adm.summary = sm;
+      const ic = $('ad-pack-icon');
+      ic.replaceChildren();
+      if (sm.icon) { const img = el('img'); img.alt = ''; img.src = sm.icon; ic.className = 'mod-icon'; ic.append(img); }
+      else { ic.className = 'mod-icon mod-icon-empty'; ic.textContent = sm.emoji || sm.title.slice(0, 1).toUpperCase(); }
+      $('ad-pack-title').textContent = sm.title;
+      const chips = $('ad-pack-chips');
+      chips.replaceChildren(chip(`Minecraft ${sm.mcVersion}`), chip(LOADER_NAMES[sm.loader] || 'Vanilla'), chip(`${sm.mods} mod${sm.mods === 1 ? '' : 's'} activos`, sm.mods ? 'ok' : 'warn'), chip(fmtSize(sm.bytes)));
+    } catch (e) {
+      $('ad-pack-title').textContent = cleanError(e);
+    }
+  }
+  paintChecklist();
+}
+
+function paintChecklist() {
+  const ul = $('ad-check');
+  ul.replaceChildren();
+  const sm = adm.summary;
+  const hasPack = !!$('ad-pack').value;
+  const items = [
+    [!!$('ad-name').value.trim(), 'Nombre del evento'],
+    [!!$('ad-host').value.trim(), 'Servidor del evento', true],
+    [!hasPack || !!(sm && sm.mods), hasPack ? (sm ? `Modpack: ${sm.mods} mods activos de Minecraft ${sm.mcVersion}` : 'Modpack') : 'Sin modpack: solo se publican los datos', !hasPack],
+    [!hasPack || $('ad-pass').value.length >= 10, 'Contraseña de al menos 10 caracteres', !hasPack]
+  ];
+  let ready = true;
+  items.forEach(([ok, label, soft]) => {
+    const li = el('li', ok ? 'ok' : soft ? 'warn' : 'bad', label);
+    ul.append(li);
+    if (!ok && !soft) ready = false;
+  });
+  $('ad-publish').disabled = !ready;
+  $('ad-pass').closest('.field').hidden = !hasPack;
+}
+['ad-name', 'ad-host', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
+$('ad-pack').addEventListener('change', showAdminPack);
+$('ad-pack-edit').addEventListener('click', async () => {
+  const p = (await window.api.modpackInstalled()).find((x) => x.id === $('ad-pack').value);
+  if (!p) return;
+  goTo('modpacks');
+  openDetail(p);
+});
+$('ad-pack-play').addEventListener('click', () => playPack($('ad-pack').value));
+$('ad-pack-new').addEventListener('click', () => { goTo('modpacks'); showView('library'); $('mp-go-create').click(); });
+
 function toLocalInput(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -1931,46 +1997,40 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-$('ad-save-event').addEventListener('click', async () => {
-  const btn = $('ad-save-event');
-  btn.disabled = true;
-  $('ad-event-status').textContent = 'Publicando…';
-  try {
-    const start = $('ad-start').value;
-    await window.api.adminSaveEvent({
-      active: $('ad-active').checked, name: $('ad-name').value, tagline: $('ad-tag').value,
-      startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked,
-      server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 },
-      minecraftVersion: $('ad-mc').value, loader: { type: $('ad-loader').value, version: '' }
-    });
-    $('ad-event-status').textContent = 'Evento publicado. Los jugadores lo verán en unos minutos.';
-    $('ad-new').checked = false;
-  } catch (e) {
-    $('ad-event-status').textContent = cleanError(e);
-  }
-  btn.disabled = false;
-});
-
 $('ad-publish').addEventListener('click', async () => {
-  const pack = $('ad-pack').selectedOptions[0];
-  if (!pack || !confirm(`¿Publicar los mods de "${pack.textContent}" como modpack del evento?\n\nLos jugadores recibirán estos mods la próxima vez que abran el launcher.`)) return;
+  const id = $('ad-pack').value;
+  const name = $('ad-name').value.trim();
+  const active = $('ad-active').checked;
+  const msg = `¿Publicar "${name}"?\n\n${active ? 'El evento queda ACTIVO: los jugadores podrán entrar.' : 'El evento queda inactivo.'}${id && adm.summary ? `\nSe publican ${adm.summary.mods} mods cifrados.` : ''}`;
+  if (!confirm(msg)) return;
   const btn = $('ad-publish');
   btn.disabled = true;
   const bar = $('ad-progress');
   bar.hidden = false;
   bar.removeAttribute('value');
-  const off = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } $('ad-pack-status').textContent = d.text || ''; };
-  adminProgress = off;
+  adminProgress = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } $('ad-status').textContent = d.text || ''; };
   try {
-    const r = await window.api.adminPublishPack({ id: $('ad-pack').value, password: $('ad-pass').value, newEvent: $('ad-pack-new').checked });
-    $('ad-pack-status').textContent = `Publicado: ${r.mods} mods cifrados. ${r.sameSalt ? 'Los jugadores que ya instalaron no tendrán que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'} Guarda bien la contraseña: no se puede recuperar.`;
+    const start = $('ad-start').value;
+    const r = await window.api.adminPublishEvent({
+      id: id || undefined, password: $('ad-pass').value,
+      form: {
+        active, name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked,
+        server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 }
+      }
+    });
+    $('ad-status').textContent = r.mods
+      ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'} Los jugadores lo ven en unos minutos.`
+      : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`;
     $('ad-pass').value = '';
+    $('ad-new').checked = false;
+    toast('Evento publicado');
+    loadAdmin();
   } catch (e) {
-    $('ad-pack-status').textContent = cleanError(e);
+    $('ad-status').textContent = cleanError(e);
   }
   adminProgress = null;
   bar.hidden = true;
-  btn.disabled = false;
+  paintChecklist();
 });
 
 function rowInputs(row, fields) {
