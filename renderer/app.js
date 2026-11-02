@@ -540,22 +540,38 @@ async function loadInstalled() {
 async function renderLibrary() {
   const grid = $('mp-library');
   await loadInstalled();
+  const q = $('mp-lib-search').value.trim().toLowerCase();
+  const list = [...mp.installed]
+    .filter((p) => !q || p.title.toLowerCase().includes(q))
+    .sort((a, b) => String(b.lastPlayedAt || '').localeCompare(String(a.lastPlayedAt || '')) || a.title.localeCompare(b.title, 'es'));
   grid.replaceChildren();
+  $('mp-lib-search').hidden = mp.installed.length < 4;
+  $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
-    ? `${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'} instalado${mp.installed.length === 1 ? '' : 's'}`
-    : 'Aún no tienes modpacks. Crea tu propia instancia o pulsa "Explorar modpacks" para instalar uno de Modrinth.';
-  mp.installed.forEach((p) => {
-    const card = el('button', 'event-card');
-    card.type = 'button';
+    ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'} · los jugados hace poco, primero`
+    : 'Aún no tienes modpacks. Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.';
+  list.forEach((p) => {
+    const card = el('div', 'event-card mp-card');
+    card.tabIndex = 0;
+    card.setAttribute('role', 'link');
+    card.setAttribute('aria-label', `${p.title}: abrir`);
     card.dataset.tilt = '';
-    card.append(packIcon(p, 'event-card-img mp-card-img'));
+    const media = el('div', 'mp-media');
+    media.append(packIcon(p, 'event-card-img mp-card-img'), el('span', 'mp-badge', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
+    const play = el('button', 'mp-play', '▶ Jugar');
+    play.type = 'button';
+    play.addEventListener('click', (e) => { e.stopPropagation(); playPack(p.id); });
+    media.append(play);
     const body = el('div', 'event-card-body');
-    body.append(el('h3', '', p.title), el('span', 'muted', packMeta(p)));
-    card.append(body);
-    card.addEventListener('click', () => openDetail(p));
+    body.append(el('h3', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion}${p.lastPlayedAt ? ' · jugado ' + new Date(p.lastPlayedAt).toLocaleDateString('es') : ' · sin jugar'}`));
+    card.append(media, body);
+    const open = () => openDetail(p);
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === card) open(); });
     grid.append(card);
   });
 }
+$('mp-lib-search').addEventListener('input', renderLibrary);
 
 $('mp-go-discover').addEventListener('click', () => {
   showView('discover');
@@ -975,11 +991,12 @@ $('mp-import-file').addEventListener('click', () => doImport({ kind: 'file' }));
 $('mp-import-folder').addEventListener('click', () => doImport({ kind: 'folder' }));
 
 const hint = $('mp-import-hint');
-['dragenter', 'dragover'].forEach((t) => $('mp-view-library').addEventListener(t, (e) => { e.preventDefault(); hint.classList.add('over'); }));
-$('mp-view-library').addEventListener('dragleave', () => hint.classList.remove('over'));
+['dragenter', 'dragover'].forEach((t) => $('mp-view-library').addEventListener(t, (e) => { e.preventDefault(); hint.hidden = false; hint.classList.add('over'); }));
+$('mp-view-library').addEventListener('dragleave', (e) => { if (e.target !== hint) { hint.classList.remove('over'); hint.hidden = mp.installed.length > 0; } });
 $('mp-view-library').addEventListener('drop', (e) => {
   e.preventDefault();
   hint.classList.remove('over');
+  hint.hidden = mp.installed.length > 0;
   const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
   if (!f) return;
   const p = window.api.pathForFile(f);
