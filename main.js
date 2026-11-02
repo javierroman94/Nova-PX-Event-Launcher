@@ -20,6 +20,8 @@ const modpacks = require('./lib/modpacks');
 const providers = require('./lib/providers');
 const content = require('./lib/content');
 const packs = require('./lib/packs');
+const importers = require('./lib/importers');
+const { readZip } = require('./lib/zip');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
 
 const config = JSON.parse(
@@ -47,12 +49,26 @@ let lastProfile = null;
 const logBuffer = [];
 const memoryKeys = new Map();
 
+// Doble clic en un archivo .novapx: el launcher lo abre y ofrece importarlo.
+function novapxFromArgv(argv) {
+  return (argv || []).slice(1).find((a) => typeof a === 'string' && /\.novapx$/i.test(a) && fs.existsSync(a)) || null;
+}
+let pendingImportFile = novapxFromArgv(process.argv);
+function openImportFile(file) {
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isLoading()) send('import:open', { path: file });
+  else pendingImportFile = file;
+}
+
 // Solo una copia del launcher a la vez (cada copia gasta memoria).
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => showWindow());
+  app.on('second-instance', (_e, argv) => {
+    showWindow();
+    const f = novapxFromArgv(argv);
+    if (f) openImportFile(f);
+  });
 }
 
 /* ---------- ajustes ---------- */
@@ -415,6 +431,10 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingImportFile) {
+      send('import:open', { path: pendingImportFile });
+      pendingImportFile = null;
+    }
     if (pendingClose) {
       send('game:close', pendingClose);
       pendingClose = null;
@@ -850,6 +870,112 @@ ipcMain.handle('instance:updatesApply', async (_e, id) => {
     }
   }
   return { updated: done, errors };
+});
+
+/* ---------- importar de otros launchers y exportar .novapx ---------- */
+
+function packEntryFrom(id, title, r, extra = {}) {
+  return {
+    id, provider: 'imported', projectId: '', versionId: '', version: '', title: cleanStr(title, 60) || 'Modpack importado', icon: '',
+    emoji: '', mcVersion: r.mcVersion, loader: r.loader, installedAt: new Date().toISOString(), skipped: r.skipped || [], settings: {}, notes: '', ...extra
+  };
+}
+
+async function importFromPath(src) {
+  const st = fs.statSync(src);
+  const list = readModpacks();
+  const progress = (text, done, total) => send('modpack:progress', { text, done, total });
+  const onFile = (done, total) => progress(`Descargando mods (${done} de ${total})…`, done, total);
+  const idFor = (name) => modpacks.instanceIdFor(name || path.basename(src, path.extname(src)), list.map((x) => x.id));
+
+  if (st.isDirectory()) {
+    const info = importers.inspectFolder(src);
+    if (!info) throw new Error('No reconozco esa carpeta. Debe ser una instancia de Prism/MultiMC o del CurseForge App. Para otras, crea una instancia y copia tus mods y mundos a su carpeta.');
+    if (info.unsupported) throw new Error(`Esa instancia usa ${info.unsupported}, que el launcher todavía no soporta.`);
+    const id = idFor(info.name || path.basename(src));
+    progress('Copiando archivos…');
+    importers.copyFolder(info.contentDir, instanceDir(GAME_DIR, { event: { id } }));
+    return packEntryFrom(id, info.name || path.basename(src), info);
+  }
+  if (st.size > 1.5 * 1024 ** 3) throw new Error('Ese archivo es demasiado grande para importarlo.');
+  const buffer = fs.readFileSync(src);
+  const kind = importers.detectZip(readZip(buffer));
+  if (!kind) throw new Error('No reconozco ese archivo. Acepto .novapx, .mrpack, modpacks de CurseForge (.zip) e instancias exportadas de Prism/MultiMC (.zip).');
+  const download = (u) => downloadBuffer(u);
+  const tmpId = idFor(path.basename(src, path.extname(src)));
+  const root = instanceDir(GAME_DIR, { event: { id: tmpId } });
+  try {
+    let r;
+    let extra = {};
+    if (kind === 'novapx') {
+      r = await importers.installNovapx({ buffer, root, download, onProgress: onFile });
+      extra = { emoji: r.emoji && packs.buildCustomEntry({ name: 'x', icon: r.emoji, mcVersion: '1.0' }).emoji, notes: r.notes, settings: r.settings };
+    } else if (kind === 'mrpack') r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
+    else if (kind === 'curse') {
+      const prov = providerFor('curseforge');
+      r = await modpacks.installCurse({ buffer, root, resolveFiles: (f) => prov.resolveFiles(f), download, onProgress: onFile });
+    } else r = importers.installPrism({ buffer, root });
+    const entry = packEntryFrom(tmpId, r.name, r, extra);
+    return entry;
+  } catch (err) {
+    fs.rmSync(root, { recursive: true, force: true });
+    throw err;
+  }
+}
+
+ipcMain.handle('modpacks:import', async (_e, p = {}) => {
+  if (installingPack) throw new Error('Ya se está instalando un modpack.');
+  if (launching) throw new Error('Cierra Minecraft antes de importar.');
+  let src = typeof p.path === 'string' ? p.path : '';
+  if (!src) {
+    const folder = p.kind === 'folder';
+    const res = await dialog.showOpenDialog(mainWindow, {
+      title: folder ? 'Elige la carpeta de la instancia' : 'Elige un modpack para importar',
+      properties: [folder ? 'openDirectory' : 'openFile'],
+      filters: folder ? [] : [{ name: 'Modpacks', extensions: ['novapx', 'mrpack', 'zip'] }]
+    });
+    if (res.canceled) return null;
+    src = res.filePaths[0];
+  }
+  if (!path.isAbsolute(src) || !fs.existsSync(src)) throw new Error('No encuentro ese archivo.');
+  installingPack = true;
+  try {
+    const entry = await importFromPath(src);
+    writeModpacks([...readModpacks(), entry]);
+    send('modpack:progress', { text: 'Listo' });
+    return entry;
+  } finally {
+    installingPack = false;
+  }
+});
+
+ipcMain.handle('modpacks:export', async (_e, p = {}) => {
+  const { entry, root } = packRoot(p.id);
+  if (launching) throw new Error('Cierra Minecraft antes de exportar.');
+  const res = await dialog.showSaveDialog(mainWindow, {
+    title: 'Exportar modpack', defaultPath: `${modpacks.slugify(entry.title)}.novapx`, filters: [{ name: 'Modpack Nova PX', extensions: ['novapx'] }]
+  });
+  if (res.canceled || !res.filePath) return null;
+  const dest = res.filePath.toLowerCase().endsWith('.novapx') ? res.filePath : `${res.filePath}.novapx`;
+  const lookup = async (hashes) => {
+    try {
+      const { byHash } = await modrinth.lookup(hashes.map((h) => ({ hash: h })), apiRequest);
+      const out = {};
+      for (const [h, v] of Object.entries(byHash || {})) {
+        const f = (v.files || []).find((x) => x.hashes && String(x.hashes.sha1).toLowerCase() === h);
+        if (f) out[h] = { url: f.url };
+      }
+      return out;
+    } catch {
+      return {}; // sin internet: todo va dentro del archivo
+    }
+  };
+  send('modpack:progress', { text: 'Empaquetando…' });
+  const r = await importers.exportNovapx({
+    root, dest, entry, lookup, includeMods: p.bundleAll ? 'bundle' : 'links', includeSettings: p.includeSettings !== false, version: app.getVersion()
+  });
+  send('modpack:progress', { text: 'Listo' });
+  return { ...r, path: dest };
 });
 
 /* ---------- contenido de cada modpack (mods, shaders, texturas, mundos, registros) ---------- */

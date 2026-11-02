@@ -39,6 +39,8 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 | 💬 **Discord Rich Presence** | Muestra en Discord a qué evento estás jugando y cuánto tiempo llevas. |
 | 🔄 **Actualizaciones automáticas** | El contenido se lee de GitHub al abrir; el programa se actualiza solo con cada versión. |
 | 📦 **Biblioteca de modpacks** | Instala modpacks de Modrinth y CurseForge, cada uno en su propia carpeta, y gestiona su contenido: activa, quita o añade mods, shaders y texturas. |
+| 🛠️ **Tus propios modpacks** | Crea instancias, ajusta RAM/Java por modpack, duplica, respalda mundos y actualiza mods. |
+| 🔁 **Importar y exportar** | Importa de Prism/MultiMC, CurseForge, Modrinth y exporta un `.novapx` propio para compartir. |
 | 🧰 **Lista de mods** | Pestaña con nombre, icono y versión de cada mod instalado (datos de [Modrinth](https://modrinth.com)). |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y botón de **Reparar instalación**. |
 | 🔔 **Avisos de evento** | Notificación de escritorio una hora antes de que empiece un evento. |

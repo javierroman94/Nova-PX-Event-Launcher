@@ -184,6 +184,20 @@ La pestaña **Modpacks** permite a cualquier jugador buscar, instalar y jugar mo
 - Desde la ficha del modpack puedes **jugar**, **abrir su carpeta** y **eliminarlo** (borra mods, mundos y ajustes de ese modpack).
 - Mientras Minecraft está abierto no se puede cambiar el contenido.
 
+## 4g. Tus propios modpacks, importar y exportar (v1.0.19)
+
+La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear y compartir los suyos.
+
+- **Crear instancia:** nombre, emoji, versión de Minecraft y loader (Fabric, Forge o Vanilla). Se crea una carpeta vacía y propia.
+- **Ajustes de cada modpack** (pestaña *Ajustes*): nombre, icono, notas, y RAM, ruta de Java, argumentos y ventana **solo para ese modpack** (lo que dejes vacío usa los Ajustes globales). En las instancias propias también se cambia la versión de Minecraft y el loader. En los de Modrinth/CurseForge, **Cambiar versión del modpack** conserva mundos y ajustes.
+- **Duplicar** (con o sin mundos), **Respaldar** cada mundo en un zip (carpeta `backups` de la instancia) y **Buscar actualizaciones** de mods (Modrinth, con comprobación de huella).
+- **Importar** (botones *Importar archivo* / *Importar carpeta*, arrastrar y soltar, o doble clic en un `.novapx`):
+  - `.novapx` (formato propio), `.mrpack` (Modrinth), `.zip` de CurseForge (necesita la clave de API), `.zip` de instancia exportada de Prism/MultiMC.
+  - Carpetas de instancia de **Prism/MultiMC** y del **CurseForge App**. Se copian sin mundos de `saves`, registros ni capturas.
+  - NeoForge y Quilt aún no están soportados. El formato `.gdlpack` de GDLauncher todavía no se importa: exporta desde GDLauncher como CurseForge/Modrinth, o copia la carpeta de la instancia a una instancia propia.
+- **Exportar `.novapx`** (pestaña *Ajustes* → *Exportar*): un zip con `novapx.json` y la carpeta `overrides/` (configuración, shaders, texturas, mods propios). Los mods que Modrinth reconoce van **por enlace con huella** (el archivo pesa poco); el resto va dentro. Con *Meter todos los mods dentro* el archivo no necesita internet. Nunca incluye mundos ni cuentas.
+- Seguridad: al importar solo se aceptan descargas de `cdn.modrinth.com`, se verifica el SHA-1 de cada mod y se rechaza cualquier ruta que salga de la carpeta del modpack. Aun así, un modpack ajeno ejecuta sus mods: importa solo de gente de confianza.
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).

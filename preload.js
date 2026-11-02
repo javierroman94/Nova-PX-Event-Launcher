@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   // general
@@ -65,6 +65,10 @@ contextBridge.exposeInMainWorld('api', {
   instanceOpenBackups: (id) => ipcRenderer.invoke('instance:openBackups', id),
   instanceUpdatesCheck: (id) => ipcRenderer.invoke('instance:updatesCheck', id),
   instanceUpdatesApply: (id) => ipcRenderer.invoke('instance:updatesApply', id),
+  modpackImport: (p) => ipcRenderer.invoke('modpacks:import', p),
+  modpackExport: (p) => ipcRenderer.invoke('modpacks:export', p),
+  pathForFile: (f) => webUtils.getPathForFile(f),
+  onImportOpen: (cb) => ipcRenderer.on('import:open', (_e, d) => cb(d)),
   onModpackProgress: (cb) => ipcRenderer.on('modpack:progress', (_e, d) => cb(d)),
   installUpdate: () => ipcRenderer.invoke('update:install'),
 

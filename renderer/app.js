@@ -922,6 +922,61 @@ $('mp-check-updates').addEventListener('click', async () => {
   }
 });
 
+
+/* --- importar y exportar --- */
+let importing = false;
+async function doImport(arg) {
+  if (importing) return;
+  importing = true;
+  const note = $('mp-lib-note');
+  note.textContent = 'Importando… esto puede tardar si hay muchos mods.';
+  try {
+    const entry = await window.api.modpackImport(arg);
+    if (!entry) { await renderLibrary(); return; }
+    toast(`"${entry.title}" importado`);
+    await loadInstalled();
+    openDetail(entry);
+  } catch (e) {
+    toast(cleanError(e), 'error');
+    renderLibrary();
+  } finally {
+    importing = false;
+  }
+}
+$('mp-import-file').addEventListener('click', () => doImport({ kind: 'file' }));
+$('mp-import-folder').addEventListener('click', () => doImport({ kind: 'folder' }));
+
+const hint = $('mp-import-hint');
+['dragenter', 'dragover'].forEach((t) => $('mp-view-library').addEventListener(t, (e) => { e.preventDefault(); hint.classList.add('over'); }));
+$('mp-view-library').addEventListener('dragleave', () => hint.classList.remove('over'));
+$('mp-view-library').addEventListener('drop', (e) => {
+  e.preventDefault();
+  hint.classList.remove('over');
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  const p = window.api.pathForFile(f);
+  if (p) doImport({ path: p });
+});
+// Doble clic en un .novapx desde el Explorador.
+window.api.onImportOpen((d) => {
+  goTo('modpacks');
+  showView('library');
+  if (d && d.path && confirm(`¿Importar este modpack?\n\n${d.path}`)) doImport({ path: d.path });
+});
+
+$('ps-export').addEventListener('click', async () => {
+  const btn = $('ps-export');
+  btn.disabled = true;
+  $('ps-status').textContent = 'Empaquetando…';
+  try {
+    const r = await window.api.modpackExport({ id: mp.pack.id, bundleAll: $('ps-ex-all').checked, includeSettings: $('ps-ex-settings').checked });
+    $('ps-status').textContent = r ? `Exportado: ${r.linked} mods por enlace, ${r.bundled} dentro del archivo (${fmtSize(r.bytes)}).` : '';
+  } catch (e) {
+    $('ps-status').textContent = cleanError(e);
+  }
+  btn.disabled = false;
+});
+
 /* --- añadir contenido desde Modrinth --- */
 let addTimer = 0;
 function openAddModal() {

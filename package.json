@@ -1,6 +1,6 @@
 {
   "name": "nova-px-event-launcher",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Nova PX - Event Launcher: launcher de Minecraft para los eventos del equipo (premium y no premium)",
   "main": "main.js",
   "author": "Nova PX",
@@ -54,6 +54,14 @@
     "linux": {
       "target": "AppImage",
       "icon": "build/icon.png"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": "novapx",
+        "name": "Modpack Nova PX",
+        "description": "Modpack de Nova PX Event Launcher",
+        "role": "Editor"
+      }
+    ]
   }
 }

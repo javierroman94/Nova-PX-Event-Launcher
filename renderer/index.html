@@ -225,11 +225,14 @@
         <div class="events-head">
           <h2 class="mp-heading">Biblioteca</h2>
           <div class="mp-actions">
+            <button id="mp-import-file" type="button">Importar archivo</button>
+            <button id="mp-import-folder" type="button">Importar carpeta</button>
             <button id="mp-go-create" type="button">+ Crear instancia</button>
             <button id="mp-go-discover" type="button" class="primary">+ Explorar modpacks</button>
           </div>
         </div>
         <p id="mp-lib-note" class="muted"></p>
+        <p id="mp-import-hint" class="drop-hint">Arrastra aquí un .novapx, .mrpack o .zip (CurseForge, Prism/MultiMC) para importarlo.</p>
         <div id="mp-library" class="events-grid"></div>
       </div>
 
@@ -343,10 +346,17 @@
               <label class="check"><input id="ps-full" type="checkbox" /> Pantalla completa</label>
               <small class="muted">Marca la casilla solo si quieres fijar pantalla completa en este modpack.</small>
             </fieldset>
+            <fieldset>
+              <legend>Exportar</legend>
+              <small class="muted">El archivo .novapx solo lo abre este launcher. No incluye tus mundos ni tu cuenta.</small>
+              <label class="check"><input id="ps-ex-all" type="checkbox" /> Meter todos los mods dentro del archivo (pesa más, pero no necesita internet)</label>
+              <label class="check"><input id="ps-ex-settings" type="checkbox" checked /> Incluir mis ajustes y notas</label>
+            </fieldset>
             <p id="ps-status" class="muted" role="status"></p>
             <div class="mp-actions">
               <button id="ps-change-version" type="button" hidden>Cambiar versión del modpack</button>
               <button id="ps-dup" type="button">Duplicar</button>
+              <button id="ps-export" type="button">Exportar .novapx</button>
               <button id="ps-save" type="button" class="primary">Guardar ajustes</button>
             </div>
           </div>
