@@ -198,6 +198,17 @@ La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear
 - **Exportar `.novapx`** (pestaña *Ajustes* → *Exportar*): un zip con `novapx.json` y la carpeta `overrides/` (configuración, shaders, texturas, mods propios). Los mods que Modrinth reconoce van **por enlace con huella** (el archivo pesa poco); el resto va dentro. Con *Meter todos los mods dentro* el archivo no necesita internet. Nunca incluye mundos ni cuentas.
 - Seguridad: al importar solo se aceptan descargas de `cdn.modrinth.com`, se verifica el SHA-1 de cada mod y se rechaza cualquier ruta que salga de la carpeta del modpack. Aun así, un modpack ajeno ejecuta sus mods: importa solo de gente de confianza.
 
+## 4h. Recomendados y capturas (v1.0.20)
+
+- **Recomendados por Nova PX:** en *Modpacks → Explorar* (Modrinth, sin búsqueda) aparece una sección con los modpacks que tú elijas. Se edita en `data/recommended.json` y se ve al instante en todos los jugadores, sin publicar versión nueva:
+
+  ```json
+  [ { "provider": "modrinth", "id": "fabulously-optimized", "note": "Por qué lo recomiendas" } ]
+  ```
+
+  `id` es el *slug* de la URL de Modrinth (`modrinth.com/modpack/<slug>`). Si un id no existe o no es un modpack, simplemente no se muestra.
+- **Capturas:** pestaña *Capturas* en cada modpack con las miniaturas de las 60 más recientes (se sacan con F2 dentro del juego) y botón para abrir la carpeta.
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).

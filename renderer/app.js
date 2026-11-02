@@ -589,9 +589,10 @@ async function playPack(id) {
 /* --- instancia --- */
 function setTab(tab) {
   document.querySelectorAll('[data-mp-tab]').forEach((b) => b.classList.toggle('active', b.dataset.mpTab === tab));
-  ['content', 'worlds', 'logs', 'settings'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
+  ['content', 'worlds', 'shots', 'logs', 'settings'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
   if (tab === 'content') renderContent();
   if (tab === 'worlds') renderWorlds();
+  if (tab === 'shots') renderShots();
   if (tab === 'logs') renderPackLog();
   if (tab === 'settings') renderPackSettings();
 }
@@ -751,6 +752,32 @@ async function renderWorlds() {
     $('mp-worlds-note').textContent = cleanError(e);
   }
 }
+
+async function renderShots() {
+  const grid = $('mp-shots-grid');
+  grid.replaceChildren();
+  $('mp-shots-note').textContent = 'Cargando…';
+  try {
+    const shots = await window.api.instanceScreenshots(mp.pack.id);
+    $('mp-shots-note').textContent = shots.length ? `${shots.length} captura${shots.length === 1 ? '' : 's'} recientes (F2 dentro del juego)` : 'Todavía no hay capturas. Pulsa F2 dentro del juego para sacar una.';
+    shots.forEach((s) => {
+      const card = el('div', 'event-card');
+      if (s.thumb) {
+        const img = el('img', 'event-card-img');
+        img.alt = s.name;
+        img.src = s.thumb;
+        card.append(img);
+      }
+      const body = el('div', 'event-card-body');
+      body.append(el('span', 'muted', new Date(s.mtime).toLocaleString('es')));
+      card.append(body);
+      grid.append(card);
+    });
+  } catch (e) {
+    $('mp-shots-note').textContent = cleanError(e);
+  }
+}
+$('mp-shots-open').addEventListener('click', () => window.api.instanceOpenScreenshots(mp.pack.id).catch((e) => toast(cleanError(e), 'error')));
 
 async function renderBackups() {
   const list = $('mp-backups-list');
@@ -1050,6 +1077,29 @@ async function searchContent() {
 }
 
 /* --- explorar modpacks --- */
+async function loadRecommended() {
+  const box = $('mp-reco');
+  const grid = $('mp-reco-grid');
+  if (mp.provider !== 'modrinth' || mp.query) { box.hidden = true; return; }
+  try {
+    const items = await window.api.modpackRecommended();
+    grid.replaceChildren();
+    items.forEach((it) => {
+      const card = el('button', 'event-card');
+      card.type = 'button';
+      card.append(iconEl(it.icon, it.title, 'event-card-img mp-card-img'));
+      const body = el('div', 'event-card-body');
+      body.append(el('h3', '', it.title), el('p', 'mp-summary', it.summary));
+      card.append(body);
+      card.addEventListener('click', () => openPackModal(it));
+      grid.append(card);
+    });
+    box.hidden = !items.length;
+  } catch {
+    box.hidden = true;
+  }
+}
+
 async function searchPacks(reset) {
   const seq = ++mp.seq;
   const note = $('mp-note');
@@ -1059,6 +1109,7 @@ async function searchPacks(reset) {
     grid.replaceChildren();
   }
   $('mp-more').hidden = true;
+  if (reset) loadRecommended();
   if (!mp.enabled[mp.provider]) {
     note.textContent = 'CurseForge necesita una clave de API para funcionar. El equipo puede activarla en config/launcher.config.json (curseforgeApiKey).';
     return;

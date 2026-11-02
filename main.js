@@ -34,7 +34,7 @@ const KEYS_FILE = path.join(app.getPath('userData'), 'unlock.json');
 const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
-const ALLOWED_DATA = ['news', 'events', 'team', 'manifest'];
+const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended'];
 const ICON = path.join(__dirname, 'build', 'icon.png');
 
 let mainWindow = null;
@@ -763,6 +763,36 @@ ipcMain.handle('modpacks:folder', async (_e, id) => {
 
 /* ---------- instancias propias: crear, ajustes, duplicar, respaldos, actualizar ---------- */
 
+// "Recomendados por Nova PX": lista editable en data/recommended.json (en GitHub). Solo Modrinth, y solo modpacks.
+ipcMain.handle('modpacks:recommended', async () => {
+  let list;
+  try {
+    list = await loadData('recommended');
+  } catch {
+    return [];
+  }
+  const wanted = (Array.isArray(list) ? list : [])
+    .filter((r) => r && r.provider === 'modrinth' && /^[A-Za-z0-9_-]{1,64}$/.test(String(r.id || '')))
+    .slice(0, 12);
+  if (!wanted.length) return [];
+  try {
+    const found = await apiRequest(`https://api.modrinth.com/v2/projects?ids=${encodeURIComponent(JSON.stringify(wanted.map((r) => r.id)))}`);
+    const out = [];
+    for (const r of wanted) {
+      const h = (found || []).find((p) => p.project_type === 'modpack' && (p.id === r.id || p.slug === r.id));
+      if (!h) continue;
+      out.push({
+        provider: 'modrinth', id: String(h.id), title: h.title, summary: cleanStr(r.note, 200) || h.description || '',
+        icon: /^https:\/\//i.test(h.icon_url || '') ? h.icon_url : '', downloads: h.downloads || 0, author: '',
+        url: h.slug ? `https://modrinth.com/modpack/${encodeURIComponent(h.slug)}` : '', recommended: true
+      });
+    }
+    return out;
+  } catch {
+    return []; // sin internet: simplemente no se muestran
+  }
+});
+
 let mcVersionsCache = null;
 ipcMain.handle('modpacks:mcVersions', async () => {
   try {
@@ -1085,6 +1115,30 @@ ipcMain.handle('instance:worlds', (_e, id) => {
     .filter((d) => d.isDirectory())
     .map((d) => ({ name: d.name, mtime: fs.statSync(path.join(dir, d.name)).mtimeMs }))
     .sort((a, b) => b.mtime - a.mtime);
+});
+// Capturas de pantalla (F2) de la instancia: miniaturas de las 60 más recientes.
+ipcMain.handle('instance:screenshots', (_e, id) => {
+  const dir = path.join(packRoot(id).root, 'screenshots');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((f) => /\.png$/i.test(f) && f === path.basename(f))
+    .map((f) => ({ name: f, mtime: fs.statSync(path.join(dir, f)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime)
+    .slice(0, 60)
+    .map((x) => {
+      let thumb = '';
+      try {
+        thumb = nativeImage.createFromPath(path.join(dir, x.name)).resize({ width: 260 }).toDataURL();
+      } catch {}
+      return { ...x, thumb };
+    });
+});
+ipcMain.handle('instance:openScreenshots', async (_e, id) => {
+  const dir = path.join(packRoot(id).root, 'screenshots');
+  fs.mkdirSync(dir, { recursive: true });
+  const err = await shell.openPath(dir);
+  if (err) throw new Error(err);
 });
 ipcMain.handle('instance:log', (_e, id) => {
   const { root } = packRoot(id);

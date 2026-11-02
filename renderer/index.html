@@ -252,6 +252,11 @@
           <input id="mp-search" class="events-search" type="search" placeholder="Buscar modpacks…" aria-label="Buscar modpacks" autocomplete="off" />
           <button type="submit" class="primary">Buscar</button>
         </form>
+        <div id="mp-reco" hidden>
+          <h3 class="mp-heading">Recomendados por Nova PX</h3>
+          <div id="mp-reco-grid" class="events-grid"></div>
+          <h3 class="mp-heading">Más modpacks</h3>
+        </div>
         <p id="mp-note" class="muted"></p>
         <div id="mp-results" class="events-grid"></div>
         <button id="mp-more" type="button" hidden>Cargar más</button>
@@ -275,6 +280,7 @@
         <div class="seg" id="mp-tabs" role="group" aria-label="Secciones del modpack">
           <button type="button" class="active" data-mp-tab="content">Contenido</button>
           <button type="button" data-mp-tab="worlds">Mundos</button>
+          <button type="button" data-mp-tab="shots">Capturas</button>
           <button type="button" data-mp-tab="logs">Registros</button>
           <button type="button" data-mp-tab="settings">Ajustes</button>
         </div>
@@ -311,6 +317,13 @@
           </div>
           <p id="mp-backups-note" class="muted"></p>
           <div id="mp-backups-list" class="mods-list"></div>
+        </div>
+        <div id="mp-tab-shots" hidden>
+          <div class="events-head">
+            <p id="mp-shots-note" class="muted"></p>
+            <button id="mp-shots-open" type="button">Abrir carpeta</button>
+          </div>
+          <div id="mp-shots-grid" class="events-grid"></div>
         </div>
         <div id="mp-tab-logs" hidden>
           <div id="mp-log" class="log" tabindex="0"></div>
