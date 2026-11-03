@@ -162,7 +162,26 @@ function countUp(node, to, suffix) {
 }
 window.addEventListener('resize', moveIndicator);
 
+const navHist = { stack: [], i: -1, skip: false };
+function navButtons() {
+  $('nav-back').disabled = navHist.i <= 0;
+  $('nav-fwd').disabled = navHist.i >= navHist.stack.length - 1;
+}
+function navStep(d) {
+  const n = navHist.i + d;
+  if (n < 0 || n >= navHist.stack.length) return;
+  navHist.i = n;
+  navHist.skip = true;
+  goTo(navHist.stack[n]);
+}
 function goTo(tab) {
+  if (!navHist.skip && navHist.stack[navHist.i] !== tab) {
+    navHist.stack = navHist.stack.slice(0, navHist.i + 1);
+    navHist.stack.push(tab);
+    navHist.i = navHist.stack.length - 1;
+  }
+  navHist.skip = false;
+  setTimeout(navButtons, 0);
   const navTab = tab === 'mods' ? 'event' : tab; // los mods del evento cuelgan de la pestaña Evento
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === navTab));
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
@@ -235,6 +254,33 @@ function nowPlayingSet(on) {
   $('np-icon').src = t.icon || 'images/logo.png';
 }
 
+function ago(iso) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return 'sin jugar';
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if (m < 1) return 'ahora mismo';
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d < 30 ? `hace ${d} día${d === 1 ? '' : 's'}` : new Date(t).toLocaleDateString('es');
+}
+
+function renderRecent(packs) {
+  const box = $('nav-recent');
+  box.querySelectorAll('.nav-item').forEach((n) => n.remove());
+  const recent = packs.filter((p) => p.lastPlayedAt).sort((a, b) => b.lastPlayedAt.localeCompare(a.lastPlayedAt)).slice(0, 4);
+  box.hidden = !recent.length;
+  recent.forEach((p) => {
+    const b = el('button', 'tab-btn nav-item');
+    b.type = 'button';
+    b.title = `${p.title} · abrir`;
+    b.append(packIcon(p, 'nav-mini'), el('span', 'nav-label', p.title));
+    b.addEventListener('click', () => { goTo('modpacks'); openDetail(p); });
+    box.append(b);
+  });
+}
+
 async function renderContinue() {
   const box = $('continue-list');
   if (!box) return;
@@ -251,25 +297,31 @@ async function renderContinue() {
   evIcon.src = eventInfo.logo || 'images/logo.png';
   const evBody = el('div', 'mod-body');
   evBody.append(el('span', 'tag', 'Evento'), el('strong', '', eventInfo.name), el('span', 'muted', eventActive ? 'Disponible para jugar' : 'Próximamente'));
-  ev.append(evIcon, evBody);
+  const evGo = el('span', 'cont-when', eventActive ? 'Ver evento →' : 'Ver detalles →');
+  ev.append(evIcon, evBody, evGo);
   ev.addEventListener('click', () => goTo('event'));
   box.append(ev);
 
+  renderRecent(packs);
   packs
     .slice()
     .sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))
     .slice(0, 5)
     .forEach((p) => {
       const card = el('div', 'continue-card');
-      const img = el('img', 'np-icon');
-      img.alt = '';
-      img.src = p.icon || 'images/logo.png';
+      card.append(packIcon(p, 'np-icon'));
       const body = el('div', 'mod-body');
-      body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}${p.lastPlayedAt ? ' · jugado ' + new Date(p.lastPlayedAt).toLocaleDateString('es') : ''}`));
-      const play = el('button', 'primary', 'Jugar');
+      body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}`));
+      const when = el('span', 'cont-when', ago(p.lastPlayedAt));
+      const play = el('button', 'primary cont-play', '▶ Jugar');
       play.type = 'button';
       play.addEventListener('click', () => playPack(p.id));
-      card.append(img, body, play);
+      const more = el('button', 'cont-more', '⋮');
+      more.type = 'button';
+      more.setAttribute('aria-label', `Abrir ${p.title}`);
+      more.title = 'Abrir la instancia';
+      more.addEventListener('click', () => { goTo('modpacks'); openDetail(p); });
+      card.append(body, when, play, more);
       box.append(card);
     });
   if (!packs.length) {
@@ -537,40 +589,66 @@ async function loadInstalled() {
   return mp.installed;
 }
 
+const libView = { sort: 'recent', group: 'none', filter: 'all' };
+function packCard(p) {
+  const card = el('div', 'event-card mp-card');
+  card.tabIndex = 0;
+  card.setAttribute('role', 'link');
+  card.setAttribute('aria-label', `${p.title}: abrir`);
+  card.dataset.tilt = '';
+  const media = el('div', 'mp-media');
+  media.append(packIcon(p, 'event-card-img mp-card-img'), el('span', 'mp-badge', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
+  const play = el('button', 'mp-play', '▶ Jugar');
+  play.type = 'button';
+  play.addEventListener('click', (e) => { e.stopPropagation(); playPack(p.id); });
+  media.append(play);
+  const body = el('div', 'event-card-body');
+  body.append(el('h3', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${ago(p.lastPlayedAt)}`));
+  card.append(media, body);
+  const open = () => openDetail(p);
+  card.addEventListener('click', open);
+  card.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === card) open(); });
+  return card;
+}
+
 async function renderLibrary() {
-  const grid = $('mp-library');
+  const host = $('mp-library');
   await loadInstalled();
   const q = $('mp-lib-search').value.trim().toLowerCase();
-  const list = [...mp.installed]
-    .filter((p) => !q || p.title.toLowerCase().includes(q))
-    .sort((a, b) => String(b.lastPlayedAt || '').localeCompare(String(a.lastPlayedAt || '')) || a.title.localeCompare(b.title, 'es'));
-  grid.replaceChildren();
-  $('mp-lib-search').hidden = mp.installed.length < 4;
+  const f = libView.filter;
+  let list = mp.installed.filter((p) => (!q || p.title.toLowerCase().includes(q)) && (f === 'all' || (f === 'custom' ? p.provider === 'custom' : (p.loader && p.loader.type) === f)));
+  const byName = (a, b) => a.title.localeCompare(b.title, 'es', { sensitivity: 'base' });
+  const sorters = {
+    recent: (a, b) => String(b.lastPlayedAt || '').localeCompare(String(a.lastPlayedAt || '')) || byName(a, b),
+    name: byName,
+    mc: (a, b) => String(b.mcVersion).localeCompare(String(a.mcVersion), undefined, { numeric: true }) || byName(a, b)
+  };
+  list = list.sort(sorters[libView.sort]);
+  host.replaceChildren();
   $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
-    ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'} · los jugados hace poco, primero`
+    ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}`
     : 'Aún no tienes modpacks. Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.';
+  const groups = new Map();
   list.forEach((p) => {
-    const card = el('div', 'event-card mp-card');
-    card.tabIndex = 0;
-    card.setAttribute('role', 'link');
-    card.setAttribute('aria-label', `${p.title}: abrir`);
-    card.dataset.tilt = '';
-    const media = el('div', 'mp-media');
-    media.append(packIcon(p, 'event-card-img mp-card-img'), el('span', 'mp-badge', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
-    const play = el('button', 'mp-play', '▶ Jugar');
-    play.type = 'button';
-    play.addEventListener('click', (e) => { e.stopPropagation(); playPack(p.id); });
-    media.append(play);
-    const body = el('div', 'event-card-body');
-    body.append(el('h3', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion}${p.lastPlayedAt ? ' · jugado ' + new Date(p.lastPlayedAt).toLocaleDateString('es') : ' · sin jugar'}`));
-    card.append(media, body);
-    const open = () => openDetail(p);
-    card.addEventListener('click', open);
-    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === card) open(); });
-    grid.append(card);
+    const key = libView.group === 'loader' ? LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla' : libView.group === 'mc' ? `Minecraft ${p.mcVersion}` : '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+  groups.forEach((items, key) => {
+    if (key) host.append(el('h3', 'mp-group', `${key} · ${items.length}`));
+    const grid = el('div', 'events-grid mp-grid');
+    items.forEach((p) => grid.append(packCard(p)));
+    host.append(grid);
   });
 }
+$('mp-lib-sort').addEventListener('change', (e) => { libView.sort = e.target.value; renderLibrary(); });
+$('mp-lib-group').addEventListener('change', (e) => { libView.group = e.target.value; renderLibrary(); });
+document.querySelectorAll('[data-lf]').forEach((b) => b.addEventListener('click', () => {
+  libView.filter = b.dataset.lf;
+  document.querySelectorAll('[data-lf]').forEach((x) => x.classList.toggle('active', x === b));
+  renderLibrary();
+}));
 $('mp-lib-search').addEventListener('input', renderLibrary);
 
 $('mp-go-discover').addEventListener('click', () => {
@@ -1442,6 +1520,9 @@ function setPlaying(value) {
   const other = value && launchTarget && launchTarget.kind === 'pack';
   $('play-label').textContent = value ? (other ? 'Jugando otro modpack' : 'Iniciando…') : eventActive ? 'Jugar' : 'Próximamente';
   if (!value && !eventActive) $('status').textContent = 'Todavía no hay un evento activo';
+  const runName = launchTarget && launchTarget.title ? launchTarget.title : eventInfo.name;
+  $('run-text').textContent = value ? `Jugando: ${runName}` : 'Sin partidas en curso';
+  $('run-dot').classList.toggle('on', value);
   if (!value) launchTarget = null;
   nowPlayingSet(value);
 }
@@ -2213,3 +2294,6 @@ $('ad-news-save').addEventListener('click', async () => {
     $('ad-news-status').textContent = 'Noticias publicadas.';
   } catch (e) { $('ad-news-status').textContent = cleanError(e); }
 });
+
+$('nav-back').addEventListener('click', () => navStep(-1));
+$('nav-fwd').addEventListener('click', () => navStep(1));

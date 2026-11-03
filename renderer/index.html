@@ -48,6 +48,7 @@
       <button class="tab-btn active" data-tab="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-6h4v6"/></svg><span class="nav-label">Inicio</span></button>
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
+      <div id="nav-recent" class="nav-recent" hidden><span class="nav-group">Recientes</span></div>
       <span class="nav-group">Evento</span>
       <button class="tab-btn" data-tab="event"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span class="nav-label">Evento</span></button>
       <button class="tab-btn" data-tab="events"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg><span class="nav-label">Historial</span></button>
@@ -73,13 +74,20 @@
 
   <div class="content">
   <header class="topbar">
+    <div class="nav-arrows" role="group" aria-label="Navegación">
+      <button id="nav-back" type="button" aria-label="Atrás" disabled>‹</button>
+      <button id="nav-fwd" type="button" aria-label="Adelante" disabled>›</button>
+    </div>
     <div class="top-title">
       <h1 id="top-title">Inicio</h1>
       <span id="top-sub" class="top-sub">Todo listo para tu próximo evento</span>
     </div>
+    <div class="top-right">
+    <div class="run-pill" id="run-pill" title="Estado del juego"><span class="dot" id="run-dot"></span><span id="run-text">Sin partidas en curso</span></div>
     <div class="server-pill" id="top-server" title="Estado del servidor del evento">
       <span class="dot" id="top-dot"></span>
       <span id="top-server-text">Servidor</span>
+    </div>
     </div>
   </header>
 
@@ -235,9 +243,20 @@
             <button id="mp-go-discover" type="button" class="primary">+ Explorar modpacks</button>
           </div>
         </div>
-        <div class="mp-toolbar"><p id="mp-lib-note" class="muted"></p><input id="mp-lib-search" class="events-search" type="search" placeholder="Buscar en mi biblioteca…" aria-label="Buscar en mi biblioteca" autocomplete="off" hidden /></div>
+        <div class="mp-toolbar">
+          <input id="mp-lib-search" class="events-search" type="search" placeholder="Buscar en mi biblioteca…" aria-label="Buscar en mi biblioteca" autocomplete="off" />
+          <select id="mp-lib-sort" aria-label="Ordenar por"><option value="recent">Último juego</option><option value="name">Nombre</option><option value="mc">Versión de Minecraft</option></select>
+          <select id="mp-lib-group" aria-label="Agrupar por"><option value="none">Sin grupos</option><option value="loader">Por loader</option><option value="mc">Por versión</option></select>
+          <div class="seg" id="mp-lib-filter" role="group" aria-label="Filtrar">
+            <button type="button" class="active" data-lf="all">Todos</button>
+            <button type="button" data-lf="fabric">Fabric</button>
+            <button type="button" data-lf="forge">Forge</button>
+            <button type="button" data-lf="custom">Míos</button>
+          </div>
+        </div>
+        <p id="mp-lib-note" class="muted"></p>
         <p id="mp-import-hint" class="drop-hint">Arrastra aquí un .novapx, .mrpack o .zip de Prism/MultiMC para importarlo.</p>
-        <div id="mp-library" class="events-grid"></div>
+        <div id="mp-library"></div>
       </div>
 
       <!-- Explorar (Modrinth) -->
