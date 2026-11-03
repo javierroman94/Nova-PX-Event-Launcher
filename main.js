@@ -22,6 +22,7 @@ const content = require('./lib/content');
 const packs = require('./lib/packs');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
+const telemetry = require('./lib/telemetry');
 const importers = require('./lib/importers');
 const { readZip } = require('./lib/zip');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
@@ -95,6 +96,7 @@ function defaultSettings() {
     effects: true,
     discordRpc: true,
     notifyEvents: true,
+    shareUsage: true,
     playSeconds: 0
   };
 }
@@ -135,6 +137,7 @@ function cleanSettings(s) {
     effects: s.effects !== false,
     discordRpc: s.discordRpc !== false,
     notifyEvents: s.notifyEvents !== false,
+    shareUsage: s.shareUsage !== false,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
 }
@@ -551,6 +554,7 @@ app.on('before-quit', () => rpc.stop());
 app.whenReady().then(() => {
   if (!gotLock) return;
   applyDiscordSetting();
+  setTimeout(pingUsage, 3000);
   restoring = restoreSession();
   createWindow();
   setupUpdater();
@@ -896,6 +900,28 @@ ipcMain.handle('instance:updatesApply', async (_e, id) => {
   return { updated: done, errors };
 });
 
+/* ---------- contador de uso (opcional, Cloudflare Worker) ---------- */
+
+const USAGE_URL = telemetry.validUrl(config.telemetryUrl);
+const INSTALL_ID_FILE = path.join(app.getPath('userData'), 'install-id');
+let lastPing = { nick: null, at: 0 };
+
+// Avisa al contador que el launcher se abrió. Si el jugador lo apagó en Ajustes, o no hay contador configurado, no hace nada.
+async function pingUsage() {
+  if (!USAGE_URL || !readSettings().shareUsage) return;
+  const nick = session ? session.name : '';
+  if (lastPing.nick === nick && Date.now() - lastPing.at < 30 * 60 * 1000) return;
+  lastPing = { nick, at: Date.now() };
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 6000);
+  try {
+    const body = telemetry.buildPing({ id: telemetry.installId(INSTALL_ID_FILE), session, version: app.getVersion(), platform: process.platform });
+    await fetch(`${USAGE_URL}/ping`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+  } catch {} finally {
+    clearTimeout(timer);
+  }
+}
+
 /* ---------- modo administrador (token de GitHub) ---------- */
 
 const ADMIN_FILE = path.join(app.getPath('userData'), 'admin.token');
@@ -960,7 +986,43 @@ ipcMain.handle('admin:login', async (_e, token) => {
   adminToken = t;
   return { admin: true, repo: c.fullName };
 });
+// Clave del contador de usuarios (la que pusiste como ADMIN_KEY en Cloudflare). Se guarda cifrada, como el token.
+const USERS_KEY_FILE = path.join(app.getPath('userData'), 'users.key');
+function readUsersKey() {
+  try {
+    return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(fs.readFileSync(USERS_KEY_FILE)) : null;
+  } catch {
+    return null;
+  }
+}
+async function usersCall(method, pathname) {
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
+  if (!USAGE_URL) throw new Error('Falta la dirección del contador (telemetryUrl en config/launcher.config.json).');
+  const key = readUsersKey();
+  if (!key) throw new Error('NO_KEY');
+  const res = await fetch(`${USAGE_URL}${pathname}`, { method, headers: { Authorization: `Bearer ${key}` } });
+  if (res.status === 401) throw new Error('La clave del contador no es correcta.');
+  if (!res.ok) throw new Error(`El contador respondió ${res.status}.`);
+  return res.json();
+}
+ipcMain.handle('admin:usersKey', async (_e, key) => {
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
+  const k = cleanStr(key, 200).trim();
+  if (k.length < 16) throw new Error('La clave debe tener al menos 16 caracteres.');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar la clave de forma cifrada.');
+  fs.writeFileSync(USERS_KEY_FILE, safeStorage.encryptString(k));
+});
+ipcMain.handle('admin:users', async () => {
+  const r = await usersCall('GET', '/users');
+  const users = (r.users || []).map((u) => ({ id: String(u.id), nick: String(u.nick || ''), premium: !!u.premium, version: String(u.version || ''), os: String(u.os || ''), first: Number(u.first) || 0, last: Number(u.last) || 0, count: Number(u.count) || 0 }));
+  return { users, summary: telemetry.summarize(users) };
+});
+ipcMain.handle('admin:userDelete', async (_e, id) => {
+  if (!/^[0-9a-f-]{36}$/.test(String(id))) throw new Error('Id no válido.');
+  await usersCall('DELETE', `/users/${id}`);
+});
 ipcMain.handle('admin:logout', () => {
+  fs.rmSync(USERS_KEY_FILE, { force: true });
   adminToken = null;
   fs.rmSync(ADMIN_FILE, { force: true });
 });
@@ -1475,6 +1537,7 @@ function clearAccount() {
 async function premiumSessionFrom(xbox) {
   const mc = await xbox.getMinecraft();
   session = { mode: 'premium', name: mc.profile.name, uuid: mc.profile.id, auth: mc.mclc() };
+  pingUsage();
   lastProfile = null;
   let refresh = null;
   try {
@@ -1493,6 +1556,7 @@ async function restoreSession() {
   try {
     if (saved.mode === 'offline' && /^[A-Za-z0-9_]{3,16}$/.test(String(saved.name))) {
       session = makeOfflineSession(saved.name);
+      pingUsage();
     } else if (saved.mode === 'premium' && saved.refresh && safeStorage.isEncryptionAvailable()) {
       const token = safeStorage.decryptString(Buffer.from(saved.refresh, 'base64'));
       const xbox = await new Auth('select_account').refresh(token);
@@ -1514,6 +1578,7 @@ ipcMain.handle('auth:offline', (_e, nick) => {
     throw new Error('El nick debe tener de 3 a 16 caracteres: letras, números o guion bajo.');
   }
   session = makeOfflineSession(name);
+  pingUsage();
   lastProfile = null;
   saveAccount({ mode: 'offline', name });
   return { mode: 'offline', name, uuid: session.uuid };

@@ -1084,3 +1084,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .mp-card:hover .mp-play, .mp-card:focus-within .mp-play, .mp-card:focus-visible .mp-play { opacity: 1; transform: none; }
 .mp-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .drop-hint { font-size: 12px; padding: 8px 12px; }
+
+.ad-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.ad-stat { display: flex; flex-direction: column; gap: 2px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.ad-stat strong { font-size: 28px; line-height: 1.1; color: var(--accent); }

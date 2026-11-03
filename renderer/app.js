@@ -1680,6 +1680,7 @@ function readSettingsForm() {
     autoJava: $('auto-java').checked,
     discordRpc: $('discord-rpc').checked,
     notifyEvents: $('notify-events').checked,
+    shareUsage: $('share-usage').checked,
     gameBehavior: $('behavior').value
   };
 }
@@ -1696,6 +1697,7 @@ function fillSettingsForm(s) {
   $('auto-java').checked = s.autoJava;
   $('discord-rpc').checked = s.discordRpc;
   $('notify-events').checked = s.notifyEvents;
+  $('share-usage').checked = s.shareUsage !== false;
   $('behavior').value = s.gameBehavior;
   $('res-w').disabled = $('res-h').disabled = s.fullscreen;
 }
@@ -1913,7 +1915,8 @@ const keep = (k, v) => { try { v === undefined ? localStorage.getItem(k) : local
 document.querySelectorAll('[data-ad-tab]').forEach((b) =>
   b.addEventListener('click', () => {
     document.querySelectorAll('[data-ad-tab]').forEach((x) => x.classList.toggle('active', x === b));
-    ['event', 'team', 'news', 'perms'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+    ['event', 'team', 'news', 'users', 'perms'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+    if (b.dataset.adTab === 'users') loadUsers();
   })
 );
 
@@ -2059,6 +2062,66 @@ $('ad-publish').addEventListener('click', async () => {
   adminProgress = null;
   bar.hidden = true;
   paintChecklist();
+});
+
+let usersList = [];
+async function loadUsers() {
+  const st = $('ad-users-status');
+  st.textContent = 'Cargando…';
+  try {
+    const r = await window.api.adminUsers();
+    usersList = r.users;
+    $('ad-users-key').hidden = true;
+    $('ad-users-body').hidden = false;
+    st.textContent = '';
+    const s = r.summary;
+    const stats = $('ad-users-stats');
+    stats.replaceChildren();
+    [[s.total, 'Instalaciones'], [s.day, 'Activas hoy'], [s.week, 'Últimos 7 días'], [s.month, 'Últimos 30 días'], [s.premium, 'Premium']].forEach(([n, l]) => {
+      const c = el('div', 'ad-stat');
+      c.append(el('strong', '', String(n)), el('span', 'muted', l));
+      stats.append(c);
+    });
+    paintUsers();
+  } catch (e) {
+    if (String(e.message || e).includes('NO_KEY')) {
+      $('ad-users-key').hidden = false;
+      $('ad-users-body').hidden = true;
+      st.textContent = '';
+    } else {
+      st.textContent = cleanError(e);
+    }
+  }
+}
+function paintUsers() {
+  const q = $('ad-users-search').value.trim().toLowerCase();
+  const box = $('ad-users-list');
+  box.replaceChildren();
+  const list = usersList.filter((u) => !q || u.nick.toLowerCase().includes(q)).sort((a, b) => b.last - a.last).slice(0, 200);
+  $('ad-users-note').textContent = `${list.length} de ${usersList.length} · ordenados por última vez visto`;
+  list.forEach((u) => {
+    const row = el('div', 'mod-card');
+    const body = el('div', 'mod-body');
+    body.append(el('strong', '', u.nick || 'Sin sesión iniciada'), el('span', 'muted', `v${u.version} · ${u.os === 'win32' ? 'Windows' : u.os === 'darwin' ? 'macOS' : 'Linux'} · visto ${new Date(u.last).toLocaleString('es')} · ${u.count} aperturas`));
+    row.append(body, el('span', `ad-chip${u.premium ? ' ok' : ''}`, u.premium ? 'Premium' : u.nick ? 'No premium' : 'Anónimo'));
+    const del = el('button', '', 'Quitar');
+    del.type = 'button';
+    del.addEventListener('click', async () => {
+      if (!confirm('¿Quitar este registro de la lista? Volverá a aparecer si esa persona abre el launcher.')) return;
+      try { await window.api.adminUserDelete(u.id); usersList = usersList.filter((x) => x.id !== u.id); paintUsers(); } catch (e) { $('ad-users-status').textContent = cleanError(e); }
+    });
+    row.append(del);
+    box.append(row);
+  });
+}
+$('ad-users-search').addEventListener('input', paintUsers);
+$('ad-users-refresh').addEventListener('click', loadUsers);
+$('ad-users-key-save').addEventListener('click', async () => {
+  try {
+    await window.api.adminUsersKey($('ad-users-key-input').value);
+    $('ad-users-key-input').value = '';
+    loadUsers();
+  } catch (e) { $('ad-users-status').textContent = cleanError(e); }
 });
 
 function paintPerms() {

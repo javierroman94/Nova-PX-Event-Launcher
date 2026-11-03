@@ -223,7 +223,7 @@ Se publican los mods activos; configuración, shaders y texturas no viajan. Guar
 
 **Quién ve el modo administrador:** los dueños (`adminOwners` en `config/launcher.config.json`, ahora `javierroman94`) y las cuentas **premium** que autorices en **Admin → Permisos** (se guardan en `data/admins.json` con su UUID de Mojang). Para los demás jugadores ni aparece la opción en Ajustes. Esto solo decide quién *ve* el panel; la seguridad real sigue siendo el token de GitHub: sin él nadie publica nada.
 
-Si varias personas del equipo publican, cada una crea su propio token (y se las añade como colaboradoras del repo). Si pierdes un token: revócalo en GitHub y crea otro. Ver quién usa el launcher no está incluido todavía.
+Si varias personas del equipo publican, cada una crea su propio token (y se las añade como colaboradoras del repo). Si pierdes un token: revócalo en GitHub y crea otro. Para ver quién usa el launcher (pestaña **Admin → Usuarios**) hace falta el contador gratis de Cloudflare: guía en [`docs/CLOUDFLARE.md`](CLOUDFLARE.md).
 
 ## 5. Límites de esta primera versión
 

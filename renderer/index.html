@@ -449,6 +449,7 @@
           <button type="button" class="active" data-ad-tab="event">Evento</button>
           <button type="button" data-ad-tab="team">Equipo</button>
           <button type="button" data-ad-tab="news">Noticias</button>
+          <button type="button" data-ad-tab="users">Usuarios</button>
           <button type="button" data-ad-tab="perms">Permisos</button>
         </div>
       </div>
@@ -510,6 +511,24 @@
           <div class="mp-actions"><button id="ad-team-add" type="button">+ Persona</button><button id="ad-team-save" type="button" class="primary">Guardar equipo</button></div>
           <p id="ad-team-status" class="muted" role="status"></p>
         </article>
+      </div>
+
+      <div id="ad-tab-users" hidden>
+        <article id="ad-users-key" class="ad-card" hidden>
+          <header><div><h3>Conectar el contador</h3><p class="muted">Pega la clave <b>ADMIN_KEY</b> que pusiste en Cloudflare. Se guarda cifrada en este equipo.</p></div></header>
+          <input id="ad-users-key-input" type="password" autocomplete="off" placeholder="Clave del contador" />
+          <div class="mp-actions"><button id="ad-users-key-save" type="button" class="primary">Conectar</button></div>
+        </article>
+        <div id="ad-users-body" hidden>
+          <div id="ad-users-stats" class="ad-stats"></div>
+          <article class="ad-card">
+            <header><div><h3>Usuarios</h3><p id="ad-users-note" class="muted"></p></div></header>
+            <input id="ad-users-search" class="events-search" type="search" placeholder="Buscar por nick…" aria-label="Buscar usuario" autocomplete="off" />
+            <div id="ad-users-list" class="mods-list"></div>
+            <div class="mp-actions"><button id="ad-users-refresh" type="button">Actualizar</button></div>
+          </article>
+        </div>
+        <p id="ad-users-status" class="muted" role="status"></p>
       </div>
 
       <div id="ad-tab-perms" hidden>
@@ -676,6 +695,8 @@
           <label class="check"><input id="join-server" type="checkbox" /> Entrar directo al servidor del evento</label>
           <label class="check"><input id="discord-rpc" type="checkbox" /> Mostrar mi actividad en Discord</label>
           <label class="check"><input id="notify-events" type="checkbox" /> Avisarme cuando un evento esté por empezar</label>
+          <label class="check"><input id="share-usage" type="checkbox" /> Contar mi uso para las estadísticas del equipo</label>
+          <small class="muted">Solo se envía un número de instalación al azar, tu nick (si iniciaste sesión), si eres premium, la versión del launcher y tu sistema operativo. Nunca tu IP, tu contraseña ni tus archivos.</small>
           <div class="field">
             <label for="behavior">Launcher mientras juego</label>
             <select id="behavior">

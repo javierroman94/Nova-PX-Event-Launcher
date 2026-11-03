@@ -9,5 +9,6 @@
   "discordLargeImage": "logo",
   "adminOwners": [
     "javierroman94"
-  ]
+  ],
+  "telemetryUrl": ""
 }
