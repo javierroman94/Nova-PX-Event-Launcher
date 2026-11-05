@@ -1105,6 +1105,7 @@ async function doImport(arg) {
   const note = $('mp-lib-note');
   note.textContent = 'Importando… esto puede tardar si hay muchos mods.';
   try {
+    busyShow('Importando modpack', { text: 'Elige el archivo…' });
     const entry = await window.api.modpackImport(arg);
     if (!entry) { await renderLibrary(); return; }
     toast(`"${entry.title}" importado`);
@@ -1114,6 +1115,7 @@ async function doImport(arg) {
     toast(cleanError(e), 'error');
     renderLibrary();
   } finally {
+    busyHide();
     importing = false;
   }
 }
@@ -1356,8 +1358,21 @@ $('mp-install').addEventListener('click', async () => {
     mp.busy = false;
   }
 });
+let busyTimer = null;
+function busyShow(title, d) {
+  const card = $('busy-card');
+  if (title) $('busy-title').textContent = title;
+  $('busy-text').textContent = (d && d.text) || '';
+  const bar = $('busy-bar');
+  if (d && d.total) { bar.max = d.total; bar.value = d.done; } else bar.removeAttribute('value');
+  card.hidden = false;
+  clearTimeout(busyTimer);
+  busyTimer = setTimeout(busyHide, 90000);
+}
+function busyHide() { clearTimeout(busyTimer); $('busy-card').hidden = true; }
 window.api.onModpackProgress((d) => {
   const text = d.text || '';
+  if (text === 'Listo') busyHide(); else busyShow(null, d);
   if (adminProgress) adminProgress(d);
   if ($('mp-add-modal').open) $('mp-add-status').textContent = text;
   $('mp-status').textContent = text;
