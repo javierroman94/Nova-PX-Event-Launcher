@@ -1127,3 +1127,42 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 #mp-lib-filter { align-self: auto; }
 .nav-recent .nav-group:first-child { margin-top: 14px; }
 .continue-card.event .cont-when { min-width: 0; color: var(--accent); font-weight: 600; margin-left: auto; }
+
+/* ganadores y editor de eventos */
+.winners { border-top: 1px solid var(--line); padding-top: 12px; }
+.winners-title { margin: 0 0 8px; font-size: 15px; }
+.winners-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-height: 300px; overflow: auto; }
+.winner { width: 120px; text-align: center; }
+.winner-stage { height: 170px; display: grid; place-items: center; border-radius: var(--r-md); background: radial-gradient(circle at 50% 80%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%); }
+.winner-stage canvas, .winner-stage img { width: 100%; height: 100%; object-fit: contain; }
+.winner .nick { font-weight: 700; margin-top: 4px; }
+.ade-img-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.ade-img { width: 200px; height: 112px; border-radius: var(--r-md); overflow: hidden; display: grid; place-items: center; border: 1px dashed var(--line); background: var(--raised); }
+.ade-img img { width: 100%; height: 100%; object-fit: cover; }
+.ade-winners { display: flex; flex-wrap: wrap; gap: 8px; }
+.ade-winner { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--raised); }
+.ade-winner img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.ade-winner button { width: 22px; height: 22px; padding: 0; border-radius: 50%; line-height: 1; }
+
+/* ---------- Ajustes en dos columnas ---------- */
+.settings.set-split { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; max-width: 1000px; }
+.set-nav { position: sticky; top: 0; display: flex; flex-direction: column; gap: 4px; padding: 14px 10px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.set-nav .nav-group:first-child { margin-top: 2px; }
+.set-item { text-align: left; padding: 10px 12px; border: 0; border-radius: var(--r-md); background: transparent; color: var(--text-2); font-weight: 600; }
+.set-item:hover { background: var(--raised); color: var(--text); }
+.set-item.active { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.set-body { min-width: 0; }
+.set-body > fieldset { display: none; margin: 0; }
+.set-body > fieldset[data-on="1"] { display: block; }
+@media (max-width: 800px) { .settings.set-split { grid-template-columns: 1fr; } .set-nav { flex-direction: row; flex-wrap: wrap; position: static; } .set-nav .nav-group { display: none; } }
+
+/* tarjetas de tema */
+.theme-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.theme-card { display: flex; flex-direction: column; gap: 8px; padding: 0; overflow: hidden; border-radius: var(--r-md); border: 2px solid var(--line); background: var(--raised); text-align: left; }
+.theme-card.active { border-color: var(--accent); }
+.tc-prev { display: grid; grid-template-columns: 26px 1fr; grid-template-rows: 1fr 1fr; gap: 6px 8px; padding: 14px; height: 84px; }
+.tc-prev i { grid-row: 1 / 3; border-radius: 6px; background: rgba(128, 128, 128, .35); }
+.tc-prev b { border-radius: 4px; background: rgba(128, 128, 128, .55); }
+.tc-dark { background: #161a24; } .tc-light { background: #eef1f7; } .tc-oled { background: #000; }
+.tc-name { padding: 0 12px 10px; font-weight: 600; font-size: 13px; }
+:root[data-theme="oled"] { --bg: #000000; --surface-solid: #0a0a0c; --raised-solid: #141418; --line: #24242b; --log-bg: #050507; color-scheme: dark; }

@@ -215,6 +215,7 @@
           <p id="event-modal-date" class="muted"></p>
           <p id="event-modal-desc"></p>
           <div id="event-modal-facts" class="facts"></div>
+          <div id="event-modal-winners" class="winners" hidden></div>
           <button id="event-modal-close" type="button">Cerrar</button>
         </div>
       </dialog>
@@ -467,6 +468,7 @@
         <div class="seg" id="ad-tabs" role="group" aria-label="Secciones de administración">
           <button type="button" class="active" data-ad-tab="event">Evento</button>
           <button type="button" data-ad-tab="team">Equipo</button>
+          <button type="button" data-ad-tab="events">Eventos</button>
           <button type="button" data-ad-tab="news">Noticias</button>
           <button type="button" data-ad-tab="users">Usuarios</button>
           <button type="button" data-ad-tab="perms">Permisos</button>
@@ -562,6 +564,15 @@
         </article>
       </div>
 
+      <div id="ad-tab-events" hidden>
+        <article class="ad-card">
+          <header><div><h3>Historial de eventos</h3><p class="muted">Lo que aparece en la pestaña Historial. Puedes editar, añadir o quitar eventos, cambiar su imagen y registrar a los ganadores (se muestran con su skin 3D).</p></div></header>
+          <div id="ad-events" class="mods-list"></div>
+          <div class="mp-actions"><button id="ad-event-add" type="button" class="primary">+ Evento nuevo</button></div>
+          <p id="ad-events-status" class="muted" role="status"></p>
+        </article>
+      </div>
+
       <div id="ad-tab-news" hidden>
         <article class="ad-card">
           <header><div><h3>Noticias</h3><p class="muted">Aparecen en Inicio. Las más nuevas, arriba.</p></div></header>
@@ -571,6 +582,34 @@
         </article>
       </div>
     </section>
+
+    <dialog id="ad-event-modal" class="event-modal mp-wide" aria-label="Editar evento">
+      <div class="event-modal-body">
+        <h3 id="ade-title">Evento</h3>
+        <div class="ade-img-row">
+          <div id="ade-img" class="ade-img" role="img" aria-label="Imagen del evento"></div>
+          <div class="mp-actions"><button id="ade-pick" type="button">Cambiar imagen</button><button id="ade-clear" type="button">Quitar</button></div>
+        </div>
+        <div class="field inline">
+          <div><label for="ade-name">Título</label><input id="ade-name" type="text" maxlength="80" /></div>
+          <div><label for="ade-date">Fecha</label><input id="ade-date" type="date" /></div>
+        </div>
+        <div class="field"><label for="ade-desc">Información</label><textarea id="ade-desc" rows="4" maxlength="800" placeholder="De qué trató, reglas, premios…"></textarea></div>
+        <div class="field inline">
+          <div><label for="ade-part">Participantes</label><input id="ade-part" type="number" min="0" max="9999" /></div>
+          <div><label for="ade-win">Ganador(es)</label>
+            <div class="input-row"><input id="ade-win" type="text" maxlength="16" placeholder="Nick de Minecraft" /><button id="ade-win-add" type="button">Añadir</button></div></div>
+        </div>
+        <div id="ade-winners" class="ade-winners"></div>
+        <p id="ade-status" class="muted" role="status"></p>
+        <div class="mp-actions">
+          <button id="ade-delete" type="button">Eliminar evento</button>
+          <button id="ade-cancel" type="button">Cancelar</button>
+          <button id="ade-save" type="button" class="primary">Guardar y publicar</button>
+        </div>
+      </div>
+    </dialog>
+
 
     <!-- EQUIPO -->
     <section class="page" id="page-team">
@@ -666,9 +705,10 @@
           <legend>Apariencia</legend>
           <div class="field">
             <label>Tema</label>
-            <div class="seg" id="theme-seg">
-              <button type="button" data-theme-value="dark">Oscuro</button>
-              <button type="button" data-theme-value="light">Claro</button>
+            <div class="theme-cards" id="theme-seg" role="group" aria-label="Tema">
+              <button type="button" data-theme-value="dark" class="theme-card"><span class="tc-prev tc-dark"><i></i><b></b><b></b></span><span class="tc-name">Oscuro</span></button>
+              <button type="button" data-theme-value="light" class="theme-card"><span class="tc-prev tc-light"><i></i><b></b><b></b></span><span class="tc-name">Claro</span></button>
+              <button type="button" data-theme-value="oled" class="theme-card"><span class="tc-prev tc-oled"><i></i><b></b><b></b></span><span class="tc-name">OLED (negro puro)</span></button>
             </div>
           </div>
           <div class="field">

@@ -39,6 +39,25 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.throws(() => a.sanitizeTeam([]), /vacío/);
   assert.strictEqual(a.sanitizeNews([{ title: 'T', date: 'x', text: 'y' }, { title: '' }]).length, 1);
 
+  // eventos del historial
+  const evs = a.sanitizeEvents([
+    { name: ' Gran Final ', date: '2026-05-01', image: 'images/final.png', description: 'x'.repeat(900), participants: '40', winners: ['Ana', 'ana', 'mal nick'], winner: 'Bob' },
+    { name: 'Sin foto', date: 'ayer', image: '../../etc/passwd' }, { name: '' }, { name: 'Remota', image: 'https://x.y/a.png' }, { name: 'Mala', image: 'javascript:alert(1)' }
+  ]);
+  assert.strictEqual(evs.length, 4);
+  assert.deepStrictEqual(evs[0].winners, ['Ana', 'Bob']);
+  assert.strictEqual(evs[0].description.length, 800);
+  assert.strictEqual(evs[0].participants, 40);
+  assert.strictEqual(evs[1].image, '');
+  assert.strictEqual(evs[1].date, '');
+  assert.strictEqual(evs[2].image, 'https://x.y/a.png');
+  assert.strictEqual(evs[3].image, '');
+  assert.ok(!('winners' in evs[1]));
+  assert.strictEqual(a.imageKind(Buffer.concat([Buffer.from([0x89]), Buffer.from('PNG\r\n\x1a\n....')])), 'png');
+  assert.strictEqual(a.imageKind(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0])), 'jpg');
+  assert.strictEqual(a.imageKind(Buffer.from('RIFF....WEBPVP8 ')), 'webp');
+  assert.strictEqual(a.imageKind(Buffer.from('MZ\x90\x00 un exe disfrazado.exe')), null);
+
   // permisos de administrador
   const U = 'a'.repeat(32);
   assert.deepStrictEqual(a.sanitizeAdmins([{ nick: 'Ana', uuid: 'AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA'.replace(/-/g, '') }, { nick: 'Ana', uuid: U }, { nick: 'x y', uuid: U }, { nick: 'Bob', uuid: 'zz' }]), [{ nick: 'Ana', uuid: U }]);
@@ -68,6 +87,7 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.deepStrictEqual((await gh.getJson('data/x.json')).data, { a: 1 });
   assert.strictEqual(await gh.getJson('data/nuevo.json'), null);
   await gh.putJson('data/x.json', { a: 2 }, 'msg');
+  await gh.putFile('data/x.json', Buffer.from('bin'), 'img');
   const rel = await gh.ensureRelease('evento-x');
   assert.strictEqual(rel.id, 7);
   await gh.uploadAsset(rel, 'a.jar.enc', Buffer.from('zz'));

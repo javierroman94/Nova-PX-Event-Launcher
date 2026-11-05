@@ -415,6 +415,54 @@ async function renderNews() {
   }
 }
 
+const winnersOf = (ev) => (Array.isArray(ev.winners) ? ev.winners : ev.winner ? [ev.winner] : []).slice(0, 12);
+let winViewers = [];
+let winEnv = null;
+function paintWinners(ev) {
+  const box = $('event-modal-winners');
+  winViewers.forEach((v) => v.destroy());
+  winViewers = [];
+  box.replaceChildren();
+  const list = winnersOf(ev);
+  box.hidden = !list.length;
+  if (!list.length) return;
+  box.append(el('h4', 'winners-title', list.length === 1 ? '🏆 Ganador' : `🏆 Ganadores (${list.length})`));
+  const row = el('div', 'winners-row');
+  list.forEach((nick, i) => {
+    const card = el('div', 'winner');
+    const stage = el('div', 'winner-stage');
+    const canvas = el('canvas', 'member-3d');
+    canvas.setAttribute('aria-label', `Skin 3D de ${nick}`);
+    stage.append(canvas);
+    let viewer = null;
+    try {
+      winEnv = winEnv || window.SkinViewer.createEnv();
+      if (winEnv) viewer = window.SkinViewer.create(canvas, { env: winEnv, distance: 106, states: ['idle', 'wave', 'jump'], start: i % 3, animated: !document.documentElement.classList.contains('no-fx') });
+    } catch {}
+    if (viewer) {
+      winViewers.push(viewer);
+      setTimeout(async () => {
+        try {
+          const r = await window.api.skinTexture(nick);
+          if (!r) return;
+          viewer.setSkin(await loadImageUrl(r.dataUrl), r.slim);
+          viewer.setCape(r.cape ? await loadImageUrl(r.cape) : null);
+        } catch {}
+      }, 120 * i);
+      card.addEventListener('mouseenter', () => viewer.trigger('wave'));
+    } else {
+      canvas.remove();
+      const img = el('img');
+      img.alt = `Skin de ${nick}`;
+      img.src = skinBust(nick);
+      stage.append(img);
+    }
+    card.append(stage, el('div', 'nick', nick));
+    row.append(card);
+  });
+  box.append(row);
+}
+
 async function renderEvents() {
   const list = $('events-list');
   list.replaceChildren();
@@ -424,7 +472,9 @@ async function renderEvents() {
     const facts = (ev) => {
       const box = el('div', 'facts');
       if (ev.participants) box.append(el('span', 'fact', `${ev.participants} participantes`));
-      if (ev.winner) box.append(el('span', 'fact', `Ganó ${ev.winner}`));
+      const w = winnersOf(ev);
+      if (w.length === 1) box.append(el('span', 'fact', `🏆 ${w[0]}`));
+      else if (w.length > 1) box.append(el('span', 'fact', `🏆 ${w.length} ganadores`));
       return box;
     };
     const open = (ev) => {
@@ -435,12 +485,14 @@ async function renderEvents() {
       $('event-modal-date').textContent = ev.date || '';
       $('event-modal-desc').textContent = ev.description || '';
       $('event-modal-facts').replaceChildren(...facts(ev).childNodes);
+      paintWinners(ev);
       if (!modal.open) modal.showModal();
     };
     if (!modal.dataset.bound) {
       modal.dataset.bound = '1';
       $('event-modal-close').addEventListener('click', () => modal.close());
       modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+      modal.addEventListener('close', () => { winViewers.forEach((v) => v.destroy()); winViewers = []; });
     }
     const cards = events.map((ev) => {
       const card = el('button', 'event-card');
@@ -1996,7 +2048,7 @@ const keep = (k, v) => { try { v === undefined ? localStorage.getItem(k) : local
 document.querySelectorAll('[data-ad-tab]').forEach((b) =>
   b.addEventListener('click', () => {
     document.querySelectorAll('[data-ad-tab]').forEach((x) => x.classList.toggle('active', x === b));
-    ['event', 'team', 'news', 'users', 'perms'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+    ['event', 'team', 'events', 'news', 'users', 'perms'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
     if (b.dataset.adTab === 'users') loadUsers();
   })
 );
@@ -2022,6 +2074,8 @@ async function loadAdmin() {
     adm.team = d.team;
     adm.news = d.news;
     adm.admins = d.admins;
+    adm.events = d.events;
+    paintAdminEvents();
     adm.owners = d.owners;
     paintPerms();
     paintTeam();
@@ -2205,6 +2259,111 @@ $('ad-users-key-save').addEventListener('click', async () => {
   } catch (e) { $('ad-users-status').textContent = cleanError(e); }
 });
 
+/* --- editor del historial de eventos --- */
+const ade = { index: -1, draft: null, preview: '' };
+function paintAdminEvents() {
+  const box = $('ad-events');
+  box.replaceChildren();
+  (adm.events || []).forEach((ev, idx) => {
+    const row = el('div', 'mod-card');
+    const src = imageUrl(ev.image);
+    if (src) { const img = el('img', 'mod-icon'); img.alt = ''; img.src = src; row.append(img); } else row.append(el('div', 'mod-icon mod-icon-empty', '🏆'));
+    const body = el('div', 'mod-body');
+    const w = ev.winners || (ev.winner ? [ev.winner] : []);
+    body.append(el('strong', '', ev.name), el('span', 'muted', `${ev.date || 'Sin fecha'}${w.length ? ' · 🏆 ' + w.join(', ') : ''}`));
+    const edit = el('button', '', 'Editar');
+    edit.type = 'button';
+    edit.addEventListener('click', () => openAdminEvent(idx));
+    row.append(body, edit);
+    box.append(row);
+  });
+  if (!(adm.events || []).length) box.append(el('p', 'muted', 'Todavía no hay eventos en el historial.'));
+}
+function paintAdeWinners() {
+  const box = $('ade-winners');
+  box.replaceChildren();
+  ade.draft.winners.forEach((n, i) => {
+    const chip = el('div', 'ade-winner');
+    const img = el('img');
+    img.alt = '';
+    img.src = skinBust(n);
+    const x = el('button', '', '×');
+    x.type = 'button';
+    x.setAttribute('aria-label', `Quitar a ${n}`);
+    x.addEventListener('click', () => { ade.draft.winners.splice(i, 1); paintAdeWinners(); });
+    chip.append(img, el('span', '', n), x);
+    box.append(chip);
+  });
+}
+function paintAdeImage() {
+  const box = $('ade-img');
+  box.replaceChildren();
+  const src = ade.preview || imageUrl(ade.draft.image);
+  if (src) { const img = el('img'); img.alt = ''; img.src = src; box.append(img); } else box.append(el('span', 'muted', 'Sin imagen'));
+}
+function openAdminEvent(idx) {
+  ade.index = idx;
+  const base = idx >= 0 ? adm.events[idx] : { name: '', date: new Date().toISOString().slice(0, 10), image: '', description: '' };
+  ade.draft = { ...base, winners: [...(base.winners || (base.winner ? [base.winner] : []))] };
+  ade.preview = '';
+  $('ade-title').textContent = idx >= 0 ? 'Editar evento' : 'Evento nuevo';
+  $('ade-name').value = ade.draft.name;
+  $('ade-date').value = ade.draft.date || '';
+  $('ade-desc').value = ade.draft.description || '';
+  $('ade-part').value = ade.draft.participants || '';
+  $('ade-win').value = '';
+  $('ade-status').textContent = '';
+  $('ade-delete').hidden = idx < 0;
+  paintAdeImage();
+  paintAdeWinners();
+  $('ad-event-modal').showModal();
+}
+$('ad-event-add').addEventListener('click', () => openAdminEvent(-1));
+$('ade-cancel').addEventListener('click', () => $('ad-event-modal').close());
+$('ade-clear').addEventListener('click', () => { ade.draft.image = ''; ade.preview = ''; paintAdeImage(); });
+$('ade-pick').addEventListener('click', async () => {
+  $('ade-status').textContent = 'Eligiendo imagen…';
+  try {
+    const r = await window.api.adminPickImage($('ade-name').value);
+    if (!r) { $('ade-status').textContent = ''; return; }
+    ade.draft.image = r.path;
+    ade.preview = r.preview;
+    paintAdeImage();
+    $('ade-status').textContent = 'Imagen subida. Se verá en el historial al guardar.';
+  } catch (e) { $('ade-status').textContent = cleanError(e); }
+});
+function addWinner() {
+  const n = $('ade-win').value.trim();
+  if (!/^[A-Za-z0-9_]{1,16}$/.test(n)) { $('ade-status').textContent = 'Escribe un nick de Minecraft válido (letras, números y _).'; return; }
+  if (!ade.draft.winners.some((w) => w.toLowerCase() === n.toLowerCase())) ade.draft.winners.push(n);
+  $('ade-win').value = '';
+  $('ade-status').textContent = '';
+  paintAdeWinners();
+}
+$('ade-win-add').addEventListener('click', addWinner);
+$('ade-win').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addWinner(); } });
+async function saveAdminEvents(list, closeModal) {
+  try {
+    adm.events = await window.api.adminSaveEvents(list);
+    paintAdminEvents();
+    $('ad-events-status').textContent = 'Historial publicado. Los jugadores lo verán en unos minutos.';
+    if (closeModal) $('ad-event-modal').close();
+  } catch (e) { $('ade-status').textContent = cleanError(e); $('ad-events-status').textContent = cleanError(e); }
+}
+$('ade-save').addEventListener('click', () => {
+  const name = $('ade-name').value.trim();
+  if (!name) { $('ade-status').textContent = 'Ponle un título al evento.'; return; }
+  const ev = { ...ade.draft, name, date: $('ade-date').value, description: $('ade-desc').value, participants: Number($('ade-part').value) || 0 };
+  delete ev.winner;
+  const list = [...adm.events];
+  if (ade.index >= 0) list[ade.index] = ev; else list.unshift(ev);
+  saveAdminEvents(list, true);
+});
+$('ade-delete').addEventListener('click', () => {
+  if (!confirm(`¿Eliminar "${ade.draft.name}" del historial?`)) return;
+  saveAdminEvents(adm.events.filter((_, i) => i !== ade.index), true);
+});
+
 function paintPerms() {
   const box = $('ad-perms');
   box.replaceChildren();
@@ -2297,3 +2456,50 @@ $('ad-news-save').addEventListener('click', async () => {
 
 $('nav-back').addEventListener('click', () => navStep(-1));
 $('nav-fwd').addEventListener('click', () => navStep(1));
+
+
+/* ---------- Ajustes con menú lateral (secciones) ---------- */
+(function settingsLayout() {
+  const root = document.querySelector('#page-settings .settings');
+  if (!root) return;
+  const GROUPS = [
+    ['Visualización', ['Apariencia']],
+    ['Juego', ['Memoria y Java', 'Ventana del juego', 'Al jugar']],
+    ['Cuenta', ['Modo administrador']],
+    ['Sistema', ['Actualizaciones', 'Archivos del juego']]
+  ];
+  const sets = [...root.querySelectorAll(':scope > fieldset')];
+  const byName = new Map(sets.map((f) => [f.querySelector('legend').textContent.trim(), f]));
+  const nav = el('nav', 'set-nav');
+  nav.setAttribute('aria-label', 'Secciones de ajustes');
+  const body = el('div', 'set-body');
+  const items = [];
+  const show = (name) => {
+    items.forEach((it) => it.btn.classList.toggle('active', it.name === name));
+    byName.forEach((f, n) => (f.dataset.on = n === name ? '1' : ''));
+  };
+  GROUPS.forEach(([group, names]) => {
+    const present = names.filter((n) => byName.has(n));
+    if (!present.length) return;
+    nav.append(el('span', 'nav-group', group));
+    present.forEach((n) => {
+      const b = el('button', 'set-item', n);
+      b.type = 'button';
+      b.addEventListener('click', () => show(n));
+      nav.append(b);
+      items.push({ name: n, btn: b });
+      body.append(byName.get(n));
+    });
+  });
+  sets.forEach((f) => { if (!body.contains(f)) body.append(f); }); // por si queda alguna sin grupo
+  root.append(nav, body);
+  root.classList.add('set-split');
+  // El botón del modo administrador sigue a la visibilidad de su sección.
+  const adm = byName.get('Modo administrador');
+  if (adm) {
+    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) it.btn.hidden = adm.hidden; if (adm.hidden && adm.dataset.on) show('Apariencia'); };
+    new MutationObserver(sync).observe(adm, { attributes: true, attributeFilter: ['hidden'] });
+    sync();
+  }
+  show('Apariencia');
+})();

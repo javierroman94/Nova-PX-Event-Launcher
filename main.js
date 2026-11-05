@@ -130,7 +130,7 @@ function cleanSettings(s) {
     height: num(s.height, 360, 4320, d.height),
     fullscreen: !!s.fullscreen,
     gameBehavior: ['minimize', 'tray', 'keep'].includes(s.gameBehavior) ? s.gameBehavior : d.gameBehavior,
-    theme: s.theme === 'light' ? 'light' : 'dark',
+    theme: ['light', 'oled'].includes(s.theme) ? s.theme : 'dark',
     accent: /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
     bgDim: num(s.bgDim, 0, 90, d.bgDim),
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
@@ -1029,7 +1029,7 @@ ipcMain.handle('admin:logout', () => {
 ipcMain.handle('admin:load', async () => {
   const r = await requireAdmin();
   const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
-  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
+  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], events: (await get('events')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
 });
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
@@ -1055,6 +1055,27 @@ ipcMain.handle('admin:saveAdmins', async (_e, list) => {
   const clean = adminLib.sanitizeAdmins(list);
   await r.putJson('data/admins.json', clean, 'Permisos de administrador actualizados (desde el launcher)');
   return clean;
+});
+ipcMain.handle('admin:saveEvents', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeEvents(list);
+  await r.putJson('data/events.json', clean, 'Historial de eventos actualizado (desde el launcher)');
+  return clean;
+});
+// Elige una imagen, la valida por sus bytes (máx. 3 MB) y la sube a data/images del repositorio.
+ipcMain.handle('admin:pickImage', async (_e, label) => {
+  const r = await requireAdmin();
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen del evento', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+  if (res.canceled) return null;
+  const buf = fs.readFileSync(res.filePaths[0]);
+  if (buf.length > adminLib.MAX_IMAGE) throw new Error('La imagen pesa más de 3 MB. Redúcela y vuelve a intentarlo.');
+  const kind = adminLib.imageKind(buf);
+  if (!kind) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
+  const name = `${modpacks.slugify(cleanStr(label, 60) || 'evento')}-${Date.now().toString(36)}.${kind}`;
+  send('modpack:progress', { text: 'Subiendo la imagen…' });
+  await r.putFile(`data/images/${name}`, buf, `Imagen del evento: ${name} (desde el launcher)`);
+  const mime = kind === 'jpg' ? 'image/jpeg' : `image/${kind}`;
+  return { path: `images/${name}`, preview: `data:${mime};base64,${buf.toString('base64')}` };
 });
 ipcMain.handle('admin:saveNews', async (_e, list) => {
   const r = await requireAdmin();
