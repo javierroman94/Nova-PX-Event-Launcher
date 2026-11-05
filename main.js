@@ -11,6 +11,7 @@ const loaders = require('./lib/loaders');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
+const serversLib = require('./lib/servers');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
 const skinsApi = require('./lib/skins');
 const { classifyNetworkError } = require('./lib/errors');
@@ -1510,11 +1511,37 @@ ipcMain.handle('link:open', (_e, url) => {
   return shell.openExternal(u.href);
 });
 
+// Estado del servidor de un modpack: se lee de su servers.dat. Nunca se devuelve la dirección, solo si está activo.
+const packServerCache = new Map();
+ipcMain.handle('modpacks:serverStatus', async (_e, id) => {
+  const entry = readModpacks().find((x) => x.id === cleanStr(id, 60));
+  if (!entry) return { found: false };
+  const srv = serversLib.findPackServer(instanceDir(GAME_DIR, { event: { id: entry.id } }));
+  if (!srv) return { found: false };
+  const key = `${srv.host}:${srv.port}`;
+  const hit = packServerCache.get(key);
+  if (hit && Date.now() - hit.at < 60000) return hit.value;
+  let value;
+  try {
+    const data = await fetchJson(`https://api.mcsrvstat.us/3/${encodeURIComponent(srv.port === 25565 ? srv.host : key)}`);
+    value = { found: true, online: !!data.online, players: data.players ? { online: data.players.online, max: data.players.max } : null };
+  } catch {
+    value = { found: true, online: false, unknown: true };
+  }
+  packServerCache.set(key, { at: Date.now(), value });
+  return value;
+});
+
 // Estado del servidor del evento (consulta pública a mcsrvstat.us).
 ipcMain.handle('server:status', async () => {
   try {
     const manifest = await loadData('manifest');
-    const { host, port } = manifest.server || {};
+    let { host, port } = manifest.server || {};
+    if (!host) {
+      // Sin IP en el manifest: se toma la del servers.dat del modpack del evento.
+      const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
+      if (found) ({ host, port } = found);
+    }
     if (!host) return { configured: false };
     const target = port && Number(port) !== 25565 ? `${host}:${port}` : host;
     const data = await fetchJson(`https://api.mcsrvstat.us/3/${encodeURIComponent(target)}`);

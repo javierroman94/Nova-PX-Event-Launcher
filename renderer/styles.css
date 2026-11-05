@@ -1183,3 +1183,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* tarjeta de progreso global (importar, instalar, publicar) */
 .busy-card { position: fixed; right: 20px; bottom: 20px; z-index: 60; width: min(340px, 86vw); display: grid; gap: 6px; padding: 14px 16px; border-radius: 14px; background: var(--surface, var(--raised)); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(0,0,0,.45); }
 .busy-card progress { width: 100%; height: 6px; }
+
+/* estado del servidor de un modpack (sin mostrar la IP) */
+.srv-pill { font-size: 12px; font-weight: 600; width: fit-content; }
+.srv-pill.on { color: #4ade80; }
+.srv-pill.off { color: var(--text-3, #8b93a1); }

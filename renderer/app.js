@@ -311,7 +311,10 @@ async function renderContinue() {
       const card = el('div', 'continue-card');
       card.append(packIcon(p, 'np-icon'));
       const body = el('div', 'mod-body');
-      body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}`));
+      const cs = el('span', 'srv-pill');
+      cs.hidden = true;
+      body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}`), cs);
+      fillServerPill(cs, p.id);
       const when = el('span', 'cont-when', ago(p.lastPlayedAt));
       const play = el('button', 'primary cont-play', '▶ Jugar');
       play.type = 'button';
@@ -642,6 +645,16 @@ async function loadInstalled() {
 }
 
 const libView = { sort: 'recent', group: 'none', filter: 'all' };
+// Muestra solo si el servidor del modpack está activo y cuántos jugadores hay; nunca la dirección.
+function fillServerPill(node, id) {
+  window.api.modpackServerStatus(id).then((s) => {
+    if (!s || !s.found || s.unknown) return;
+    node.hidden = false;
+    node.className = `srv-pill ${s.online ? 'on' : 'off'}`;
+    node.textContent = s.online ? (s.players ? `● ${s.players.online}/${s.players.max} en línea` : '● Servidor activo') : '● Servidor apagado';
+  }).catch(() => {});
+}
+
 function packCard(p) {
   const card = el('div', 'event-card mp-card');
   card.tabIndex = 0;
@@ -656,6 +669,10 @@ function packCard(p) {
   media.append(play);
   const body = el('div', 'event-card-body');
   body.append(el('h3', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${ago(p.lastPlayedAt)}`));
+  const srv = el('span', 'srv-pill');
+  srv.hidden = true;
+  body.append(srv);
+  fillServerPill(srv, p.id);
   card.append(media, body);
   const open = () => openDetail(p);
   card.addEventListener('click', open);
@@ -1518,10 +1535,10 @@ async function refreshServer() {
   } else if (s.online) {
     dot.classList.add('on');
     const players = s.players ? `${s.players.online} de ${s.players.max} jugadores conectados` : 'En línea';
-    detail.textContent = `${s.host}: ${players}`;
+    detail.textContent = players;
   } else {
     dot.classList.add('off');
-    detail.textContent = `${s.host} está desconectado.`;
+    detail.textContent = 'El servidor está desconectado.';
   }
 }
 
