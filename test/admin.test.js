@@ -74,6 +74,9 @@ const { GithubRepo, GithubError } = require('../lib/github');
     calls.push([o.method || 'GET', url, o.headers.Authorization]);
     const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
     if (url.endsWith('/repos/o/r')) return json(200, { full_name: 'o/r', permissions: { push: true } });
+    if (url.includes('/git/ref/heads/main')) return json(200, { object: { sha: 'H1' } });
+    if (url.endsWith('/git/refs') && o.method === 'POST') return json(201, {});
+    if (url.includes('/git/refs/heads/novapx-check') && o.method === 'DELETE') return json(204, {});
     if (url.includes('/contents/data/x.json') && (o.method || 'GET') === 'GET') return json(200, { sha: 'S1', content: Buffer.from('{"a":1}').toString('base64') });
     if (url.includes('/contents/data/x.json')) { const b = JSON.parse(o.body); assert.strictEqual(b.sha, 'S1'); assert.strictEqual(b.branch, 'main'); return json(200, {}); }
     if (url.includes('/releases/tags/')) return json(404, { message: 'Not Found' });
@@ -84,6 +87,14 @@ const { GithubRepo, GithubError } = require('../lib/github');
   };
   const gh = new GithubRepo({ owner: 'o', repo: 'r', token: 'TOK', fetchImpl: fake });
   assert.deepStrictEqual(await gh.check(), { canPush: true, fullName: 'o/r' });
+  // Token de solo lectura: GitHub dice push=true (permisos del usuario) pero rechaza crear la rama.
+  const ro = new GithubRepo({ owner: 'o', repo: 'r', token: 'RO', fetchImpl: async (url, o) => {
+    const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
+    if (url.endsWith('/repos/o/r')) return json(200, { full_name: 'o/r', permissions: { push: true } });
+    if (url.includes('/git/ref/heads/')) return json(200, { object: { sha: 'H1' } });
+    return json(403, { message: 'Resource not accessible by personal access token' });
+  } });
+  assert.strictEqual((await ro.check()).canPush, false, 'un token de solo lectura no debe pasar');
   assert.deepStrictEqual((await gh.getJson('data/x.json')).data, { a: 1 });
   assert.strictEqual(await gh.getJson('data/nuevo.json'), null);
   await gh.putJson('data/x.json', { a: 2 }, 'msg');
