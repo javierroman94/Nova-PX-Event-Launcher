@@ -855,6 +855,60 @@
   <script src="theme.js"></script>
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
+  <!-- Asistente de primer uso -->
+  <dialog id="welcome-modal" class="event-modal welcome" aria-label="Bienvenida">
+    <div class="event-modal-body">
+      <div class="wz-dots" id="wz-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+      <section data-wz="0">
+        <img class="wz-logo" src="images/logo.png" alt="" />
+        <h3>Te damos la bienvenida a Nova PX</h3>
+        <p class="muted">En un minuto lo dejamos listo para jugar.</p>
+        <ul class="wz-list">
+          <li><b>Eventos:</b> entra al evento de la comunidad con un clic.</li>
+          <li><b>Tus modpacks:</b> crea los tuyos, instala de Modrinth o importa de otros launchers.</li>
+          <li><b>Todo automático:</b> el launcher descarga la versión de Java que necesita.</li>
+        </ul>
+      </section>
+
+      <section data-wz="1" hidden>
+        <h3>¿Cómo quieres entrar?</h3>
+        <p id="wz-session" class="muted">Con una cuenta de Minecraft original (Microsoft) puedes entrar a servidores premium. Sin cuenta, juegas con un nombre.</p>
+        <div class="mp-actions"><button id="wz-ms" type="button" class="primary">Iniciar sesión con Microsoft</button></div>
+        <div class="field inline">
+          <div><label for="wz-nick">…o juega sin cuenta, con este nombre</label><input id="wz-nick" type="text" maxlength="16" placeholder="TuNombre" autocomplete="off" /></div>
+          <div class="mp-actions"><button id="wz-offline" type="button">Usar este nombre</button></div>
+        </div>
+        <p id="wz-msg" class="muted" role="status"></p>
+      </section>
+
+      <section data-wz="2" hidden>
+        <h3>Memoria para Minecraft</h3>
+        <p id="wz-ram-hint" class="muted"></p>
+        <input id="wz-ram" type="range" min="1" max="16" step="1" value="4" aria-label="Memoria RAM" />
+        <div class="wz-ram-out"><strong id="wz-ram-out">4 GB</strong> <span id="wz-ram-rec" class="ad-chip ok">Recomendado</span></div>
+        <small class="muted">Más memoria no siempre es mejor: déjale al menos 2 GB libres a tu sistema. Puedes cambiarlo luego en Ajustes.</small>
+      </section>
+
+      <section data-wz="3" hidden>
+        <h3>¡Todo listo!</h3>
+        <ul class="wz-list">
+          <li><b>Inicio:</b> tus últimos modpacks y el evento.</li>
+          <li><b>Modpacks:</b> crea una instancia, explora Modrinth o importa.</li>
+          <li><b>Ajustes:</b> tema, RAM, Java y más.</li>
+        </ul>
+      </section>
+
+      <div class="mp-actions wz-nav">
+        <button id="wz-skip" type="button">Omitir</button>
+        <span class="wz-spacer"></span>
+        <button id="wz-back" type="button">Atrás</button>
+        <button id="wz-next" type="button" class="primary">Empezar</button>
+      </div>
+    </div>
+  </dialog>
+
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -227,6 +227,10 @@ Se publican los mods activos; configuración, shaders y texturas no viajan. Guar
 
 Si varias personas del equipo publican, cada una crea su propio token (y se las añade como colaboradoras del repo). Si pierdes un token: revócalo en GitHub y crea otro. Para ver quién usa el launcher (pestaña **Admin → Usuarios**) hace falta el contador gratis de Cloudflare: guía en [`docs/CLOUDFLARE.md`](CLOUDFLARE.md).
 
+## 4j. Asistente de primer uso (v1.0.28)
+
+La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida, cuenta (Microsoft o solo un nombre), memoria RAM recomendada según tu equipo y un resumen. Puedes omitirlo; no vuelve a aparecer (se guarda en tus ajustes).
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).

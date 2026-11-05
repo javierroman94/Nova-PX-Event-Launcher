@@ -1166,3 +1166,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .tc-dark { background: #161a24; } .tc-light { background: #eef1f7; } .tc-oled { background: #000; }
 .tc-name { padding: 0 12px 10px; font-weight: 600; font-size: 13px; }
 :root[data-theme="oled"] { --bg: #000000; --surface-solid: #0a0a0c; --raised-solid: #141418; --line: #24242b; --log-bg: #050507; color-scheme: dark; }
+
+/* asistente de primer uso */
+.welcome { width: min(560px, 92vw); }
+.welcome section { min-height: 250px; display: flex; flex-direction: column; gap: 12px; }
+.welcome h3 { margin: 0; font-size: 22px; }
+.wz-logo { width: 64px; height: 64px; border-radius: 16px; background: #fff; padding: 6px; }
+.wz-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--text-2); }
+.wz-dots { display: flex; gap: 6px; margin-bottom: 14px; }
+.wz-dots i { height: 4px; flex: 1; border-radius: 4px; background: var(--line); transition: background .2s; }
+.wz-dots i.on { background: var(--accent); }
+.wz-nav { margin-top: 12px; align-items: center; }
+.wz-spacer { flex: 1; }
+.wz-ram-out { font-size: 28px; display: flex; align-items: center; gap: 10px; }

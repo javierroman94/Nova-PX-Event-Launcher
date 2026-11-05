@@ -97,6 +97,7 @@ function defaultSettings() {
     discordRpc: true,
     notifyEvents: true,
     shareUsage: true,
+    welcomed: false,
     playSeconds: 0
   };
 }
@@ -138,6 +139,7 @@ function cleanSettings(s) {
     discordRpc: s.discordRpc !== false,
     notifyEvents: s.notifyEvents !== false,
     shareUsage: s.shareUsage !== false,
+    welcomed: s.welcomed === true,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
 }
