@@ -1051,6 +1051,26 @@ $('ps-save').addEventListener('click', async () => {
   }
 });
 
+$('ps-icon-pick').addEventListener('click', async () => {
+  try {
+    const e = await window.api.modpackPickIcon({ id: mp.pack.id });
+    if (!e) return;
+    mp.pack = e;
+    openDetailHeader(e);
+    await loadInstalled();
+    $('ps-status').textContent = 'Imagen actualizada.';
+  } catch (err) { $('ps-status').textContent = cleanError(err); }
+});
+$('ps-icon-clear').addEventListener('click', async () => {
+  try {
+    mp.pack = await window.api.modpackUpdate({ id: mp.pack.id, changes: { removeIcon: true } });
+    openDetailHeader(mp.pack);
+    await loadInstalled();
+    $('ps-status').textContent = 'Imagen quitada.';
+  } catch (err) { $('ps-status').textContent = cleanError(err); }
+});
+window.api.onModpacksChanged(async () => { await loadInstalled(); if (mp.view === 'library') renderLibrary(); });
+
 $('ps-dup').addEventListener('click', async () => {
   const withWorlds = confirm('¿Copiar también los mundos?\n\nAceptar: copia con mundos. Cancelar: copia solo los mods y ajustes.');
   $('ps-dup').disabled = true;

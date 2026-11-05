@@ -557,6 +557,7 @@ app.whenReady().then(() => {
   if (!gotLock) return;
   applyDiscordSetting();
   setTimeout(pingUsage, 3000);
+  setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
   setupUpdater();
@@ -825,6 +826,7 @@ ipcMain.handle('modpacks:update', (_e, p = {}) => {
     if (!t) throw new Error('El nombre no puede quedar vacío.');
     entry.title = t;
   }
+  if (c.removeIcon === true) { entry.icon = ''; entry.iconTried = true; }
   if (c.emoji !== undefined) entry.emoji = packs.buildCustomEntry({ name: 'x', icon: c.emoji, mcVersion: '1.0' }).emoji;
   if (c.notes !== undefined) entry.notes = packs.cleanNotes(c.notes);
   if (c.settings !== undefined) entry.settings = packs.sanitizeSettings(c.settings);
@@ -834,6 +836,27 @@ ipcMain.handle('modpacks:update', (_e, p = {}) => {
     entry.mcVersion = t.mcVersion;
     entry.loader = { type: t.loader.type, version: '' };
   }
+  writeModpacks(list);
+  return entry;
+});
+
+// Imagen propia para una instancia: se recorta a cuadrado y se reduce a 128 px (queda en modpacks.json como data URL).
+ipcMain.handle('modpacks:pickIcon', async (_e, p = {}) => {
+  const list = readModpacks();
+  const entry = list.find((x) => x.id === cleanStr(p.id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen del modpack', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+  if (res.canceled) return null;
+  const buf = fs.readFileSync(res.filePaths[0]);
+  if (buf.length > adminLib.MAX_IMAGE) throw new Error('La imagen pesa más de 3 MB. Redúcela y vuelve a intentarlo.');
+  if (!adminLib.imageKind(buf)) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
+  let img = nativeImage.createFromBuffer(buf);
+  if (img.isEmpty()) throw new Error('No pude leer esa imagen.');
+  const { width, height } = img.getSize();
+  const side = Math.min(width, height);
+  img = img.crop({ x: Math.floor((width - side) / 2), y: Math.floor((height - side) / 2), width: side, height: side }).resize({ width: 128, height: 128, quality: 'best' });
+  entry.icon = `data:image/png;base64,${img.toPNG().toString('base64')}`;
+  entry.iconTried = true;
   writeModpacks(list);
   return entry;
 });
@@ -1155,6 +1178,30 @@ function packEntryFrom(id, title, r, extra = {}) {
   };
 }
 
+// Los archivos .mrpack/.novapx no traen imagen: si Modrinth tiene un modpack con el mismo nombre, se usa su icono.
+const normName = (s) => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+async function lookupModrinthIcon(title) {
+  const q = normName(title);
+  if (q.length < 3) return '';
+  try {
+    const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(String(title).slice(0, 80))}&facets=${encodeURIComponent('[["project_type:modpack"]]')}&limit=5`;
+    const r = await apiRequest(url);
+    const hit = (r.hits || []).find((h) => normName(h.title) === q) || (r.hits || []).find((h) => { const n = normName(h.title); return n.length >= 5 && q.length >= 5 && (n.startsWith(q) || q.startsWith(n)); });
+    return hit && /^https:\/\//i.test(hit.icon_url || '') ? String(hit.icon_url).slice(0, 300) : '';
+  } catch { return ''; }
+}
+async function backfillIcons() {
+  const list = readModpacks();
+  let changed = false;
+  for (const e of list) {
+    if (e.icon || e.emoji || e.iconTried || (e.provider !== 'imported' && e.provider !== 'copy')) continue;
+    e.iconTried = true;
+    changed = true;
+    e.icon = await lookupModrinthIcon(e.title);
+  }
+  if (changed) { writeModpacks(list); send('modpacks:changed', {}); }
+}
+
 async function importFromPath(src) {
   const st = fs.statSync(src);
   const list = readModpacks();
@@ -1188,6 +1235,7 @@ async function importFromPath(src) {
     else if (kind === 'curse') throw new Error('Los modpacks .zip de CurseForge no se pueden importar. Busca el mismo modpack en Modrinth, o impórtalo desde la carpeta de su instancia en el CurseForge App.');
     else r = importers.installPrism({ buffer, root });
     const entry = packEntryFrom(tmpId, r.name, r, extra);
+    if (!entry.icon && !entry.emoji) { entry.icon = await lookupModrinthIcon(entry.title); entry.iconTried = true; }
     return entry;
   } catch (err) {
     fs.rmSync(root, { recursive: true, force: true });

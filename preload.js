@@ -77,6 +77,8 @@ contextBridge.exposeInMainWorld('api', {
   modpackMcVersions: () => ipcRenderer.invoke('modpacks:mcVersions'),
   modpackCreate: (p) => ipcRenderer.invoke('modpacks:create', p),
   modpackUpdate: (p) => ipcRenderer.invoke('modpacks:update', p),
+  modpackPickIcon: (p) => ipcRenderer.invoke('modpacks:pickIcon', p),
+  onModpacksChanged: (cb) => ipcRenderer.on('modpacks:changed', () => cb()),
   modpackDuplicate: (p) => ipcRenderer.invoke('modpacks:duplicate', p),
   instanceBackup: (p) => ipcRenderer.invoke('instance:backup', p),
   instanceBackups: (id) => ipcRenderer.invoke('instance:backups', id),
