@@ -42,6 +42,9 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 | 🛠️ **Tus propios modpacks** | Crea instancias, ajusta RAM/Java por modpack, duplica, respalda mundos y actualiza mods. |
 | 🔁 **Importar y exportar** | Importa de Prism/MultiMC, CurseForge App, Modrinth y exporta un `.novapx` propio para compartir. |
 | 📊 **Estadísticas de uso (opcional)** | Contador gratis en Cloudflare para el administrador. Cada jugador puede apagarlo; no guarda IP. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
+| 🧭 **Asistente de primer uso** | Al abrirlo por primera vez te guía: cuenta, RAM recomendada según tu equipo y listo. |
+| 📡 **Estado del servidor** | Cada modpack muestra si su servidor está activo y cuántos jugadores hay, leyendo su `servers.dat`. La IP no se muestra. |
+| 🛰️ **Modo administrador** | Solo para el dueño y los jugadores autorizados: crea el modpack en el launcher y publícalo como evento con un botón (mods cifrados + manifest), edita equipo, noticias y eventos. |
 | 🧰 **Lista de mods** | Pestaña con nombre, icono y versión de cada mod instalado (datos de [Modrinth](https://modrinth.com)). |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y botón de **Reparar instalación**. |
 | 🔔 **Avisos de evento** | Notificación de escritorio una hora antes de que empiece un evento. |
@@ -92,26 +95,42 @@ El contenido se edita **sin tocar el programa**, en la carpeta [`data/`](data):
 Para publicar una versión nueva del programa:
 
 ```bash
-git tag v1.0.12
-git push origin v1.0.12
+git tag v1.0.33
+git push origin v1.0.33
 ```
 
 GitHub Actions compila el instalador y lo publica en **Releases**; los launchers instalados lo descargan solos. Todo el detalle (mods cifrados, Forge, servidor, instancias, Discord) está en la **[Guía completa](docs/GUIA.md)**.
+
+## 🛰️ Modo administrador
+
+Las funciones de administración no aparecen para los jugadores normales. Se activan en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado (solo este repositorio, permiso *Contents: lectura y escritura*) y una cuenta premium autorizada. El flujo es: crear el modpack en el launcher → probarlo → **publicarlo como evento**. Detalles y recomendaciones de seguridad en la [Guía](docs/GUIA.md); el contador de usuarios opcional está en [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
+
+## ❓ Preguntas frecuentes
+
+**¿Windows dice «editor desconocido»?** El instalador aún no está firmado digitalmente. Pulsa *Más información → Ejecutar de todas formas*.
+
+**¿Necesito instalar Java?** No, el launcher descarga el que cada versión necesita.
+
+**¿Puedo usar mis modpacks de otros launchers?** Sí: *Importar archivo* acepta `.mrpack`, `.novapx` y zips de Prism/MultiMC; *Importar carpeta* acepta instancias de Prism y de la app de CurseForge.
+
+**¿Qué datos se envían?** Solo un contador anónimo opcional (sin IP ni nick) que puedes apagar en Ajustes.
 
 ## 🧱 Estructura
 
 ```
 main.js · preload.js      Proceso principal de Electron
 renderer/                 Interfaz (HTML, CSS, JS, visor 3D en WebGL)
-lib/                      Loaders, cifrado del modpack, Java, skins, Discord, instancias
+lib/                      Loaders, cifrado, Java, skins, Discord, instancias, importadores, admin, GitHub
+worker/                   Contador de usuarios opcional (Cloudflare Worker)
 data/                     Contenido editable (se lee desde GitHub)
 tools/                    Utilidades (generar mods cifrados)
 test/                     Pruebas automáticas
-docs/                     Guía y capturas
+docs/                     Guía, guía de Cloudflare y capturas
+CHANGELOG.md              Historial de versiones
 ```
 
 ## 👥 Equipo
 
-Hecho por el equipo de **Nova PX** · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
+Hecho por el equipo de **Nova PX** · [Historial de cambios](CHANGELOG.md) · [Cómo colaborar](CONTRIBUTING.md) · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
 
 <sub>Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</sub>

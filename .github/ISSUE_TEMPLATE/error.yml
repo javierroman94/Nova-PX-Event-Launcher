@@ -1,0 +1,28 @@
+name: Reportar un error
+description: Algo no funciona como debería
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versión del launcher
+      description: Aparece abajo en la barra lateral (por ejemplo 1.0.32).
+    validations: { required: true }
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options: [Windows 11, Windows 10, Linux, Otro]
+    validations: { required: true }
+  - type: textarea
+    id: que
+    attributes:
+      label: ¿Qué pasó?
+      description: Explica qué hacías y qué esperabas. Si puedes, adjunta una captura.
+    validations: { required: true }
+  - type: textarea
+    id: consola
+    attributes:
+      label: Registro de la Consola
+      description: Copia las últimas líneas de la pestaña Consola. No incluyas contraseñas ni tokens.
+      render: text
