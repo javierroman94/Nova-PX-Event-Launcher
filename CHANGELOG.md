@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.33
+- Animación de inicio nueva: sobria y de menos de 2 segundos.
+- Guía sobre el registro de una app de Microsoft (`docs/MICROSOFT.md`).
+
 ## 1.0.32
 - Estado del servidor de cada modpack (activo y jugadores conectados) leyendo su `servers.dat`. La IP nunca se muestra.
 

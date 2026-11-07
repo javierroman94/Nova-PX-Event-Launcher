@@ -14,7 +14,7 @@ const skinBust = (nick) => `https://minotar.net/armor/bust/${encodeURIComponent(
 const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}/64.png`;
 
 /* ---------- animación de inicio ---------- */
-// Dura unos 4 segundos (lo que tarda la barra de carga). Se puede saltar con clic o cualquier tecla.
+// Dura menos de 2 segundos. Se puede saltar con clic o cualquier tecla.
 (function splash() {
   const s = document.getElementById('splash');
   if (!s) return;
@@ -23,9 +23,9 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
     if (closed) return;
     closed = true;
     s.classList.add('hide');
-    setTimeout(() => s.remove(), 700);
+    setTimeout(() => s.remove(), 600);
   }
-  setTimeout(close, 3900);
+  setTimeout(close, 1900);
   s.addEventListener('click', close);
   document.addEventListener('keydown', close, { once: true });
 })();

@@ -103,7 +103,7 @@ GitHub Actions compila el instalador y lo publica en **Releases**; los launchers
 
 ## 🛰️ Modo administrador
 
-Las funciones de administración no aparecen para los jugadores normales. Se activan en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado (solo este repositorio, permiso *Contents: lectura y escritura*) y una cuenta premium autorizada. El flujo es: crear el modpack en el launcher → probarlo → **publicarlo como evento**. Detalles y recomendaciones de seguridad en la [Guía](docs/GUIA.md); el contador de usuarios opcional está en [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
+Las funciones de administración no aparecen para los jugadores normales. Se activan en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado (solo este repositorio, permiso *Contents: lectura y escritura*) y una cuenta premium autorizada. El flujo es: crear el modpack en el launcher → probarlo → **publicarlo como evento**. Detalles y recomendaciones de seguridad en la [Guía](docs/GUIA.md); sobre el inicio de sesión con Microsoft y el registro de una app propia, ver [`docs/MICROSOFT.md`](docs/MICROSOFT.md); el contador de usuarios opcional está en [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
 
 ## ❓ Preguntas frecuentes
 
