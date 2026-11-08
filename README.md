@@ -42,6 +42,9 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 | 🛠️ **Tus propios modpacks** | Crea instancias, ajusta RAM/Java por modpack, duplica, respalda mundos y actualiza mods. |
 | 🔁 **Importar y exportar** | Importa de Prism/MultiMC, CurseForge App, Modrinth y exporta un `.novapx` propio para compartir. |
 | 📊 **Estadísticas de uso (opcional)** | Contador gratis en Cloudflare para el administrador. Cada jugador puede apagarlo; no guarda IP. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
+| 🌌 **Nova Neón** | Tema futurista animado: vidrio, auroras, rejilla en movimiento, borde de luz y red de partículas. Se puede cambiar por Oscuro, Claro u OLED. |
+| 🎄 **Temporadas** | Decoración automática por fecha (Halloween, Navidad con nieve y luces, Año Nuevo con confeti) o elegida en Ajustes. |
+| 🌐 **Idiomas** | Paquetes de idioma (inglés incluido). La comunidad puede añadir más copiando un `.json`. |
 | 🧭 **Asistente de primer uso** | Al abrirlo por primera vez te guía: cuenta, RAM recomendada según tu equipo y listo. |
 | 📡 **Estado del servidor** | Cada modpack muestra si su servidor está activo y cuántos jugadores hay, leyendo su `servers.dat`. La IP no se muestra. |
 | 🛰️ **Modo administrador** | Solo para el dueño y los jugadores autorizados: crea el modpack en el launcher y publícalo como evento con un botón (mods cifrados + manifest), edita equipo, noticias y eventos. |

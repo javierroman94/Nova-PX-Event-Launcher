@@ -12,6 +12,7 @@
 <body>
   <div id="app-bg" aria-hidden="true"></div>
   <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="season-lights" aria-hidden="true"><i></i><i></i></div>
 
   <div id="splash" class="splash" role="status" aria-label="Cargando Nova PX - Event Launcher">
     <div class="splash-content">
@@ -695,12 +696,22 @@
         </fieldset>
 
         <fieldset>
+          <legend>Idioma</legend>
+          <div class="field inline">
+            <div><label for="lang-select">Idioma del launcher</label><select id="lang-select"></select></div>
+            <div class="mp-actions"><button id="lang-folder" type="button">Añadir idioma…</button></div>
+          </div>
+          <small class="muted">Lo que no esté traducido se muestra en español. Para añadir otro idioma, copia un paquete .json a la carpeta que se abre con «Añadir idioma…».</small>
+        </fieldset>
+
+        <fieldset>
           <legend>Apariencia</legend>
           <div class="field">
             <label>Tema</label>
             <div class="theme-cards" id="theme-seg" role="group" aria-label="Tema">
               <button type="button" data-theme-value="dark" class="theme-card"><span class="tc-prev tc-dark"><i></i><b></b><b></b></span><span class="tc-name">Oscuro</span></button>
               <button type="button" data-theme-value="light" class="theme-card"><span class="tc-prev tc-light"><i></i><b></b><b></b></span><span class="tc-name">Claro</span></button>
+              <button type="button" data-theme-value="nova" class="theme-card"><span class="tc-prev tc-nova"><i></i><b></b><b></b></span><span class="tc-name">Nova Neón</span></button>
               <button type="button" data-theme-value="oled" class="theme-card"><span class="tc-prev tc-oled"><i></i><b></b><b></b></span><span class="tc-name">OLED (negro puro)</span></button>
             </div>
           </div>
@@ -722,6 +733,16 @@
           <div class="field">
             <label for="bg-blur">Desenfoque del fondo</label>
             <input id="bg-blur" type="range" min="0" max="24" step="1" />
+          </div>
+          <div class="field">
+            <label for="season-select">Decoración de temporada</label>
+            <select id="season-select">
+              <option value="auto">Automática (según la fecha)</option>
+              <option value="off">Sin decoración</option>
+              <option value="navidad">Navidad</option>
+              <option value="halloween">Halloween</option>
+              <option value="anio">Año Nuevo</option>
+            </select>
           </div>
           <label class="check"><input id="effects" type="checkbox" /> Efectos animados (partículas y transiciones)</label>
           <small id="theme-msg" class="msg" role="status"></small>
@@ -850,6 +871,7 @@
     </form>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="theme.js"></script>
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>

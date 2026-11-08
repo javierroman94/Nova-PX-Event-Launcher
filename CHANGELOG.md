@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.34
+- Nuevo diseño **Nova Neón** (futurista y animado) como tema por defecto.
+- Decoración de temporada automática: Halloween, Navidad (nieve y luces) y Año Nuevo (confeti).
+- Paquetes de idioma en Ajustes, con inglés incluido y carpeta para añadir más.
+
 ## 1.0.33
 - Animación de inicio nueva: sobria y de menos de 2 segundos.
 - Guía sobre el registro de una app de Microsoft (`docs/MICROSOFT.md`).

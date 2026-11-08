@@ -231,6 +231,14 @@ Si varias personas del equipo publican, cada una crea su propio token (y se las 
 
 La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida, cuenta (Microsoft o solo un nombre), memoria RAM recomendada según tu equipo y un resumen. Puedes omitirlo; no vuelve a aparecer (se guarda en tus ajustes).
 
+## 4k. Idiomas, tema Nova Neón y temporadas (v1.0.34)
+
+- **Idioma:** Ajustes → Idioma. «Automático» usa el idioma de tu sistema si hay paquete; si no, español. El inglés viene incluido.
+- **Añadir un idioma:** Ajustes → Idioma → «Añadir idioma…» abre una carpeta con una plantilla. Un paquete es un `.json` con `code`, `name`, `strings` (texto en español → traducción) y, opcional, `patterns` para frases con números. Lo que no esté traducido se queda en español. Copia `renderer/lang/en.json` como modelo.
+- **Contenido del evento** (noticias, historial, equipo): se traduce igual si agregas su texto exacto a `strings`.
+- **Tema:** Ajustes → Apariencia → Nova Neón (por defecto en la 1.0.34; puedes volver a Oscuro, Claro u OLED).
+- **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática: Halloween 10–31 oct, Navidad 1 nov–27 dic, Año Nuevo 28 dic–6 ene. Se apaga con «Sin decoración» o quitando «Efectos animados».
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).

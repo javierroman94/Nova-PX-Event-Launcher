@@ -12,6 +12,7 @@ const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
 const serversLib = require('./lib/servers');
+const langLib = require('./lib/langpack');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
 const skinsApi = require('./lib/skins');
 const { classifyNetworkError } = require('./lib/errors');
@@ -90,8 +91,11 @@ function defaultSettings() {
     fullscreen: false,
     // minimize: minimiza | tray: cierra la ventana y deja un icono (ahorra más memoria) | keep: no hace nada
     gameBehavior: process.platform === 'linux' ? 'minimize' : 'tray',
-    theme: 'dark',
-    accent: '#f2b84b',
+    theme: 'nova',
+    accent: '#35d6ff',
+    design: 2,
+    lang: 'auto',
+    season: 'auto',
     bgDim: 55,
     bgBlur: 6,
     effects: true,
@@ -132,8 +136,12 @@ function cleanSettings(s) {
     height: num(s.height, 360, 4320, d.height),
     fullscreen: !!s.fullscreen,
     gameBehavior: ['minimize', 'tray', 'keep'].includes(s.gameBehavior) ? s.gameBehavior : d.gameBehavior,
-    theme: ['light', 'oled'].includes(s.theme) ? s.theme : 'dark',
-    accent: /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
+    // Diseño 2 (Nova Neón): quien aún no lo tenía lo recibe una vez; después puede volver al que prefiera.
+    design: 2,
+    theme: s.design !== 2 ? 'nova' : ['light', 'oled', 'nova'].includes(s.theme) ? s.theme : 'dark',
+    accent: s.design !== 2 && String(s.accent).toLowerCase() === '#f2b84b' ? '#35d6ff' : /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
+    lang: s.lang === 'auto' || langLib.CODE_RE.test(String(s.lang || '')) ? String(s.lang || 'auto') : 'auto',
+    season: ['auto', 'off', 'navidad', 'halloween', 'anio'].includes(s.season) ? s.season : 'auto',
     bgDim: num(s.bgDim, 0, 90, d.bgDim),
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
     effects: s.effects !== false,
@@ -1467,6 +1475,24 @@ ipcMain.handle('data:get', async (_e, name) => {
 });
 
 ipcMain.handle('settings:get', () => readSettings());
+// Paquetes de idioma: incluidos (renderer/lang) + los que el usuario deje en la carpeta "idiomas".
+const LANG_DIR = path.join(app.getPath('userData'), 'idiomas');
+const loadLangs = () => langLib.loadAll(path.join(__dirname, 'renderer', 'lang'), LANG_DIR);
+ipcMain.handle('lang:list', () => [...loadLangs().values()].map((l) => ({ code: l.code, name: l.name, author: l.author, builtin: l.builtin })));
+ipcMain.handle('lang:get', (_e, code) => loadLangs().get(String(code || '')) || null);
+ipcMain.handle('lang:openFolder', async () => {
+  fs.mkdirSync(LANG_DIR, { recursive: true });
+  const example = path.join(LANG_DIR, 'ejemplo-plantilla.json.txt');
+  if (!fs.existsSync(example)) {
+    fs.writeFileSync(example, JSON.stringify({
+      code: 'fr', name: 'Français', author: 'Tu nombre',
+      strings: { Inicio: 'Accueil', Ajustes: 'Paramètres', Jugar: 'Jouer' },
+      patterns: [{ match: '^(\\d+) de (\\d+) modpacks?$', to: '$1 sur $2 modpacks' }]
+    }, null, 2));
+  }
+  await shell.openPath(LANG_DIR);
+});
+
 ipcMain.handle('settings:save', (_e, s) => {
   const clean = cleanSettings({ ...readSettings(), ...s, playSeconds: readSettings().playSeconds });
   writeSettings(clean);

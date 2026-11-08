@@ -1063,3 +1063,191 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .srv-pill { font-size: 12px; font-weight: 600; width: fit-content; }
 .srv-pill.on { color: #4ade80; }
 .srv-pill.off { color: var(--text-3, #8b93a1); }
+
+/* =====================================================================
+   Tema "Nova Neón": futurista, con vidrio, brillo y movimiento
+   ===================================================================== */
+@property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.tc-nova { background: linear-gradient(135deg, #0a0e24, #1b1045); }
+.tc-nova i { background: linear-gradient(180deg, #35d6ff, #9d6bff); }
+
+:root[data-theme="nova"] {
+  --bg: #04050d;
+  --surface-solid: #0c1124;
+  --raised-solid: #141b36;
+  --surface: rgba(12, 17, 36, .62);
+  --raised: rgba(24, 32, 66, .6);
+  --line: rgba(120, 165, 255, .18);
+  --text: #eaf2ff;
+  --text-2: #b9c8e6;
+  --muted: #8a9cc2;
+  --log-bg: rgba(4, 6, 16, .8);
+  --neon: linear-gradient(120deg, var(--accent), var(--violet));
+  color-scheme: dark;
+}
+
+/* fondo vivo: auroras que se mueven despacio + rejilla en perspectiva */
+:root[data-theme="nova"] body {
+  background:
+    radial-gradient(60vmax 45vmax at 12% 8%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
+    radial-gradient(55vmax 42vmax at 92% 92%, rgba(157, 107, 255, .26), transparent 62%),
+    radial-gradient(40vmax 30vmax at 70% 12%, rgba(255, 70, 160, .10), transparent 60%),
+    var(--bg);
+  background-size: 140% 140%, 140% 140%, 140% 140%, auto;
+  animation: nova-aurora 26s ease-in-out infinite alternate;
+}
+:root[data-theme="nova"] body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(120, 165, 255, .07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 165, 255, .07) 1px, transparent 1px);
+  background-size: 54px 54px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 75%);
+  animation: nova-grid 14s linear infinite;
+}
+:root[data-theme="nova"] .shell { position: relative; z-index: 1; }
+@keyframes nova-aurora { 0% { background-position: 0% 0%, 100% 100%, 50% 0%, 0 0; } 100% { background-position: 100% 60%, 0% 20%, 20% 80%, 0 0; } }
+@keyframes nova-grid { from { background-position: 0 0, 0 0; } to { background-position: 54px 54px, 54px 54px; } }
+
+/* paneles de vidrio */
+:root[data-theme="nova"] .sidebar,
+:root[data-theme="nova"] .card,
+:root[data-theme="nova"] fieldset,
+:root[data-theme="nova"] .news-item,
+:root[data-theme="nova"] .player-card,
+:root[data-theme="nova"] .server-card,
+:root[data-theme="nova"] .member,
+:root[data-theme="nova"] .side-card,
+:root[data-theme="nova"] .continue-card,
+:root[data-theme="nova"] .mod-card,
+:root[data-theme="nova"] .event-card,
+:root[data-theme="nova"] .stat,
+:root[data-theme="nova"] .run-pill,
+:root[data-theme="nova"] .server-pill,
+:root[data-theme="nova"] .account-chip {
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 30px -18px rgba(0, 0, 0, .8);
+}
+:root[data-theme="nova"] .sidebar {
+  background: linear-gradient(180deg, rgba(14, 20, 44, .85), rgba(8, 11, 26, .78));
+  border-right: 1px solid rgba(120, 165, 255, .22);
+}
+/* hilo de luz que recorre el borde de la barra lateral */
+:root[data-theme="nova"] .sidebar::after {
+  content: ""; position: absolute; top: 0; right: -1px; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, transparent, var(--accent), var(--violet), transparent);
+  background-size: 100% 220%;
+  animation: nova-edge 5s linear infinite;
+  opacity: .85;
+}
+@keyframes nova-edge { from { background-position: 0 -120%; } to { background-position: 0 120%; } }
+
+/* tarjetas: brillo al pasar el cursor */
+:root[data-theme="nova"] .card:hover,
+:root[data-theme="nova"] .continue-card:hover,
+:root[data-theme="nova"] .mod-card:hover,
+:root[data-theme="nova"] .event-card:hover,
+:root[data-theme="nova"] .member:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 18px 50px -18px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* título de página con degradado */
+:root[data-theme="nova"] .top-title h1 {
+  background: linear-gradient(100deg, #fff 20%, color-mix(in srgb, var(--accent) 70%, #fff) 60%, var(--violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* menú: el elemento activo brilla */
+:root[data-theme="nova"] .tab-btn.active,
+:root[data-theme="nova"] .set-item.active {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 24%, transparent), rgba(157, 107, 255, .08));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 24px -8px var(--accent);
+}
+:root[data-theme="nova"] .tab-btn.active .ico { filter: drop-shadow(0 0 6px var(--accent)); }
+:root[data-theme="nova"] .brand-logo { animation: nova-logo 4s ease-in-out infinite; }
+@keyframes nova-logo { 0%, 100% { box-shadow: 0 0 0 1px var(--line), 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); } 50% { box-shadow: 0 0 0 1px var(--line), 0 0 30px color-mix(in srgb, var(--violet) 70%, transparent); } }
+
+/* hero: borde de luz que gira */
+:root[data-theme="nova"] .hero {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(8, 11, 26, .72), rgba(8, 11, 26, .72)) padding-box,
+    conic-gradient(from var(--ang), var(--accent), var(--violet), #ff4fa8, var(--accent)) border-box;
+  animation: nova-spin 8s linear infinite;
+  box-shadow: 0 30px 80px -34px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+@keyframes nova-spin { to { --ang: 360deg; } }
+
+/* botones principales: neón */
+:root[data-theme="nova"] button.primary,
+:root[data-theme="nova"] .play {
+  background: linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 45%, var(--violet)) 55%, var(--violet));
+  background-size: 200% 100%;
+  color: #04101a;
+  border: 0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 8px 28px -8px var(--accent);
+  animation: nova-btn 6s ease-in-out infinite alternate;
+}
+:root[data-theme="nova"] .play { animation: nova-btn 6s ease-in-out infinite alternate, glow-pulse 2.8s ease-in-out infinite; }
+@keyframes nova-btn { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+:root[data-theme="nova"] button.primary:hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(255, 255, 255, .4) inset, 0 10px 36px -6px var(--accent); }
+
+/* campos con anillo de luz al enfocar */
+:root[data-theme="nova"] input:focus, :root[data-theme="nova"] select:focus, :root[data-theme="nova"] textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), 0 0 24px -6px var(--accent);
+}
+:root[data-theme="nova"] progress, :root[data-theme="nova"] .splash-bar i { accent-color: var(--accent); }
+:root[data-theme="nova"] ::-webkit-scrollbar-thumb { background: linear-gradient(var(--accent), var(--violet)); border-radius: 8px; }
+
+/* =====================================================================
+   Decoración de temporada (se activa por fecha o desde Ajustes)
+   ===================================================================== */
+.season-lights { position: fixed; top: 0; left: 0; right: 0; height: 18px; z-index: 90; pointer-events: none; display: none; }
+:root[data-season="navidad"] .season-lights,
+:root[data-season="halloween"] .season-lights,
+:root[data-season="anio"] .season-lights { display: block; }
+.season-lights i { position: absolute; inset: 0; background-repeat: repeat-x; background-size: 56px 18px; }
+/* luces de colores: dos capas que se encienden por turnos */
+:root[data-season="navidad"] .season-lights i:nth-child(1) {
+  background-image: radial-gradient(circle at 10px 6px, #ff3b4e 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #34e08a 0 3.5px, transparent 4.5px);
+  filter: drop-shadow(0 0 5px #ff3b4e) drop-shadow(0 0 5px #34e08a);
+  animation: lights-a 1.8s ease-in-out infinite;
+}
+:root[data-season="navidad"] .season-lights i:nth-child(2) {
+  background-image: radial-gradient(circle at 24px 6px, #ffd23f 0 3.5px, transparent 4.5px), radial-gradient(circle at 52px 6px, #4cc9f0 0 3.5px, transparent 4.5px);
+  filter: drop-shadow(0 0 5px #ffd23f) drop-shadow(0 0 5px #4cc9f0);
+  animation: lights-b 1.8s ease-in-out infinite;
+}
+:root[data-season="halloween"] .season-lights i:nth-child(1) {
+  background-image: radial-gradient(circle at 10px 6px, #ff8a1f 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #b46bff 0 3.5px, transparent 4.5px);
+  filter: drop-shadow(0 0 6px #ff8a1f) drop-shadow(0 0 6px #b46bff);
+  animation: lights-a 2.2s ease-in-out infinite;
+}
+:root[data-season="halloween"] .season-lights i:nth-child(2) {
+  background-image: radial-gradient(circle at 24px 6px, #9dff4f 0 3.5px, transparent 4.5px);
+  filter: drop-shadow(0 0 6px #9dff4f);
+  animation: lights-b 2.2s ease-in-out infinite;
+}
+:root[data-season="anio"] .season-lights i:nth-child(1) {
+  background-image: radial-gradient(circle at 10px 6px, #ffd23f 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #fff 0 3px, transparent 4px);
+  filter: drop-shadow(0 0 6px #ffd23f);
+  animation: lights-a 1.4s ease-in-out infinite;
+}
+:root[data-season="anio"] .season-lights i:nth-child(2) {
+  background-image: radial-gradient(circle at 24px 6px, #ff4fa8 0 3.5px, transparent 4.5px), radial-gradient(circle at 52px 6px, #4cc9f0 0 3.5px, transparent 4.5px);
+  filter: drop-shadow(0 0 6px #ff4fa8);
+  animation: lights-b 1.4s ease-in-out infinite;
+}
+@keyframes lights-a { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes lights-b { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+/* tono de la temporada sobre el tema Nova Neón */
+:root[data-theme="nova"][data-season="navidad"] body { --violet: #ff4d6d; }
+:root[data-theme="nova"][data-season="halloween"] body { --violet: #ff8a1f; }
+:root[data-theme="nova"][data-season="anio"] body { --violet: #ffd23f; }
+:root[data-season] .sidebar { padding-top: 26px; }

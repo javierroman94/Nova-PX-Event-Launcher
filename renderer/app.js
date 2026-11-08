@@ -2000,6 +2000,25 @@ $('update-check').addEventListener('click', async () => {
   }
 });
 
+/* ---------- idioma ---------- */
+async function initLanguage(saved) {
+  const sel = $('lang-select');
+  let list = [];
+  try { list = await window.api.langList(); } catch {}
+  sel.replaceChildren();
+  const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.append(o); };
+  add('auto', 'Automático (idioma del sistema)');
+  add('es', 'Español');
+  list.filter((l) => l.code !== 'es').forEach((l) => add(l.code, l.name));
+  sel.value = [...sel.options].some((o) => o.value === saved) ? saved : 'auto';
+  await NovaI18n.setLanguage(await NovaI18n.resolve(sel.value));
+  sel.addEventListener('change', async () => {
+    await NovaI18n.setLanguage(await NovaI18n.resolve(sel.value));
+    window.api.saveSettings({ lang: sel.value });
+  });
+  $('lang-folder').addEventListener('click', () => window.api.langOpenFolder());
+}
+
 /* ---------- asistente de primer uso ---------- */
 const wz = { step: 0, rec: 4 };
 function wzShow(n) {
@@ -2095,6 +2114,7 @@ $('wz-offline').addEventListener('click', async () => {
   $('offline-nick').value = settings.lastNick || '';
 
   window.NovaTheme.init(settings);
+  initLanguage(settings.lang || 'auto');
   refreshPlaytime();
 
   renderHero();
@@ -2582,7 +2602,7 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   const root = document.querySelector('#page-settings .settings');
   if (!root) return;
   const GROUPS = [
-    ['Visualización', ['Apariencia']],
+    ['Visualización', ['Apariencia', 'Idioma']],
     ['Juego', ['Memoria y Java', 'Ventana del juego', 'Al jugar']],
     ['Cuenta', ['Modo administrador']],
     ['Sistema', ['Actualizaciones', 'Archivos del juego']]
@@ -2616,7 +2636,7 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   // El botón del modo administrador sigue a la visibilidad de su sección.
   const adm = byName.get('Modo administrador');
   if (adm) {
-    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) it.btn.hidden = adm.hidden; if (adm.hidden && adm.dataset.on) show('Apariencia'); };
+    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) { it.btn.hidden = adm.hidden; const lab = it.btn.previousElementSibling; if (lab && lab.classList.contains('nav-group')) lab.hidden = adm.hidden; } if (adm.hidden && adm.dataset.on) show('Apariencia'); };
     new MutationObserver(sync).observe(adm, { attributes: true, attributeFilter: ['hidden'] });
     sync();
   }

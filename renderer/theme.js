@@ -5,7 +5,19 @@
   const PRESETS = ['#f2b84b', '#9d6bff', '#4cc9f0', '#5fd38d', '#ff6b8b', '#ff8a3d'];
   // Las animaciones se controlan con la casilla "Efectos animados" de Ajustes (no con la opción del sistema).
 
-  let state = { theme: 'dark', accent: '#f2b84b', bgDim: 55, bgBlur: 6, effects: true };
+  let state = { theme: 'nova', accent: '#35d6ff', bgDim: 55, bgBlur: 6, effects: true, season: 'auto' };
+
+  // Temporada según la fecha: Halloween (10-31 oct), Navidad (1 nov-27 dic), Año Nuevo (28 dic-6 ene).
+  function seasonNow(choice) {
+    if (choice === 'off') return '';
+    if (choice && choice !== 'auto') return choice;
+    const d = new Date();
+    const md = (d.getMonth() + 1) * 100 + d.getDate();
+    if (md >= 1010 && md <= 1031) return 'halloween';
+    if (md >= 1101 && md <= 1227) return 'navidad';
+    if (md >= 1228 || md <= 106) return 'anio';
+    return '';
+  }
   let saveTimer = 0;
 
   // Texto oscuro o claro encima del color principal, según su luminosidad.
@@ -18,6 +30,8 @@
   function apply(s) {
     state = { ...state, ...s };
     root.dataset.theme = state.theme;
+    root.dataset.season = seasonNow(state.season);
+    if (g('season-select')) g('season-select').value = state.season;
     root.style.setProperty('--accent', state.accent);
     root.style.setProperty('--accent-ink', inkFor(state.accent));
     root.style.setProperty('--bg-dim', String(state.bgDim / 100));
@@ -30,6 +44,7 @@
     if (g('bg-dim')) g('bg-dim').value = state.bgDim;
     if (g('bg-blur')) g('bg-blur').value = state.bgBlur;
     if (g('effects')) g('effects').checked = state.effects;
+    fx.resize();
     fx.sync();
     window.dispatchEvent(new CustomEvent('nova-fx', { detail: state.effects }));
   }
@@ -37,7 +52,7 @@
   function persist(extra) {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      window.api.saveSettings({ theme: state.theme, accent: state.accent, bgDim: state.bgDim, bgBlur: state.bgBlur, effects: state.effects, ...extra });
+      window.api.saveSettings({ theme: state.theme, accent: state.accent, bgDim: state.bgDim, bgBlur: state.bgBlur, effects: state.effects, season: state.season, ...extra });
     }, 350);
   }
 
@@ -64,6 +79,14 @@
     setTimeout(() => (m.textContent = ''), 3500);
   }
 
+  function fxMode() {
+    const s = root.dataset.season;
+    if (s === 'navidad') return 'snow';
+    if (s === 'halloween') return 'embers';
+    if (s === 'anio') return 'confetti';
+    return state.theme === 'nova' ? 'net' : 'dots';
+  }
+
   /* ---------- partículas ---------- */
   const fx = (function () {
     const canvas = g('fx');
@@ -81,15 +104,16 @@
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const count = Math.round(Math.min(70, Math.max(24, (w * h) / 26000)));
-      parts = Array.from({ length: count }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: 0.8 + Math.random() * 2.1,
-        vy: -(8 + Math.random() * 22),
-        vx: (Math.random() - 0.5) * 8,
-        a: 0.15 + Math.random() * 0.4
-      }));
+      const mode = fxMode();
+      const count = Math.round(Math.min(mode === 'net' ? 60 : 90, Math.max(24, (w * h) / (mode === 'net' ? 30000 : 22000))));
+      parts = Array.from({ length: count }, () => {
+        const p = { x: Math.random() * w, y: Math.random() * h, r: 0.8 + Math.random() * 2.1, vy: -(8 + Math.random() * 22), vx: (Math.random() - 0.5) * 8, a: 0.15 + Math.random() * 0.4, ph: Math.random() * 6.28 };
+        if (mode === 'snow') { p.r = 1 + Math.random() * 2.6; p.vy = 18 + Math.random() * 34; p.a = 0.35 + Math.random() * 0.5; }
+        if (mode === 'embers') { p.vy = -(20 + Math.random() * 40); p.a = 0.3 + Math.random() * 0.6; }
+        if (mode === 'confetti') { p.r = 2 + Math.random() * 2.5; p.vy = 25 + Math.random() * 45; p.hue = Math.floor(Math.random() * 360); p.a = 0.8; }
+        if (mode === 'net') { p.vy = (Math.random() - 0.5) * 22; p.vx = (Math.random() - 0.5) * 22; p.r = 1 + Math.random() * 1.6; p.a = 0.5 + Math.random() * 0.4; }
+        return p;
+      });
     }
 
     function frame(t) {
@@ -98,17 +122,46 @@
       const dt = Math.min(0.1, (t - last) / 1000);
       last = t;
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = state.accent;
+      const mode = fxMode();
+      const color = mode === 'snow' ? '#ffffff' : mode === 'embers' ? '#ff8a3d' : state.accent;
+      ctx.fillStyle = color;
       for (const p of parts) {
-        p.x += p.vx * dt;
+        p.ph += dt;
+        p.x += (p.vx + (mode === 'snow' || mode === 'confetti' ? Math.sin(p.ph * 1.3) * 14 : 0)) * dt;
         p.y += p.vy * dt;
-        if (p.y < -6) { p.y = h + 6; p.x = Math.random() * w; }
+        const down = p.vy > 0 && mode !== 'net';
+        if (mode === 'net') {
+          if (p.x < -6) p.x = w + 6; else if (p.x > w + 6) p.x = -6;
+          if (p.y < -6) p.y = h + 6; else if (p.y > h + 6) p.y = -6;
+        } else if (down) {
+          if (p.y > h + 6) { p.y = -6; p.x = Math.random() * w; }
+        } else if (p.y < -6) { p.y = h + 6; p.x = Math.random() * w; }
         if (p.x < -6) p.x = w + 6;
         if (p.x > w + 6) p.x = -6;
         ctx.globalAlpha = p.a;
+        if (mode === 'confetti') ctx.fillStyle = `hsl(${p.hue} 90% 60%)`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
+      }
+      if (mode === 'net') {
+        // constelación: une con líneas finas las partículas cercanas
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = state.accent;
+        for (let i = 0; i < parts.length; i++) {
+          for (let j = i + 1; j < parts.length; j++) {
+            const dx = parts[i].x - parts[j].x;
+            const dy = parts[i].y - parts[j].y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < 16900) {
+              ctx.globalAlpha = (1 - d2 / 16900) * 0.35;
+              ctx.beginPath();
+              ctx.moveTo(parts[i].x, parts[i].y);
+              ctx.lineTo(parts[j].x, parts[j].y);
+              ctx.stroke();
+            }
+          }
+        }
       }
       ctx.globalAlpha = 1;
     }
@@ -132,7 +185,7 @@
     resize();
     window.addEventListener('resize', () => { resize(); });
     document.addEventListener('visibilitychange', sync);
-    return { sync };
+    return { sync, resize };
   })();
 
   /* ---------- inclinación de tarjetas y brillo del hero ---------- */
@@ -185,6 +238,7 @@
     g('bg-dim').addEventListener('input', (e) => change({ bgDim: Number(e.target.value) }));
     g('bg-blur').addEventListener('input', (e) => change({ bgBlur: Number(e.target.value) }));
     g('effects').addEventListener('change', (e) => change({ effects: e.target.checked }));
+    g('season-select').addEventListener('change', (e) => change({ season: e.target.value }));
 
     g('bg-pick').addEventListener('click', async () => {
       try {
