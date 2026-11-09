@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/img/banner.png" alt="Nova PX Event Launcher" width="100%" />
+<img src="brand/sagitta-lockup.png" alt="Sagitta Launcher" width="100%" />
 
 <br />
 

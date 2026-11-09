@@ -238,7 +238,6 @@
   "Quién ve el modo administrador": "Who sees administrator mode",
   "Recientes": "Recent",
   "Recomendado": "Recommended",
-  "Recomendados por Nova PX": "Recommended by Nova PX",
   "Registros": "Logs",
   "Reiniciar e instalar": "Restart and install",
   "Rendimiento (solo este modpack)": "Performance (this modpack only)",
@@ -267,7 +266,6 @@
   "Skins y capas": "Skins and capes",
   "Solo cuentas": "Accounts only",
   "Solo se envía un número de instalación al azar, tu nick (si iniciaste sesión), si eres premium, la versión del launcher y tu sistema operativo. Nunca tu IP, tu contraseña ni tus archivos.": "Only a random install number, your nick (if signed in), whether you are premium, the launcher version and your operating system are sent. Never your IP, your password or your files.",
-  "Te damos la bienvenida a Nova PX": "Welcome to Nova PX",
   "Tema": "Theme",
   "Tiempo jugado": "Time played",
   "Tipo": "Type",
@@ -471,7 +469,9 @@
   "ahora mismo": "just now",
   "sin jugar": "not played yet",
   "▶ Jugar": "▶ Play",
-  "Evento nuevo": "New event"
+  "Evento nuevo": "New event",
+  "Te damos la bienvenida a Sagitta": "Welcome to Sagitta",
+  "Recomendados": "Recommended"
  },
  "patterns": [
   {

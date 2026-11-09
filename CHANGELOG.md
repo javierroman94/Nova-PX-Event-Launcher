@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.35
+- El launcher pasa a llamarse **Sagitta**: nuevo logo, nombre en la ventana, pantalla de inicio, instalador y bandeja.
+- Se conservan los datos, las instancias, los ajustes y la actualización automática de quienes ya lo tenían instalado.
+
 ## 1.0.34
 - Nuevo diseño **Nova Neón** (futurista y animado) como tema por defecto.
 - Decoración de temporada automática: Halloween, Navidad (nieve y luces) y Año Nuevo (confeti).
