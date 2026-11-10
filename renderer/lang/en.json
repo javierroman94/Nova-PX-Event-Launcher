@@ -351,7 +351,6 @@
   "Listo. Los mods se volverán a descargar la próxima vez que pulses Jugar.": "Done. The mods will be downloaded again the next time you press Play.",
   "Lo que estás jugando y las novedades": "What you're playing and what's new",
   "Lo que lleva instalado el evento": "What the event has installed",
-  "Lo que prepara Nova PX para ti": "What Nova PX is preparing for you",
   "Memoria, Java, apariencia y más": "Memory, Java, appearance and more",
   "Minecraft en ejecución": "Minecraft running",
   "Minecraft se cerró": "Minecraft closed",
@@ -471,7 +470,35 @@
   "▶ Jugar": "▶ Play",
   "Evento nuevo": "New event",
   "Te damos la bienvenida a Sagitta": "Welcome to Sagitta",
-  "Recomendados": "Recommended"
+  "Recomendados": "Recommended",
+  "Comunidades": "Communities",
+  "¿Tienes un código de invitación?": "Do you have an invitation code?",
+  "Si un equipo te dio un código, úsalo para ver su evento, su equipo y sus novedades.": "If a team gave you a code, use it to see their event, team and news.",
+  "Unirme con un código": "Join with a code",
+  "Unirme a una comunidad": "Join a community",
+  "Unirme": "Join",
+  "Escribe el código que te dio el equipo. Con él aparece su evento en una pestaña aparte.": "Enter the code the team gave you. With it, their event appears in a separate tab.",
+  "Código": "Code",
+  "Comprobando el código…": "Checking the code…",
+  "+ Añadir con código…": "+ Add with a code…",
+  "Añadir con código": "Add with a code",
+  "Cada comunidad (evento, equipo y novedades) se separa en su propia pestaña. Aparecen solo si tienes su código.": "Each community (event, team and news) is kept in its own tab. They only appear if you have their code.",
+  "Todavía no estás en ninguna comunidad.": "You are not in any community yet.",
+  "Activa": "Active",
+  "Salir": "Leave",
+  "Crear comunidad": "Create community",
+  "Crear código": "Create code",
+  "Nombre de la comunidad": "Community name",
+  "Repositorio (dueño/nombre)": "Repository (owner/name)",
+  "Nicks de los dueños (separados por coma)": "Owner nicks (comma-separated)",
+  "Guardar token": "Save token",
+  "Copiar código": "Copy code",
+  "Token de GitHub de este launcher": "GitHub token for this launcher",
+  "Genera el código para un equipo. Su evento vive en su propio repositorio de GitHub; el código lo encuentra y lo mantiene oculto para el resto.": "Generate the code for a team. Their event lives in its own GitHub repository; the code finds it and keeps it hidden from everyone else.",
+  "Código copiado": "Code copied",
+  "Creando y publicando…": "Creating and publishing…",
+  "Token guardado.": "Token saved.",
+  "Lo que prepara la comunidad para ti": "What the community is preparing for you"
  },
  "patterns": [
   {
@@ -745,6 +772,18 @@
   {
    "match": "^(.+) · hace (\\d+) días?$",
    "to": "$1 · $2 day(s) ago"
+  },
+  {
+   "match": "^Te uniste a (.+)$",
+   "to": "You joined $1"
+  },
+  {
+   "match": "^¿Salir de \"(.+)\"\\? .*$",
+   "to": "Leave \"$1\"? Your worlds and files are kept; to come back you will need its code."
+  },
+  {
+   "match": "^Código de \"(.+)\": (.+) \\(también queda guardado abajo\\)\\. Compártelo solo con quien deba entrar\\.$",
+   "to": "Code for \"$1\": $2 (also saved below). Share it only with whoever should join."
   }
  ]
 }

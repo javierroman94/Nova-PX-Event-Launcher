@@ -1249,3 +1249,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 :root[data-theme="nova"][data-season="halloween"] body { --violet: #ff8a1f; }
 :root[data-theme="nova"][data-season="anio"] body { --violet: #ffd23f; }
 :root[data-season] .sidebar { padding-top: 26px; }
+
+/* comunidades */
+.nav-community { display: contents; }
+.community-switch { padding: 2px 10px 6px; }
+.community-switch select { width: 100%; font-weight: 600; }
+.join-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 20px; margin-bottom: 14px; border-radius: 16px; border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.join-card p { margin: 4px 0 0; }
+.comm-list { display: grid; gap: 8px; margin: 10px 0; }
+.comm-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
+.comm-info { display: grid; gap: 2px; min-width: 0; }
+.comm-info span { overflow-wrap: anywhere; }

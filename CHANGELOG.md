@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.36
+- **Comunidades por código**: el launcher queda limpio y cada evento (Nova PX u otros) aparece solo con su código de invitación, en su propia pestaña y su propio repositorio.
+- Ajustes → Crear comunidad (solo propietario) y Comunidades (unirse/salir). Ver `docs/COMUNIDADES.md`.
+
 ## 1.0.35
 - El launcher pasa a llamarse **Sagitta**: nuevo logo, nombre en la ventana, pantalla de inicio, instalador y bandeja.
 - Se conservan los datos, las instancias, los ajustes y la actualización automática de quienes ya lo tenían instalado.

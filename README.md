@@ -10,7 +10,7 @@
 ![Electron](https://img.shields.io/badge/Electron-33-4cc9f0?style=for-the-badge&labelColor=0e1220&logo=electron&logoColor=white)
 ![Minecraft Java](https://img.shields.io/badge/Minecraft-Java-5fd38d?style=for-the-badge&labelColor=0e1220)
 
-**[⬇️ Descargar la última versión](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** · [📖 Guía completa](docs/GUIA.md) · [💬 Discord](https://discord.gg/VAfuFEQtjv)
+**[⬇️ Descargar la última versión](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** · [📖 Guía completa](docs/GUIA.md) · [🔑 Comunidades](docs/COMUNIDADES.md) · [💬 Discord](https://discord.gg/VAfuFEQtjv)
 
 </div>
 

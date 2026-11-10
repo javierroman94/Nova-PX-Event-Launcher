@@ -39,10 +39,13 @@
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
       <div id="nav-recent" class="nav-recent" hidden><span class="nav-group">Recientes</span></div>
-      <span class="nav-group">Evento</span>
+      <div id="nav-community" class="nav-community" hidden>
+      <span class="nav-group">Comunidad</span>
+      <div class="community-switch"><select id="community-select" aria-label="Comunidad"></select></div>
       <button class="tab-btn" data-tab="event"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span class="nav-label">Evento</span></button>
       <button class="tab-btn" data-tab="events"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg><span class="nav-label">Historial</span></button>
       <button class="tab-btn" data-tab="team"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 010 6.4M18.5 14.8c1.8.7 3 2.4 3.4 5"/></svg><span class="nav-label">Equipo</span></button>
+      </div>
       <span class="nav-group">Sistema</span>
       <button class="tab-btn" data-tab="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="nav-label">Ajustes</span></button>
       <button class="tab-btn" data-tab="console"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 9.5l3 2.5-3 2.5M13 15h4"/></svg><span class="nav-label">Consola</span></button>
@@ -89,6 +92,13 @@
   <main>
     <!-- INICIO -->
     <section class="page active" id="page-home">
+      <section id="home-join" class="join-card" hidden>
+        <div>
+          <strong>¿Tienes un código de invitación?</strong>
+          <p class="muted">Si un equipo te dio un código, úsalo para ver su evento, su equipo y sus novedades.</p>
+        </div>
+        <button id="home-join-btn" class="primary" type="button">Unirme con un código</button>
+      </section>
       <section id="np" class="np" aria-live="polite" hidden>
         <img id="np-icon" class="np-icon" alt="" />
         <div class="np-body">
@@ -683,6 +693,34 @@
           </div>
         </fieldset>
 
+        <fieldset id="comm-fieldset">
+          <legend>Comunidades</legend>
+          <p class="muted">Cada comunidad (evento, equipo y novedades) se separa en su propia pestaña. Aparecen solo si tienes su código.</p>
+          <div id="comm-list" class="comm-list"></div>
+          <div class="mp-actions"><button id="comm-add" type="button" class="primary">Añadir con código</button></div>
+        </fieldset>
+
+        <fieldset id="cc-fieldset" hidden>
+          <legend>Crear comunidad</legend>
+          <p class="muted">Genera el código para un equipo. Su evento vive en su propio repositorio de GitHub; el código lo encuentra y lo mantiene oculto para el resto.</p>
+          <div id="cc-token-box" hidden>
+            <label for="cc-token">Token de GitHub de este launcher</label>
+            <input id="cc-token" type="password" autocomplete="off" placeholder="github_pat_…" />
+            <small class="muted">Necesita permiso «Contents: Read and write» sobre el repositorio del launcher. Se guarda cifrado.</small>
+            <div class="mp-actions"><button id="cc-login" type="button">Guardar token</button></div>
+          </div>
+          <div id="cc-form">
+            <div class="field inline">
+              <div><label for="cc-name">Nombre de la comunidad</label><input id="cc-name" type="text" maxlength="40" placeholder="Mi equipo" /></div>
+              <div><label for="cc-repo">Repositorio (dueño/nombre)</label><input id="cc-repo" type="text" placeholder="usuario/mi-comunidad" /></div>
+            </div>
+            <div class="field"><label for="cc-owners">Nicks de los dueños (separados por coma)</label><input id="cc-owners" type="text" placeholder="NickPremium1, NickPremium2" /></div>
+            <div class="mp-actions"><button id="cc-create" type="button" class="primary">Crear código</button></div>
+          </div>
+          <p id="cc-msg" class="muted" role="status"></p>
+          <div id="cc-list" class="comm-list"></div>
+        </fieldset>
+
         <fieldset id="adm-fieldset" hidden>
           <legend>Modo administrador</legend>
           <p id="adm-state" class="muted">Desactivado.</p>
@@ -876,6 +914,16 @@
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
   <!-- Asistente de primer uso -->
+  <dialog id="community-modal" class="event-modal" aria-label="Unirme a una comunidad">
+    <div class="event-modal-body">
+      <h3>Unirme a una comunidad</h3>
+      <p class="muted">Escribe el código que te dio el equipo. Con él aparece su evento en una pestaña aparte.</p>
+      <div class="field"><label for="community-code">Código</label><input id="community-code" type="text" maxlength="40" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" /></div>
+      <p id="community-msg" class="muted" role="status"></p>
+      <div class="mp-actions"><button id="community-cancel" type="button">Cancelar</button><button id="community-join" type="button" class="primary">Unirme</button></div>
+    </div>
+  </dialog>
+
   <dialog id="welcome-modal" class="event-modal welcome" aria-label="Bienvenida">
     <div class="event-modal-body">
       <div class="wz-dots" id="wz-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>

@@ -119,7 +119,7 @@ function moveIndicator() {
 
 const PAGE_TITLES = {
   home: ['Inicio', 'Lo que estás jugando y las novedades'],
-  event: ['Evento actual', 'Lo que prepara Nova PX para ti'],
+  event: ['Evento actual', 'Lo que prepara la comunidad para ti'],
   events: ['Historial', 'Los eventos anteriores del equipo'],
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
@@ -300,7 +300,7 @@ async function renderContinue() {
   const evGo = el('span', 'cont-when', eventActive ? 'Ver evento →' : 'Ver detalles →');
   ev.append(evIcon, evBody, evGo);
   ev.addEventListener('click', () => goTo('event'));
-  box.append(ev);
+  if (comm.list.length) box.append(ev);
 
   renderRecent(packs);
   packs
@@ -2000,6 +2000,135 @@ $('update-check').addEventListener('click', async () => {
   }
 });
 
+/* ---------- comunidades ---------- */
+let comm = { list: [], active: null, owner: false };
+const EVENT_PAGES = ['event', 'events', 'team', 'mods'];
+
+function applyCommunities(st) {
+  comm = st;
+  const has = st.list.length > 0;
+  $('nav-community').hidden = !has;
+  $('home-join').hidden = has;
+  $('top-server').hidden = !has;
+  const sel = $('community-select');
+  sel.replaceChildren();
+  st.list.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.append(o); });
+  const add = document.createElement('option');
+  add.value = '__add__';
+  add.textContent = '+ Añadir con código…';
+  sel.append(add);
+  if (st.active) sel.value = st.active;
+  // lista en Ajustes
+  const box = $('comm-list');
+  box.replaceChildren();
+  if (!has) box.append(el('p', 'muted', 'Todavía no estás en ninguna comunidad.'));
+  st.list.forEach((c) => {
+    const row = el('div', 'comm-row');
+    const info = el('div', 'comm-info');
+    info.append(el('strong', '', c.name), el('span', 'muted', c.id === st.active ? 'Activa' : ''));
+    const out = el('button', '', 'Salir');
+    out.type = 'button';
+    out.addEventListener('click', async () => {
+      if (!confirm(`¿Salir de "${c.name}"? Tus mundos y archivos se conservan; para volver necesitarás su código.`)) return;
+      applyCommunities(await window.api.communitiesRemove(c.id));
+      await onCommunityChanged();
+    });
+    row.append(info, out);
+    box.append(row);
+  });
+  $('cc-fieldset').hidden = !st.owner;
+  if (st.owner) refreshOwnerBox();
+  moveIndicator();
+}
+
+// Al cambiar de comunidad se recarga todo lo que depende de ella, sin mezclar datos.
+async function onCommunityChanged() {
+  try { remoteBase = ((await window.api.getConfig()).remoteBase) || ''; } catch {}
+  await Promise.allSettled([renderHero(), renderNews(), renderEvents(), renderTeam(), refreshServer()]);
+  refreshAdmin();
+  const cur = document.querySelector('.page.active');
+  if (!comm.list.length && cur && EVENT_PAGES.some((p) => cur.id === `page-${p}`)) goTo('home');
+}
+
+async function initCommunities() {
+  try { applyCommunities(await window.api.communitiesList()); } catch {}
+}
+
+let joinAfter = null;
+function openJoin() {
+  $('community-code').value = '';
+  $('community-msg').textContent = '';
+  $('community-modal').showModal();
+  setTimeout(() => $('community-code').focus(), 50);
+}
+$('community-select').addEventListener('change', async (e) => {
+  if (e.target.value === '__add__') { e.target.value = comm.active || ''; openJoin(); return; }
+  try {
+    applyCommunities(await window.api.communitiesSetActive(e.target.value));
+    await onCommunityChanged();
+  } catch (err) { toast(cleanError(err), 'error'); }
+});
+['home-join-btn', 'comm-add'].forEach((id) => $(id).addEventListener('click', openJoin));
+$('community-cancel').addEventListener('click', () => $('community-modal').close());
+async function doJoin() {
+  const btn = $('community-join');
+  btn.disabled = true;
+  $('community-msg').textContent = 'Comprobando el código…';
+  try {
+    const st = await window.api.communitiesJoin($('community-code').value);
+    applyCommunities(st);
+    $('community-modal').close();
+    toast(`Te uniste a ${st.joined}`);
+    await onCommunityChanged();
+    goTo('event');
+  } catch (err) {
+    $('community-msg').textContent = cleanError(err);
+  }
+  btn.disabled = false;
+}
+$('community-join').addEventListener('click', doJoin);
+$('community-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') doJoin(); });
+
+// Dueños: crear el código de una comunidad nueva.
+async function refreshOwnerBox() {
+  try {
+    const s = await window.api.communitiesOwnerStatus();
+    $('cc-token-box').hidden = s.hasToken;
+    $('cc-form').hidden = !s.hasToken;
+    const list = $('cc-list');
+    list.replaceChildren();
+    s.created.slice().reverse().forEach((c) => {
+      const row = el('div', 'comm-row');
+      const info = el('div', 'comm-info');
+      info.append(el('strong', '', c.name), el('span', 'muted', `${c.repo} · ${c.code}`));
+      const cp = el('button', '', 'Copiar código');
+      cp.type = 'button';
+      cp.addEventListener('click', () => { navigator.clipboard.writeText(c.code).then(() => toast('Código copiado')).catch(() => toast('No se pudo copiar', 'error')); });
+      row.append(info, cp);
+      list.append(row);
+    });
+  } catch {}
+}
+$('cc-login').addEventListener('click', async () => {
+  try {
+    await window.api.communitiesRegistryLogin($('cc-token').value);
+    $('cc-token').value = '';
+    $('cc-msg').textContent = 'Token guardado.';
+    refreshOwnerBox();
+  } catch (e) { $('cc-msg').textContent = cleanError(e); }
+});
+$('cc-create').addEventListener('click', async () => {
+  $('cc-create').disabled = true;
+  $('cc-msg').textContent = 'Creando y publicando…';
+  try {
+    const r = await window.api.communitiesCreate({ name: $('cc-name').value, repo: $('cc-repo').value, owners: $('cc-owners').value });
+    $('cc-msg').textContent = `Código de "${r.name}": ${r.code} (también queda guardado abajo). Compártelo solo con quien deba entrar.`;
+    ['cc-name', 'cc-repo', 'cc-owners'].forEach((id) => ($(id).value = ''));
+    refreshOwnerBox();
+  } catch (e) { $('cc-msg').textContent = cleanError(e); }
+  $('cc-create').disabled = false;
+});
+
 /* ---------- idioma ---------- */
 async function initLanguage(saved) {
   const sel = $('lang-select');
@@ -2117,6 +2246,7 @@ $('wz-offline').addEventListener('click', async () => {
   initLanguage(settings.lang || 'auto');
   refreshPlaytime();
 
+  await initCommunities();
   renderHero();
   renderNews();
   renderEvents();
@@ -2604,6 +2734,7 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   const GROUPS = [
     ['Visualización', ['Apariencia', 'Idioma']],
     ['Juego', ['Memoria y Java', 'Ventana del juego', 'Al jugar']],
+    ['Comunidad', ['Comunidades', 'Crear comunidad']],
     ['Cuenta', ['Modo administrador']],
     ['Sistema', ['Actualizaciones', 'Archivos del juego']]
   ];
@@ -2634,11 +2765,20 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   root.append(nav, body);
   root.classList.add('set-split');
   // El botón del modo administrador sigue a la visibilidad de su sección.
-  const adm = byName.get('Modo administrador');
-  if (adm) {
-    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) { it.btn.hidden = adm.hidden; const lab = it.btn.previousElementSibling; if (lab && lab.classList.contains('nav-group')) lab.hidden = adm.hidden; } if (adm.hidden && adm.dataset.on) show('Apariencia'); };
-    new MutationObserver(sync).observe(adm, { attributes: true, attributeFilter: ['hidden'] });
-    sync();
-  }
+  const sync = () => {
+    items.forEach((it) => { it.btn.hidden = byName.get(it.name).hidden; });
+    nav.querySelectorAll('.nav-group').forEach((lab) => {
+      let n = lab.nextElementSibling;
+      let any = false;
+      while (n && !n.classList.contains('nav-group')) { if (!n.hidden) any = true; n = n.nextElementSibling; }
+      lab.hidden = !any;
+    });
+    byName.forEach((f) => { if (f.hidden && f.dataset.on) show('Apariencia'); });
+  };
+  ['Modo administrador', 'Crear comunidad'].forEach((n) => {
+    const f = byName.get(n);
+    if (f) new MutationObserver(sync).observe(f, { attributes: true, attributeFilter: ['hidden'] });
+  });
+  sync();
   show('Apariencia');
 })();

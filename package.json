@@ -1,6 +1,6 @@
 {
   "name": "nova-px-event-launcher",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "description": "Sagitta: launcher de Minecraft con comunidades y eventos (premium y no premium)",
   "main": "main.js",
   "author": "Nova PX",
