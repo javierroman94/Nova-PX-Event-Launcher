@@ -4,11 +4,11 @@
 
 ## Cuándo sí conviene
 - Muchos jugadores a la vez reciben errores al iniciar sesión.
-- Quieres que la ventana de Microsoft muestre «Nova PX Event Launcher» como nombre de la aplicación.
+- Quieres que la ventana de Microsoft muestre «Sagitta» como nombre de la aplicación.
 
 ## Cómo hacerlo (gratis, sin tarjeta)
 1. Entra en <https://portal.azure.com> con una cuenta Microsoft normal y abre **App registrations → New registration**.
-2. **Name:** `Nova PX Event Launcher`. En **Supported account types** elige *Personal Microsoft accounts only*.
+2. **Name:** `Sagitta`. En **Supported account types** elige *Personal Microsoft accounts only*.
 3. **Redirect URI:** tipo *Public client/native* con el valor `http://localhost`.
 4. Guarda el **Application (client) ID** que aparece al terminar.
 5. En **Authentication** activa *Allow public client flows*.

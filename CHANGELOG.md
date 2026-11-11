@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.39
+- Limpieza de marca: README, guías, plantillas y textos del programa describen un launcher normal; los eventos son opcionales y por código. La novedad de bienvenida ya no menciona a ningún equipo.
+
 ## 1.0.38
 - Nueva portada de Inicio: barra de acceso rápido (evento y modpacks), botón de jugar grande sobre lo elegido y fondo orbital animado.
 

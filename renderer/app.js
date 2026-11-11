@@ -2315,7 +2315,7 @@ $('wz-offline').addEventListener('click', async () => {
     window.api.systemInfo()
   ]);
 
-  // "Nova PX - Event Launcher" se muestra en dos líneas: nombre y subtítulo.
+  // "Sagitta - Launcher" se muestra en dos líneas: nombre y subtítulo.
   const [brandName, ...brandRest] = cfg.launcherName.split(' - ');
   $('brand-name').textContent = brandName;
   $('brand-sub').textContent = brandRest.join(' - ');

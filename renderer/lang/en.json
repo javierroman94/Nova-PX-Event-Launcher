@@ -1,7 +1,7 @@
 {
  "code": "en",
  "name": "English",
- "author": "Nova PX",
+ "author": "Sagitta",
  "strings": {
   "+ Crear instancia": "+ Create instance",
   "+ Evento nuevo": "+ New event",
@@ -67,7 +67,6 @@
   "Cancelar": "Cancel",
   "Capa": "Cape",
   "Capturas": "Screenshots",
-  "Cargando Nova PX - Event Launcher": "Loading Nova PX - Event Launcher",
   "Cargar archivos": "Upload files",
   "Cargar más": "Load more",
   "Carpeta": "Folder",

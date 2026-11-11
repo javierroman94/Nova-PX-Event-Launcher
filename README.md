@@ -10,7 +10,7 @@
 ![Electron](https://img.shields.io/badge/Electron-33-4cc9f0?style=for-the-badge&labelColor=0e1220&logo=electron&logoColor=white)
 ![Minecraft Java](https://img.shields.io/badge/Minecraft-Java-5fd38d?style=for-the-badge&labelColor=0e1220)
 
-**[⬇️ Descargar la última versión](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** · [📖 Guía completa](docs/GUIA.md) · [🔑 Comunidades](docs/COMUNIDADES.md) · [💬 Discord](https://discord.gg/VAfuFEQtjv)
+**[⬇️ Descargar la última versión](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** · [📖 Guía completa](docs/GUIA.md) · [🔑 Comunidades](docs/COMUNIDADES.md) · [🐞 Reportar un problema](https://github.com/javierroman94/Nova-PX-Event-Launcher/issues/new/choose)
 
 </div>
 
@@ -18,7 +18,9 @@
 
 ## ✨ Qué es
 
-El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugador lo instala **una sola vez**: después, las noticias, los eventos, el equipo y los mods se actualizan solos desde este repositorio, y el propio programa se actualiza cuando publicamos una versión nueva.
+**Sagitta** es un launcher de Minecraft Java rápido y con diseño propio: instala Vanilla, Fabric y Forge, gestiona tus modpacks (Modrinth, importación de otros launchers) y se actualiza solo. Es un launcher normal para cualquier jugador.
+
+Si un equipo organiza **eventos**, puede tener su propia comunidad: el jugador escribe un **código de invitación** y aparece una pestaña con su evento, historial y equipo. Sin código no se ve nada de eso. Cada comunidad vive en su propio repositorio. Ver [`docs/COMUNIDADES.md`](docs/COMUNIDADES.md).
 
 <div align="center">
 <img src="docs/img/home.png" alt="Pantalla de inicio del launcher" width="92%" />
@@ -30,27 +32,28 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 | | |
 |---|---|
 | 🔐 **Premium y no premium** | Inicio de sesión con Microsoft o con un nick local. La sesión se recuerda al cerrar el launcher. |
-| 🧩 **Vanilla, Fabric y Forge** | Instala el loader y la versión de Minecraft del evento sin que el jugador toque nada. |
-| 🛡️ **Mods protegidos** | Los mods viajan cifrados (AES-256-GCM). Se pide una contraseña solo en la primera instalación. |
+| 🧩 **Vanilla, Fabric y Forge** | Instala el loader y la versión de Minecraft de cada modpack sin que el jugador toque nada. |
+| 🛡️ **Mods protegidos (eventos)** | Las comunidades pueden publicar mods cifrados (AES-256-GCM); se pide una contraseña solo en la primera instalación. |
 | ☕ **Java automático** | Si el equipo no tiene el Java correcto, el launcher lo descarga e instala. |
-| 🎮 **Una carpeta por evento** | Cada evento vive en su propia instancia: los mods de uno no chocan con los de otro. |
+| 🎮 **Una carpeta por modpack** | Cada modpack y cada evento viven en su propia instancia: los mods de uno no chocan con los de otro. |
 | 🧍 **Skins en 3D** | Visor 3D con animaciones, cambio de skin y de capa para cuentas premium. |
 | 🎨 **Temas y efectos** | Tema oscuro/claro, color principal, fondo propio y efectos que se pueden apagar. |
-| 💬 **Discord Rich Presence** | Muestra en Discord a qué evento estás jugando y cuánto tiempo llevas. |
-| 🔄 **Actualizaciones automáticas** | El contenido se lee de GitHub al abrir; el programa se actualiza solo con cada versión. |
+| 💬 **Discord Rich Presence** | Muestra en Discord a qué estás jugando y cuánto tiempo llevas. |
+| 🔄 **Actualizaciones automáticas** | El programa se actualiza solo con cada versión. |
+| 🔑 **Comunidades por código** | Eventos de equipos que solo aparecen con su código, cada uno en su propia pestaña y repositorio. |
 | 📦 **Biblioteca de modpacks** | Instala modpacks de Modrinth, cada uno en su propia carpeta, y gestiona su contenido: activa, quita o añade mods, shaders y texturas. |
 | 🛠️ **Tus propios modpacks** | Crea instancias, ajusta RAM/Java por modpack, duplica, respalda mundos y actualiza mods. |
-| 🔁 **Importar y exportar** | Importa de Prism/MultiMC, CurseForge App, Modrinth y exporta un `.novapx` propio para compartir. |
+| 🔁 **Importar y exportar** | Importa de Prism/MultiMC, CurseForge App, Modrinth y exporta un `.novapx` (formato propio de Sagitta) para compartir. |
 | 📊 **Estadísticas de uso (opcional)** | Contador gratis en Cloudflare para el administrador. Cada jugador puede apagarlo; no guarda IP. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
 | 🌌 **Nova Neón** | Tema futurista animado: vidrio, auroras, rejilla en movimiento, borde de luz y red de partículas. Se puede cambiar por Oscuro, Claro u OLED. |
 | 🎄 **Temporadas** | Decoración automática por fecha (Halloween, Navidad con nieve y luces, Año Nuevo con confeti) o elegida en Ajustes. |
 | 🌐 **Idiomas** | Paquetes de idioma (inglés incluido). La comunidad puede añadir más copiando un `.json`. |
 | 🧭 **Asistente de primer uso** | Al abrirlo por primera vez te guía: cuenta, RAM recomendada según tu equipo y listo. |
 | 📡 **Estado del servidor** | Cada modpack muestra si su servidor está activo y cuántos jugadores hay, leyendo su `servers.dat`. La IP no se muestra. |
-| 🛰️ **Modo administrador** | Solo para el dueño y los jugadores autorizados: crea el modpack en el launcher y publícalo como evento con un botón (mods cifrados + manifest), edita equipo, noticias y eventos. |
+| 🛰️ **Modo administrador** | Solo para quien organiza una comunidad: publica el evento con un botón (mods cifrados + manifest) y edita equipo, noticias y eventos de esa comunidad. |
 | 🧰 **Lista de mods** | Pestaña con nombre, icono y versión de cada mod instalado (datos de [Modrinth](https://modrinth.com)). |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y botón de **Reparar instalación**. |
-| 🔔 **Avisos de evento** | Notificación de escritorio una hora antes de que empiece un evento. |
+| 🔔 **Avisos de evento** | Si estás en una comunidad, notificación una hora antes de que empiece su evento. |
 | 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |
 
 ## 🖼️ Capturas
@@ -74,9 +77,10 @@ El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugad
 
 1. Entra a **[Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** y descarga el instalador para tu sistema (`.exe` en Windows, `.AppImage` en Linux).
 2. Ábrelo e instala. Windows puede mostrar un aviso de "editor desconocido" porque el instalador aún no está firmado: pulsa **Más información → Ejecutar de todas formas**.
-3. Inicia sesión y pulsa **Jugar**. No necesitas instalar Java ni descargar mods a mano.
+3. Inicia sesión y pulsa **Jugar** en uno de tus modpacks. No necesitas instalar Java.
+4. ¿Te dieron un código de evento? Inicio → **Unirme con un código**.
 
-## 🛠️ Para el equipo (desarrollo)
+## 🛠️ Desarrollo
 
 Requisitos: [Node.js](https://nodejs.org) LTS.
 
@@ -86,11 +90,11 @@ npm start        # abre el launcher en modo desarrollo
 npm test         # ejecuta las pruebas
 ```
 
-El contenido se edita **sin tocar el programa**, en la carpeta [`data/`](data):
+El contenido de una **comunidad** (en su propio repositorio, carpeta `data/`) se edita sin tocar el programa:
 
 | Archivo | Qué controla |
 |---|---|
-| `manifest.json` | Evento actual, versión de Minecraft, loader, servidor y mods |
+| `manifest.json` | Evento activo, versión de Minecraft, loader, servidor y mods |
 | `events.json` | Historial de eventos (nombre, fecha, imagen, descripción) |
 | `team.json` | Miembros del equipo y sus cargos |
 | `news.json` | Noticias de la pantalla de inicio |
@@ -106,7 +110,7 @@ GitHub Actions compila el instalador y lo publica en **Releases**; los launchers
 
 ## 🛰️ Modo administrador
 
-Las funciones de administración no aparecen para los jugadores normales. Se activan en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado (solo este repositorio, permiso *Contents: lectura y escritura*) y una cuenta premium autorizada. El flujo es: crear el modpack en el launcher → probarlo → **publicarlo como evento**. Detalles y recomendaciones de seguridad en la [Guía](docs/GUIA.md); sobre el inicio de sesión con Microsoft y el registro de una app propia, ver [`docs/MICROSOFT.md`](docs/MICROSOFT.md); el contador de usuarios opcional está en [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
+Las funciones de administración no aparecen para los jugadores normales. Se activan en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado (solo el repositorio de esa comunidad, permiso *Contents: lectura y escritura*) y una cuenta premium autorizada. El flujo es: crear el modpack en el launcher → probarlo → **publicarlo como evento**. Detalles y recomendaciones de seguridad en la [Guía](docs/GUIA.md); sobre el inicio de sesión con Microsoft y el registro de una app propia, ver [`docs/MICROSOFT.md`](docs/MICROSOFT.md); el contador de usuarios opcional está en [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
 
 ## ❓ Preguntas frecuentes
 
@@ -134,6 +138,6 @@ CHANGELOG.md              Historial de versiones
 
 ## 👥 Equipo
 
-Hecho por el equipo de **Nova PX** · [Historial de cambios](CHANGELOG.md) · [Cómo colaborar](CONTRIBUTING.md) · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
+Hecho por **Francisco Javier Román** ([@javierroman94](https://github.com/javierroman94)) · [Historial de cambios](CHANGELOG.md) · [Cómo colaborar](CONTRIBUTING.md)
 
-<sub>Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</sub>
+<sub>Sagitta no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</sub>

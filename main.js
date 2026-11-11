@@ -680,7 +680,7 @@ async function apiRequest(url, opts = {}) {
     const res = await fetch(url, {
       method: opts.method || 'GET',
       headers: {
-        'User-Agent': `javierroman94/Nova-PX-Event-Launcher/${app.getVersion()} (discord.gg/VAfuFEQtjv)`,
+        'User-Agent': `Sagitta/${app.getVersion()} (github.com/javierroman94/Nova-PX-Event-Launcher)`,
         ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
         ...(opts.headers || {})
       },
@@ -746,7 +746,7 @@ async function downloadWithProgress(url, onProgress) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15 * 60 * 1000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': `Nova-PX-Event-Launcher/${app.getVersion()}` } });
+    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': `Sagitta/${app.getVersion()}` } });
     if (!res.ok) throw new Error(`HTTP ${res.status} al descargar el modpack`);
     const total = Number(res.headers.get('content-length')) || 0;
     if (total > 1.5 * 1024 ** 3) throw new Error('El modpack es demasiado grande para instalarlo desde el launcher.');
@@ -837,7 +837,7 @@ ipcMain.handle('modpacks:folder', async (_e, id) => {
 
 /* ---------- instancias propias: crear, ajustes, duplicar, respaldos, actualizar ---------- */
 
-// "Recomendados por Nova PX": lista editable en data/recommended.json (en GitHub). Solo Modrinth, y solo modpacks.
+// "Recomendados": lista editable en data/recommended.json (en GitHub). Solo Modrinth, y solo modpacks.
 ipcMain.handle('modpacks:recommended', async () => {
   let list;
   try {
@@ -1548,7 +1548,7 @@ ipcMain.handle('modpacks:export', async (_e, p = {}) => {
   const { entry, root } = packRoot(p.id);
   if (launching) throw new Error('Cierra Minecraft antes de exportar.');
   const res = await dialog.showSaveDialog(mainWindow, {
-    title: 'Exportar modpack', defaultPath: `${modpacks.slugify(entry.title)}.novapx`, filters: [{ name: 'Modpack Nova PX', extensions: ['novapx'] }]
+    title: 'Exportar modpack', defaultPath: `${modpacks.slugify(entry.title)}.novapx`, filters: [{ name: 'Modpack Sagitta', extensions: ['novapx'] }]
   });
   if (res.canceled || !res.filePath) return null;
   const dest = res.filePath.toLowerCase().endsWith('.novapx') ? res.filePath : `${res.filePath}.novapx`;

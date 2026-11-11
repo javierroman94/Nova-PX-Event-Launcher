@@ -1,8 +1,8 @@
-# Guía completa - Nova PX Event Launcher
+# Guía completa - Sagitta
 
-<p align="center"><img src="../renderer/images/logo.png" alt="Logo de Nova PX" width="140" /></p>
+<p align="center"><img src="../renderer/images/logo.png" alt="Logo de Sagitta" width="140" /></p>
 
-Launcher de Minecraft Java para los eventos de Nova PX. Al abrirse muestra una animación de inicio con el logo (se salta con un clic o una tecla). Soporta jugadores **premium** (login Microsoft) y **no premium** (nick local), instala Fabric y los mods del evento automáticamente, y muestra noticias, historial de eventos y el equipo con sus skins.
+Launcher de Minecraft Java con modpacks propios y, de forma opcional, eventos de comunidades (que aparecen solo con su código; ver `COMUNIDADES.md`). Al abrirse muestra una animación de inicio con el logo (se salta con un clic o una tecla). Soporta jugadores **premium** (login Microsoft) y **no premium** (nick local), instala Fabric y los mods del evento automáticamente, y muestra noticias, historial de eventos y el equipo con sus skins.
 
 ## 1. Probarlo en tu computadora (paso a paso)
 
@@ -199,7 +199,7 @@ La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear
 
 ## 4h. Recomendados y capturas (v1.0.20)
 
-- **Recomendados por Nova PX:** en *Modpacks → Explorar* (Modrinth, sin búsqueda) aparece una sección con los modpacks que tú elijas. Se edita en `data/recommended.json` y se ve al instante en todos los jugadores, sin publicar versión nueva:
+- **Recomendados:** en *Modpacks → Explorar* (Modrinth, sin búsqueda) aparece una sección con los modpacks que tú elijas. Se edita en `data/recommended.json` y se ve al instante en todos los jugadores, sin publicar versión nueva:
 
   ```json
   [ { "provider": "modrinth", "id": "fabulously-optimized", "note": "Por qué lo recomiendas" } ]

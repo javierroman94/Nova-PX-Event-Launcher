@@ -1,4 +1,4 @@
-// Nova PX - contador de usuarios (Cloudflare Worker + KV).
+// Sagitta - contador de usuarios (Cloudflare Worker + KV).
 // Guarda por instalación: nick (si inició sesión), si es premium, versión del launcher y sistema.
 // No guarda IP ni nada más. Los registros inactivos se borran solos a los 180 días.
 // Variables: KV "USERS" y secreto "ADMIN_KEY" (clave que solo conoce el administrador).
@@ -72,7 +72,7 @@ export default {
       await env.USERS.delete(`u:${id}`);
       return json({ ok: true });
     }
-    if (url.pathname === '/') return new Response('Nova PX usage counter', { status: 200 });
+    if (url.pathname === '/') return new Response('Sagitta usage counter', { status: 200 });
     return json({ error: 'not_found' }, 404);
   }
 };

@@ -10,7 +10,7 @@
   --muted: #8f99ad;
   --log-bg: #0c0e14;
   --lapis: var(--accent);
-  --violet: #9d6bff; /* violeta de la marca Nova PX (splash) */
+  --violet: #9d6bff; /* violeta de la marca (splash) */
   --accent: #f2b84b;
   --accent-deep: color-mix(in srgb, var(--accent) 66%, #000);
   --accent-ink: #2a1d05;

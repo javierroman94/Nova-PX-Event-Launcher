@@ -9,12 +9,12 @@ Límites del plan gratis de Cloudflare: 100 000 peticiones al día y unas 1 000 
 ## Paso a paso (unos 10 minutos)
 
 1. Entra a https://dash.cloudflare.com y crea una cuenta gratis (o inicia sesión).
-2. **Crear el almacén:** menú *Storage & Databases* → *KV* → **Create** → nombre `novapx-users` → Add.
-3. **Crear el Worker:** menú *Workers & Pages* → **Create** → *Create Worker* → nombre `novapx-contador` → **Deploy**. Luego pulsa **Edit code**, borra todo lo que hay, pega el contenido del archivo `worker/index.mjs` de este repositorio y pulsa **Deploy**.
-4. **Conectar el almacén:** en el Worker → *Settings* → *Bindings* → **Add** → *KV namespace* → nombre de variable **`USERS`** (en mayúsculas) → elige `novapx-users` → Deploy.
+2. **Crear el almacén:** menú *Storage & Databases* → *KV* → **Create** → nombre `sagitta-users` → Add.
+3. **Crear el Worker:** menú *Workers & Pages* → **Create** → *Create Worker* → nombre `sagitta-contador` → **Deploy**. Luego pulsa **Edit code**, borra todo lo que hay, pega el contenido del archivo `worker/index.mjs` de este repositorio y pulsa **Deploy**.
+4. **Conectar el almacén:** en el Worker → *Settings* → *Bindings* → **Add** → *KV namespace* → nombre de variable **`USERS`** (en mayúsculas) → elige `sagitta-users` → Deploy.
 5. **Crear la clave del administrador:** en el Worker → *Settings* → *Variables and Secrets* → **Add** → tipo **Secret** → nombre **`ADMIN_KEY`** → valor: una frase larga y única (mínimo 16 caracteres; guárdala en un lugar seguro) → Deploy.
-6. Copia la dirección del Worker (algo como `https://novapx-contador.TU-USUARIO.workers.dev`).
-7. **Decirle la dirección al launcher:** en GitHub, edita `config/launcher.config.json` y pon `"telemetryUrl": "https://novapx-contador.TU-USUARIO.workers.dev"`. Publica una versión nueva del launcher (tag `vX.Y.Z`).
+6. Copia la dirección del Worker (algo como `https://sagitta-contador.TU-USUARIO.workers.dev`).
+7. **Decirle la dirección al launcher:** en GitHub, edita `config/launcher.config.json` y pon `"telemetryUrl": "https://sagitta-contador.TU-USUARIO.workers.dev"`. Publica una versión nueva del launcher (tag `vX.Y.Z`).
 8. **Ver los datos:** en el launcher (con tu cuenta premium autorizada) → **Admin → Usuarios** → pega la `ADMIN_KEY` una sola vez → Conectar.
 
 ## Si algo falla
