@@ -629,6 +629,7 @@ app.whenReady().then(() => {
   if (!gotLock) return;
   applyDiscordSetting();
   setTimeout(pingUsage, 3000);
+  setTimeout(() => refreshCommunities().catch(() => {}), 2500);
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
@@ -1135,8 +1136,11 @@ ipcMain.handle('communities:join', async (_e, code) => {
   if (!target) {
     let id = found.id;
     for (let i = 2; communities().some((c) => c.id === id); i++) id = `${found.id}-${i}`.slice(0, 32);
-    target = { ...found, id };
+    target = { ...found, id, code: comm.normalizeCode(code) };
     communities().push(target);
+    saveCommunities();
+  } else if (!target.code) {
+    target.code = comm.normalizeCode(code);
     saveCommunities();
   }
   writeSettings({ ...readSettings(), activeCommunity: target.id });
@@ -1168,6 +1172,77 @@ ipcMain.handle('communities:ownerStatus', () => {
   requireOwner();
   return { hasToken: !!readAdminToken(config.remoteBase), created: readCreated() };
 });
+
+// Los permisos de cada comunidad viven en el registro. Al abrir el launcher se refrescan: si el dueño cambia los
+// administradores de una comunidad, sus jugadores lo ven sin reinstalar. Si retira el código, la comunidad se oculta.
+async function refreshCommunities() {
+  const list = communities();
+  if (!list.some((c) => c.code)) return;
+  let registry;
+  try {
+    registry = await fetchJson(`${config.remoteBase.replace(/\/$/, '')}/communities.json?t=${Date.now()}`);
+  } catch {
+    return; // sin internet: se queda como está
+  }
+  const entries = (registry && registry.entries) || {};
+  let changed = false;
+  for (const c of list.slice()) {
+    if (!c.code) continue;
+    const found = comm.lookup(registry, c.code);
+    if (!found) {
+      if (Object.keys(entries).length) {
+        list.splice(list.indexOf(c), 1);
+        changed = true;
+      }
+      continue;
+    }
+    const next = { ...c, name: found.name, owners: found.owners, description: found.description, remoteBase: found.remoteBase };
+    if (JSON.stringify(next) !== JSON.stringify(c)) {
+      list[list.indexOf(c)] = next;
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveCommunities();
+    const act = readSettings().activeCommunity;
+    if (act && !list.some((c) => c.id === act)) writeSettings({ ...readSettings(), activeCommunity: (list[0] || {}).id || '' });
+    send('communities:changed', communityState());
+  }
+}
+const parseOwners = (text) => {
+  const owners = String(text || '').split(/[\s,;]+/).filter(Boolean);
+  if (owners.some((o) => !/^[A-Za-z0-9_]{3,16}$/.test(o))) throw new Error('Algún nick no es válido (3 a 16 letras, números o _).');
+  return [...new Set(owners)].slice(0, 20);
+};
+// El dueño del launcher decide quién administra cada comunidad. Cada una publica solo en su propio repositorio.
+ipcMain.handle('communities:setOwners', async (_e, p = {}) => {
+  requireOwner();
+  const created = readCreated();
+  const item = created.find((x) => x.code === comm.normalizeCode(p.code) || x.code === String(p.code));
+  if (!item) throw new Error('No encuentro esa comunidad entre las que creaste en este equipo.');
+  const owners = parseOwners(p.owners);
+  const repo = comm.parseRepoInput(item.branch && item.branch !== 'main' ? `${item.repo}#${item.branch}` : item.repo);
+  const community = comm.sanitizeCommunity({ id: item.id, name: item.name, remoteBase: comm.baseFromRepo(repo.owner, repo.repo, repo.branch), owners, description: item.description });
+  if (!community) throw new Error('No se pudo actualizar esa comunidad.');
+  const r = await verifiedRepo(config.remoteBase);
+  const cur = ((await r.getJson('data/communities.json')) || {}).data || { version: 1, entries: {} };
+  await r.putJson('data/communities.json', comm.addEntry(cur, community, item.code), `Administradores de ${item.name} actualizados`);
+  item.owners = owners;
+  fs.writeFileSync(CREATED_FILE, JSON.stringify(created, null, 2));
+  return { created };
+});
+ipcMain.handle('communities:revoke', async (_e, code) => {
+  requireOwner();
+  const created = readCreated();
+  const i = created.findIndex((x) => x.code === String(code));
+  if (i < 0) throw new Error('No encuentro esa comunidad entre las que creaste en este equipo.');
+  const r = await verifiedRepo(config.remoteBase);
+  const cur = ((await r.getJson('data/communities.json')) || {}).data || { version: 1, entries: {} };
+  await r.putJson('data/communities.json', comm.removeEntry(cur, created[i].code), `Código de ${created[i].name} retirado`);
+  created.splice(i, 1);
+  fs.writeFileSync(CREATED_FILE, JSON.stringify(created, null, 2));
+  return { created };
+});
 ipcMain.handle('communities:registryLogin', async (_e, token) => {
   requireOwner();
   const t = cleanStr(token, 300).trim();
@@ -1185,8 +1260,7 @@ ipcMain.handle('communities:create', async (_e, p = {}) => {
   if (!name) throw new Error('Ponle un nombre a la comunidad.');
   const repo = comm.parseRepoInput(p.repo);
   if (!repo) throw new Error('Escribe el repositorio como dueño/repositorio, por ejemplo javierroman94/mi-comunidad.');
-  const owners = String(p.owners || '').split(/[\s,;]+/).filter(Boolean);
-  if (owners.some((o) => !/^[A-Za-z0-9_]{3,16}$/.test(o))) throw new Error('Algún nick de dueño no es válido (3 a 16 letras, números o _).');
+  const owners = parseOwners(p.owners);
   const id = cleanStr(p.id, 32).trim().toLowerCase() || name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
   const community = comm.sanitizeCommunity({ id, name, remoteBase: comm.baseFromRepo(repo.owner, repo.repo, repo.branch), owners, description: cleanStr(p.description, 200) });
   if (!community) throw new Error('No se pudo armar la comunidad con esos datos.');
@@ -1195,7 +1269,7 @@ ipcMain.handle('communities:create', async (_e, p = {}) => {
   const cur = ((await r.getJson('data/communities.json')) || {}).data || { version: 1, entries: {} };
   await r.putJson('data/communities.json', comm.addEntry(cur, community, code), `Comunidad nueva (desde el launcher)`);
   const created = readCreated();
-  created.push({ name, repo: `${repo.owner}/${repo.repo}`, code, created: new Date().toISOString() });
+  created.push({ id: community.id, name, repo: `${repo.owner}/${repo.repo}`, branch: repo.branch, owners, description: community.description, code, created: new Date().toISOString() });
   fs.writeFileSync(CREATED_FILE, JSON.stringify(created, null, 2));
   return { code, name, created };
 });
@@ -1210,7 +1284,7 @@ ipcMain.handle('admin:login', async (_e, token) => {
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar el token de forma cifrada, así que no se activa el modo administrador.');
   saveAdminToken(base, t);
   checkedAt.set(tokenFile(base), Date.now());
-  return { admin: true, repo: c.fullName };
+  return { admin: true, repo: c.fullName, community: (activeCommunity() || {}).name };
 });
 // Clave del contador de usuarios (la que pusiste como ADMIN_KEY en Cloudflare). Se guarda cifrada, como el token.
 const USERS_KEY_FILE = path.join(app.getPath('userData'), 'users.key');

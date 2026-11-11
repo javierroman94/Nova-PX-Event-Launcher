@@ -2052,6 +2052,7 @@ async function onCommunityChanged() {
 
 async function initCommunities() {
   try { applyCommunities(await window.api.communitiesList()); } catch {}
+  try { window.api.onCommunitiesChanged(async (st) => { applyCommunities({ ...comm, ...st }); await onCommunityChanged(); }); } catch {}
 }
 
 let joinAfter = null;
@@ -2098,6 +2099,7 @@ async function refreshOwnerBox() {
     const list = $('cc-list');
     list.replaceChildren();
     s.created.slice().reverse().forEach((c) => {
+      const card = el('div', 'comm-card');
       const row = el('div', 'comm-row');
       const info = el('div', 'comm-info');
       info.append(el('strong', '', c.name), el('span', 'muted', `${c.repo} · ${c.code}`));
@@ -2105,7 +2107,32 @@ async function refreshOwnerBox() {
       cp.type = 'button';
       cp.addEventListener('click', () => { navigator.clipboard.writeText(c.code).then(() => toast('Código copiado')).catch(() => toast('No se pudo copiar', 'error')); });
       row.append(info, cp);
-      list.append(row);
+      const perm = el('div', 'comm-perm');
+      const lab = el('label', 'muted', 'Administradores de esta comunidad (solo ellos pueden publicar su evento)');
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = (c.owners || []).join(', ');
+      inp.placeholder = 'NickPremium1, NickPremium2';
+      const save = el('button', '', 'Guardar permisos');
+      save.type = 'button';
+      save.addEventListener('click', async () => {
+        save.disabled = true;
+        try { await window.api.communitiesSetOwners({ code: c.code, owners: inp.value }); toast(`Permisos de ${c.name} actualizados`); }
+        catch (e) { toast(cleanError(e), 'error'); }
+        save.disabled = false;
+      });
+      const rev = el('button', 'danger', 'Retirar código');
+      rev.type = 'button';
+      rev.addEventListener('click', async () => {
+        if (!confirm(`¿Retirar el código de "${c.name}"? Dejará de aparecer a sus jugadores y nadie podrá unirse con él. El repositorio no se borra.`)) return;
+        try { await window.api.communitiesRevoke(c.code); toast('Código retirado'); refreshOwnerBox(); }
+        catch (e) { toast(cleanError(e), 'error'); }
+      });
+      const acts = el('div', 'mp-actions');
+      acts.append(save, rev);
+      perm.append(lab, inp, acts);
+      card.append(row, perm);
+      list.append(card);
     });
   } catch {}
 }
@@ -2276,18 +2303,18 @@ $('wz-offline').addEventListener('click', async () => {
 /* ---------- modo administrador ---------- */
 let isAdmin = false;
 let adminProgress = null;
-function setAdminUi(on, repo, err, eligible) {
+function setAdminUi(on, repo, err, eligible, community) {
   isAdmin = on;
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
   $('adm-login-box').hidden = on;
   $('adm-logout-box').hidden = !on;
-  $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
+  $('adm-state').textContent = on ? `Activo en ${community ? `«${community}»` : 'esta comunidad'}: puedes publicar solo en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
   moveIndicator();
 }
 function refreshAdmin() {
   window.api.adminStatus().then((r) => {
-    setAdminUi(r.admin, r.repo, r.error, r.eligible);
+    setAdminUi(r.admin, r.repo, r.error, r.eligible, r.community);
     if (!r.admin && $('page-admin').classList.contains('active')) goTo('home');
   }).catch(() => {});
 }
@@ -2297,7 +2324,7 @@ $('adm-login').addEventListener('click', async () => {
   try {
     const r = await window.api.adminLogin($('adm-token').value);
     $('adm-token').value = '';
-    setAdminUi(true, r.repo, undefined, true);
+    setAdminUi(true, r.repo, undefined, true, r.community);
     toast('Modo administrador activado');
   } catch (e) {
     $('adm-state').textContent = cleanError(e);

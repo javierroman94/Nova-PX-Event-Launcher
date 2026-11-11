@@ -32,4 +32,9 @@ assert.deepStrictEqual(c.parseRepoInput('https://github.com/a/b.git'), { owner: 
 assert.deepStrictEqual(c.parseRepoInput('a/b#dev'), { owner: 'a', repo: 'b', branch: 'dev' });
 assert.strictEqual(c.parseRepoInput('nada'), null);
 assert.strictEqual(c.baseFromRepo('a', 'b'), 'https://raw.githubusercontent.com/a/b/main/data');
+const r2 = c.removeEntry(reg, code);
+assert.strictEqual(c.lookup(r2, code), null);
+assert.ok(c.lookup(r2, code2));
+assert.strictEqual(c.sanitizeCommunity({ ...com, code: 'ABCD1234EFGH5678' }).code, 'ABCD1234EFGH5678');
+assert.strictEqual(c.sanitizeCommunity({ ...com, code: 'x y' }).code, undefined);
 console.log('communities.test OK');

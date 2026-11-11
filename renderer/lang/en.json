@@ -498,7 +498,13 @@
   "Código copiado": "Code copied",
   "Creando y publicando…": "Creating and publishing…",
   "Token guardado.": "Token saved.",
-  "Lo que prepara la comunidad para ti": "What the community is preparing for you"
+  "Lo que prepara la comunidad para ti": "What the community is preparing for you",
+  "Administradores de esta comunidad (solo ellos pueden publicar su evento)": "Administrators of this community (only they can publish its event)",
+  "Guardar permisos": "Save permissions",
+  "Retirar código": "Revoke code",
+  "Código retirado": "Code revoked",
+  "Nicks de los administradores (separados por coma)": "Administrator nicks (comma separated)",
+  "Vale solo para la comunidad activa (cambia de comunidad en la barra lateral). Cada una tiene su propio token y solo publica en su repositorio: nunca se mezclan. Quién puede administrar lo decide el dueño del launcher.": "Applies only to the active community (switch community in the sidebar). Each one has its own token and publishes only to its own repository: they never mix. The launcher owner decides who can administer."
  },
  "patterns": [
   {
@@ -784,6 +790,18 @@
   {
    "match": "^Código de \"(.+)\": (.+) \\(también queda guardado abajo\\)\\. Compártelo solo con quien deba entrar\\.$",
    "to": "Code for \"$1\": $2 (also saved below). Share it only with whoever should join."
+  },
+  {
+   "match": "^Permisos de (.+) actualizados$",
+   "to": "Permissions for $1 updated"
+  },
+  {
+   "match": "^Activo en (.+): puedes publicar solo en (.+)\\.$",
+   "to": "Active in $1: you can publish only to $2."
+  },
+  {
+   "match": "^¿Retirar el código de \"(.+)\"\\? .*$",
+   "to": "Revoke the code for \"$1\"? It will disappear for its players and nobody can join with it. The repository is not deleted."
   }
  ]
 }

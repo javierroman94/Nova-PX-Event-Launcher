@@ -1260,3 +1260,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .comm-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
 .comm-info { display: grid; gap: 2px; min-width: 0; }
 .comm-info span { overflow-wrap: anywhere; }
+
+.comm-card { display: grid; gap: 8px; margin-bottom: 12px; }
+.comm-perm { display: grid; gap: 6px; padding: 10px 14px 12px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; margin-top: -10px; }
+.comm-perm .mp-actions { margin-top: 2px; }
+button.danger { color: #ff8a8a; border-color: color-mix(in srgb, #ff5c5c 45%, transparent); }

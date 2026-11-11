@@ -714,7 +714,7 @@
               <div><label for="cc-name">Nombre de la comunidad</label><input id="cc-name" type="text" maxlength="40" placeholder="Mi equipo" /></div>
               <div><label for="cc-repo">Repositorio (dueño/nombre)</label><input id="cc-repo" type="text" placeholder="usuario/mi-comunidad" /></div>
             </div>
-            <div class="field"><label for="cc-owners">Nicks de los dueños (separados por coma)</label><input id="cc-owners" type="text" placeholder="NickPremium1, NickPremium2" /></div>
+            <div class="field"><label for="cc-owners">Nicks de los administradores (separados por coma)</label><input id="cc-owners" type="text" placeholder="NickPremium1, NickPremium2" /></div>
             <div class="mp-actions"><button id="cc-create" type="button" class="primary">Crear código</button></div>
           </div>
           <p id="cc-msg" class="muted" role="status"></p>
@@ -723,6 +723,7 @@
 
         <fieldset id="adm-fieldset" hidden>
           <legend>Modo administrador</legend>
+          <p class="muted">Vale solo para la comunidad activa (<b>cambia de comunidad en la barra lateral</b>). Cada una tiene su propio token y solo publica en su repositorio: nunca se mezclan. Quién puede administrar lo decide el dueño del launcher.</p>
           <p id="adm-state" class="muted">Desactivado.</p>
           <div id="adm-login-box">
             <label for="adm-token">Token de GitHub</label>

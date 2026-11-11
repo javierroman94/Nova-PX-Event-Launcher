@@ -18,6 +18,12 @@ Sagitta es un launcher limpio. Un evento (Nova PX, el de otro equipo…) **solo 
 
 Solo el dueño del launcher puede crear comunidades. Los datos del registro se guardan cifrados (scrypt + AES-256-GCM) en `data/communities.json`: sin el código no se puede leer a qué repositorio apunta.
 
+## Permisos: quién administra cada evento
+- El **dueño del launcher** (tú) decide quién administra cada comunidad: Ajustes → *Crear comunidad* → en cada comunidad escribe los nicks y pulsa **Guardar permisos**. Puedes cambiarlos cuando quieras, y **Retirar código** oculta la comunidad.
+- Los administradores de una comunidad solo ven el modo administrador cuando esa comunidad está activa, y publican únicamente en **su** repositorio con **su** token. Nunca pueden tocar el evento de otra comunidad.
+- Los cambios llegan a los jugadores al abrir el launcher (necesitan internet).
+- Además, un administrador puede autorizar a otros nicks dentro de su evento con `data/admins.json` de su repositorio.
+
 ## Notas
 - El código no es una contraseña fuerte: quien lo reciba puede reenviarlo. Si se filtra, crea otra comunidad y retira la anterior.
 - Los mods cifrados del evento siguen la misma regla de cada repositorio.

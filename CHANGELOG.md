@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.37
+- **Permisos por comunidad**: el dueño decide, en Ajustes → Crear comunidad, qué nicks administran cada evento ("Guardar permisos") y puede retirar un código. Los cambios llegan a los jugadores al abrir el launcher.
+- El modo administrador indica a qué comunidad pertenece y solo publica en el repositorio de esa comunidad.
+
 ## 1.0.36
 - **Comunidades por código**: el launcher queda limpio y cada evento (Nova PX u otros) aparece solo con su código de invitación, en su propia pestaña y su propio repositorio.
 - Ajustes → Crear comunidad (solo propietario) y Comunidades (unirse/salir). Ver `docs/COMUNIDADES.md`.
