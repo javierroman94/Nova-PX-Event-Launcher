@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.38
+- Nueva portada de Inicio: barra de acceso rápido (evento y modpacks), botón de jugar grande sobre lo elegido y fondo orbital animado.
+
 ## 1.0.37
 - **Permisos por comunidad**: el dueño decide, en Ajustes → Crear comunidad, qué nicks administran cada evento ("Guardar permisos") y puede retirar un código. Los cambios llegan a los jugadores al abrir el launcher.
 - El modo administrador indica a qué comunidad pertenece y solo publica en el repositorio de esa comunidad.

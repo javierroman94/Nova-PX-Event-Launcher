@@ -303,6 +303,7 @@ async function renderContinue() {
   if (comm.list.length) box.append(ev);
 
   renderRecent(packs);
+  renderStage(packs);
   packs
     .slice()
     .sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))
@@ -335,6 +336,71 @@ async function renderContinue() {
     go.addEventListener('click', () => goTo('modpacks'));
     hint.append(go);
     box.append(hint);
+  }
+}
+
+/* ---------- inicio: portada de juego rápido ---------- */
+let stagePick = null; // 'event' o id de modpack elegido en la barra rápida
+function renderStage(packs) {
+  const sorted = packs.slice().sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')));
+  const hasEvent = comm.list.length > 0;
+  const items = [];
+  if (hasEvent) items.push({ key: 'event', title: eventInfo.name, icon: eventInfo.logo || 'images/logo.png', event: true });
+  sorted.slice(0, 8).forEach((p) => items.push({ key: p.id, title: p.title, pack: p }));
+  const cur = items.find((i) => i.key === stagePick) || items.find((i) => i.pack) || items[0];
+  const strip = $('quick-strip');
+  strip.replaceChildren();
+  const lab = el('span', 'quick-label', 'Acceso rápido');
+  strip.append(lab);
+  items.forEach((i) => {
+    const b = el('button', `quick-item${i === cur ? ' on' : ''}`);
+    b.type = 'button';
+    b.title = i.title;
+    b.setAttribute('aria-label', i.title);
+    b.setAttribute('aria-pressed', i === cur ? 'true' : 'false');
+    if (i.pack) b.append(packIcon(i.pack, 'quick-icon'));
+    else { const im = el('img', 'quick-icon'); im.alt = ''; im.src = i.icon; b.append(im); }
+    b.addEventListener('click', () => { stagePick = i.key; renderStage(packs); });
+    strip.append(b);
+  });
+  const hero = $('stage');
+  const chips = $('stage-chips');
+  chips.replaceChildren();
+  const art = $('stage-art');
+  art.hidden = true;
+  $('stage-play').disabled = false;
+  if (!cur) {
+    $('stage-kicker').textContent = 'Bienvenido';
+    $('stage-title').textContent = 'Tu próxima aventura empieza aquí';
+    $('stage-meta').textContent = 'Instala un modpack o únete a una comunidad con su código.';
+    $('stage-play-label').textContent = 'Explorar modpacks';
+    $('stage-play-sub').textContent = '';
+    $('stage-play').onclick = () => goTo('modpacks');
+    hero.dataset.kind = 'empty';
+    return;
+  }
+  hero.dataset.kind = cur.event ? 'event' : 'pack';
+  $('stage-title').textContent = cur.title;
+  if (cur.event) {
+    $('stage-kicker').textContent = 'Evento de tu comunidad';
+    $('stage-meta').textContent = eventActive ? 'Listo para jugar con todos.' : 'El próximo evento todavía no empieza.';
+    chips.append(el('span', 'chip', `Minecraft ${eventInfo.mc || '–'}`), el('span', 'chip', LOADER_NAMES[eventInfo.loader] || eventInfo.loader));
+    if (eventInfo.logo) { art.src = eventInfo.logo; art.hidden = false; }
+    $('stage-play-label').textContent = eventActive ? 'Ir al evento' : 'Ver detalles';
+    $('stage-play-sub').textContent = eventActive ? 'Actualiza y juega' : 'Próximamente';
+    $('stage-play').onclick = () => goTo('event');
+  } else {
+    const p = cur.pack;
+    $('stage-kicker').textContent = p.lastPlayedAt ? `Última vez ${ago(p.lastPlayedAt)}` : 'Tu modpack';
+    $('stage-meta').textContent = 'Todo listo para continuar donde lo dejaste.';
+    chips.append(el('span', 'chip', `Minecraft ${p.mcVersion}`), el('span', 'chip', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
+    const pill = el('span', 'srv-pill');
+    pill.hidden = true;
+    chips.append(pill);
+    fillServerPill(pill, p.id);
+    $('stage-play-label').textContent = `Jugar ${p.mcVersion}`;
+    $('stage-play-sub').textContent = p.title;
+    $('stage-play').onclick = () => playPack(p.id);
   }
 }
 

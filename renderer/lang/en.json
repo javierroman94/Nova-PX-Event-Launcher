@@ -504,7 +504,20 @@
   "Retirar código": "Revoke code",
   "Código retirado": "Code revoked",
   "Nicks de los administradores (separados por coma)": "Administrator nicks (comma separated)",
-  "Vale solo para la comunidad activa (cambia de comunidad en la barra lateral). Cada una tiene su propio token y solo publica en su repositorio: nunca se mezclan. Quién puede administrar lo decide el dueño del launcher.": "Applies only to the active community (switch community in the sidebar). Each one has its own token and publishes only to its own repository: they never mix. The launcher owner decides who can administer."
+  "Vale solo para la comunidad activa (cambia de comunidad en la barra lateral). Cada una tiene su propio token y solo publica en su repositorio: nunca se mezclan. Quién puede administrar lo decide el dueño del launcher.": "Applies only to the active community (switch community in the sidebar). Each one has its own token and publishes only to its own repository: they never mix. The launcher owner decides who can administer.",
+  "Acceso rápido": "Quick access",
+  "Bienvenido": "Welcome",
+  "Tu próxima aventura empieza aquí": "Your next adventure starts here",
+  "Instala un modpack o únete a una comunidad con su código.": "Install a modpack or join a community with its code.",
+  "Explorar modpacks": "Explore modpacks",
+  "Evento de tu comunidad": "Your community event",
+  "Listo para jugar con todos.": "Ready to play with everyone.",
+  "El próximo evento todavía no empieza.": "The next event hasn't started yet.",
+  "Ir al evento": "Go to the event",
+  "Ver detalles": "View details",
+  "Actualiza y juega": "Update and play",
+  "Tu modpack": "Your modpack",
+  "Todo listo para continuar donde lo dejaste.": "All set to continue where you left off."
  },
  "patterns": [
   {
@@ -802,6 +815,14 @@
   {
    "match": "^¿Retirar el código de \"(.+)\"\\? .*$",
    "to": "Revoke the code for \"$1\"? It will disappear for its players and nobody can join with it. The repository is not deleted."
+  },
+  {
+   "match": "^Última vez (.+)$",
+   "to": "Last played $1"
+  },
+  {
+   "match": "^Jugar (\\d[\\d.]*)$",
+   "to": "Play $1"
   }
  ]
 }
