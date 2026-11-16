@@ -7,6 +7,11 @@
     "tributeText": "Gracias por todo lo que nos enseñaste. Cada evento lleva un poco de ti."
   },
   {
+    "nick": "EzLuiiz",
+    "role": "Lead Level Designer / CEO / Creative Director",
+    "featured": true
+  },
+  {
     "nick": "MegaDeker",
     "role": "Co-Founder / Art & Operations Director",
     "featured": true
@@ -27,11 +32,6 @@
   {
     "nick": "Kyoukster",
     "role": "Lead Concept Artist & Motion Designer"
-  },
-  {
-    "nick": "EzLuiiz",
-    "role": "Lead Level Designer / CEO / Creative Director",
-    "featured": true
   },
   {
     "nick": "MaurizioPG_",
