@@ -25,6 +25,7 @@ const packs = require('./lib/packs');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const telemetry = require('./lib/telemetry');
+const remote = require('./lib/remote');
 const importers = require('./lib/importers');
 const { readZip } = require('./lib/zip');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
@@ -39,7 +40,7 @@ const KEYS_FILE = path.join(app.getPath('userData'), 'unlock.json');
 const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
-const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins'];
+const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher'];
 const ICON = path.join(__dirname, 'build', 'icon.png');
 
 let mainWindow = null;
@@ -78,10 +79,23 @@ if (!gotLock) {
 
 /* ---------- ajustes ---------- */
 
+// Configuración remota (data/launcher.json). Se refresca al abrir y cada 10 minutos.
+let remoteCfg = remote.sanitize(null);
+async function refreshRemote() {
+  try {
+    const next = remote.sanitize(await loadData('launcher'));
+    if (JSON.stringify(next) !== JSON.stringify(remoteCfg)) {
+      remoteCfg = next;
+      send('remote:changed', remoteCfg);
+    }
+  } catch {}
+}
+ipcMain.handle('remote:get', () => remoteCfg);
+
 function defaultSettings() {
   return {
     lastNick: '',
-    ramGb: config.defaultRamGb,
+    ramGb: (remoteCfg.defaults && remoteCfg.defaults.ramGb) || config.defaultRamGb,
     joinServer: true,
     javaPath: config.javaPath || '',
     autoJava: true,
@@ -565,6 +579,8 @@ app.on('before-quit', () => rpc.stop());
 app.whenReady().then(() => {
   if (!gotLock) return;
   applyDiscordSetting();
+  refreshRemote();
+  setInterval(refreshRemote, 10 * 60 * 1000).unref();
   setTimeout(pingUsage, 3000);
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
@@ -942,7 +958,7 @@ let lastPing = { nick: null, at: 0 };
 
 // Avisa al contador que el launcher se abrió. Si el jugador lo apagó en Ajustes, o no hay contador configurado, no hace nada.
 async function pingUsage() {
-  if (!USAGE_URL || !readSettings().shareUsage) return;
+  if (!USAGE_URL || !readSettings().shareUsage || !remoteCfg.features.usageCounter) return;
   const nick = session ? session.name : '';
   if (lastPing.nick === nick && Date.now() - lastPing.at < 30 * 60 * 1000) return;
   lastPing = { nick, at: Date.now() };
@@ -1063,7 +1079,41 @@ ipcMain.handle('admin:logout', () => {
 ipcMain.handle('admin:load', async () => {
   const r = await requireAdmin();
   const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
-  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], events: (await get('events')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
+  return { launcher: remote.sanitize(await get('launcher')), recommended: remote.sanitizeRecommended(await get('recommended')), manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], events: (await get('events')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
+});
+// Apariencia, ajustes, avisos y control remoto: todo en data/launcher.json.
+ipcMain.handle('admin:saveLauncher', async (_e, raw) => {
+  const r = await requireAdmin();
+  const clean = remote.sanitize(raw);
+  await r.putJson('data/launcher.json', clean, 'Configuración del launcher actualizada (desde el launcher)');
+  remoteCfg = clean;
+  send('remote:changed', remoteCfg);
+  return clean;
+});
+ipcMain.handle('admin:saveRecommended', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = remote.sanitizeRecommended(list);
+  await r.putJson('data/recommended.json', clean, 'Modpacks recomendados actualizados (desde el launcher)');
+  return clean;
+});
+// Historial y "deshacer": versiones anteriores de lo que se publicó (solo archivos seguros de restaurar).
+const RESTORABLE = ['launcher', 'news', 'events', 'team', 'recommended'];
+const restorable = (name) => {
+  if (!RESTORABLE.includes(name)) throw new Error('Ese archivo no se puede restaurar desde aquí.');
+  return `data/${name}.json`;
+};
+ipcMain.handle('admin:history', async (_e, name) => {
+  const r = await requireAdmin();
+  return r.history(restorable(name), 15);
+});
+ipcMain.handle('admin:restore', async (_e, name, sha) => {
+  const r = await requireAdmin();
+  const file = restorable(name);
+  const old = await r.jsonAt(file, sha);
+  const clean = { launcher: remote.sanitize, recommended: remote.sanitizeRecommended, news: adminLib.sanitizeNews, events: adminLib.sanitizeEvents, team: adminLib.sanitizeTeam }[name](old);
+  await r.putJson(file, clean, `Restaurado ${name} a la versión ${String(sha).slice(0, 7)} (desde el launcher)`);
+  if (name === 'launcher') { remoteCfg = clean; send('remote:changed', remoteCfg); }
+  return clean;
 });
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
@@ -1697,6 +1747,7 @@ let restoring = null;
 
 // Cuenta NO premium: nick local. El servidor debe tener online-mode=false + plugin de login.
 ipcMain.handle('auth:offline', (_e, nick) => {
+  if (!remoteCfg.features.nonPremium) throw new Error('El inicio de sesión no premium está desactivado por el administrador. Entra con tu cuenta de Microsoft.');
   const name = String(nick || '').trim();
   if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
     throw new Error('El nick debe tener de 3 a 16 caracteres: letras, números o guion bajo.');
@@ -1865,6 +1916,9 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
   if (!session) throw new Error('Primero inicia sesión.');
   if (launching) throw new Error('El juego ya se está iniciando.');
+  await refreshRemote();
+  const blocked = remote.blockReason(remoteCfg, app.getVersion(), { admin: await adminEligible() });
+  if (blocked) throw new Error(blocked);
   launching = true;
 
   try {

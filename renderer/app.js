@@ -193,7 +193,7 @@ function goTo(tab) {
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
   if (tab === 'mods') renderMods();
   if (tab === 'modpacks') openModpacks();
-  if (tab === 'admin') loadAdmin();
+  if (tab === 'admin') { loadAdmin(); if (window.adminEntered) window.adminEntered(); } else if (window.adminLeft) window.adminLeft();
   if (tab === 'home') renderContinue();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
@@ -236,7 +236,8 @@ async function renderHero() {
     $('stat-ver').textContent = eventActive ? m.minecraftVersion : '–';
     $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
     startCountdown(m.event && m.event.startsAt);
-    renderLinks(m.links);
+    lastEventLinks = m.links;
+    window.refreshLinks();
   } catch {
     $('hero-tagline').textContent = 'No se pudo leer la configuración del evento.';
   }
@@ -370,6 +371,8 @@ function startCountdown(iso) {
   countdownTimer = setInterval(tick, 1000);
 }
 
+let lastEventLinks = [];
+window.refreshLinks = () => renderLinks(window.withRemoteLinks ? window.withRemoteLinks(lastEventLinks) : lastEventLinks);
 function renderLinks(links) {
   const card = $('links-card');
   const box = $('links');
@@ -2114,6 +2117,7 @@ $('wz-offline').addEventListener('click', async () => {
   $('offline-nick').value = settings.lastNick || '';
 
   window.NovaTheme.init(settings);
+  await initRemote();
   initLanguage(settings.lang || 'auto');
   refreshPlaytime();
 
@@ -2180,14 +2184,14 @@ $('adm-logout').addEventListener('click', async () => {
   if ($('page-admin').classList.contains('active')) goTo('settings');
 });
 
-const adm = { team: [], news: [], manifest: {}, summary: null };
+const adm = { team: [], news: [], reco: [], launcher: null, manifest: {}, summary: null };
 const AD_PACK_KEY = 'novapx.eventPack';
 const keep = (k, v) => { try { v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch {} return (() => { try { return localStorage.getItem(k); } catch { return null; } })(); };
 
 document.querySelectorAll('[data-ad-tab]').forEach((b) =>
   b.addEventListener('click', () => {
     document.querySelectorAll('[data-ad-tab]').forEach((x) => x.classList.toggle('active', x === b));
-    ['event', 'team', 'events', 'news', 'users', 'perms'].forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+    window.AD_TABS.forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
     if (b.dataset.adTab === 'users') loadUsers();
   })
 );
@@ -2219,6 +2223,7 @@ async function loadAdmin() {
     paintPerms();
     paintTeam();
     paintNews();
+    if (window.adminExtLoad) window.adminExtLoad(d);
     await loadAdminPacks();
   } catch (e) {
     $('ad-status').textContent = cleanError(e);
@@ -2417,6 +2422,7 @@ function paintAdminEvents() {
     box.append(row);
   });
   if (!(adm.events || []).length) box.append(el('p', 'muted', 'Todavía no hay eventos en el historial.'));
+  if (window.makeSortable) window.makeSortable(box, adm.events, paintAdminEvents, () => saveAdminEvents(adm.events));
 }
 function paintAdeWinners() {
   const box = $('ade-winners');
@@ -2562,6 +2568,7 @@ function paintTeam() {
     row.append(f.nick, f.role, star, del);
     box.append(row);
   });
+  if (window.makeSortable) window.makeSortable(box, adm.team, paintTeam);
 }
 function paintNews() {
   const box = $('ad-news');
@@ -2575,6 +2582,7 @@ function paintNews() {
     row.append(f.title, f.date, f.text, del);
     box.append(row);
   });
+  if (window.makeSortable) window.makeSortable(box, adm.news, paintNews);
 }
 $('ad-team-add').addEventListener('click', () => { adm.team.push({ nick: '', role: '' }); paintTeam(); });
 $('ad-news-add').addEventListener('click', () => { adm.news.unshift({ title: '', date: new Date().toISOString().slice(0, 10), text: '' }); paintNews(); });
@@ -2582,6 +2590,7 @@ $('ad-team-save').addEventListener('click', async () => {
   try {
     adm.team = await window.api.adminSaveTeam(adm.team.filter((m) => (m.nick || '').trim()));
     paintTeam();
+    window.adminListSaved('team');
     $('ad-team-status').textContent = 'Equipo publicado.';
   } catch (e) { $('ad-team-status').textContent = cleanError(e); }
 });
@@ -2589,6 +2598,7 @@ $('ad-news-save').addEventListener('click', async () => {
   try {
     adm.news = await window.api.adminSaveNews(adm.news);
     paintNews();
+    window.adminListSaved('news');
     $('ad-news-status').textContent = 'Noticias publicadas.';
   } catch (e) { $('ad-news-status').textContent = cleanError(e); }
 });

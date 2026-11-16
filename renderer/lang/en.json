@@ -76,7 +76,7 @@
   "Cerrar sesión": "Sign out",
   "Claro": "Light",
   "Clave del contador": "Counter key",
-  "Color principal": "Accent color",
+  "Color principal": "Main color",
   "Con una cuenta de Minecraft original (Microsoft) puedes entrar a servidores premium. Sin cuenta, juegas con un nombre.": "With an original Minecraft (Microsoft) account you can join premium servers. Without one, you play with a name.",
   "Conectar": "Connect",
   "Conectar el contador": "Connect the counter",
@@ -471,7 +471,40 @@
   "ahora mismo": "just now",
   "sin jugar": "not played yet",
   "▶ Jugar": "▶ Play",
-  "Evento nuevo": "New event"
+  "Evento nuevo": "New event",
+  "Recomendados": "Recommended",
+  "Control": "Control",
+  "Estado": "Status",
+  "Deshacer": "Undo",
+  "Marca y apariencia": "Brand and appearance",
+  "Nombre del launcher": "Launcher name",
+  "Subtítulo": "Subtitle",
+  "Tema por defecto": "Default theme",
+  "Temporada": "Season",
+  "Sin cambiar": "Unchanged",
+  "Publicar cambios": "Publish changes",
+  "Ajustes del launcher": "Launcher settings",
+  "Funciones": "Features",
+  "Anuncio global": "Global announcement",
+  "Mostrar el anuncio": "Show the announcement",
+  "Mantenimiento y versiones": "Maintenance and versions",
+  "Modpacks recomendados": "Recommended modpacks",
+  "Últimos cambios publicados": "Latest published changes",
+  "Descartar vista previa": "Discard preview",
+  "Recuperar borrador": "Restore draft",
+  "Descartar": "Discard",
+  "Restaurar": "Restore",
+  "Versión del launcher": "Launcher version",
+  "Versión mínima": "Minimum version",
+  "Mantenimiento": "Maintenance",
+  "Jugadores ahora": "Players now",
+  "👁 Vista previa en vivo: ya lo ves en tu launcher, pero todavía no está publicado.": "👁 Live preview: you can already see it in your launcher, but it is not published yet.",
+  "Más información": "More information",
+  "Cerrar aviso": "Close notice",
+  "Permitir inicio de sesión no premium": "Allow non-premium sign-in",
+  "Contador de usuarios activo": "User counter enabled",
+  "Aviso": "Warning",
+  "Importante": "Important"
  },
  "patterns": [
   {
@@ -745,6 +778,14 @@
   {
    "match": "^(.+) · hace (\\d+) días?$",
    "to": "$1 · $2 day(s) ago"
+  },
+  {
+   "match": "^Tienes un borrador sin publicar de (.+)\\.$",
+   "to": "You have an unpublished draft of $1."
+  },
+  {
+   "match": "^Historial: (.+)$",
+   "to": "History: $1"
   }
  ]
 }

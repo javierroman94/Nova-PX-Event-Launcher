@@ -58,6 +58,7 @@
 
   function change(patch) {
     apply(patch);
+    try { localStorage.setItem('px.themeTouched', '1'); } catch {} // el jugador eligió: el tema del administrador ya no lo pisa
     persist();
   }
 
@@ -255,6 +256,8 @@
   }
 
   window.NovaTheme = {
+    // Aplica sin guardar (tema por defecto del administrador y vista previa del panel).
+    preview(patch) { apply(patch); },
     async init(settings) {
       bindControls();
       apply(settings);

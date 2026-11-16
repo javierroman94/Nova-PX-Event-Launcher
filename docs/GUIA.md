@@ -322,3 +322,19 @@ Archivo `data/news.json`, con `title`, `date` y `text`.
 ## Ideas para la siguiente versión
 
 Recordar sesión premium, instalar Java automáticamente, soporte NeoForge y Quilt, carpeta separada por modpack, selector de eventos (varios modpacks a la vez), instalar configuraciones y shaders del modpack, y estadísticas de jugadores en el historial.
+
+
+## Panel administrador: cambiar el launcher sin reinstalar
+
+Con el modo administrador activo, la pestaña **Admin** tiene estas secciones (todo se publica en `data/` de GitHub y llega a los jugadores al abrir el launcher):
+
+- **Apariencia:** nombre y subtítulo, tema, temporada, color principal y mensaje de bienvenida. Mientras editas ves el cambio en tu propio launcher (*vista previa en vivo*); hasta pulsar **Publicar cambios** nadie más lo ve. Un jugador que elige su propio tema no se ve afectado.
+- **Ajustes:** RAM por defecto, enlaces (Discord, X, YouTube, web) y funciones que se pueden apagar (no premium, importar modpacks, contador).
+- **Control:** anuncio global (franja arriba para todos), modo mantenimiento (nadie puede jugar; el administrador sí, para probar) y versión mínima del launcher.
+- **Recomendados:** la lista de *Modpacks → Explorar*, ordenable arrastrando.
+- **Estado:** versión, mantenimiento, servidor y últimos cambios.
+- **Equipo, Noticias y Eventos:** se ordenan arrastrando el asa ⠿ (en Eventos el orden se publica al soltar).
+
+**Deshacer y borradores.** Cada sección tiene **Historial**: lista las versiones publicadas y permite restaurar una (se publica como un cambio nuevo). El botón **Deshacer** vuelve a lo último publicado. Lo que editas se guarda como borrador en tu equipo: si cierras el launcher sin publicar, al volver te ofrece recuperarlo.
+
+Todo lo remoto se valida al leer y al guardar (solo enlaces https, colores válidos, textos acotados). La configuración está en `data/launcher.json`.

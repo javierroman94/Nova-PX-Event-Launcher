@@ -80,6 +80,7 @@
     </div>
     </div>
   </header>
+  <div id="announce" class="announce-stack" aria-live="polite"></div>
 
   <div id="update-banner" class="update-banner" role="status" hidden>
     <span id="update-text"></span>
@@ -89,6 +90,10 @@
   <main>
     <!-- INICIO -->
     <section class="page active" id="page-home">
+      <section id="home-welcome" class="welcome-card" hidden>
+        <strong id="hw-title"></strong>
+        <p id="hw-text" class="muted"></p>
+      </section>
       <section id="np" class="np" aria-live="polite" hidden>
         <img id="np-icon" class="np-icon" alt="" />
         <div class="np-body">
@@ -465,6 +470,11 @@
           <button type="button" data-ad-tab="events">Eventos</button>
           <button type="button" data-ad-tab="news">Noticias</button>
           <button type="button" data-ad-tab="users">Usuarios</button>
+          <button type="button" data-ad-tab="look">Apariencia</button>
+          <button type="button" data-ad-tab="config">Ajustes</button>
+          <button type="button" data-ad-tab="reco">Recomendados</button>
+          <button type="button" data-ad-tab="control">Control</button>
+          <button type="button" data-ad-tab="status">Estado</button>
           <button type="button" data-ad-tab="perms">Permisos</button>
         </div>
       </div>
@@ -521,9 +531,9 @@
 
       <div id="ad-tab-team" hidden>
         <article class="ad-card">
-          <header><div><h3>Equipo</h3><p class="muted">Quién aparece en la pestaña Equipo. Marca la casilla para destacar a alguien.</p></div></header>
+          <header><div><h3>Equipo</h3><p class="muted">Quién aparece en la pestaña Equipo. Arrastra para ordenar. Marca la casilla para destacar a alguien.</p></div><button type="button" class="ghost" data-history="team">Historial</button></header>
           <div id="ad-team" class="mods-list"></div>
-          <div class="mp-actions"><button id="ad-team-add" type="button">+ Persona</button><button id="ad-team-save" type="button" class="primary">Guardar equipo</button></div>
+          <div class="mp-actions"><button id="ad-team-add" type="button">+ Persona</button><button id="ad-team-undo" type="button" class="ghost">Deshacer</button><button id="ad-team-save" type="button" class="primary">Guardar equipo</button></div>
           <p id="ad-team-status" class="muted" role="status"></p>
         </article>
       </div>
@@ -546,6 +556,97 @@
         <p id="ad-users-status" class="muted" role="status"></p>
       </div>
 
+
+      <div id="ad-draft-bar" class="ad-preview-bar" hidden>
+        <span id="ad-draft-text">Tienes un borrador sin publicar.</span>
+        <button id="ad-draft-keep" type="button">Recuperar borrador</button>
+        <button id="ad-draft-drop" type="button">Descartar</button>
+      </div>
+      <div id="ad-preview-bar" class="ad-preview-bar live" hidden>
+        <span>👁 Vista previa en vivo: ya lo ves en tu launcher, pero todavía no está publicado.</span>
+        <button id="ad-prev-discard" type="button">Descartar vista previa</button>
+      </div>
+
+      <div id="ad-tab-look" hidden>
+        <article class="ad-card">
+          <header><div><h3>Marca y apariencia</h3><p class="muted">Lo que cambies se ve al instante en tu launcher (vista previa). Al publicar, llega a todos los jugadores sin reinstalar. Cada jugador puede seguir eligiendo su propio tema.</p></div><button type="button" class="ghost" data-history="launcher">Historial</button></header>
+          <div class="field inline">
+            <div><label for="lk-name">Nombre del launcher</label><input id="lk-name" type="text" maxlength="40" placeholder="Nova PX" /></div>
+            <div><label for="lk-sub">Subtítulo</label><input id="lk-sub" type="text" maxlength="60" placeholder="Event Launcher" /></div>
+          </div>
+          <div class="field inline">
+            <div><label for="lk-preset">Tema por defecto</label><select id="lk-preset"><option value="">Sin cambiar</option><option value="nova">Nova Neón</option><option value="dark">Oscuro</option><option value="light">Claro</option><option value="oled">OLED</option></select></div>
+            <div><label for="lk-season">Temporada</label><select id="lk-season"><option value="">Sin cambiar</option><option value="auto">Automática</option><option value="off">Sin decoración</option><option value="halloween">Halloween</option><option value="navidad">Navidad</option><option value="anio">Año Nuevo</option></select></div>
+            <div><label for="lk-accent">Color principal</label><div class="ad-color"><input id="lk-accent" type="color" value="#35d6ff" /><button id="lk-accent-clear" type="button" class="ghost">Sin cambiar</button></div></div>
+          </div>
+          <div class="field"><label for="lk-wtitle">Mensaje de bienvenida (título)</label><input id="lk-wtitle" type="text" maxlength="80" placeholder="¡Bienvenido al evento!" /></div>
+          <div class="field"><label for="lk-wtext">Mensaje de bienvenida (texto)</label><input id="lk-wtext" type="text" maxlength="300" placeholder="Aparece arriba en Inicio. Déjalo vacío para ocultarlo." /></div>
+          <div class="ad-launcher-actions"></div>
+        </article>
+      </div>
+
+      <div id="ad-tab-config" hidden>
+        <article class="ad-card">
+          <header><div><h3>Ajustes del launcher</h3><p class="muted">Valores por defecto y enlaces para todos los jugadores.</p></div><button type="button" class="ghost" data-history="launcher">Historial</button></header>
+          <div class="field inline">
+            <div><label for="cf-ram">RAM por defecto (GB, 0 = automática)</label><input id="cf-ram" type="number" min="0" max="32" step="1" /></div>
+          </div>
+          <div class="field inline">
+            <div><label for="cf-discord">Discord</label><input id="cf-discord" type="url" maxlength="300" placeholder="https://discord.gg/…" /></div>
+            <div><label for="cf-x">X / Twitter</label><input id="cf-x" type="url" maxlength="300" placeholder="https://x.com/…" /></div>
+          </div>
+          <div class="field inline">
+            <div><label for="cf-youtube">YouTube</label><input id="cf-youtube" type="url" maxlength="300" placeholder="https://youtube.com/…" /></div>
+            <div><label for="cf-web">Sitio web</label><input id="cf-web" type="url" maxlength="300" placeholder="https://…" /></div>
+          </div>
+          <h4 class="ad-sub">Funciones</h4>
+          <label class="check"><input id="cf-nonpremium" type="checkbox" /> Permitir inicio de sesión no premium</label>
+          <label class="check"><input id="cf-import" type="checkbox" /> Permitir importar modpacks (.mrpack, .novapx, Prism)</label>
+          <label class="check"><input id="cf-usage" type="checkbox" /> Contador de usuarios activo</label>
+          <div class="ad-launcher-actions"></div>
+        </article>
+      </div>
+
+      <div id="ad-tab-control" hidden>
+        <article class="ad-card">
+          <header><div><h3>Anuncio global</h3><p class="muted">Una franja arriba del launcher para todos los jugadores.</p></div><button type="button" class="ghost" data-history="launcher">Historial</button></header>
+          <label class="check"><input id="ct-an-on" type="checkbox" /> Mostrar el anuncio</label>
+          <div class="field inline">
+            <div><label for="ct-an-level">Tipo</label><select id="ct-an-level"><option value="info">Información</option><option value="warn">Aviso</option><option value="danger">Importante</option></select></div>
+            <div><label for="ct-an-url">Enlace (opcional)</label><input id="ct-an-url" type="url" maxlength="300" placeholder="https://…" /></div>
+          </div>
+          <div class="field"><label for="ct-an-text">Texto</label><input id="ct-an-text" type="text" maxlength="240" placeholder="Hoy a las 20:00 empieza el evento" /></div>
+        </article>
+        <article class="ad-card">
+          <header><div><h3>Mantenimiento y versiones</h3><p class="muted">Controla quién puede jugar. Tú (administrador) puedes seguir probando durante un mantenimiento.</p></div></header>
+          <label class="check"><input id="ct-mt-on" type="checkbox" /> Activar mantenimiento (nadie puede iniciar el juego)</label>
+          <div class="field"><label for="ct-mt-text">Mensaje de mantenimiento</label><input id="ct-mt-text" type="text" maxlength="240" placeholder="Estamos actualizando el evento. Vuelve en unos minutos." /></div>
+          <div class="field inline">
+            <div><label for="ct-minver">Versión mínima del launcher (ej. 1.0.40)</label><input id="ct-minver" type="text" maxlength="20" placeholder="Sin mínimo" /></div>
+          </div>
+          <p class="muted">Quien tenga una versión más vieja verá un aviso y no podrá jugar hasta actualizar.</p>
+          <div class="ad-launcher-actions"></div>
+        </article>
+      </div>
+
+      <div id="ad-tab-reco" hidden>
+        <article class="ad-card">
+          <header><div><h3>Modpacks recomendados</h3><p class="muted">Aparecen en Modpacks → Explorar. Arrastra para ordenar. Usa el nombre corto de Modrinth (lo que va al final de la dirección).</p></div><button type="button" class="ghost" data-history="recommended">Historial</button></header>
+          <div id="ad-reco" class="mods-list"></div>
+          <div class="mp-actions"><button id="ad-reco-add" type="button">+ Modpack</button><button id="ad-reco-undo" type="button" class="ghost">Deshacer</button><button id="ad-reco-save" type="button" class="primary">Publicar recomendados</button></div>
+          <p id="ad-reco-status" class="muted" role="status"></p>
+        </article>
+      </div>
+
+      <div id="ad-tab-status" hidden>
+        <div id="ad-status-stats" class="ad-stats"></div>
+        <article class="ad-card">
+          <header><div><h3>Últimos cambios publicados</h3><p class="muted">Lo más reciente primero. Para volver atrás, usa el botón Historial de cada sección.</p></div></header>
+          <div id="ad-recent" class="mods-list"></div>
+          <div class="mp-actions"><button id="ad-recent-refresh" type="button">Actualizar</button></div>
+        </article>
+      </div>
+
       <div id="ad-tab-perms" hidden>
         <article class="ad-card">
           <header><div><h3>Quién ve el modo administrador</h3><p class="muted">Solo cuentas <b>premium</b>. Esta lista solo muestra el panel a esa persona; para poder publicar también necesita su propio token de GitHub y ser colaboradora del repositorio.</p></div></header>
@@ -562,20 +663,30 @@
         <article class="ad-card">
           <header><div><h3>Historial de eventos</h3><p class="muted">Lo que aparece en la pestaña Historial. Puedes editar, añadir o quitar eventos, cambiar su imagen y registrar a los ganadores (se muestran con su skin 3D).</p></div></header>
           <div id="ad-events" class="mods-list"></div>
-          <div class="mp-actions"><button id="ad-event-add" type="button" class="primary">+ Evento nuevo</button></div>
+          <div class="mp-actions"><button id="ad-event-add" type="button" class="primary">+ Evento nuevo</button><button type="button" class="ghost" data-history="events">Historial</button></div>
           <p id="ad-events-status" class="muted" role="status"></p>
         </article>
       </div>
 
       <div id="ad-tab-news" hidden>
         <article class="ad-card">
-          <header><div><h3>Noticias</h3><p class="muted">Aparecen en Inicio. Las más nuevas, arriba.</p></div></header>
+          <header><div><h3>Noticias</h3><p class="muted">Aparecen en Inicio. Arrastra para ordenar; las primeras salen arriba.</p></div><button type="button" class="ghost" data-history="news">Historial</button></header>
           <div id="ad-news" class="mods-list"></div>
-          <div class="mp-actions"><button id="ad-news-add" type="button">+ Noticia</button><button id="ad-news-save" type="button" class="primary">Guardar noticias</button></div>
+          <div class="mp-actions"><button id="ad-news-add" type="button">+ Noticia</button><button id="ad-news-undo" type="button" class="ghost">Deshacer</button><button id="ad-news-save" type="button" class="primary">Guardar noticias</button></div>
           <p id="ad-news-status" class="muted" role="status"></p>
         </article>
       </div>
     </section>
+
+    <dialog id="ad-history-modal" class="event-modal" aria-label="Historial de versiones">
+      <div class="event-modal-body">
+        <h3 id="adh-title">Historial</h3>
+        <p class="muted">Elige una versión anterior para restaurarla. Se publica como un cambio nuevo, así que siempre puedes volver a la actual.</p>
+        <div id="adh-list" class="mods-list"></div>
+        <p id="adh-status" class="muted" role="status"></p>
+        <div class="mp-actions"><button id="adh-close" type="button">Cerrar</button></div>
+      </div>
+    </dialog>
 
     <dialog id="ad-event-modal" class="event-modal mp-wide" aria-label="Editar evento">
       <div class="event-modal-body">
@@ -837,7 +948,7 @@
           <p>Inicia sesión con tu cuenta de Microsoft si compraste Minecraft Java.</p>
           <button id="login-ms" class="primary">Iniciar sesión con Microsoft</button>
         </div>
-        <div class="card">
+        <div class="card" id="card-offline">
           <h3>Cuenta no premium</h3>
           <p>Elige un nick de 3 a 16 caracteres con letras, números o guion bajo. Usa siempre el mismo para conservar tu progreso.</p>
           <input id="offline-nick" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
@@ -929,6 +1040,8 @@
   </dialog>
 
 
+  <script src="remote.js"></script>
+  <script src="admin-ext.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

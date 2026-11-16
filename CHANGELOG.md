@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.41
+- **Panel administrador ampliado**: nuevas secciones Apariencia, Ajustes, Control, Recomendados y Estado. Cambia nombre, tema, temporada, color, bienvenida, enlaces, RAM por defecto, anuncio global, mantenimiento, versión mínima y funciones sin reinstalar (`data/launcher.json`).
+- **Más interactivo**: vista previa en vivo, arrastrar y soltar (equipo, noticias, eventos, recomendados), historial con restauración de versiones, botón Deshacer y borradores que se recuperan.
+
 ## 1.0.40
 - Vuelve el launcher **Nova PX** (diseño, nombre y logo de la 1.0.34). Se retiran la marca Sagitta, las comunidades por código y la portada nueva.
 

@@ -94,6 +94,7 @@ El contenido se edita **sin tocar el programa**, en la carpeta [`data/`](data):
 | `events.json` | Historial de eventos (nombre, fecha, imagen, descripción) |
 | `team.json` | Miembros del equipo y sus cargos |
 | `news.json` | Noticias de la pantalla de inicio |
+| `launcher.json` | Marca, tema, avisos, mantenimiento y funciones (se edita desde el panel administrador) |
 
 Para publicar una versión nueva del programa:
 

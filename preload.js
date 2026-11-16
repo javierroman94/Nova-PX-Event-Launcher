@@ -31,6 +31,14 @@ contextBridge.exposeInMainWorld('api', {
   skinFetch: (url, kind) => ipcRenderer.invoke('skin:fetch', url, kind),
   skinsCape: (capeId) => ipcRenderer.invoke('skins:cape', capeId),
 
+  // configuración remota y panel administrador ampliado
+  remoteGet: () => ipcRenderer.invoke('remote:get'),
+  onRemoteChanged: (cb) => ipcRenderer.on('remote:changed', (_e, c) => cb(c)),
+  adminSaveLauncher: (c) => ipcRenderer.invoke('admin:saveLauncher', c),
+  adminSaveRecommended: (l) => ipcRenderer.invoke('admin:saveRecommended', l),
+  adminHistory: (name) => ipcRenderer.invoke('admin:history', name),
+  adminRestore: (name, sha) => ipcRenderer.invoke('admin:restore', name, sha),
+
   // jugar
   launch: (opts) => ipcRenderer.invoke('game:launch', opts),
 
