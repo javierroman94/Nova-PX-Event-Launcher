@@ -504,7 +504,11 @@
   "Permitir inicio de sesión no premium": "Allow non-premium sign-in",
   "Contador de usuarios activo": "User counter enabled",
   "Aviso": "Warning",
-  "Importante": "Important"
+  "Importante": "Important",
+  "🕊 Homenaje": "🕊 Tribute",
+  "Años (ej. 1994 – 2024)": "Years (e.g. 1994 – 2024)",
+  "Mensaje de homenaje": "Tribute message",
+  "Homenaje: tarjeta especial arriba del todo": "Tribute: special card at the very top"
  },
  "patterns": [
   {

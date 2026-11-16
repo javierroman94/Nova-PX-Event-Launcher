@@ -1438,7 +1438,7 @@ const TEAM_STATES = ['idle', 'wave', 'walk', 'jump', 'spin'];
 window.addEventListener('nova-fx', (e) => teamViewers.forEach((v) => v.setAnimated(e.detail)));
 
 function teamCard(m, index, featured) {
-  const card = el('div', featured ? 'member featured' : 'member');
+  const card = el('div', m.tribute ? 'member tribute' : featured ? 'member featured' : 'member');
   card.dataset.tilt = '';
   const stage = el('div', 'member-stage');
   const canvas = el('canvas', 'member-3d');
@@ -1481,7 +1481,11 @@ function teamCard(m, index, featured) {
   }
 
   const info = el('div', 'member-info');
-  info.append(el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
+  if (m.tribute) {
+    info.append(el('div', 'tribute-label', '🕊 Homenaje'), el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
+    if (m.years) info.append(el('div', 'tribute-years', m.years));
+    if (m.tributeText) info.append(el('p', 'tribute-text', m.tributeText));
+  } else info.append(el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
   card.append(stage, info);
   return card;
 }
@@ -1489,8 +1493,10 @@ function teamCard(m, index, featured) {
 async function renderTeam() {
   const grid = $('team-grid');
   const top = $('team-featured');
+  const trib = $('team-tribute');
   grid.replaceChildren();
   top.replaceChildren();
+  trib.replaceChildren();
   teamViewers.forEach((v) => v.destroy());
   teamViewers = [];
   try {
@@ -1498,7 +1504,7 @@ async function renderTeam() {
     let i = 0;
     team.forEach((m) => {
       const featured = !!m.featured;
-      (featured ? top : grid).append(teamCard(m, i++, featured));
+      (m.tribute ? trib : featured ? top : grid).append(teamCard(m, i++, featured));
     });
   } catch {
     grid.append(el('p', 'muted', 'No se pudo cargar el equipo.'));
@@ -2565,7 +2571,24 @@ function paintTeam() {
     const del = el('button', '', 'Quitar');
     del.type = 'button';
     del.addEventListener('click', () => { adm.team.splice(idx, 1); paintTeam(); });
-    row.append(f.nick, f.role, star, del);
+    const tr = el('input');
+    tr.type = 'checkbox'; tr.checked = !!m.tribute; tr.title = 'Homenaje';
+    tr.setAttribute('aria-label', 'Homenaje');
+    const trLab = el('label', 'tribute-toggle');
+    trLab.append(tr, el('span', '', '🕊'));
+    trLab.title = 'Homenaje: tarjeta especial arriba del todo';
+    tr.addEventListener('change', () => { m.tribute = tr.checked; paintTeam(); });
+    row.append(f.nick, f.role, star, trLab, del);
+    if (m.tribute) {
+      row.classList.add('has-tribute');
+      const sub = el('div', 'team-tribute-fields');
+      const yrs = el('input'); yrs.type = 'text'; yrs.maxLength = 30; yrs.placeholder = 'Años (ej. 1994 – 2024)'; yrs.value = m.years || '';
+      yrs.addEventListener('input', () => { m.years = yrs.value; });
+      const txt = el('input'); txt.type = 'text'; txt.maxLength = 300; txt.placeholder = 'Mensaje de homenaje'; txt.value = m.tributeText || '';
+      txt.addEventListener('input', () => { m.tributeText = txt.value; });
+      sub.append(yrs, txt);
+      row.append(sub);
+    }
     box.append(row);
   });
   if (window.makeSortable) window.makeSortable(box, adm.team, paintTeam);

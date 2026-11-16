@@ -1279,3 +1279,20 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .ad-card > header .ghost { margin-left: auto; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .ad-preview-bar.live { animation: none; } }
 #ad-tabs { flex-wrap: wrap; overflow: visible; max-width: 100%; }
+
+/* homenaje en Equipo */
+.team-tribute { display: grid; gap: 18px; margin-bottom: 18px; }
+.team-tribute:empty { display: none; }
+.member.tribute { flex-direction: row; align-items: stretch; border-color: color-mix(in srgb, #f2d28b 55%, var(--line)); background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, #f2d28b 18%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in srgb, #f2d28b 8%, var(--surface)), var(--surface)); box-shadow: 0 24px 56px -30px #f2d28b; }
+.member.tribute::before { background: linear-gradient(90deg, transparent, #f2d28b, transparent); height: 4px; opacity: 1; }
+.member.tribute .member-stage { width: 260px; flex: none; height: 330px; background: radial-gradient(ellipse at 50% 88%, color-mix(in srgb, #f2d28b 32%, transparent), transparent 62%); }
+.member.tribute .member-info { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 24px 30px; border-top: 0; border-left: 1px solid var(--line); }
+.tribute-label { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #f2d28b; }
+.member.tribute .nick { font-size: 28px; white-space: normal; }
+.member.tribute .role { color: #f2d28b; font-weight: 600; font-size: 14px; }
+.tribute-years { color: var(--muted); font-size: 14px; letter-spacing: .06em; }
+.tribute-text { margin: 10px 0 0; font-size: 15px; line-height: 1.55; font-style: italic; max-width: 56ch; }
+.mod-card.has-tribute { flex-wrap: wrap; }
+.team-tribute-fields { flex-basis: 100%; display: grid; grid-template-columns: 200px 1fr; gap: 10px; }
+.tribute-toggle { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+@media (max-width: 860px) { .member.tribute { flex-direction: column; } .member.tribute .member-stage { width: auto; } .member.tribute .member-info { border-left: 0; border-top: 1px solid var(--line); } }

@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.42
+- **Homenaje en Equipo**: una persona puede marcarse como homenaje (🕊) en el panel administrador; aparece en una tarjeta grande y dorada arriba de todo, con su skin 3D, años y un mensaje.
+
 ## 1.0.41
 - **Panel administrador ampliado**: nuevas secciones Apariencia, Ajustes, Control, Recomendados y Estado. Cambia nombre, tema, temporada, color, bienvenida, enlaces, RAM por defecto, anuncio global, mantenimiento, versión mínima y funciones sin reinstalar (`data/launcher.json`).
 - **Más interactivo**: vista previa en vivo, arrastrar y soltar (equipo, noticias, eventos, recomendados), historial con restauración de versiones, botón Deshacer y borradores que se recuperan.

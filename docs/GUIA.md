@@ -333,6 +333,7 @@ Con el modo administrador activo, la pestaña **Admin** tiene estas secciones (t
 - **Control:** anuncio global (franja arriba para todos), modo mantenimiento (nadie puede jugar; el administrador sí, para probar) y versión mínima del launcher.
 - **Recomendados:** la lista de *Modpacks → Explorar*, ordenable arrastrando.
 - **Estado:** versión, mantenimiento, servidor y últimos cambios.
+- **Homenaje (Equipo):** en la fila de una persona marca 🕊 y escribe años y un mensaje; se muestra arriba de todo en la pestaña Equipo en una tarjeta especial.
 - **Equipo, Noticias y Eventos:** se ordenan arrastrando el asa ⠿ (en Eventos el orden se publica al soltar).
 
 **Deshacer y borradores.** Cada sección tiene **Historial**: lista las versiones publicadas y permite restaurar una (se publica como un cambio nuevo). El botón **Deshacer** vuelve a lo último publicado. Lo que editas se guarda como borrador en tu equipo: si cierras el launcher sin publicar, al volver te ofrece recuperarlo.
