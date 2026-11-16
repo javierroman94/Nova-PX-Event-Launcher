@@ -1,12 +1,41 @@
 {
   "version": 1,
-  "brand": { "name": "", "subtitle": "" },
-  "theme": { "preset": "", "accent": "", "season": "" },
-  "welcome": { "title": "", "text": "" },
-  "announcement": { "enabled": false, "level": "info", "text": "", "url": "" },
-  "maintenance": { "enabled": false, "text": "" },
+  "brand": {
+    "name": "",
+    "subtitle": ""
+  },
+  "theme": {
+    "preset": "",
+    "accent": "",
+    "season": ""
+  },
+  "welcome": {
+    "title": "",
+    "text": ""
+  },
+  "announcement": {
+    "enabled": false,
+    "level": "info",
+    "text": "",
+    "url": ""
+  },
+  "maintenance": {
+    "enabled": false,
+    "text": ""
+  },
   "minVersion": "",
-  "links": { "discord": "", "x": "", "youtube": "", "web": "" },
-  "defaults": { "ramGb": 0 },
-  "features": { "nonPremium": true, "usageCounter": true, "importPacks": true }
+  "links": {
+    "discord": "https://discord.gg/gYnWDrN83b",
+    "x": "https://x.com/NovaPX_",
+    "youtube": "",
+    "web": ""
+  },
+  "defaults": {
+    "ramGb": 0
+  },
+  "features": {
+    "nonPremium": true,
+    "usageCounter": true,
+    "importPacks": true
+  }
 }
