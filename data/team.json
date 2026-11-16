@@ -2,7 +2,10 @@
   {
     "nick": "PandraxInLive",
     "role": "Founder & CEO / Creative Director",
-    "featured": true
+    "featured": true,
+    "tribute": true,
+    "years": "",
+    "tributeText": ""
   },
   {
     "nick": "MegaDeker",
