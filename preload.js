@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   appState: () => ipcRenderer.invoke('app:state'),
   openGameFolder: () => ipcRenderer.invoke('folder:open'),
   browseJava: () => ipcRenderer.invoke('java:browse'),
+  winOverlay: (c) => ipcRenderer.invoke('win:overlay', c),
   openLink: (url) => ipcRenderer.invoke('link:open', url),
   serverStatus: () => ipcRenderer.invoke('server:status'),
 
@@ -19,13 +20,14 @@ contextBridge.exposeInMainWorld('api', {
   logout: () => ipcRenderer.invoke('auth:logout'),
 
   // tema
-  getBackground: () => ipcRenderer.invoke('theme:background'),
-  pickBackground: () => ipcRenderer.invoke('theme:pickBackground'),
-  clearBackground: () => ipcRenderer.invoke('theme:clearBackground'),
 
   // skins y capas
   skinsProfile: () => ipcRenderer.invoke('skins:profile'),
   skinsPick: () => ipcRenderer.invoke('skins:pick'),
+  skinsSavedList: () => ipcRenderer.invoke('skins:saved:list'),
+  skinsSavedAdd: (o) => ipcRenderer.invoke('skins:saved:add', o),
+  skinsSavedRemove: (id) => ipcRenderer.invoke('skins:saved:remove', id),
+  skinsSavedUse: (id) => ipcRenderer.invoke('skins:saved:use', id),
   skinsApply: (variant) => ipcRenderer.invoke('skins:apply', variant),
   skinTexture: (nick, fresh) => ipcRenderer.invoke('skin:texture', nick, fresh),
   skinFetch: (url, kind) => ipcRenderer.invoke('skin:fetch', url, kind),

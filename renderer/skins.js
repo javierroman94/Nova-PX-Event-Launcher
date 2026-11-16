@@ -139,7 +139,9 @@
     profile = p;
     const seq = ++loadSeq;
     const skin = p.activeSkin;
-    const url = skin && onlyMojang(skin.url);
+    // Si hay una skin elegida sin aplicar, no se pisa su vista previa (por ejemplo al cambiar de capa).
+    const keepPreview = !!pickedImage;
+    const url = !keepPreview && skin && onlyMojang(skin.url);
     if (url) {
       try {
         // La imagen se descarga desde el programa (no desde la página) para poder usarla en WebGL.
@@ -147,14 +149,14 @@
         const img = await loadImage(tex.dataUrl);
         if (seq !== loadSeq) return;
         drawBoth(img, skin.variant === 'slim');
-        g('skin-name').textContent = `${p.name} · modelo ${skin.variant === 'slim' ? 'fino' : 'normal'}`;
+        g('skin-name').textContent = `${p.name} · modelo ${skin.variant === 'slim' ? 'Slim' : 'Default'}`;
       } catch {
         g('skin-name').textContent = 'No se pudo cargar tu skin ahora mismo.';
       }
-    } else {
+    } else if (!keepPreview) {
       g('skin-name').textContent = p.name;
     }
-    const slimRadio = document.querySelector('input[name="skin-variant"][value="' + (skin && skin.variant === 'slim' ? 'slim' : 'classic') + '"]');
+    const slimRadio = keepPreview ? null : document.querySelector('input[name="skin-variant"][value="' + (skin && skin.variant === 'slim' ? 'slim' : 'classic') + '"]');
     if (slimRadio) slimRadio.checked = true;
     // capa equipada en el visor 3D
     if (stage) {
@@ -268,6 +270,7 @@
       drawBoth(pickedImage, slim);
       g('skin-name').textContent = `Vista previa: ${r.name}`;
       g('skin-apply').disabled = false;
+      g('skin-save').disabled = false;
     } catch (err) {
       failure(err);
     }
@@ -285,15 +288,60 @@
     msg('Subiendo la skin a Mojang…');
     try {
       const variant = document.querySelector('input[name="skin-variant"]:checked').value;
-      await renderProfile(await window.api.skinsApply(variant));
-      window.dispatchEvent(new Event('nova-skin-changed'));
+      const applied = await window.api.skinsApply(variant);
       pickedImage = null;
+      await renderProfile(applied);
+      window.dispatchEvent(new Event('nova-skin-changed'));
       msg('Skin cambiada. Puede tardar un momento en verse en el juego.');
     } catch (err) {
       btn.disabled = false;
       failure(err);
     }
   });
+
+  /* --- skins guardadas: cambio con un clic --- */
+  async function paintSaved() {
+    const box = g('saved-skins');
+    box.replaceChildren();
+    let list = [];
+    try { list = await window.api.skinsSavedList(); } catch {}
+    if (!list.length) { const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'Elige un archivo y pulsa "Guardar en mi lista" para tenerlo aquí.'; box.append(p); return; }
+    list.forEach((s) => {
+      const card = document.createElement('div');
+      card.className = 'saved-skin';
+      const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
+      const im = new Image();
+      im.onload = () => { const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64); c.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64); };
+      im.src = s.dataUrl;
+      const name = document.createElement('div'); name.className = 'saved-name'; name.textContent = `${s.name} · ${s.variant === 'slim' ? 'Slim' : 'Default'}`;
+      const use = document.createElement('button'); use.type = 'button'; use.className = 'primary'; use.textContent = 'Usar';
+      use.addEventListener('click', async () => {
+        use.disabled = true; msg('Cambiando tu skin…');
+        try {
+          pickedImage = null; g('skin-apply').disabled = true; g('skin-save').disabled = true;
+          await renderProfile(await window.api.skinsSavedUse(s.id));
+          window.dispatchEvent(new Event('nova-skin-changed'));
+          msg('Skin cambiada. Puede tardar un momento en verse en el juego.');
+        } catch (err) { failure(err); }
+        use.disabled = false;
+      });
+      const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', 'Quitar skin guardada');
+      del.addEventListener('click', async () => { await window.api.skinsSavedRemove(s.id); paintSaved(); });
+      card.append(cv, name, use, del);
+      box.append(card);
+    });
+  }
+  g('skin-save').addEventListener('click', async () => {
+    try {
+      const variant = document.querySelector('input[name="skin-variant"]:checked').value;
+      const label = (g('skin-name').textContent || '').replace(/^Vista previa: /, '').replace(/\.png$/i, '');
+      await window.api.skinsSavedAdd({ name: label, variant });
+      g('skin-save').disabled = true;
+      msg('Skin guardada en tu lista.');
+      paintSaved();
+    } catch (err) { failure(err); }
+  });
+  paintSaved();
 
   window.NovaSkins = {
     setUser(info) {

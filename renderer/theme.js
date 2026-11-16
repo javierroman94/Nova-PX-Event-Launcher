@@ -47,6 +47,25 @@
     fx.resize();
     fx.sync();
     window.dispatchEvent(new CustomEvent('nova-fx', { detail: state.effects }));
+    syncTitleBar();
+  }
+
+  // La barra de la ventana (botones de minimizar/cerrar) toma el color de la barra superior del tema.
+  function toHex(css) {
+    const m = String(css).match(/\d+(\.\d+)?/g);
+    if (!m || m.length < 3) return null;
+    return '#' + m.slice(0, 3).map((n) => Math.round(Number(n)).toString(16).padStart(2, '0')).join('');
+  }
+  function syncTitleBar() {
+    setTimeout(() => {
+      try {
+        const top = document.querySelector('.topbar');
+        if (!top || !window.api.winOverlay) return;
+        const bg = toHex(getComputedStyle(document.body).backgroundColor) || '#0d0f16';
+        const fg = toHex(getComputedStyle(document.body).color) || '#e8eaf2';
+        window.api.winOverlay({ color: bg, symbol: fg });
+      } catch {}
+    }, 60);
   }
 
   function persist(extra) {
@@ -236,23 +255,8 @@
     picker.addEventListener('input', () => change({ accent: picker.value.toLowerCase() }));
     box.append(picker);
 
-    g('bg-dim').addEventListener('input', (e) => change({ bgDim: Number(e.target.value) }));
-    g('bg-blur').addEventListener('input', (e) => change({ bgBlur: Number(e.target.value) }));
     g('effects').addEventListener('change', (e) => change({ effects: e.target.checked }));
     g('season-select').addEventListener('change', (e) => change({ season: e.target.value }));
-
-    g('bg-pick').addEventListener('click', async () => {
-      try {
-        const url = await window.api.pickBackground();
-        if (url) setBackground(url);
-      } catch (err) {
-        themeMsg(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), true);
-      }
-    });
-    g('bg-clear').addEventListener('click', async () => {
-      await window.api.clearBackground();
-      setBackground(null);
-    });
   }
 
   window.NovaTheme = {
@@ -261,9 +265,7 @@
     async init(settings) {
       bindControls();
       apply(settings);
-      try {
-        setBackground(await window.api.getBackground());
-      } catch {}
+      setBackground(null);
     }
   };
 })();

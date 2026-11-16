@@ -480,6 +480,8 @@ function createWindow() {
     title: config.launcherName,
     icon: ICON,
     backgroundColor: '#0d0f16',
+    // Barra de título propia en Windows: el color la sigue el estilo elegido (ver win:overlay).
+    ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#0d0f16', symbolColor: '#e8eaf2', height: 52 } } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -1501,11 +1503,14 @@ ipcMain.handle('instance:install', async (_e, p = {}) => {
   assertEditable();
   const t = searchTarget(p);
   const progress = (text) => send('modpack:progress', { text });
-  const r = await content.installFromModrinth({
-    request: apiRequest, download: (u) => downloadBuffer(u), root: t.root, type: t.type,
-    projectId: cleanStr(p.projectId, 40), mc: t.entry.mcVersion, loader: t.loader, onStatus: progress
-  });
-  return r;
+  try {
+    return await content.installFromModrinth({
+      request: apiRequest, download: (u) => downloadBuffer(u), root: t.root, type: t.type,
+      projectId: cleanStr(p.projectId, 40), mc: t.entry.mcVersion, loader: t.loader, onStatus: progress
+    });
+  } finally {
+    progress('Listo'); // sin esto el aviso de abajo a la derecha se quedaba colgado
+  }
 });
 
 ipcMain.handle('instance:worlds', (_e, id) => {
@@ -1610,6 +1615,12 @@ ipcMain.handle('system:info', () => ({
 }));
 
 // Estado que la interfaz recupera al abrirse (también cuando la ventana se vuelve a abrir tras jugar).
+ipcMain.handle('win:overlay', (_e, c = {}) => {
+  if (process.platform !== 'win32' || !mainWindow || mainWindow.isDestroyed()) return false;
+  const hex = (v, d) => (/^#[0-9a-f]{6}$/i.test(String(v || '')) ? v : d);
+  try { mainWindow.setTitleBarOverlay({ color: hex(c.color, '#0d0f16'), symbolColor: hex(c.symbol, '#e8eaf2'), height: 52 }); return true; } catch { return false; }
+});
+
 ipcMain.handle('app:state', async () => {
   if (restoring) await Promise.race([restoring, new Promise((r) => setTimeout(r, 15000))]);
   return {
@@ -1688,38 +1699,8 @@ ipcMain.handle('server:status', async () => {
 
 /* ---------- IPC: tema y fondo ---------- */
 
-function backgroundDataUrl() {
-  try {
-    return `data:image/jpeg;base64,${fs.readFileSync(BACKGROUND_FILE).toString('base64')}`;
-  } catch {
-    return null;
-  }
-}
-
-ipcMain.handle('theme:background', () => backgroundDataUrl());
-
-// La imagen se reduce a 1920 px de ancho y se guarda como JPEG: se ve igual y gasta mucha menos memoria.
-ipcMain.handle('theme:pickBackground', async () => {
-  const res = await dialog.showOpenDialog(mainWindow, {
-    title: 'Elige una imagen de fondo',
-    properties: ['openFile'],
-    filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }]
-  });
-  if (res.canceled || !res.filePaths[0]) return null;
-  const file = res.filePaths[0];
-  if (fs.statSync(file).size > 40 * 1024 * 1024) throw new Error('La imagen pesa más de 40 MB. Elige una más pequeña.');
-  let img = nativeImage.createFromPath(file);
-  if (img.isEmpty()) throw new Error('No se pudo leer la imagen. Prueba con un PNG o JPG.');
-  const { width } = img.getSize();
-  if (width > 1920) img = img.resize({ width: 1920, quality: 'good' });
-  fs.mkdirSync(path.dirname(BACKGROUND_FILE), { recursive: true });
-  fs.writeFileSync(BACKGROUND_FILE, img.toJPEG(82));
-  return backgroundDataUrl();
-});
-
-ipcMain.handle('theme:clearBackground', () => {
-  fs.rmSync(BACKGROUND_FILE, { force: true });
-});
+// Los jugadores ya no pueden subir imágenes de fondo: se borra la que quedara de versiones anteriores.
+try { fs.rmSync(BACKGROUND_FILE, { force: true }); } catch {}
 
 /* ---------- IPC: cuentas ---------- */
 
@@ -1875,6 +1856,49 @@ ipcMain.handle('skins:apply', async (_e, variant) => {
   const token = premiumToken();
   if (!pendingSkin) throw new Error('Primero elige un archivo de skin.');
   await skinsApi.uploadSkin(token, pendingSkin, variant === 'slim' ? 'slim' : 'classic');
+  pendingSkin = null;
+  lastProfile = await skinsApi.getProfile(token);
+  return lastProfile;
+});
+
+/* ---------- skins guardadas (cambio con un clic) ---------- */
+const SAVED_SKINS_DIR = path.join(app.getPath('userData'), 'saved-skins');
+const SAVED_SKINS_INDEX = path.join(SAVED_SKINS_DIR, 'index.json');
+function readSavedSkins() {
+  try { const l = JSON.parse(fs.readFileSync(SAVED_SKINS_INDEX, 'utf8')); return Array.isArray(l) ? l.filter((s) => /^[a-f0-9]{16}$/.test(String(s.id))) : []; } catch { return []; }
+}
+function writeSavedSkins(list) {
+  fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
+  fs.writeFileSync(SAVED_SKINS_INDEX, JSON.stringify(list));
+}
+ipcMain.handle('skins:saved:list', () => readSavedSkins().map((s) => {
+  try { return { id: s.id, name: s.name, variant: s.variant, dataUrl: `data:image/png;base64,${fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`)).toString('base64')}` }; } catch { return null; }
+}).filter(Boolean));
+ipcMain.handle('skins:saved:add', (_e, p = {}) => {
+  if (!pendingSkin) throw new Error('Primero elige un archivo de skin.');
+  const list = readSavedSkins();
+  if (list.length >= 50) throw new Error('Ya tienes 50 skins guardadas. Quita alguna para guardar otra.');
+  const id = crypto.randomBytes(8).toString('hex');
+  fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
+  fs.writeFileSync(path.join(SAVED_SKINS_DIR, `${id}.png`), pendingSkin);
+  list.push({ id, name: cleanStr(p.name, 40) || 'Mi skin', variant: p.variant === 'slim' ? 'slim' : 'classic' });
+  writeSavedSkins(list);
+  return true;
+});
+ipcMain.handle('skins:saved:remove', (_e, id) => {
+  const list = readSavedSkins();
+  if (!list.some((s) => s.id === id)) return false;
+  fs.rmSync(path.join(SAVED_SKINS_DIR, `${id}.png`), { force: true });
+  writeSavedSkins(list.filter((s) => s.id !== id));
+  return true;
+});
+ipcMain.handle('skins:saved:use', async (_e, id) => {
+  const s = readSavedSkins().find((x) => x.id === id);
+  if (!s) throw new Error('Esa skin ya no está guardada.');
+  const token = premiumToken();
+  const buf = fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`));
+  skinsApi.validateSkinPng(buf);
+  await skinsApi.uploadSkin(token, buf, s.variant);
   pendingSkin = null;
   lastProfile = await skinsApi.getProfile(token);
   return lastProfile;

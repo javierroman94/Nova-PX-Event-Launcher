@@ -121,3 +121,13 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(ev[0].collabs[0].role, 'Mapa');
   console.log('ok admin links/roster/collabs');
 }
+
+{
+  const assert = require('assert');
+  const A = require('../lib/admin');
+  const t = A.sanitizeTeam([{ nick: 'Ana', name: 'Ana Pérez', bio: 'Diseño', avatar: 'images/ana-1.png' }, { nick: 'Bo', avatar: 'javascript:x' }]);
+  assert.strictEqual(t[0].avatar, 'images/ana-1.png');
+  assert.strictEqual(t[0].name, 'Ana Pérez');
+  assert.strictEqual(t[1].avatar, undefined);
+  console.log('ok admin perfil');
+}

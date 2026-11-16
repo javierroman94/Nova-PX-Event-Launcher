@@ -1343,3 +1343,46 @@ html.streamer .pii:hover { filter: blur(7px); }
 .person img { width: 64px; height: 64px; border-radius: 10px; image-rendering: pixelated; }
 .person .nick { font-weight: 700; margin-top: 4px; }
 .person .role { font-size: 12px; opacity: .75; }
+
+.confirm-modal { max-width: 420px; }
+.confirm-msg { white-space: pre-line; margin: 0 0 16px; line-height: 1.5; }
+
+.event-modal { max-height: 90vh; overflow-y: auto; }
+.modal-x { position: sticky; top: 8px; float: right; margin: 8px 8px -36px 0; z-index: 5; width: 32px; height: 32px; padding: 0; border-radius: 50%; line-height: 1; background: rgba(0,0,0,.55); color: #fff; border: 1px solid rgba(255,255,255,.25); cursor: pointer; }
+.modal-x:hover { background: var(--accent, #7c5cff); color: var(--accent-ink, #fff); }
+.event-modal-body .modal-x { justify-self: auto; margin-top: 8px; }
+
+/* sin la línea que cortaba la skin y el texto en las tarjetas del equipo */
+.member-info { border-top: 0; padding-top: 4px; }
+.member-stage { margin-bottom: -6px; -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent); mask-image: linear-gradient(180deg, #000 82%, transparent); }
+.member.tribute .member-stage { -webkit-mask-image: none; mask-image: none; margin-bottom: 0; }
+
+/* barra superior = barra de la ventana (Windows): se puede arrastrar y deja sitio a los botones */
+html.win .topbar { -webkit-app-region: drag; padding-right: 150px; }
+html.win .topbar button, html.win .topbar input, html.win .topbar a, html.win .top-right { -webkit-app-region: no-drag; }
+.top-right[hidden] { display: none; }
+
+/* Enlaces de la comunidad: grandes y a la vista en Inicio */
+.links-hero { margin-bottom: 22px; }
+.links-hero[hidden] { display: none; }
+.links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.link-tile { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center; text-align: left; padding: 18px 20px; border-radius: 16px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface)); cursor: pointer; overflow: hidden; transition: transform .18s, box-shadow .18s, border-color .18s; }
+.link-tile::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--accent) 38%, transparent), transparent 62%); opacity: 0; transition: opacity .2s; pointer-events: none; }
+.link-tile:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 16px 34px -18px var(--accent); }
+.link-tile:hover::after { opacity: 1; }
+.link-ico { grid-row: 1 / 3; font-size: 34px; line-height: 1; }
+.link-name { font-weight: 800; font-size: 17px; }
+.link-host { font-size: 12.5px; }
+
+/* skins guardadas */
+.saved-title { margin: 18px 0 8px; }
+.saved-skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.saved-skin { display: grid; gap: 6px; justify-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); position: relative; }
+.saved-skin canvas { width: 64px; height: 64px; image-rendering: pixelated; border-radius: 8px; }
+.saved-skin .saved-name { font-size: 12.5px; text-align: center; word-break: break-word; }
+.saved-skin > button:last-child { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border-radius: 50%; line-height: 1; }
+
+.member { cursor: pointer; }
+.member-profile { text-align: center; }
+.mm-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); }
+.mm-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 12px 0; }

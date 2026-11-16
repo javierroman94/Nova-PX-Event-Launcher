@@ -201,7 +201,7 @@
           const b = el('button', '', 'Restaurar');
           b.type = 'button';
           b.addEventListener('click', async () => {
-            if (!confirm(`¿Restaurar "${NAMES[name] || name}" a la versión del ${fmt(c.date)}?`)) return;
+            if (!(await askConfirm(`¿Restaurar "${NAMES[name] || name}" a la versión del ${fmt(c.date)}?`))) return;
             b.disabled = true;
             try {
               const out = await window.api.adminRestore(name, c.sha);

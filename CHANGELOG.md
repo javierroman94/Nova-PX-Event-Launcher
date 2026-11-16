@@ -2,6 +2,16 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.45
+Correcciones y mejoras pedidas en el tablero de pruebas:
+- Inicio: las miniaturas de eventos ya no muestran ganadores (se ven al abrir el evento). Enlaces de la comunidad grandes, con icono y brillo.
+- Se quitó la imagen de fondo personalizada. "Ver mods del evento" ahora es solo para administradores.
+- Skins: nombres Default / Slim; elegir una capa ya no borra la skin cargada; **skins guardadas** con cambio de un clic.
+- Modpacks: el filtro de tipo filtra de verdad y muestra un mensaje si no hay nada; confirmaciones con la estética del launcher; la descarga de texturas ya no deja el aviso colgado.
+- Ventana: la barra superior sigue el estilo elegido (Windows). Los diálogos grandes tienen botón ✕. Signo "?" centrado. Sin la línea que cortaba la skin en Equipo.
+- Equipo: clic en un miembro abre su **perfil** (foto, nombre, presentación y enlaces).
+- Botones laterales del mouse: atrás y adelante.
+
 ## 1.0.44
 - **Modo streamer**: oculta tu nick manualmente o automáticamente al detectar OBS, Streamlabs, etc.
 - **Ajustes rediseñados** al estilo Discord (buscador, perfil, grupos).

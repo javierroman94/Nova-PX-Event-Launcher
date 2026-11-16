@@ -191,6 +191,8 @@ function goTo(tab) {
   $('top-sub').textContent = sub;
   moveIndicator();
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
+  document.querySelector('.top-right').hidden = !(tab === 'event' || tab === 'mods');
+  if (tab === 'mods' && !isAdmin) { goTo('event'); return; }
   if (tab === 'mods') renderMods();
   if (tab === 'modpacks') openModpacks();
   if (tab === 'admin') { loadAdmin(); if (window.adminEntered) window.adminEntered(); } else if (window.adminLeft) window.adminLeft();
@@ -379,9 +381,25 @@ function renderLinks(links) {
   box.replaceChildren();
   const valid = (Array.isArray(links) ? links : []).filter((l) => l && l.name && /^https:\/\//i.test(String(l.url || ''))).slice(0, 8);
   card.hidden = valid.length === 0;
+  const iconFor = (l) => {
+    const t = `${l.name} ${l.url}`.toLowerCase();
+    if (/discord/.test(t)) return '💬';
+    if (/youtu/.test(t)) return '▶️';
+    if (/twitch|kick/.test(t)) return '🎮';
+    if (/tiktok/.test(t)) return '🎵';
+    if (/instagram/.test(t)) return '📸';
+    if (/twitter|x\.com|\bx\b/.test(t)) return '🐦';
+    if (/github/.test(t)) return '💻';
+    if (/mail|correo|contacto/.test(t)) return '✉️';
+    if (/web|nova|portafolio|portfolio/.test(t)) return '🌐';
+    return '🔗';
+  };
   valid.forEach((l) => {
-    const b = el('button', '', String(l.name).slice(0, 30));
+    const b = el('button', 'link-tile');
     b.type = 'button';
+    b.dataset.tilt = '';
+    const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
+    b.append(el('span', 'link-ico', iconFor(l)), el('span', 'link-name', String(l.name).slice(0, 30)), el('span', 'link-host muted', host));
     b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
     box.append(b);
   });
@@ -419,6 +437,42 @@ async function renderNews() {
     box.replaceChildren();
     box.append(el('p', 'muted', 'No se pudieron cargar las novedades. Revisa tu conexión.'));
   }
+}
+
+if (/Windows/i.test(navigator.userAgent)) document.documentElement.classList.add('win');
+
+/* --- botón ✕ en todos los diálogos grandes (el contenido puede ser más alto que la ventana) --- */
+document.querySelectorAll('dialog.event-modal').forEach((dlg) => {
+  const x = el('button', 'modal-x', '✕');
+  x.type = 'button';
+  x.setAttribute('aria-label', 'Cerrar');
+  x.addEventListener('click', () => dlg.close());
+  dlg.prepend(x);
+});
+
+/* --- confirmación con la estética del launcher (reemplaza al confirm() de Windows) --- */
+function askConfirm(message, okLabel, cancelLabel) {
+  return new Promise((resolve) => {
+    const dlg = el('dialog', 'event-modal confirm-modal');
+    dlg.setAttribute('aria-label', 'Confirmar');
+    const body = el('div', 'event-modal-body');
+    const msg = el('p', 'confirm-msg', String(message));
+    const actions = el('div', 'mp-actions');
+    const no = el('button', '', cancelLabel || 'Cancelar'); no.type = 'button';
+    const yes = el('button', 'primary', okLabel || 'Aceptar'); yes.type = 'button';
+    actions.append(no, yes);
+    body.append(msg, actions);
+    dlg.append(body);
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; resolve(v); try { dlg.close(); } catch {} dlg.remove(); };
+    yes.addEventListener('click', () => finish(true));
+    no.addEventListener('click', () => finish(false));
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(false); });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(false); });
+    document.body.append(dlg);
+    dlg.showModal();
+    yes.focus();
+  });
 }
 
 const winnersOf = (ev) => (Array.isArray(ev.winners) ? ev.winners : ev.winner ? [ev.winner] : []).slice(0, 12);
@@ -499,10 +553,10 @@ async function renderEvents() {
   try {
     const events = (await window.api.getData('events')).sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
     const modal = $('event-modal');
-    const facts = (ev) => {
+    const facts = (ev, withWinners) => {
       const box = el('div', 'facts');
       if (ev.participants) box.append(el('span', 'fact', `${ev.participants} participantes`));
-      const w = winnersOf(ev);
+      const w = withWinners ? winnersOf(ev) : [];
       if (w.length === 1) box.append(el('span', 'fact', `🏆 ${w[0]}`));
       else if (w.length > 1) box.append(el('span', 'fact', `🏆 ${w.length} ganadores`));
       return box;
@@ -514,7 +568,7 @@ async function renderEvents() {
       $('event-modal-name').textContent = ev.name;
       $('event-modal-date').textContent = ev.date || '';
       $('event-modal-desc').textContent = ev.description || '';
-      $('event-modal-facts').replaceChildren(...facts(ev).childNodes);
+      $('event-modal-facts').replaceChildren(...facts(ev, true).childNodes);
       paintWinners(ev);
       paintPeople(ev);
       if (!modal.open) modal.showModal();
@@ -812,7 +866,7 @@ $('mp-detail-play').addEventListener('click', () => mp.pack && playPack(mp.pack.
 $('mp-detail-folder').addEventListener('click', () => mp.pack && window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')));
 $('mp-detail-delete').addEventListener('click', async () => {
   const p = mp.pack;
-  if (!p || !confirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
+  if (!p || !await askConfirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
   try {
     await window.api.modpackRemove(p.id);
     toast('Modpack eliminado');
@@ -852,6 +906,10 @@ function paintContent(offline) {
   $('mp-content-note').textContent = mp.items.length
     ? `${shown.length} de ${mp.items.length} · ${count('mod')} mods · ${count('shader')} shaders · ${count('resourcepack')} texturas${offline ? ' · sin conexión: nombres e iconos pueden faltar' : ''}`
     : 'Este modpack todavía no tiene mods, shaders ni texturas. Usa "Explorar contenido" o "Cargar archivos".';
+  if (!shown.length && mp.items.length) {
+    const EMPTY = { mod: 'No tienes ningún mod instalado. Explora contenido para buscar uno.', shader: 'No tienes ningún shader instalado. Explora contenido para buscar uno.', resourcepack: 'No tienes ninguna textura instalada. Explora contenido para buscar una.' };
+    list.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : EMPTY[mp.filter] || 'No hay nada para mostrar.'));
+  }
   shown.forEach((it) => {
     const row = el('div', `mod-card${it.enabled ? '' : ' mod-off'}`);
     row.append(iconEl(it.icon, it.name));
@@ -876,7 +934,7 @@ function paintContent(offline) {
     const del = el('button', '', 'Quitar');
     del.type = 'button';
     del.addEventListener('click', async () => {
-      if (!confirm(`¿Quitar "${it.name}" de este modpack?`)) return;
+      if (!await askConfirm(`¿Quitar "${it.name}" de este modpack?`)) return;
       try {
         await window.api.instanceRemove({ id: mp.pack.id, type: it.type, file: it.file });
         await renderContent();
@@ -890,6 +948,12 @@ function paintContent(offline) {
 }
 
 $('mp-content-search').addEventListener('input', () => paintContent(false));
+// El menú de tipo junto a "Cargar archivos" también filtra la lista, para que no parezca un filtro roto.
+$('mp-add-type').addEventListener('change', () => {
+  mp.filter = $('mp-add-type').value;
+  document.querySelectorAll('[data-mp-filter]').forEach((x) => x.classList.toggle('active', x.dataset.mpFilter === mp.filter));
+  paintContent(false);
+});
 document.querySelectorAll('[data-mp-filter]').forEach((b) =>
   b.addEventListener('click', () => {
     mp.filter = b.dataset.mpFilter;
@@ -1117,7 +1181,7 @@ $('ps-icon-clear').addEventListener('click', async () => {
 window.api.onModpacksChanged(async () => { await loadInstalled(); if (mp.view === 'library') renderLibrary(); });
 
 $('ps-dup').addEventListener('click', async () => {
-  const withWorlds = confirm('¿Copiar también los mundos?\n\nAceptar: copia con mundos. Cancelar: copia solo los mods y ajustes.');
+  const withWorlds = await askConfirm('¿Copiar también los mundos?\n\nCon mundos: copia todo. Solo mods: copia los mods y ajustes.', 'Con mundos', 'Solo mods');
   $('ps-dup').disabled = true;
   try {
     const copy = await window.api.modpackDuplicate({ id: mp.pack.id, withWorlds });
@@ -1149,7 +1213,7 @@ $('mp-check-updates').addEventListener('click', async () => {
     note.textContent = 'Buscando actualizaciones en Modrinth…';
     const ups = await window.api.instanceUpdatesCheck(mp.pack.id);
     if (!ups.length) { note.textContent = 'Todos tus mods están al día.'; return; }
-    if (!confirm(`Hay ${ups.length} mod${ups.length === 1 ? '' : 's'} para actualizar:\n\n${ups.slice(0, 15).map((u) => `• ${u.file.replace(/\.disabled$/i, '')} → ${u.newFile}`).join('\n')}${ups.length > 15 ? '\n…' : ''}\n\n¿Actualizar ahora?`)) { note.textContent = `${ups.length} actualizaciones disponibles.`; return; }
+    if (!await askConfirm(`Hay ${ups.length} mod${ups.length === 1 ? '' : 's'} para actualizar:\n\n${ups.slice(0, 15).map((u) => `• ${u.file.replace(/\.disabled$/i, '')} → ${u.newFile}`).join('\n')}${ups.length > 15 ? '\n…' : ''}\n\n¿Actualizar ahora?`)) { note.textContent = `${ups.length} actualizaciones disponibles.`; return; }
     const r = await window.api.instanceUpdatesApply(mp.pack.id);
     toast(`${r.updated} mod${r.updated === 1 ? '' : 's'} actualizado${r.updated === 1 ? '' : 's'}`);
     r.errors.forEach((m) => toast(m, 'error'));
@@ -1200,10 +1264,10 @@ $('mp-view-library').addEventListener('drop', (e) => {
   if (p) doImport({ path: p });
 });
 // Doble clic en un .novapx desde el Explorador.
-window.api.onImportOpen((d) => {
+window.api.onImportOpen(async (d) => {
   goTo('modpacks');
   showView('library');
-  if (d && d.path && confirm(`¿Importar este modpack?\n\n${d.path}`)) doImport({ path: d.path });
+  if (d && d.path && await askConfirm(`¿Importar este modpack?\n\n${d.path}`)) doImport({ path: d.path });
 });
 
 $('ps-export').addEventListener('click', async () => {
@@ -1281,6 +1345,7 @@ async function searchContent() {
           $('mp-add-status').textContent = cleanError(e);
         } finally {
           mp.busy = false;
+          busyHide();
         }
       });
       row.append(btn);
@@ -1501,6 +1566,30 @@ function linksEditor(obj) {
   return box;
 }
 
+function openMember(m) {
+  const img = $('mm-avatar');
+  const src = imageUrl(m.avatar);
+  img.hidden = !src;
+  if (src) img.src = src;
+  $('mm-name').textContent = m.name || m.nick;
+  $('mm-role').textContent = `${m.name ? m.nick + ' · ' : ''}${m.role || ''}`;
+  $('mm-bio').textContent = m.bio || '';
+  $('mm-bio').hidden = !m.bio;
+  const box = $('mm-links');
+  box.replaceChildren();
+  (m.links || []).forEach((l) => {
+    const b = el('button', 'link-tile');
+    b.type = 'button';
+    const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
+    b.append(el('span', 'link-ico', '🔗'), el('span', 'link-name', l.name), el('span', 'link-host muted', host));
+    b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
+    box.append(b);
+  });
+  if (!$('member-modal').open) $('member-modal').showModal();
+}
+$('mm-close').addEventListener('click', () => $('member-modal').close());
+$('member-modal').addEventListener('click', (e) => { if (e.target === $('member-modal')) $('member-modal').close(); });
+
 function teamCard(m, index, featured) {
   const card = el('div', m.tribute ? 'member tribute' : featured ? 'member featured' : 'member');
   card.dataset.tilt = '';
@@ -1552,6 +1641,10 @@ function teamCard(m, index, featured) {
   } else info.append(el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
   if (m.links && m.links.length) info.append(linkChips(m.links));
   card.append(stage, info);
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.addEventListener('click', () => openMember(m));
+  card.addEventListener('keydown', (e) => { if (e.key === 'Enter') openMember(m); });
   return card;
 }
 
@@ -2284,6 +2377,7 @@ let isAdmin = false;
 let adminProgress = null;
 function setAdminUi(on, repo, err, eligible) {
   isAdmin = on;
+  document.querySelectorAll('[data-tab="mods"]').forEach((b) => { b.hidden = !on; });
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
   $('adm-login-box').hidden = on;
@@ -2445,7 +2539,7 @@ $('ad-publish').addEventListener('click', async () => {
   const name = $('ad-name').value.trim();
   const active = $('ad-active').checked;
   const msg = `¿Publicar "${name}"?\n\n${active ? 'El evento queda ACTIVO: los jugadores podrán entrar.' : 'El evento queda inactivo.'}${id && adm.summary ? `\nSe publican ${adm.summary.mods} mods cifrados.` : ''}`;
-  if (!confirm(msg)) return;
+  if (!await askConfirm(msg)) return;
   const btn = $('ad-publish');
   btn.disabled = true;
   const bar = $('ad-progress');
@@ -2520,7 +2614,7 @@ function paintUsers() {
     const del = el('button', '', 'Quitar');
     del.type = 'button';
     del.addEventListener('click', async () => {
-      if (!confirm('¿Quitar este registro de la lista? Volverá a aparecer si esa persona abre el launcher.')) return;
+      if (!await askConfirm('¿Quitar este registro de la lista? Volverá a aparecer si esa persona abre el launcher.')) return;
       try { await window.api.adminUserDelete(u.id); usersList = usersList.filter((x) => x.id !== u.id); paintUsers(); } catch (e) { $('ad-users-status').textContent = cleanError(e); }
     });
     row.append(del);
@@ -2671,8 +2765,8 @@ $('ade-save').addEventListener('click', () => {
   if (ade.index >= 0) list[ade.index] = ev; else list.unshift(ev);
   saveAdminEvents(list, true);
 });
-$('ade-delete').addEventListener('click', () => {
-  if (!confirm(`¿Eliminar "${ade.draft.name}" del historial?`)) return;
+$('ade-delete').addEventListener('click', async () => {
+  if (!await askConfirm(`¿Eliminar "${ade.draft.name}" del historial?`)) return;
   saveAdminEvents(adm.events.filter((_, i) => i !== ade.index), true);
 });
 
@@ -2757,7 +2851,17 @@ function paintTeam() {
     tr.addEventListener('change', () => { m.tribute = tr.checked; paintTeam(); });
     row.append(f.nick, f.role, star, trLab, del);
     const lk = el('details', 'team-links');
-    lk.append(el('summary', '', `Enlaces (${(m.links || []).length})`), linksEditor(m));
+    lk.append(el('summary', '', `Perfil y enlaces (${(m.links || []).length})`));
+    const pf = rowInputs(m, [['name', 'Nombre real', 40], ['bio', 'Presentación corta', 300]]);
+    const av = el('div', 'links-row');
+    const avPick = el('button', '', m.avatar ? 'Cambiar foto' : 'Subir foto'); avPick.type = 'button';
+    avPick.addEventListener('click', async () => {
+      try { const r = await window.api.adminPickImage(m.nick || 'perfil'); if (r) { m.avatar = r.path; avPick.textContent = 'Cambiar foto'; } } catch (e) { $('ad-team-status').textContent = cleanError(e); }
+    });
+    const avClear = el('button', '', 'Quitar foto'); avClear.type = 'button';
+    avClear.addEventListener('click', () => { delete m.avatar; avPick.textContent = 'Subir foto'; });
+    av.append(avPick, avClear);
+    lk.append(pf.name, pf.bio, av, linksEditor(m));
     row.append(lk);
     if (m.tribute) {
       row.classList.add('has-tribute');
@@ -2810,6 +2914,15 @@ $('ad-news-save').addEventListener('click', async () => {
 
 $('nav-back').addEventListener('click', () => navStep(-1));
 $('nav-fwd').addEventListener('click', () => navStep(1));
+// Botones laterales del mouse (atrás = 3, adelante = 4). Primero cierra un diálogo abierto, si lo hay.
+['mouseup', 'auxclick'].forEach((type) => window.addEventListener(type, (e) => {
+  if (e.button !== 3 && e.button !== 4) return;
+  e.preventDefault();
+  if (type === 'auxclick') return;
+  const open = document.querySelector('dialog[open]');
+  if (open && e.button === 3) { try { open.close(); } catch {} return; }
+  navStep(e.button === 3 ? -1 : 1);
+}));
 
 
 /* ---------- Ajustes con menú lateral (secciones) ---------- */
