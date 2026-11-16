@@ -192,7 +192,18 @@ async function fetchJson(url) {
 
 // Orden de lectura: 1) GitHub (siempre lo más nuevo), 2) última copia descargada (sin internet),
 // 3) copia incluida en el instalador. Así el launcher nunca se queda sin datos.
+// Lo que el administrador acaba de publicar se ve al instante en su propio launcher (GitHub tarda un poco en servirlo).
+const justPublished = new Map();
+function remember(name, data) {
+  justPublished.set(name, { data, until: Date.now() + 5 * 60 * 1000 });
+  try {
+    fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
+    fs.writeFileSync(path.join(DATA_CACHE_DIR, `${name}.json`), JSON.stringify(data));
+  } catch {}
+}
 async function loadData(name) {
+  const mine = justPublished.get(name);
+  if (mine && mine.until > Date.now()) return mine.data;
   if (config.remoteBase) {
     const cacheFile = path.join(DATA_CACHE_DIR, `${name}.json`);
     try {
@@ -1086,6 +1097,7 @@ ipcMain.handle('admin:saveLauncher', async (_e, raw) => {
   const r = await requireAdmin();
   const clean = remote.sanitize(raw);
   await r.putJson('data/launcher.json', clean, 'Configuración del launcher actualizada (desde el launcher)');
+  remember('launcher', clean);
   remoteCfg = clean;
   send('remote:changed', remoteCfg);
   return clean;
@@ -1094,6 +1106,7 @@ ipcMain.handle('admin:saveRecommended', async (_e, list) => {
   const r = await requireAdmin();
   const clean = remote.sanitizeRecommended(list);
   await r.putJson('data/recommended.json', clean, 'Modpacks recomendados actualizados (desde el launcher)');
+  remember('recommended', clean);
   return clean;
 });
 // Historial y "deshacer": versiones anteriores de lo que se publicó (solo archivos seguros de restaurar).
@@ -1112,6 +1125,7 @@ ipcMain.handle('admin:restore', async (_e, name, sha) => {
   const old = await r.jsonAt(file, sha);
   const clean = { launcher: remote.sanitize, recommended: remote.sanitizeRecommended, news: adminLib.sanitizeNews, events: adminLib.sanitizeEvents, team: adminLib.sanitizeTeam }[name](old);
   await r.putJson(file, clean, `Restaurado ${name} a la versión ${String(sha).slice(0, 7)} (desde el launcher)`);
+  remember(name === 'recommended' ? 'recommended' : name, clean);
   if (name === 'launcher') { remoteCfg = clean; send('remote:changed', remoteCfg); }
   return clean;
 });
@@ -1119,6 +1133,7 @@ ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeTeam(list);
   await r.putJson('data/team.json', clean, 'Equipo actualizado (desde el launcher)');
+  remember('team', clean);
   return clean;
 });
 // Dar o quitar permiso: se resuelve el uuid del nick en Mojang (así no sirve un nick prestado).
@@ -1144,6 +1159,7 @@ ipcMain.handle('admin:saveEvents', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeEvents(list);
   await r.putJson('data/events.json', clean, 'Historial de eventos actualizado (desde el launcher)');
+  remember('events', clean);
   return clean;
 });
 // Elige una imagen, la valida por sus bytes (máx. 3 MB) y la sube a data/images del repositorio.
@@ -1165,6 +1181,7 @@ ipcMain.handle('admin:saveNews', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeNews(list);
   await r.putJson('data/news.json', clean, 'Noticias actualizadas (desde el launcher)');
+  remember('news', clean);
   return clean;
 });
 
@@ -1221,6 +1238,7 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
     }
     progress('Publicando datos del evento…');
     await r.putJson('data/manifest.json', merged, `Evento: ${merged.event.name}${pack ? `, ${result.mods} mods` : ''} (desde el launcher)`);
+    remember('manifest', merged);
     progress('Listo');
     return { ...result, name: merged.event.name, active: !!merged.event.active };
   } finally {

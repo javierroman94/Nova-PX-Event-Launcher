@@ -404,7 +404,7 @@ async function refreshPlaytime() {
 
 async function renderNews() {
   const box = $('news-list');
-  box.replaceChildren(el('div', 'skeleton'), el('div', 'skeleton'));
+  if (!box.children.length) box.replaceChildren(el('div', 'skeleton'), el('div', 'skeleton'));
   try {
     const news = await window.api.getData('news');
     box.replaceChildren();
@@ -1490,25 +1490,31 @@ function teamCard(m, index, featured) {
   return card;
 }
 
-async function renderTeam() {
+let lastTeamJson = '';
+async function renderTeam(force) {
   const grid = $('team-grid');
   const top = $('team-featured');
   const trib = $('team-tribute');
+  let team;
+  try {
+    team = await window.api.getData('team');
+  } catch {
+    if (!lastTeamJson) { grid.replaceChildren(el('p', 'muted', 'No se pudo cargar el equipo.')); }
+    return;
+  }
+  const json = JSON.stringify(team);
+  if (!force && json === lastTeamJson) return; // sin cambios: no se recrean los visores 3D
+  lastTeamJson = json;
   grid.replaceChildren();
   top.replaceChildren();
   trib.replaceChildren();
   teamViewers.forEach((v) => v.destroy());
   teamViewers = [];
-  try {
-    const team = await window.api.getData('team');
-    let i = 0;
-    team.forEach((m) => {
-      const featured = !!m.featured;
-      (m.tribute ? trib : featured ? top : grid).append(teamCard(m, i++, featured));
-    });
-  } catch {
-    grid.append(el('p', 'muted', 'No se pudo cargar el equipo.'));
-  }
+  let i = 0;
+  team.forEach((m) => {
+    const featured = !!m.featured;
+    (m.tribute ? trib : featured ? top : grid).append(teamCard(m, i++, featured));
+  });
 }
 
 /* ---------- estado del servidor ---------- */
@@ -2149,6 +2155,11 @@ $('wz-offline').addEventListener('click', async () => {
     logRender();
   }
   setInterval(refreshServer, 60000);
+  // El contenido publicado (equipo, noticias, eventos, evento) se actualiza solo mientras el launcher está abierto.
+  let lastContent = Date.now();
+  window.refreshContent = async () => { lastContent = Date.now(); await Promise.all([renderHero(), renderNews(), renderEvents(), renderTeam()]); };
+  setInterval(() => { if (!document.hidden) window.refreshContent(); }, 3 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastContent > 60 * 1000) window.refreshContent(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
 })();
 
@@ -2341,6 +2352,7 @@ $('ad-publish').addEventListener('click', async () => {
     $('ad-new').checked = false;
     toast('Evento publicado');
     loadAdmin();
+    window.refreshContent && window.refreshContent();
   } catch (e) {
     $('ad-status').textContent = cleanError(e);
   }
@@ -2498,6 +2510,7 @@ async function saveAdminEvents(list, closeModal) {
     adm.events = await window.api.adminSaveEvents(list);
     paintAdminEvents();
     $('ad-events-status').textContent = 'Historial publicado. Los jugadores lo verán en unos minutos.';
+    window.refreshContent && window.refreshContent();
     if (closeModal) $('ad-event-modal').close();
   } catch (e) { $('ade-status').textContent = cleanError(e); $('ad-events-status').textContent = cleanError(e); }
 }
@@ -2614,7 +2627,8 @@ $('ad-team-save').addEventListener('click', async () => {
     adm.team = await window.api.adminSaveTeam(adm.team.filter((m) => (m.nick || '').trim()));
     paintTeam();
     window.adminListSaved('team');
-    $('ad-team-status').textContent = 'Equipo publicado.';
+    $('ad-team-status').textContent = 'Equipo publicado. Ya lo ves en la pestaña Equipo; los jugadores lo reciben en pocos minutos.';
+    window.refreshContent && window.refreshContent();
   } catch (e) { $('ad-team-status').textContent = cleanError(e); }
 });
 $('ad-news-save').addEventListener('click', async () => {
@@ -2623,6 +2637,7 @@ $('ad-news-save').addEventListener('click', async () => {
     paintNews();
     window.adminListSaved('news');
     $('ad-news-status').textContent = 'Noticias publicadas.';
+    window.refreshContent && window.refreshContent();
   } catch (e) { $('ad-news-status').textContent = cleanError(e); }
 });
 

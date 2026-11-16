@@ -222,6 +222,7 @@
     else if (name === 'news') { adm.news = out; paintNews(); window.adminListSaved('news'); }
     else if (name === 'team') { adm.team = out; paintTeam(); window.adminListSaved('team'); }
     else if (name === 'events') { adm.events = out; paintAdminEvents(); }
+    if (window.refreshContent) window.refreshContent();
   }
 
   /* ---------- estado ---------- */

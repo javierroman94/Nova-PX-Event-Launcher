@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.43
+- Lo que publicas desde el panel (equipo, noticias, eventos, evento, configuración) se ve **al instante** en tu launcher.
+- Todos los launchers abiertos se actualizan solos cada 3 minutos y al volver a la ventana, sin tener que reiniciarlos.
+
 ## 1.0.42
 - **Homenaje en Equipo**: una persona puede marcarse como homenaje (🕊) en el panel administrador; aparece en una tarjeta grande y dorada arriba de todo, con su skin 3D, años y un mensaje.
 
