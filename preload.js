@@ -34,10 +34,15 @@ contextBridge.exposeInMainWorld('api', {
   // configuración remota y panel administrador ampliado
   remoteGet: () => ipcRenderer.invoke('remote:get'),
   onRemoteChanged: (cb) => ipcRenderer.on('remote:changed', (_e, c) => cb(c)),
+  adminInvite: (user) => ipcRenderer.invoke('admin:invite', user),
   adminSaveLauncher: (c) => ipcRenderer.invoke('admin:saveLauncher', c),
   adminSaveRecommended: (l) => ipcRenderer.invoke('admin:saveRecommended', l),
   adminHistory: (name) => ipcRenderer.invoke('admin:history', name),
   adminRestore: (name, sha) => ipcRenderer.invoke('admin:restore', name, sha),
+
+  streamerGet: () => ipcRenderer.invoke('streamer:get'),
+  onStreamerChanged: (cb) => ipcRenderer.on('streamer:changed', (_e, v) => cb(v)),
+  authExpiredNotice: () => ipcRenderer.invoke('auth:expiredNotice'),
 
   // jugar
   launch: (opts) => ipcRenderer.invoke('game:launch', opts),

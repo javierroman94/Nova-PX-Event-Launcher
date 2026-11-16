@@ -54,7 +54,7 @@
       <button class="account-chip" id="account-chip" data-tab="account" aria-label="Cuenta">
         <img id="chip-avatar" alt="" width="36" height="36" hidden />
         <span class="chip-text">
-          <span id="chip-name">Iniciar sesión</span>
+          <span id="chip-name" class="pii">Iniciar sesión</span>
           <span id="chip-mode" class="chip-mode"></span>
         </span>
       </button>
@@ -121,7 +121,7 @@
           <div class="player-card" data-tilt>
             <div class="player-skin"><canvas id="player3d" class="skin3d" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas><img id="player-bust" alt="" width="120" height="120" hidden /></div>
             <div class="player-info">
-              <div id="player-name" class="player-name">Sin sesión</div>
+              <div id="player-name" class="player-name pii">Sin sesión</div>
               <div id="player-mode" class="player-mode">Elige cómo quieres entrar</div>
               <div id="playtime" class="playtime"></div>
               <button id="player-action" class="ghost">Iniciar sesión</button>
@@ -211,6 +211,7 @@
           <p id="event-modal-desc"></p>
           <div id="event-modal-facts" class="facts"></div>
           <div id="event-modal-winners" class="winners" hidden></div>
+          <div id="event-modal-people" class="winners" hidden></div>
           <button id="event-modal-close" type="button">Cerrar</button>
         </div>
       </dialog>
@@ -513,6 +514,7 @@
               <div><label for="ad-port">Puerto</label><input id="ad-port" type="number" min="1" max="65535" /></div>
             </div>
             <label class="check"><input id="ad-new" type="checkbox" /> Es un evento nuevo (los jugadores empiezan en una carpeta limpia)</label>
+            <label class="check"><input id="ad-lock" type="checkbox" checked /> 🔒 Bloquear el modpack: los jugadores no pueden añadir ni cambiar mods, texturas ni shaders del evento</label>
           </article>
         </div>
 
@@ -657,6 +659,21 @@
           </div>
           <p id="ad-perm-status" class="muted" role="status"></p>
         </article>
+        <article class="ad-card">
+          <header><div><h3>Que otra persona publique sin darle tu token</h3><p class="muted">Cada administrador usa <b>su propio token</b>: nunca compartes el tuyo y los cambios salen con <b>su nombre</b> en GitHub.</p></div></header>
+          <ol class="ad-steps">
+            <li><b>Invítala</b> al repositorio con su usuario de GitHub (abajo).</li>
+            <li>Ella <b>acepta</b> la invitación (le llega a su correo y a GitHub).</li>
+            <li>Ella crea <b>su token</b> en GitHub → Settings → Developer settings → Fine-grained tokens: solo este repositorio y permiso <i>Contents: Read and write</i>.</li>
+            <li>Ella lo pega en <b>su</b> launcher: Ajustes → Modo administrador.</li>
+            <li>Tú le das permiso arriba con su <b>nick premium</b> (“Dar permiso”).</li>
+          </ol>
+          <div class="field inline">
+            <div><label for="ad-invite-user">Usuario de GitHub</label><input id="ad-invite-user" type="text" maxlength="39" placeholder="usuario-de-github" /></div>
+            <div class="mp-actions"><button id="ad-invite" type="button" class="primary">Invitar al repositorio</button></div>
+          </div>
+          <p id="ad-invite-status" class="muted" role="status"></p>
+        </article>
       </div>
 
       <div id="ad-tab-events" hidden>
@@ -706,6 +723,10 @@
             <div class="input-row"><input id="ade-win" type="text" maxlength="16" placeholder="Nick de Minecraft" /><button id="ade-win-add" type="button">Añadir</button></div></div>
         </div>
         <div id="ade-winners" class="ade-winners"></div>
+        <h4 class="ade-sub">Participantes con nombre <span class="muted">(opcional)</span></h4>
+        <div id="ade-roster" class="people-editor"></div>
+        <h4 class="ade-sub">Colaboraron con Nova PX <span class="muted">(opcional)</span></h4>
+        <div id="ade-collabs" class="people-editor"></div>
         <p id="ade-status" class="muted" role="status"></p>
         <div class="mp-actions">
           <button id="ade-delete" type="button">Eliminar evento</button>
@@ -768,6 +789,20 @@
     <section class="page" id="page-settings">
       <h2 class="page-title">Ajustes</h2>
       <div class="settings">
+        <fieldset>
+          <legend>Mi cuenta</legend>
+          <div class="row-setting"><div class="rs-text"><b>Nombre de usuario</b><small class="muted">Con el que entras al juego</small></div><span id="ac-name" class="rs-value pii">–</span><button id="ac-switch" type="button">Cambiar de cuenta</button></div>
+          <div class="row-setting"><div class="rs-text"><b>Tipo de cuenta</b><small class="muted">Premium usa tu cuenta de Microsoft; no premium usa un nick local</small></div><span id="ac-mode" class="rs-value">–</span></div>
+          <div class="row-setting"><div class="rs-text"><b>Sesión</b><small id="ac-session-hint" class="muted">Las cuentas premium piden volver a iniciar sesión cada 30 días. La no premium no caduca.</small></div><span id="ac-session" class="rs-value">–</span><button id="ac-logout" type="button" class="danger">Cerrar sesión</button></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Privacidad</legend>
+          <div class="row-setting"><div class="rs-text"><b>Modo streamer</b><small class="muted">Oculta tu nick en el launcher, en la consola y en los avisos para que no se vea en directo. En automático se activa solo al detectar OBS, Streamlabs u otro programa de directos.</small></div>
+            <select id="streamer-mode" aria-label="Modo streamer"><option value="auto">Automático</option><option value="on">Siempre activado</option><option value="off">Desactivado</option></select></div>
+          <div class="row-setting"><div class="rs-text"><b>Estado ahora</b></div><span id="streamer-state" class="rs-value">–</span></div>
+        </fieldset>
+
         <fieldset>
           <legend>Memoria y Java</legend>
           <div class="field">
@@ -952,7 +987,7 @@
         <div class="card" id="card-offline">
           <h3>Cuenta no premium</h3>
           <p>Elige un nick de 3 a 16 caracteres con letras, números o guion bajo. Usa siempre el mismo para conservar tu progreso.</p>
-          <input id="offline-nick" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
+          <input id="offline-nick" class="pii" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
           <button id="login-offline">Entrar con este nick</button>
         </div>
       </div>

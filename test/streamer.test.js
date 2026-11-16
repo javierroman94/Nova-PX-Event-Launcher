@@ -1,0 +1,20 @@
+'use strict';
+const assert = require('assert');
+const s = require('../lib/streamer');
+assert.ok(s.streamingDetected(['explorer.exe', 'obs64.exe']));
+assert.ok(s.streamingDetected(['Streamlabs Desktop.exe']));
+assert.ok(s.streamingDetected(['OBS']));
+assert.ok(!s.streamingDetected(['chrome.exe', 'javaw.exe', 'observer.exe']));
+assert.ok(!s.streamingDetected([]));
+assert.strictEqual(s.cleanMode('x'), 'auto');
+assert.strictEqual(s.effective('on', false), true);
+assert.strictEqual(s.effective('off', true), false);
+assert.strictEqual(s.effective('auto', true), true);
+assert.strictEqual(s.effective('auto', false), false);
+(async () => {
+  const fake = (cmd, args, o, cb) => cb(null, '"Image Name","PID"\r\n"obs64.exe","12"\r\n"javaw.exe","9"\r\n');
+  assert.ok(s.streamingDetected(await s.listProcesses(fake, 'win32')));
+  const bad = (cmd, args, o, cb) => cb(new Error('x'));
+  assert.deepStrictEqual(await s.listProcesses(bad, 'linux'), []);
+  console.log('streamer.test OK');
+})();

@@ -26,6 +26,9 @@ const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const telemetry = require('./lib/telemetry');
 const remote = require('./lib/remote');
+const sess = require('./lib/session');
+const streamer = require('./lib/streamer');
+const packLock = require('./lib/lock');
 const importers = require('./lib/importers');
 const { readZip } = require('./lib/zip');
 const { installJava, findJavaBinary } = require('./lib/javaRuntime');
@@ -116,6 +119,7 @@ function defaultSettings() {
     discordRpc: true,
     notifyEvents: true,
     shareUsage: true,
+    streamer: 'auto',
     welcomed: false,
     playSeconds: 0
   };
@@ -162,6 +166,7 @@ function cleanSettings(s) {
     discordRpc: s.discordRpc !== false,
     notifyEvents: s.notifyEvents !== false,
     shareUsage: s.shareUsage !== false,
+    streamer: streamer.cleanMode(s.streamer),
     welcomed: s.welcomed === true,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
@@ -192,6 +197,20 @@ async function fetchJson(url) {
 
 // Orden de lectura: 1) GitHub (siempre lo más nuevo), 2) última copia descargada (sin internet),
 // 3) copia incluida en el instalador. Así el launcher nunca se queda sin datos.
+// Modo streamer: detecta programas de directo (OBS, Streamlabs…) y avisa a la interfaz.
+let streamDetected = false;
+let streamLast = null;
+const streamerOn = () => streamer.effective(readSettings().streamer, streamDetected);
+async function checkStreamer() {
+  try {
+    if (readSettings().streamer === 'auto') streamDetected = streamer.streamingDetected(await streamer.listProcesses(execFile));
+    else streamDetected = false;
+  } catch { streamDetected = false; }
+  const now = { on: streamerOn(), detected: streamDetected };
+  if (!streamLast || streamLast.on !== now.on || streamLast.detected !== now.detected) { streamLast = now; send('streamer:changed', now); }
+}
+ipcMain.handle('streamer:get', async () => { await checkStreamer(); return streamLast; });
+
 // Lo que el administrador acaba de publicar se ve al instante en su propio launcher (GitHub tarda un poco en servirlo).
 const justPublished = new Map();
 function remember(name, data) {
@@ -590,6 +609,8 @@ app.on('before-quit', () => rpc.stop());
 app.whenReady().then(() => {
   if (!gotLock) return;
   applyDiscordSetting();
+  checkStreamer();
+  setInterval(checkStreamer, 15 * 1000).unref();
   refreshRemote();
   setInterval(refreshRemote, 10 * 60 * 1000).unref();
   setTimeout(pingUsage, 3000);
@@ -1018,10 +1039,24 @@ function gh() {
 async function requireAdmin() {
   if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador. Inicia sesión con tu cuenta premium autorizada.');
   const r = gh();
+  r.byline = session && session.name ? session.name : ''; // el mensaje del cambio dice quién lo hizo
   const c = await r.check();
   if (!c.canPush) throw new Error('Ese token no tiene permiso de escritura en el repositorio.');
   return r;
 }
+
+// Invitar a otra persona como colaboradora de GitHub, para que publique con su propio token (sin compartir el tuyo).
+ipcMain.handle('admin:invite', async (_e, user) => {
+  const r = await requireAdmin();
+  const name = String(user || '').trim();
+  try {
+    const out = await r.inviteCollaborator(name);
+    return { ok: true, ...out, user: name };
+  } catch (err) {
+    // El token normal no puede invitar (hace falta el permiso "Administration"): se abre la página de GitHub.
+    return { ok: false, user: name, message: String(err.message || err), url: `https://github.com/${r.owner}/${r.repo}/settings/access` };
+  }
+});
 
 ipcMain.handle('admin:status', async () => {
   const eligible = await adminEligible();
@@ -1578,7 +1613,7 @@ ipcMain.handle('system:info', () => ({
 ipcMain.handle('app:state', async () => {
   if (restoring) await Promise.race([restoring, new Promise((r) => setTimeout(r, 15000))]);
   return {
-  session: session ? { mode: session.mode, name: session.name, uuid: session.uuid } : null,
+  session: sessionPublic(),
   playing: launching,
   target: launching ? currentTarget : null,
   log: logBuffer
@@ -1712,7 +1747,7 @@ function saveAccount(data) {
     let out = null;
     if (data.mode === 'offline') out = { mode: 'offline', name: data.name };
     else if (data.mode === 'premium' && data.refresh && safeStorage.isEncryptionAvailable()) {
-      out = { mode: 'premium', refresh: safeStorage.encryptString(String(data.refresh)).toString('base64') };
+      out = { mode: 'premium', at: sess.startedAt(data.at), refresh: safeStorage.encryptString(String(data.refresh)).toString('base64') };
     }
     if (!out) return clearAccount();
     fs.mkdirSync(path.dirname(ACCOUNT_FILE), { recursive: true });
@@ -1726,16 +1761,17 @@ function clearAccount() {
   } catch {}
 }
 
-async function premiumSessionFrom(xbox) {
+async function premiumSessionFrom(xbox, startedAtMs) {
   const mc = await xbox.getMinecraft();
   session = { mode: 'premium', name: mc.profile.name, uuid: mc.profile.id, auth: mc.mclc() };
+  sessionStartedAt = sess.startedAt(startedAtMs);
   pingUsage();
   lastProfile = null;
   let refresh = null;
   try {
     refresh = xbox.save();
   } catch {}
-  if (refresh) saveAccount({ mode: 'premium', refresh });
+  if (refresh) saveAccount({ mode: 'premium', refresh, at: startedAtMs });
 }
 
 async function restoreSession() {
@@ -1750,15 +1786,29 @@ async function restoreSession() {
       session = makeOfflineSession(saved.name);
       pingUsage();
     } else if (saved.mode === 'premium' && saved.refresh && safeStorage.isEncryptionAvailable()) {
+      if (sess.premiumExpired(saved.at)) {
+        // Han pasado 30 días: se pide iniciar sesión otra vez con Microsoft (la cuenta no premium nunca caduca).
+        clearAccount();
+        sessionExpiredNotice = true;
+        return;
+      }
       const token = safeStorage.decryptString(Buffer.from(saved.refresh, 'base64'));
       const xbox = await new Auth('select_account').refresh(token);
-      await premiumSessionFrom(xbox);
+      await premiumSessionFrom(xbox, sess.startedAt(saved.at));
     }
   } catch {
     // Sin internet o sesión caducada: se pide iniciar sesión de nuevo (el archivo se conserva si solo falló la red).
     session = null;
   }
 }
+
+let sessionStartedAt = 0;
+const sessionPublic = () => session ? {
+  mode: session.mode, name: session.name, uuid: session.uuid,
+  ...(session.mode === 'premium' && sessionStartedAt ? { expiresAt: sessionStartedAt + sess.DAYS * 24 * 60 * 60 * 1000 } : {})
+} : null;
+let sessionExpiredNotice = false;
+ipcMain.handle('auth:expiredNotice', () => { const v = sessionExpiredNotice; sessionExpiredNotice = false; return v; });
 
 // La interfaz espera (hasta 15 s) a que termine de restaurar la sesión.
 let restoring = null;
@@ -1782,7 +1832,7 @@ ipcMain.handle('auth:microsoft', async () => {
   const authManager = new Auth('select_account');
   const xbox = await authManager.launch('electron');
   await premiumSessionFrom(xbox);
-  return { mode: 'premium', name: session.name, uuid: session.uuid };
+  return sessionPublic();
 });
 
 ipcMain.handle('auth:logout', () => {
@@ -1971,7 +2021,16 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     // Cada evento vive en su propia carpeta: los mods de un evento no chocan con los de otro.
     const eventDir = instanceDir(GAME_DIR, manifest);
     fs.mkdirSync(eventDir, { recursive: true });
+    // Evento bloqueado (por defecto): los jugadores no pueden añadir ni cambiar mods, texturas ni shaders.
+    const lockEvent = !pack && manifest.lockPack !== false;
+    const enforceLock = () => {
+      if (!lockEvent) return;
+      const removed = packLock.enforce(eventDir);
+      if (removed.length) send('game:status', { text: `Se quitaron ${removed.length} archivo(s) que no son del evento (modpack bloqueado).` });
+    };
+    enforceLock();
     if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
+    enforceLock();
     // Los ajustes propios del modpack (RAM, Java, argumentos, ventana) pesan más que los de Ajustes.
     const st = packs.mergeSettings(readSettings(), pack && pack.settings);
     const javaPath = await resolveJava(manifest, loaderType, st);

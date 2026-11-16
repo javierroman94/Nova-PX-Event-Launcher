@@ -1,0 +1,10 @@
+'use strict';
+const assert = require('assert');
+const { premiumExpired, startedAt } = require('../lib/session');
+const D = 24 * 60 * 60 * 1000, now = 1_800_000_000_000;
+assert.strictEqual(premiumExpired(now - 29 * D, now), false);
+assert.strictEqual(premiumExpired(now - 31 * D, now), true);
+assert.strictEqual(premiumExpired(undefined, now), false);
+assert.strictEqual(startedAt(undefined, now), now);
+assert.strictEqual(startedAt(123456, now), 123456);
+console.log('session.test OK');

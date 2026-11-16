@@ -109,3 +109,15 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.throws(() => new GithubRepo({ owner: '../x', repo: 'r', token: 't' }), /Repositorio/);
   console.log('admin.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// links / roster / collabs
+{
+  const assert = require('assert');
+  const A = require('../lib/admin');
+  const t = A.sanitizeTeam([{ nick: 'Ana', role: 'x', links: [{ name: 'IG', url: 'https://instagram.com/a' }, { name: 'mal', url: 'javascript:alert(1)' }] }]);
+  assert.deepStrictEqual(t[0].links, [{ name: 'IG', url: 'https://instagram.com/a' }]);
+  const ev = A.sanitizeEvents([{ name: 'E', roster: [{ nick: 'Bob', links: [{ name: 'W', url: 'https://w.com' }] }, { nick: 'Bob' }, { nick: 'x y' }], collabs: [{ nick: 'Cy', role: 'Mapa' }] }]);
+  assert.strictEqual(ev[0].roster.length, 1);
+  assert.strictEqual(ev[0].collabs[0].role, 'Mapa');
+  console.log('ok admin links/roster/collabs');
+}

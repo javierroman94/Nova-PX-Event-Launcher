@@ -2,6 +2,14 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.44
+- **Modo streamer**: oculta tu nick manualmente o automáticamente al detectar OBS, Streamlabs, etc.
+- **Ajustes rediseñados** al estilo Discord (buscador, perfil, grupos).
+- **Modpack del evento bloqueado**: se quitan mods/resourcepacks/shaders añadidos o modificados (se puede desactivar por evento).
+- **Colaboradores de GitHub**: invita admins desde el panel para que sus cambios salgan con su nombre, sin compartir tu token.
+- Los usuarios premium deben volver a iniciar sesión a los 30 días; los no premium quedan permanentes.
+- **Equipo y eventos**: enlaces (redes/portafolio) por persona, participantes con nombre y colaboradores con skin y enlaces.
+
 ## 1.0.43
 - Lo que publicas desde el panel (equipo, noticias, eventos, evento, configuración) se ve **al instante** en tu launcher.
 - Todos los launchers abiertos se actualizan solos cada 3 minutos y al volver a la ventana, sin tener que reiniciarlos.

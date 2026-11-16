@@ -134,7 +134,7 @@ const PAGE_TITLES = {
 /* ---------- avisos emergentes ---------- */
 function toast(text, kind) {
   const box = $('toasts');
-  const t = el('div', kind === 'error' ? 'toast error' : 'toast', text);
+  const t = el('div', kind === 'error' ? 'toast error' : 'toast', maskNick(text));
   box.append(t);
   setTimeout(() => {
     t.classList.add('out');
@@ -469,6 +469,30 @@ function paintWinners(ev) {
   box.append(row);
 }
 
+// Participantes y colaboradores con nombre: tarjetas con skin, rol y enlaces.
+function paintPeople(ev) {
+  const box = $('event-modal-people');
+  box.replaceChildren();
+  const groups = [['👥 Participantes', ev.roster], ['🤝 Colaboraron con Nova PX', ev.collabs]];
+  let any = false;
+  groups.forEach(([title, list]) => {
+    if (!list || !list.length) return;
+    any = true;
+    box.append(el('h4', 'winners-title', `${title} (${list.length})`));
+    const row = el('div', 'people-row');
+    list.forEach((p) => {
+      const c = el('div', 'person');
+      const img = el('img'); img.alt = `Skin de ${p.nick}`; img.loading = 'lazy'; img.src = skinBust(p.nick);
+      c.append(img, el('div', 'nick', p.nick));
+      if (p.role) c.append(el('div', 'role', p.role));
+      if (p.links && p.links.length) c.append(linkChips(p.links));
+      row.append(c);
+    });
+    box.append(row);
+  });
+  box.hidden = !any;
+}
+
 async function renderEvents() {
   const list = $('events-list');
   list.replaceChildren();
@@ -492,6 +516,7 @@ async function renderEvents() {
       $('event-modal-desc').textContent = ev.description || '';
       $('event-modal-facts').replaceChildren(...facts(ev).childNodes);
       paintWinners(ev);
+      paintPeople(ev);
       if (!modal.open) modal.showModal();
     };
     if (!modal.dataset.bound) {
@@ -1437,6 +1462,45 @@ const TEAM_STATES = ['idle', 'wave', 'walk', 'jump', 'spin'];
 
 window.addEventListener('nova-fx', (e) => teamViewers.forEach((v) => v.setAnimated(e.detail)));
 
+/* --- enlaces (redes / portafolio) --- */
+function linkChips(links) {
+  const box = el('div', 'link-chips');
+  (links || []).forEach((l) => {
+    const b = el('button', 'link-chip', l.name);
+    b.type = 'button';
+    b.title = l.url;
+    b.addEventListener('click', (e) => { e.stopPropagation(); window.api.openLink(l.url).catch(() => {}); });
+    box.append(b);
+  });
+  box.hidden = !box.childElementCount;
+  return box;
+}
+// Editor de enlaces para un objeto { links: [{name,url}] }
+function linksEditor(obj) {
+  const box = el('div', 'links-editor');
+  const paint = () => {
+    box.replaceChildren();
+    (obj.links = obj.links || []).forEach((l, i) => {
+      const row = el('div', 'links-row');
+      const n = el('input'); n.type = 'text'; n.maxLength = 30; n.placeholder = 'Red (Instagram, Portafolio…)'; n.value = l.name || '';
+      n.addEventListener('input', () => { l.name = n.value; });
+      const u = el('input'); u.type = 'url'; u.maxLength = 300; u.placeholder = 'https://…'; u.value = l.url || '';
+      u.addEventListener('input', () => { l.url = u.value; });
+      const x = el('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Quitar enlace');
+      x.addEventListener('click', () => { obj.links.splice(i, 1); paint(); });
+      row.append(n, u, x);
+      box.append(row);
+    });
+    if (obj.links.length < 6) {
+      const add = el('button', 'ghost', '+ Enlace'); add.type = 'button';
+      add.addEventListener('click', () => { obj.links.push({ name: '', url: 'https://' }); paint(); });
+      box.append(add);
+    }
+  };
+  paint();
+  return box;
+}
+
 function teamCard(m, index, featured) {
   const card = el('div', m.tribute ? 'member tribute' : featured ? 'member featured' : 'member');
   card.dataset.tilt = '';
@@ -1486,6 +1550,7 @@ function teamCard(m, index, featured) {
     if (m.years) info.append(el('div', 'tribute-years', m.years));
     if (m.tributeText) info.append(el('p', 'tribute-text', m.tributeText));
   } else info.append(el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
+  if (m.links && m.links.length) info.append(linkChips(m.links));
   card.append(stage, info);
   return card;
 }
@@ -1560,12 +1625,58 @@ async function refreshServer() {
 /* ---------- sesión ---------- */
 function showMsg(text, isError = false) {
   const m = $('account-msg');
-  m.textContent = text;
+  m.textContent = maskNick(text);
   m.className = isError ? 'msg error' : 'msg';
+}
+
+/* ---------- modo streamer y datos de la cuenta ---------- */
+let streamerOn = false;
+function maskNick(text) {
+  const t = String(text == null ? '' : text);
+  return streamerOn && currentUser && currentUser.name ? t.split(currentUser.name).join('••••') : t;
+}
+function applyStreamer(v) {
+  streamerOn = !!(v && v.on);
+  document.documentElement.classList.toggle('streamer', streamerOn);
+  const st = $('streamer-state');
+  if (st) st.textContent = streamerOn ? (v.detected ? 'Activo: directo detectado' : 'Activo') : 'Inactivo';
+  logRender();
+  renderAccountRows();
+}
+function renderAccountRows() {
+  const info = currentUser;
+  $('ac-name').textContent = info ? info.name : 'Sin sesión';
+  $('ac-mode').textContent = info ? (info.mode === 'premium' ? 'Premium (Microsoft)' : 'No premium (nick local)') : '–';
+  let sess = '–';
+  if (info && info.mode === 'premium') {
+    if (info.expiresAt) {
+      const days = Math.max(0, Math.ceil((info.expiresAt - Date.now()) / 86400000));
+      sess = days <= 1 ? 'Caduca hoy o mañana' : `Caduca en ${days} días`;
+    } else sess = 'Activa';
+  } else if (info) sess = 'No caduca';
+  $('ac-session').textContent = sess;
+  $('ac-logout').disabled = !info;
+  if ($('set-prof-name')) {
+    $('set-prof-name').textContent = info ? info.name : 'Sin sesión';
+    $('set-prof-mode').textContent = info ? (info.mode === 'premium' ? 'Cuenta premium' : 'Cuenta no premium') : 'Inicia sesión desde Mi cuenta';
+    const av = $('set-prof-avatar');
+    av.hidden = !info;
+    if (info) av.src = skinHead(info.name);
+  }
+}
+$('ac-switch').addEventListener('click', () => $('player-action').click());
+$('ac-logout').addEventListener('click', () => $('logout-btn').click());
+$('streamer-mode').addEventListener('change', async () => {
+  try { await window.api.saveSettings({ streamer: $('streamer-mode').value }); applyStreamer(await window.api.streamerGet()); } catch {}
+});
+async function initStreamer(settings) {
+  try { $('streamer-mode').value = (settings && settings.streamer) || 'auto'; } catch {}
+  try { window.api.onStreamerChanged(applyStreamer); applyStreamer(await window.api.streamerGet()); } catch {}
 }
 
 function setSession(info) {
   currentUser = info;
+  renderAccountRows();
   if (window.NovaSkins) window.NovaSkins.setUser(info);
   loggedIn = !!info;
   setTimeout(() => { try { refreshAdmin(); } catch {} }, 0);
@@ -1790,7 +1901,7 @@ function logVisible(line) {
 }
 
 function logRow(line) {
-  const row = el('div', `log-line log-${logLevel(line)}`, line);
+  const row = el('div', `log-line log-${logLevel(line)}`, maskNick(line));
   return row;
 }
 
@@ -2130,6 +2241,7 @@ $('wz-offline').addEventListener('click', async () => {
 
   window.NovaTheme.init(settings);
   await initRemote();
+  initStreamer(settings);
   initLanguage(settings.lang || 'auto');
   refreshPlaytime();
 
@@ -2143,7 +2255,10 @@ $('wz-offline').addEventListener('click', async () => {
   $('chip-name').textContent = 'Conectando…';
   const st = await window.api.appState();
   if (st.session) setSession(st.session);
-  else setSession(null);
+  else {
+    setSession(null);
+    window.api.authExpiredNotice().then((v) => { if (v) toast('Tu sesión premium caducó (30 días). Inicia sesión con Microsoft otra vez.'); }).catch(() => {});
+  }
   if (st.playing) {
     if (st.target) launchTarget = { kind: st.target.kind, title: st.target.title, icon: st.target.icon || '' };
     setPlaying(true);
@@ -2227,6 +2342,7 @@ async function loadAdmin() {
     $('ad-active').checked = !!ev.active;
     $('ad-name').value = ev.name || '';
     $('ad-tag').value = ev.tagline || '';
+    $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
     $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
     $('ad-host').value = (m.server && m.server.host) || '';
     $('ad-port').value = (m.server && m.server.port) || 25565;
@@ -2341,7 +2457,7 @@ $('ad-publish').addEventListener('click', async () => {
     const r = await window.api.adminPublishEvent({
       id: id || undefined, password: $('ad-pass').value,
       form: {
-        active, name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked,
+        active, name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
         server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 }
       }
     });
@@ -2458,6 +2574,36 @@ function paintAdeWinners() {
     box.append(chip);
   });
 }
+// Editor de personas nombradas (participantes / colaboradores): nick, rol opcional y enlaces.
+function peopleEditor(box, list, withRole, addLabel) {
+  const paint = () => {
+    box.replaceChildren();
+    list.forEach((p, i) => {
+      const row = el('div', 'person-row');
+      const head = el('div', 'person-head');
+      const img = el('img'); img.alt = ''; img.src = p.nick ? skinBust(p.nick) : '';
+      const n = el('input'); n.type = 'text'; n.maxLength = 16; n.placeholder = 'Nick de Minecraft'; n.value = p.nick || '';
+      n.addEventListener('change', () => { p.nick = n.value.trim(); img.src = /^[A-Za-z0-9_]{1,16}$/.test(p.nick) ? skinBust(p.nick) : ''; });
+      head.append(img, n);
+      if (withRole) {
+        const r = el('input'); r.type = 'text'; r.maxLength = 60; r.placeholder = 'Qué hizo (opcional)'; r.value = p.role || '';
+        r.addEventListener('input', () => { p.role = r.value; });
+        head.append(r);
+      }
+      const x = el('button', '', 'Quitar'); x.type = 'button';
+      x.addEventListener('click', () => { list.splice(i, 1); paint(); });
+      head.append(x);
+      const lk = el('details', 'team-links');
+      lk.append(el('summary', '', `Enlaces (${(p.links || []).length})`), linksEditor(p));
+      row.append(head, lk);
+      box.append(row);
+    });
+    const add = el('button', '', addLabel); add.type = 'button';
+    add.addEventListener('click', () => { list.push({ nick: '', links: [] }); paint(); });
+    box.append(add);
+  };
+  paint();
+}
 function paintAdeImage() {
   const box = $('ade-img');
   box.replaceChildren();
@@ -2467,7 +2613,9 @@ function paintAdeImage() {
 function openAdminEvent(idx) {
   ade.index = idx;
   const base = idx >= 0 ? adm.events[idx] : { name: '', date: new Date().toISOString().slice(0, 10), image: '', description: '' };
-  ade.draft = { ...base, winners: [...(base.winners || (base.winner ? [base.winner] : []))] };
+  ade.draft = { ...base, winners: [...(base.winners || (base.winner ? [base.winner] : []))], roster: (base.roster || []).map((p) => ({ ...p, links: [...(p.links || [])].map((l) => ({ ...l })) })), collabs: (base.collabs || []).map((p) => ({ ...p, links: [...(p.links || [])].map((l) => ({ ...l })) })) };
+  peopleEditor($('ade-roster'), ade.draft.roster, false, '+ Participante');
+  peopleEditor($('ade-collabs'), ade.draft.collabs, true, '+ Colaborador');
   ade.preview = '';
   $('ade-title').textContent = idx >= 0 ? 'Editar evento' : 'Evento nuevo';
   $('ade-name').value = ade.draft.name;
@@ -2550,6 +2698,22 @@ function paintPerms() {
     box.append(row);
   });
 }
+$('ad-invite').addEventListener('click', async () => {
+  const st = $('ad-invite-status');
+  const user = $('ad-invite-user').value.trim();
+  if (!user) { st.textContent = 'Escribe su usuario de GitHub.'; return; }
+  st.textContent = 'Invitando…';
+  try {
+    const r = await window.api.adminInvite(user);
+    if (r.ok) {
+      st.textContent = r.already ? `${user} ya es colaborador del repositorio.` : `Invitación enviada a ${user}. Cuando la acepte, sigue con el paso 3.`;
+      $('ad-invite-user').value = '';
+    } else {
+      st.textContent = 'Tu token no puede invitar gente (es normal). Se abrió GitHub: pulsa “Add people”, escribe su usuario y elige el rol Write.';
+      window.api.openLink(r.url).catch(() => {});
+    }
+  } catch (e) { st.textContent = cleanError(e); }
+});
 $('ad-perm-add').addEventListener('click', async () => {
   $('ad-perm-status').textContent = 'Comprobando el nick en Mojang…';
   try {
@@ -2592,6 +2756,9 @@ function paintTeam() {
     trLab.title = 'Homenaje: tarjeta especial arriba del todo';
     tr.addEventListener('change', () => { m.tribute = tr.checked; paintTeam(); });
     row.append(f.nick, f.role, star, trLab, del);
+    const lk = el('details', 'team-links');
+    lk.append(el('summary', '', `Enlaces (${(m.links || []).length})`), linksEditor(m));
+    row.append(lk);
     if (m.tribute) {
       row.classList.add('has-tribute');
       const sub = el('div', 'team-tribute-fields');
@@ -2650,15 +2817,25 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   const root = document.querySelector('#page-settings .settings');
   if (!root) return;
   const GROUPS = [
+    ['Cuenta', ['Mi cuenta', 'Privacidad', 'Modo administrador']],
     ['Visualización', ['Apariencia', 'Idioma']],
     ['Juego', ['Memoria y Java', 'Ventana del juego', 'Al jugar']],
-    ['Cuenta', ['Modo administrador']],
     ['Sistema', ['Actualizaciones', 'Archivos del juego']]
   ];
   const sets = [...root.querySelectorAll(':scope > fieldset')];
   const byName = new Map(sets.map((f) => [f.querySelector('legend').textContent.trim(), f]));
   const nav = el('nav', 'set-nav');
   nav.setAttribute('aria-label', 'Secciones de ajustes');
+  const prof = el('div', 'set-profile');
+  const pav = el('img', 'set-prof-avatar'); pav.id = 'set-prof-avatar'; pav.alt = ''; pav.hidden = true;
+  const ptx = el('div', 'set-prof-text');
+  const pname = el('strong', 'pii', 'Sin sesión'); pname.id = 'set-prof-name';
+  const pmode = el('span', 'muted', ''); pmode.id = 'set-prof-mode';
+  ptx.append(pname, pmode);
+  prof.append(pav, ptx);
+  const search = document.createElement('input');
+  search.type = 'search'; search.className = 'set-search'; search.placeholder = 'Buscar ajustes'; search.setAttribute('aria-label', 'Buscar ajustes');
+  nav.append(prof, search);
   const body = el('div', 'set-body');
   const items = [];
   const show = (name) => {
@@ -2679,14 +2856,31 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
     });
   });
   sets.forEach((f) => { if (!body.contains(f)) body.append(f); }); // por si queda alguna sin grupo
+  // Búsqueda: filtra el menú por el nombre de la sección o por cualquier texto de sus ajustes.
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    let first = null;
+    items.forEach((it) => {
+      const f = byName.get(it.name);
+      const hit = !q || it.name.toLowerCase().includes(q) || f.textContent.toLowerCase().includes(q);
+      it.btn.dataset.hide = hit ? '' : '1';
+      if (hit && !first && !(f.hidden)) first = it.name;
+    });
+    nav.querySelectorAll('.nav-group').forEach((g) => {
+      let n = g.nextElementSibling; let any = false;
+      while (n && n.classList.contains('set-item')) { if (!n.dataset.hide && !n.hidden) any = true; n = n.nextElementSibling; }
+      g.dataset.hide = any ? '' : '1';
+    });
+    if (q && first) show(first);
+  });
   root.append(nav, body);
   root.classList.add('set-split');
   // El botón del modo administrador sigue a la visibilidad de su sección.
   const adm = byName.get('Modo administrador');
   if (adm) {
-    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) { it.btn.hidden = adm.hidden; const lab = it.btn.previousElementSibling; if (lab && lab.classList.contains('nav-group')) lab.hidden = adm.hidden; } if (adm.hidden && adm.dataset.on) show('Apariencia'); };
+    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) { it.btn.hidden = adm.hidden; const lab = it.btn.previousElementSibling; if (lab && lab.classList.contains('nav-group')) lab.hidden = adm.hidden; } if (adm.hidden && adm.dataset.on) show('Mi cuenta'); };
     new MutationObserver(sync).observe(adm, { attributes: true, attributeFilter: ['hidden'] });
     sync();
   }
-  show('Apariencia');
+  show('Mi cuenta');
 })();
