@@ -142,7 +142,7 @@ Límite honesto: quien conozca la contraseña puede instalar el modpack y sacar 
 
 ## 4c. Novedades del launcher
 
-- **Temas**: oscuro, claro, color principal a elección, imagen de fondo propia con oscurecido y desenfoque (Ajustes > Apariencia).
+- **Temas**: oscuro, claro, color principal a elección y decoración de temporada (Ajustes > Apariencia). Los jugadores ya no pueden subir una imagen de fondo propia (v1.0.45); el fondo lo decides tú desde el panel.
 - **Efectos**: partículas, transiciones, tarjetas que se inclinan y brillo en Jugar. Se apagan con una casilla y se detienen solos cuando la ventana está oculta.
 - **Ahorro de memoria**: al abrir Minecraft el launcher cierra su ventana y deja un icono en la bandeja (o se minimiza, a elección). Al cerrar el juego vuelve con la sesión y la consola intactas.
 - **Skin en 3D**: tu muñeco aparece en 3D en el launcher (sin librerías, con WebGL). Se gira arrastrando y hace animaciones: camina, saluda, pica un bloque de tierra con partículas, salta y gira. Con un clic saluda o salta. Si WebGL no está disponible, usa una vista 2D.
@@ -239,6 +239,16 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Tema:** Ajustes → Apariencia → Nova Neón (por defecto en la 1.0.34; puedes volver a Oscuro, Claro u OLED).
 - **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática: Halloween 10–31 oct, Navidad 1 nov–27 dic, Año Nuevo 28 dic–6 ene. Se apaga con «Sin decoración» o quitando «Efectos animados».
 
+## 4l. Novedades 1.0.44 y 1.0.45
+
+- **Modo streamer** (Ajustes > Privacidad): oculta tu nick de forma manual o automática al detectar OBS, Streamlabs, XSplit y similares.
+- **Ajustes** rediseñados con buscador, perfil y grupos. Estas secciones llevan "Mi cuenta" y "Privacidad".
+- **Modpack del evento bloqueado**: al jugar el evento se quitan los mods, resourcepacks y shaders añadidos o modificados. Se desactiva por evento con la casilla del editor (`lockPack: false`). "Ver mods del evento" es solo para admins.
+- **Admins con su propio nombre**: en **Admin → Permisos** invita a cada persona como colaboradora de GitHub; cada una crea su token y sus cambios salen con su nombre, sin compartir el tuyo.
+- **Sesión premium**: vuelve a pedir inicio de sesión a los 30 días. Los no premium no caducan.
+- **Skins guardadas**: elige un archivo, pulsa "Guardar en mi lista" y cámbiate con un clic.
+- **Botones laterales del mouse**: atrás y adelante. Los diálogos tienen ✕ y las confirmaciones usan la estética del launcher.
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).
@@ -295,9 +305,13 @@ Archivo `data/events.json`. Cada evento es un bloque; copia uno y cambia los dat
   "image": "images/halloween-torneo.png",
   "description": "Tres noches de supervivencia con 40 jugadores.",
   "participants": 40,
-  "winner": "NickDelGanador"
+  "winners": ["NickDelGanador"],
+  "roster": [ { "nick": "Jugador1", "links": [ { "name": "Twitch", "url": "https://twitch.tv/jugador1" } ] } ],
+  "collabs": [ { "nick": "OtroCreador", "role": "Mapa", "links": [ { "name": "YouTube", "url": "https://youtube.com/@otro" } ] } ]
 }
 ```
+
+- `roster` (participantes con nombre) y `collabs` (personas con las que Nova PX colaboró) son opcionales; cada uno muestra su skin, un texto (`role`) y enlaces `https`. Se editan en **Admin → Eventos**.
 
 - `image` es opcional (recomendado 1280 x 720 px, formato 16:9). Sube el archivo a `data/images/` del repositorio.
 - Se ordenan solos por fecha, del más reciente al más antiguo. Usa siempre el formato `AAAA-MM-DD`.
@@ -307,8 +321,12 @@ Archivo `data/events.json`. Cada evento es un bloque; copia uno y cambia los dat
 Archivo `data/team.json`:
 
 ```
-{ "nick": "TuNickDeMinecraft", "role": "Desarrollo de mods" }
+{ "nick": "TuNickDeMinecraft", "role": "Desarrollo de mods",
+  "name": "Nombre real", "bio": "Presentación corta", "avatar": "images/mi-foto.png",
+  "links": [ { "name": "Instagram", "url": "https://instagram.com/tu_usuario" } ] }
 ```
+
+`name`, `bio`, `avatar` (foto que no es de Minecraft) y `links` (solo `https`, hasta 6) son opcionales. Al hacer clic en una persona el launcher abre su perfil con todo eso. Se editan sin tocar el archivo en **Admin → Equipo → Perfil y enlaces**.
 
 La skin y el modelo 3D salen solos a partir del `nick` (debe existir como cuenta premium para ver su skin real; si no, se ve la de Steve). Para agregar a alguien, copia una línea; para quitar a alguien, bórrala.
 
@@ -321,7 +339,7 @@ Archivo `data/news.json`, con `title`, `date` y `text`.
 
 ## Ideas para la siguiente versión
 
-Recordar sesión premium, instalar Java automáticamente, soporte NeoForge y Quilt, carpeta separada por modpack, selector de eventos (varios modpacks a la vez), instalar configuraciones y shaders del modpack, y estadísticas de jugadores en el historial.
+Skins para no premium (CustomSkinLoader), instalar Java automáticamente, soporte NeoForge y Quilt, carpeta separada por modpack, selector de eventos (varios modpacks a la vez), instalar configuraciones y shaders del modpack, y estadísticas de jugadores en el historial.
 
 
 ## Panel administrador: cambiar el launcher sin reinstalar
