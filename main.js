@@ -13,7 +13,6 @@ const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
 const serversLib = require('./lib/servers');
 const langLib = require('./lib/langpack');
-const comm = require('./lib/communities');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
 const skinsApi = require('./lib/skins');
 const { classifyNetworkError } = require('./lib/errors');
@@ -97,7 +96,6 @@ function defaultSettings() {
     design: 2,
     lang: 'auto',
     season: 'auto',
-    activeCommunity: '',
     bgDim: 55,
     bgBlur: 6,
     effects: true,
@@ -144,7 +142,6 @@ function cleanSettings(s) {
     accent: s.design !== 2 && String(s.accent).toLowerCase() === '#f2b84b' ? '#35d6ff' : /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
     lang: s.lang === 'auto' || langLib.CODE_RE.test(String(s.lang || '')) ? String(s.lang || 'auto') : 'auto',
     season: ['auto', 'off', 'navidad', 'halloween', 'anio'].includes(s.season) ? s.season : 'auto',
-    activeCommunity: comm.ID_RE.test(String(s.activeCommunity || '')) ? String(s.activeCommunity) : '',
     bgDim: num(s.bgDim, 0, 90, d.bgDim),
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
     effects: s.effects !== false,
@@ -181,83 +178,24 @@ async function fetchJson(url) {
 
 // Orden de lectura: 1) GitHub (siempre lo más nuevo), 2) última copia descargada (sin internet),
 // 3) copia incluida en el instalador. Así el launcher nunca se queda sin datos.
-/* ---------- comunidades ---------- */
-// Cada comunidad (evento, equipo, noticias) vive en su propio repositorio y solo aparece si el jugador puso su código.
-// Lo propio del launcher (recomendados, registro de códigos y, sin comunidad, las novedades) viene de config.remoteBase.
-const LEGACY_COMMUNITY = 'novapx'; // quienes ya usaban el launcher conservan sus carpetas y su caché con este id
-const LAUNCHER_DATA = ['recommended', 'communities'];
-const EMPTY_DATA = { manifest: {}, events: [], team: [], admins: [], news: [] };
-const COMMUNITIES_FILE = path.join(app.getPath('userData'), 'communities.json');
-let communityList = null;
-
-function communities() {
-  if (communityList) return communityList;
-  let list = null;
-  try {
-    list = JSON.parse(fs.readFileSync(COMMUNITIES_FILE, 'utf8'));
-  } catch {}
-  if (Array.isArray(list)) {
-    communityList = list.map(comm.sanitizeCommunity).filter(Boolean);
-  } else {
-    // Primera vez con comunidades: quien ya tenía datos del launcher conserva Nova PX; una instalación nueva empieza limpia.
-    const existing = [SETTINGS_FILE, KEYS_FILE, ACCOUNT_FILE, MODPACKS_FILE].some((f) => fs.existsSync(f));
-    communityList = existing && config.remoteBase
-      ? [comm.sanitizeCommunity({ id: LEGACY_COMMUNITY, name: 'Nova PX', remoteBase: config.remoteBase, owners: config.adminOwners || [] })].filter(Boolean)
-      : [];
-    saveCommunities();
-  }
-  return communityList;
-}
-function saveCommunities() {
-  try {
-    fs.mkdirSync(path.dirname(COMMUNITIES_FILE), { recursive: true });
-    fs.writeFileSync(COMMUNITIES_FILE, JSON.stringify(communityList, null, 2));
-  } catch (err) {
-    console.warn('No se pudieron guardar las comunidades:', err.message);
-  }
-}
-function activeCommunity() {
-  const list = communities();
-  const id = readSettings().activeCommunity;
-  return list.find((c) => c.id === id) || list[0] || null;
-}
-const publicCommunity = (c) => ({ id: c.id, name: c.name, description: c.description });
-const norm = (s) => String(s || '').toLowerCase();
-const sameRepo = (a, b) => norm(a).replace(/\/$/, '') === norm(b).replace(/\/$/, '');
-
-// Orden de lectura: 1) GitHub (siempre lo más nuevo), 2) última copia descargada (sin internet),
-// 3) copia incluida en el instalador (solo para lo del launcher y para Nova PX). Así el launcher nunca se queda sin datos.
 async function loadData(name) {
-  const c = LAUNCHER_DATA.includes(name) || (name === 'news' && !activeCommunity()) ? null : activeCommunity();
-  if (!c && !LAUNCHER_DATA.includes(name) && name !== 'news') return JSON.parse(JSON.stringify(EMPTY_DATA[name] ?? {}));
-  const base = (c ? c.remoteBase : config.remoteBase) || '';
-  const cacheDir = !c || c.id === LEGACY_COMMUNITY ? DATA_CACHE_DIR : path.join(DATA_CACHE_DIR, c.id);
-  const bundled = !c || c.id === LEGACY_COMMUNITY;
-  let data;
-  if (base) {
-    const cacheFile = path.join(cacheDir, `${name}.json`);
+  if (config.remoteBase) {
+    const cacheFile = path.join(DATA_CACHE_DIR, `${name}.json`);
     try {
-      data = await fetchJson(`${base.replace(/\/$/, '')}/${name}.json?t=${Date.now()}`);
+      const remote = await fetchJson(`${config.remoteBase.replace(/\/$/, '')}/${name}.json?t=${Date.now()}`);
       try {
-        fs.mkdirSync(cacheDir, { recursive: true });
-        fs.writeFileSync(cacheFile, JSON.stringify(data));
+        fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
+        fs.writeFileSync(cacheFile, JSON.stringify(remote));
       } catch {}
+      return remote;
     } catch (err) {
       console.warn(`No se pudo leer ${name} remoto:`, err.message);
       try {
-        data = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        return JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
       } catch {}
     }
   }
-  if (data === undefined) {
-    if (bundled) data = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', `${name}.json`), 'utf8'));
-    else data = JSON.parse(JSON.stringify(EMPTY_DATA[name] ?? {}));
-  }
-  // Carpeta propia por comunidad: el id del evento lleva el de la comunidad para que dos eventos nunca se mezclen.
-  if (name === 'manifest' && c && c.id !== LEGACY_COMMUNITY && data && data.event && data.event.id) {
-    data.event = { ...data.event, id: `${c.id}-${data.event.id}` };
-  }
-  return data;
+  return JSON.parse(fs.readFileSync(path.join(__dirname, 'data', `${name}.json`), 'utf8'));
 }
 
 function sha1OfFile(file) {
@@ -625,11 +563,9 @@ function applyDiscordSetting() {
 app.on('before-quit', () => rpc.stop());
 
 app.whenReady().then(() => {
-  communities(); // decide la migración antes de que algo cree archivos nuevos
   if (!gotLock) return;
   applyDiscordSetting();
   setTimeout(pingUsage, 3000);
-  setTimeout(() => refreshCommunities().catch(() => {}), 2500);
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
@@ -647,7 +583,7 @@ app.on('window-all-closed', () => {
 ipcMain.handle('config:get', () => ({
   launcherName: config.launcherName,
   defaultRamGb: config.defaultRamGb,
-  remoteBase: ((activeCommunity() || {}).remoteBase || config.remoteBase || '').replace(/\/$/, ''),
+  remoteBase: (config.remoteBase || '').replace(/\/$/, ''),
   version: app.getVersion()
 }));
 
@@ -680,7 +616,7 @@ async function apiRequest(url, opts = {}) {
     const res = await fetch(url, {
       method: opts.method || 'GET',
       headers: {
-        'User-Agent': `Sagitta/${app.getVersion()} (github.com/javierroman94/Nova-PX-Event-Launcher)`,
+        'User-Agent': `javierroman94/Nova-PX-Event-Launcher/${app.getVersion()} (discord.gg/VAfuFEQtjv)`,
         ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
         ...(opts.headers || {})
       },
@@ -746,7 +682,7 @@ async function downloadWithProgress(url, onProgress) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15 * 60 * 1000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': `Sagitta/${app.getVersion()}` } });
+    const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': `Nova-PX-Event-Launcher/${app.getVersion()}` } });
     if (!res.ok) throw new Error(`HTTP ${res.status} al descargar el modpack`);
     const total = Number(res.headers.get('content-length')) || 0;
     if (total > 1.5 * 1024 ** 3) throw new Error('El modpack es demasiado grande para instalarlo desde el launcher.');
@@ -837,7 +773,7 @@ ipcMain.handle('modpacks:folder', async (_e, id) => {
 
 /* ---------- instancias propias: crear, ajustes, duplicar, respaldos, actualizar ---------- */
 
-// "Recomendados": lista editable en data/recommended.json (en GitHub). Solo Modrinth, y solo modpacks.
+// "Recomendados por Nova PX": lista editable en data/recommended.json (en GitHub). Solo Modrinth, y solo modpacks.
 ipcMain.handle('modpacks:recommended', async () => {
   let list;
   try {
@@ -1026,265 +962,63 @@ const ADMIN_FILE = path.join(app.getPath('userData'), 'admin.token');
 let adminToken = null;
 let adminChecked = false;
 
-function repoFromBase(base) {
-  const m = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\//.exec(base || '');
-  if (!m) throw new Error('La dirección de datos no apunta a un repositorio de GitHub.');
+function repoFromConfig() {
+  const m = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\//.exec(config.remoteBase || '');
+  if (!m) throw new Error('config.remoteBase no apunta a un repositorio de GitHub.');
   return { owner: m[1], repo: m[2], branch: m[3] };
 }
-function adminBase() {
-  const c = activeCommunity();
-  if (!c) throw new Error('Primero entra en una comunidad con su código.');
-  return c.remoteBase;
-}
-// Un token por repositorio (así cada comunidad tiene el suyo). El del repositorio del launcher conserva el archivo de siempre.
-function tokenFile(base) {
-  const r = repoFromBase(base);
-  const mine = repoFromBase(config.remoteBase);
-  if (norm(`${r.owner}/${r.repo}`) === norm(`${mine.owner}/${mine.repo}`)) return ADMIN_FILE;
-  return path.join(app.getPath('userData'), `admin-${crypto.createHash('sha1').update(norm(`${r.owner}/${r.repo}`)).digest('hex').slice(0, 12)}.token`);
-}
-const tokenCache = new Map();
-function readAdminToken(base = adminBase()) {
-  const file = tokenFile(base);
-  if (tokenCache.has(file)) return tokenCache.get(file);
-  let t = null;
+function readAdminToken() {
+  if (adminToken) return adminToken;
   try {
-    if (safeStorage.isEncryptionAvailable()) t = safeStorage.decryptString(fs.readFileSync(file));
+    if (safeStorage.isEncryptionAvailable()) adminToken = safeStorage.decryptString(fs.readFileSync(ADMIN_FILE));
   } catch {}
-  if (t) tokenCache.set(file, t);
-  return t;
+  return adminToken;
 }
-function saveAdminToken(base, t) {
-  fs.writeFileSync(tokenFile(base), safeStorage.encryptString(t));
-  tokenCache.set(tokenFile(base), t);
-}
-function dropAdminToken(base) {
-  const f = tokenFile(base);
-  tokenCache.delete(f);
-  fs.rmSync(f, { force: true });
-}
-// Dueños del launcher (config): pueden crear comunidades. Dueños de una comunidad: los que figuran en su código.
-const isOwnerNick = (owners) => !!session && session.mode === 'premium' && (owners || []).some((o) => norm(o) === norm(session.name));
-const ownerEligible = () => isOwnerNick(config.adminOwners);
 // Quién puede ver el modo administrador: los dueños (config) y las cuentas premium que ellos autoricen (data/admins.json).
 async function adminEligible() {
   if (!session) return false;
-  const c = activeCommunity();
-  if (!c) return false;
   let admins = [];
   try {
     admins = await loadData('admins');
   } catch {}
-  const owners = [...(c.owners || []), ...(c.id === LEGACY_COMMUNITY ? config.adminOwners || [] : [])];
-  return adminLib.isAllowedAdmin(session, owners, admins);
+  return adminLib.isAllowedAdmin(session, config.adminOwners || [], admins);
 }
-function gh(base = adminBase()) {
-  const token = readAdminToken(base);
+function gh() {
+  const token = readAdminToken();
   if (!token) throw new Error('Primero activa el modo administrador en Ajustes.');
-  return new GithubRepo({ ...repoFromBase(base), token, userAgent: `Sagitta/${app.getVersion()}` });
-}
-// La comprobación de escritura crea y borra una rama temporal: se recuerda unos minutos para no repetirla en cada acción.
-const checkedAt = new Map();
-async function verifiedRepo(base) {
-  const r = gh(base);
-  const key = `${tokenFile(base)}`;
-  if (Date.now() - (checkedAt.get(key) || 0) > 5 * 60 * 1000) {
-    const c = await r.check();
-    if (!c.canPush) throw new Error('Ese token no tiene permiso de escritura en el repositorio.');
-    checkedAt.set(key, Date.now());
-  }
-  return r;
+  return new GithubRepo({ ...repoFromConfig(), token, userAgent: `Nova-PX-Event-Launcher/${app.getVersion()}` });
 }
 async function requireAdmin() {
   if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador. Inicia sesión con tu cuenta premium autorizada.');
-  return verifiedRepo(adminBase());
+  const r = gh();
+  const c = await r.check();
+  if (!c.canPush) throw new Error('Ese token no tiene permiso de escritura en el repositorio.');
+  return r;
 }
 
 ipcMain.handle('admin:status', async () => {
-  const owner = ownerEligible();
-  const community = activeCommunity();
   const eligible = await adminEligible();
-  if (!eligible) return { admin: false, eligible: false, owner };
-  if (!readAdminToken()) return { admin: false, eligible: true, owner, community: community.name };
+  if (!eligible) return { admin: false, eligible: false };
+  if (!readAdminToken()) return { admin: false, eligible: true };
   try {
-    const r = await verifiedRepo(community.remoteBase);
-    return { admin: true, eligible: true, owner, community: community.name, repo: `${r.owner}/${r.repo}` };
+    const c = await gh().check();
+    adminChecked = c.canPush;
+    return { admin: c.canPush, eligible: true, repo: c.fullName };
   } catch (err) {
-    return { admin: false, eligible: true, owner, community: community.name, error: err.message };
+    return { admin: false, eligible: true, error: err.message };
   }
-});
-
-/* ---------- IPC: comunidades ---------- */
-const communityState = () => ({ list: communities().map(publicCommunity), active: (activeCommunity() || {}).id || null, owner: ownerEligible() });
-ipcMain.handle('communities:list', () => communityState());
-ipcMain.handle('communities:setActive', (_e, id) => {
-  if (!communities().some((c) => c.id === cleanStr(id, 40))) throw new Error('Esa comunidad ya no está en tu lista.');
-  writeSettings({ ...readSettings(), activeCommunity: cleanStr(id, 40) });
-  return communityState();
-});
-ipcMain.handle('communities:join', async (_e, code) => {
-  if (comm.normalizeCode(code).length < 8) throw new Error('Escribe el código completo que te dieron.');
-  let registry;
-  try {
-    registry = await loadData('communities');
-  } catch {
-    throw new Error('No se pudo comprobar el código. Revisa tu conexión a internet.');
-  }
-  const found = comm.lookup(registry, code);
-  if (!found) throw new Error('Ese código no corresponde a ninguna comunidad. Revisa que esté bien escrito y que tengas internet.');
-  let target = communities().find((c) => sameRepo(c.remoteBase, found.remoteBase));
-  if (!target) {
-    let id = found.id;
-    for (let i = 2; communities().some((c) => c.id === id); i++) id = `${found.id}-${i}`.slice(0, 32);
-    target = { ...found, id, code: comm.normalizeCode(code) };
-    communities().push(target);
-    saveCommunities();
-  } else if (!target.code) {
-    target.code = comm.normalizeCode(code);
-    saveCommunities();
-  }
-  writeSettings({ ...readSettings(), activeCommunity: target.id });
-  return { ...communityState(), joined: target.name };
-});
-ipcMain.handle('communities:remove', (_e, id) => {
-  const list = communities();
-  const i = list.findIndex((c) => c.id === cleanStr(id, 40));
-  if (i < 0) return communityState();
-  list.splice(i, 1);
-  saveCommunities();
-  if (readSettings().activeCommunity === cleanStr(id, 40)) writeSettings({ ...readSettings(), activeCommunity: (list[0] || {}).id || '' });
-  return communityState();
-});
-
-// Solo para los dueños del launcher: crear el código de una comunidad nueva (se guarda cifrado en data/communities.json).
-const CREATED_FILE = path.join(app.getPath('userData'), 'communities-created.json');
-const readCreated = () => {
-  try {
-    return JSON.parse(fs.readFileSync(CREATED_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
-};
-function requireOwner() {
-  if (!ownerEligible()) throw new Error('Solo los dueños del launcher pueden hacer esto. Inicia sesión con tu cuenta premium de dueño.');
-}
-ipcMain.handle('communities:ownerStatus', () => {
-  requireOwner();
-  return { hasToken: !!readAdminToken(config.remoteBase), created: readCreated() };
-});
-
-// Los permisos de cada comunidad viven en el registro. Al abrir el launcher se refrescan: si el dueño cambia los
-// administradores de una comunidad, sus jugadores lo ven sin reinstalar. Si retira el código, la comunidad se oculta.
-async function refreshCommunities() {
-  const list = communities();
-  if (!list.some((c) => c.code)) return;
-  let registry;
-  try {
-    registry = await fetchJson(`${config.remoteBase.replace(/\/$/, '')}/communities.json?t=${Date.now()}`);
-  } catch {
-    return; // sin internet: se queda como está
-  }
-  const entries = (registry && registry.entries) || {};
-  let changed = false;
-  for (const c of list.slice()) {
-    if (!c.code) continue;
-    const found = comm.lookup(registry, c.code);
-    if (!found) {
-      if (Object.keys(entries).length) {
-        list.splice(list.indexOf(c), 1);
-        changed = true;
-      }
-      continue;
-    }
-    const next = { ...c, name: found.name, owners: found.owners, description: found.description, remoteBase: found.remoteBase };
-    if (JSON.stringify(next) !== JSON.stringify(c)) {
-      list[list.indexOf(c)] = next;
-      changed = true;
-    }
-  }
-  if (changed) {
-    saveCommunities();
-    const act = readSettings().activeCommunity;
-    if (act && !list.some((c) => c.id === act)) writeSettings({ ...readSettings(), activeCommunity: (list[0] || {}).id || '' });
-    send('communities:changed', communityState());
-  }
-}
-const parseOwners = (text) => {
-  const owners = String(text || '').split(/[\s,;]+/).filter(Boolean);
-  if (owners.some((o) => !/^[A-Za-z0-9_]{3,16}$/.test(o))) throw new Error('Algún nick no es válido (3 a 16 letras, números o _).');
-  return [...new Set(owners)].slice(0, 20);
-};
-// El dueño del launcher decide quién administra cada comunidad. Cada una publica solo en su propio repositorio.
-ipcMain.handle('communities:setOwners', async (_e, p = {}) => {
-  requireOwner();
-  const created = readCreated();
-  const item = created.find((x) => x.code === comm.normalizeCode(p.code) || x.code === String(p.code));
-  if (!item) throw new Error('No encuentro esa comunidad entre las que creaste en este equipo.');
-  const owners = parseOwners(p.owners);
-  const repo = comm.parseRepoInput(item.branch && item.branch !== 'main' ? `${item.repo}#${item.branch}` : item.repo);
-  const community = comm.sanitizeCommunity({ id: item.id, name: item.name, remoteBase: comm.baseFromRepo(repo.owner, repo.repo, repo.branch), owners, description: item.description });
-  if (!community) throw new Error('No se pudo actualizar esa comunidad.');
-  const r = await verifiedRepo(config.remoteBase);
-  const cur = ((await r.getJson('data/communities.json')) || {}).data || { version: 1, entries: {} };
-  await r.putJson('data/communities.json', comm.addEntry(cur, community, item.code), `Administradores de ${item.name} actualizados`);
-  item.owners = owners;
-  fs.writeFileSync(CREATED_FILE, JSON.stringify(created, null, 2));
-  return { created };
-});
-ipcMain.handle('communities:revoke', async (_e, code) => {
-  requireOwner();
-  const created = readCreated();
-  const i = created.findIndex((x) => x.code === String(code));
-  if (i < 0) throw new Error('No encuentro esa comunidad entre las que creaste en este equipo.');
-  const r = await verifiedRepo(config.remoteBase);
-  const cur = ((await r.getJson('data/communities.json')) || {}).data || { version: 1, entries: {} };
-  await r.putJson('data/communities.json', comm.removeEntry(cur, created[i].code), `Código de ${created[i].name} retirado`);
-  created.splice(i, 1);
-  fs.writeFileSync(CREATED_FILE, JSON.stringify(created, null, 2));
-  return { created };
-});
-ipcMain.handle('communities:registryLogin', async (_e, token) => {
-  requireOwner();
-  const t = cleanStr(token, 300).trim();
-  if (!/^[A-Za-z0-9_]{20,300}$/.test(t)) throw new Error('Ese token no tiene el formato de un token de GitHub.');
-  const c = await new GithubRepo({ ...repoFromBase(config.remoteBase), token: t }).check();
-  if (!c.canPush) throw new Error('Ese token puede ver el repositorio pero no escribir en él. Necesita "Contents: Read and write".');
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar el token de forma cifrada.');
-  saveAdminToken(config.remoteBase, t);
-  checkedAt.set(tokenFile(config.remoteBase), Date.now());
-  return { hasToken: true };
-});
-ipcMain.handle('communities:create', async (_e, p = {}) => {
-  requireOwner();
-  const name = cleanStr(p.name, 40).trim();
-  if (!name) throw new Error('Ponle un nombre a la comunidad.');
-  const repo = comm.parseRepoInput(p.repo);
-  if (!repo) throw new Error('Escribe el repositorio como dueño/repositorio, por ejemplo javierroman94/mi-comunidad.');
-  const owners = parseOwners(p.owners);
-  const id = cleanStr(p.id, 32).trim().toLowerCase() || name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32);
-  const community = comm.sanitizeCommunity({ id, name, remoteBase: comm.baseFromRepo(repo.owner, repo.repo, repo.branch), owners, description: cleanStr(p.description, 200) });
-  if (!community) throw new Error('No se pudo armar la comunidad con esos datos.');
-  const r = await verifiedRepo(config.remoteBase);
-  const code = comm.makeCode();
-  const cur = ((await r.getJson('data/communities.json')) || {}).data || { version: 1, entries: {} };
-  await r.putJson('data/communities.json', comm.addEntry(cur, community, code), `Comunidad nueva (desde el launcher)`);
-  const created = readCreated();
-  created.push({ id: community.id, name, repo: `${repo.owner}/${repo.repo}`, branch: repo.branch, owners, description: community.description, code, created: new Date().toISOString() });
-  fs.writeFileSync(CREATED_FILE, JSON.stringify(created, null, 2));
-  return { code, name, created };
 });
 ipcMain.handle('admin:login', async (_e, token) => {
   if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
-  const base = adminBase();
   const t = cleanStr(token, 300).trim();
   if (!/^[A-Za-z0-9_]{20,300}$/.test(t)) throw new Error('Ese token no tiene el formato de un token de GitHub.');
-  const r = new GithubRepo({ ...repoFromBase(base), token: t });
+  const r = new GithubRepo({ ...repoFromConfig(), token: t });
   const c = await r.check();
   if (!c.canPush) throw new Error('Ese token puede ver el repositorio pero no escribir en él. Crea uno con permiso "Contents: Read and write".');
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar el token de forma cifrada, así que no se activa el modo administrador.');
-  saveAdminToken(base, t);
-  checkedAt.set(tokenFile(base), Date.now());
-  return { admin: true, repo: c.fullName, community: (activeCommunity() || {}).name };
+  fs.writeFileSync(ADMIN_FILE, safeStorage.encryptString(t));
+  adminToken = t;
+  return { admin: true, repo: c.fullName };
 });
 // Clave del contador de usuarios (la que pusiste como ADMIN_KEY en Cloudflare). Se guarda cifrada, como el token.
 const USERS_KEY_FILE = path.join(app.getPath('userData'), 'users.key');
@@ -1296,7 +1030,7 @@ function readUsersKey() {
   }
 }
 async function usersCall(method, pathname) {
-  if (!ownerEligible()) throw new Error('Tu cuenta no tiene permiso de administrador.');
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
   if (!USAGE_URL) throw new Error('Falta la dirección del contador (telemetryUrl en config/launcher.config.json).');
   const key = readUsersKey();
   if (!key) throw new Error('NO_KEY');
@@ -1306,7 +1040,7 @@ async function usersCall(method, pathname) {
   return res.json();
 }
 ipcMain.handle('admin:usersKey', async (_e, key) => {
-  if (!ownerEligible()) throw new Error('Tu cuenta no tiene permiso de administrador.');
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
   const k = cleanStr(key, 200).trim();
   if (k.length < 16) throw new Error('La clave debe tener al menos 16 caracteres.');
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar la clave de forma cifrada.');
@@ -1323,13 +1057,13 @@ ipcMain.handle('admin:userDelete', async (_e, id) => {
 });
 ipcMain.handle('admin:logout', () => {
   fs.rmSync(USERS_KEY_FILE, { force: true });
-  const c = activeCommunity();
-  if (c) dropAdminToken(c.remoteBase);
+  adminToken = null;
+  fs.rmSync(ADMIN_FILE, { force: true });
 });
 ipcMain.handle('admin:load', async () => {
   const r = await requireAdmin();
   const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
-  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], events: (await get('events')) || [], admins: (await get('admins')) || [], owners: [...((activeCommunity() || {}).owners || []), ...(((activeCommunity() || {}).id === LEGACY_COMMUNITY) ? config.adminOwners || [] : [])] };
+  return { manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], events: (await get('events')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
 });
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
@@ -1548,7 +1282,7 @@ ipcMain.handle('modpacks:export', async (_e, p = {}) => {
   const { entry, root } = packRoot(p.id);
   if (launching) throw new Error('Cierra Minecraft antes de exportar.');
   const res = await dialog.showSaveDialog(mainWindow, {
-    title: 'Exportar modpack', defaultPath: `${modpacks.slugify(entry.title)}.novapx`, filters: [{ name: 'Modpack Sagitta', extensions: ['novapx'] }]
+    title: 'Exportar modpack', defaultPath: `${modpacks.slugify(entry.title)}.novapx`, filters: [{ name: 'Modpack Nova PX', extensions: ['novapx'] }]
   });
   if (res.canceled || !res.filePath) return null;
   const dest = res.filePath.toLowerCase().endsWith('.novapx') ? res.filePath : `${res.filePath}.novapx`;

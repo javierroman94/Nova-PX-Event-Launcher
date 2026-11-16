@@ -119,7 +119,7 @@ function moveIndicator() {
 
 const PAGE_TITLES = {
   home: ['Inicio', 'Lo que estás jugando y las novedades'],
-  event: ['Evento actual', 'Lo que prepara la comunidad para ti'],
+  event: ['Evento actual', 'Lo que prepara Nova PX para ti'],
   events: ['Historial', 'Los eventos anteriores del equipo'],
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
@@ -300,10 +300,9 @@ async function renderContinue() {
   const evGo = el('span', 'cont-when', eventActive ? 'Ver evento →' : 'Ver detalles →');
   ev.append(evIcon, evBody, evGo);
   ev.addEventListener('click', () => goTo('event'));
-  if (comm.list.length) box.append(ev);
+  box.append(ev);
 
   renderRecent(packs);
-  renderStage(packs);
   packs
     .slice()
     .sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))
@@ -336,71 +335,6 @@ async function renderContinue() {
     go.addEventListener('click', () => goTo('modpacks'));
     hint.append(go);
     box.append(hint);
-  }
-}
-
-/* ---------- inicio: portada de juego rápido ---------- */
-let stagePick = null; // 'event' o id de modpack elegido en la barra rápida
-function renderStage(packs) {
-  const sorted = packs.slice().sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')));
-  const hasEvent = comm.list.length > 0;
-  const items = [];
-  if (hasEvent) items.push({ key: 'event', title: eventInfo.name, icon: eventInfo.logo || 'images/logo.png', event: true });
-  sorted.slice(0, 8).forEach((p) => items.push({ key: p.id, title: p.title, pack: p }));
-  const cur = items.find((i) => i.key === stagePick) || items.find((i) => i.pack) || items[0];
-  const strip = $('quick-strip');
-  strip.replaceChildren();
-  const lab = el('span', 'quick-label', 'Acceso rápido');
-  strip.append(lab);
-  items.forEach((i) => {
-    const b = el('button', `quick-item${i === cur ? ' on' : ''}`);
-    b.type = 'button';
-    b.title = i.title;
-    b.setAttribute('aria-label', i.title);
-    b.setAttribute('aria-pressed', i === cur ? 'true' : 'false');
-    if (i.pack) b.append(packIcon(i.pack, 'quick-icon'));
-    else { const im = el('img', 'quick-icon'); im.alt = ''; im.src = i.icon; b.append(im); }
-    b.addEventListener('click', () => { stagePick = i.key; renderStage(packs); });
-    strip.append(b);
-  });
-  const hero = $('stage');
-  const chips = $('stage-chips');
-  chips.replaceChildren();
-  const art = $('stage-art');
-  art.hidden = true;
-  $('stage-play').disabled = false;
-  if (!cur) {
-    $('stage-kicker').textContent = 'Bienvenido';
-    $('stage-title').textContent = 'Tu próxima aventura empieza aquí';
-    $('stage-meta').textContent = 'Instala un modpack o únete a una comunidad con su código.';
-    $('stage-play-label').textContent = 'Explorar modpacks';
-    $('stage-play-sub').textContent = '';
-    $('stage-play').onclick = () => goTo('modpacks');
-    hero.dataset.kind = 'empty';
-    return;
-  }
-  hero.dataset.kind = cur.event ? 'event' : 'pack';
-  $('stage-title').textContent = cur.title;
-  if (cur.event) {
-    $('stage-kicker').textContent = 'Evento de tu comunidad';
-    $('stage-meta').textContent = eventActive ? 'Listo para jugar con todos.' : 'El próximo evento todavía no empieza.';
-    chips.append(el('span', 'chip', `Minecraft ${eventInfo.mc || '–'}`), el('span', 'chip', LOADER_NAMES[eventInfo.loader] || eventInfo.loader));
-    if (eventInfo.logo) { art.src = eventInfo.logo; art.hidden = false; }
-    $('stage-play-label').textContent = eventActive ? 'Ir al evento' : 'Ver detalles';
-    $('stage-play-sub').textContent = eventActive ? 'Actualiza y juega' : 'Próximamente';
-    $('stage-play').onclick = () => goTo('event');
-  } else {
-    const p = cur.pack;
-    $('stage-kicker').textContent = p.lastPlayedAt ? `Última vez ${ago(p.lastPlayedAt)}` : 'Tu modpack';
-    $('stage-meta').textContent = 'Todo listo para continuar donde lo dejaste.';
-    chips.append(el('span', 'chip', `Minecraft ${p.mcVersion}`), el('span', 'chip', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
-    const pill = el('span', 'srv-pill');
-    pill.hidden = true;
-    chips.append(pill);
-    fillServerPill(pill, p.id);
-    $('stage-play-label').textContent = `Jugar ${p.mcVersion}`;
-    $('stage-play-sub').textContent = p.title;
-    $('stage-play').onclick = () => playPack(p.id);
   }
 }
 
@@ -2066,162 +2000,6 @@ $('update-check').addEventListener('click', async () => {
   }
 });
 
-/* ---------- comunidades ---------- */
-let comm = { list: [], active: null, owner: false };
-const EVENT_PAGES = ['event', 'events', 'team', 'mods'];
-
-function applyCommunities(st) {
-  comm = st;
-  const has = st.list.length > 0;
-  $('nav-community').hidden = !has;
-  $('home-join').hidden = has;
-  $('top-server').hidden = !has;
-  const sel = $('community-select');
-  sel.replaceChildren();
-  st.list.forEach((c) => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.append(o); });
-  const add = document.createElement('option');
-  add.value = '__add__';
-  add.textContent = '+ Añadir con código…';
-  sel.append(add);
-  if (st.active) sel.value = st.active;
-  // lista en Ajustes
-  const box = $('comm-list');
-  box.replaceChildren();
-  if (!has) box.append(el('p', 'muted', 'Todavía no estás en ninguna comunidad.'));
-  st.list.forEach((c) => {
-    const row = el('div', 'comm-row');
-    const info = el('div', 'comm-info');
-    info.append(el('strong', '', c.name), el('span', 'muted', c.id === st.active ? 'Activa' : ''));
-    const out = el('button', '', 'Salir');
-    out.type = 'button';
-    out.addEventListener('click', async () => {
-      if (!confirm(`¿Salir de "${c.name}"? Tus mundos y archivos se conservan; para volver necesitarás su código.`)) return;
-      applyCommunities(await window.api.communitiesRemove(c.id));
-      await onCommunityChanged();
-    });
-    row.append(info, out);
-    box.append(row);
-  });
-  $('cc-fieldset').hidden = !st.owner;
-  if (st.owner) refreshOwnerBox();
-  moveIndicator();
-}
-
-// Al cambiar de comunidad se recarga todo lo que depende de ella, sin mezclar datos.
-async function onCommunityChanged() {
-  try { remoteBase = ((await window.api.getConfig()).remoteBase) || ''; } catch {}
-  await Promise.allSettled([renderHero(), renderNews(), renderEvents(), renderTeam(), refreshServer()]);
-  refreshAdmin();
-  const cur = document.querySelector('.page.active');
-  if (!comm.list.length && cur && EVENT_PAGES.some((p) => cur.id === `page-${p}`)) goTo('home');
-}
-
-async function initCommunities() {
-  try { applyCommunities(await window.api.communitiesList()); } catch {}
-  try { window.api.onCommunitiesChanged(async (st) => { applyCommunities({ ...comm, ...st }); await onCommunityChanged(); }); } catch {}
-}
-
-let joinAfter = null;
-function openJoin() {
-  $('community-code').value = '';
-  $('community-msg').textContent = '';
-  $('community-modal').showModal();
-  setTimeout(() => $('community-code').focus(), 50);
-}
-$('community-select').addEventListener('change', async (e) => {
-  if (e.target.value === '__add__') { e.target.value = comm.active || ''; openJoin(); return; }
-  try {
-    applyCommunities(await window.api.communitiesSetActive(e.target.value));
-    await onCommunityChanged();
-  } catch (err) { toast(cleanError(err), 'error'); }
-});
-['home-join-btn', 'comm-add'].forEach((id) => $(id).addEventListener('click', openJoin));
-$('community-cancel').addEventListener('click', () => $('community-modal').close());
-async function doJoin() {
-  const btn = $('community-join');
-  btn.disabled = true;
-  $('community-msg').textContent = 'Comprobando el código…';
-  try {
-    const st = await window.api.communitiesJoin($('community-code').value);
-    applyCommunities(st);
-    $('community-modal').close();
-    toast(`Te uniste a ${st.joined}`);
-    await onCommunityChanged();
-    goTo('event');
-  } catch (err) {
-    $('community-msg').textContent = cleanError(err);
-  }
-  btn.disabled = false;
-}
-$('community-join').addEventListener('click', doJoin);
-$('community-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') doJoin(); });
-
-// Dueños: crear el código de una comunidad nueva.
-async function refreshOwnerBox() {
-  try {
-    const s = await window.api.communitiesOwnerStatus();
-    $('cc-token-box').hidden = s.hasToken;
-    $('cc-form').hidden = !s.hasToken;
-    const list = $('cc-list');
-    list.replaceChildren();
-    s.created.slice().reverse().forEach((c) => {
-      const card = el('div', 'comm-card');
-      const row = el('div', 'comm-row');
-      const info = el('div', 'comm-info');
-      info.append(el('strong', '', c.name), el('span', 'muted', `${c.repo} · ${c.code}`));
-      const cp = el('button', '', 'Copiar código');
-      cp.type = 'button';
-      cp.addEventListener('click', () => { navigator.clipboard.writeText(c.code).then(() => toast('Código copiado')).catch(() => toast('No se pudo copiar', 'error')); });
-      row.append(info, cp);
-      const perm = el('div', 'comm-perm');
-      const lab = el('label', 'muted', 'Administradores de esta comunidad (solo ellos pueden publicar su evento)');
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.value = (c.owners || []).join(', ');
-      inp.placeholder = 'NickPremium1, NickPremium2';
-      const save = el('button', '', 'Guardar permisos');
-      save.type = 'button';
-      save.addEventListener('click', async () => {
-        save.disabled = true;
-        try { await window.api.communitiesSetOwners({ code: c.code, owners: inp.value }); toast(`Permisos de ${c.name} actualizados`); }
-        catch (e) { toast(cleanError(e), 'error'); }
-        save.disabled = false;
-      });
-      const rev = el('button', 'danger', 'Retirar código');
-      rev.type = 'button';
-      rev.addEventListener('click', async () => {
-        if (!confirm(`¿Retirar el código de "${c.name}"? Dejará de aparecer a sus jugadores y nadie podrá unirse con él. El repositorio no se borra.`)) return;
-        try { await window.api.communitiesRevoke(c.code); toast('Código retirado'); refreshOwnerBox(); }
-        catch (e) { toast(cleanError(e), 'error'); }
-      });
-      const acts = el('div', 'mp-actions');
-      acts.append(save, rev);
-      perm.append(lab, inp, acts);
-      card.append(row, perm);
-      list.append(card);
-    });
-  } catch {}
-}
-$('cc-login').addEventListener('click', async () => {
-  try {
-    await window.api.communitiesRegistryLogin($('cc-token').value);
-    $('cc-token').value = '';
-    $('cc-msg').textContent = 'Token guardado.';
-    refreshOwnerBox();
-  } catch (e) { $('cc-msg').textContent = cleanError(e); }
-});
-$('cc-create').addEventListener('click', async () => {
-  $('cc-create').disabled = true;
-  $('cc-msg').textContent = 'Creando y publicando…';
-  try {
-    const r = await window.api.communitiesCreate({ name: $('cc-name').value, repo: $('cc-repo').value, owners: $('cc-owners').value });
-    $('cc-msg').textContent = `Código de "${r.name}": ${r.code} (también queda guardado abajo). Compártelo solo con quien deba entrar.`;
-    ['cc-name', 'cc-repo', 'cc-owners'].forEach((id) => ($(id).value = ''));
-    refreshOwnerBox();
-  } catch (e) { $('cc-msg').textContent = cleanError(e); }
-  $('cc-create').disabled = false;
-});
-
 /* ---------- idioma ---------- */
 async function initLanguage(saved) {
   const sel = $('lang-select');
@@ -2315,7 +2093,7 @@ $('wz-offline').addEventListener('click', async () => {
     window.api.systemInfo()
   ]);
 
-  // "Sagitta - Launcher" se muestra en dos líneas: nombre y subtítulo.
+  // "Nova PX - Event Launcher" se muestra en dos líneas: nombre y subtítulo.
   const [brandName, ...brandRest] = cfg.launcherName.split(' - ');
   $('brand-name').textContent = brandName;
   $('brand-sub').textContent = brandRest.join(' - ');
@@ -2339,7 +2117,6 @@ $('wz-offline').addEventListener('click', async () => {
   initLanguage(settings.lang || 'auto');
   refreshPlaytime();
 
-  await initCommunities();
   renderHero();
   renderNews();
   renderEvents();
@@ -2369,18 +2146,18 @@ $('wz-offline').addEventListener('click', async () => {
 /* ---------- modo administrador ---------- */
 let isAdmin = false;
 let adminProgress = null;
-function setAdminUi(on, repo, err, eligible, community) {
+function setAdminUi(on, repo, err, eligible) {
   isAdmin = on;
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
   $('adm-login-box').hidden = on;
   $('adm-logout-box').hidden = !on;
-  $('adm-state').textContent = on ? `Activo en ${community ? `«${community}»` : 'esta comunidad'}: puedes publicar solo en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
+  $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
   moveIndicator();
 }
 function refreshAdmin() {
   window.api.adminStatus().then((r) => {
-    setAdminUi(r.admin, r.repo, r.error, r.eligible, r.community);
+    setAdminUi(r.admin, r.repo, r.error, r.eligible);
     if (!r.admin && $('page-admin').classList.contains('active')) goTo('home');
   }).catch(() => {});
 }
@@ -2390,7 +2167,7 @@ $('adm-login').addEventListener('click', async () => {
   try {
     const r = await window.api.adminLogin($('adm-token').value);
     $('adm-token').value = '';
-    setAdminUi(true, r.repo, undefined, true, r.community);
+    setAdminUi(true, r.repo, undefined, true);
     toast('Modo administrador activado');
   } catch (e) {
     $('adm-state').textContent = cleanError(e);
@@ -2827,7 +2604,6 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   const GROUPS = [
     ['Visualización', ['Apariencia', 'Idioma']],
     ['Juego', ['Memoria y Java', 'Ventana del juego', 'Al jugar']],
-    ['Comunidad', ['Comunidades', 'Crear comunidad']],
     ['Cuenta', ['Modo administrador']],
     ['Sistema', ['Actualizaciones', 'Archivos del juego']]
   ];
@@ -2858,20 +2634,11 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   root.append(nav, body);
   root.classList.add('set-split');
   // El botón del modo administrador sigue a la visibilidad de su sección.
-  const sync = () => {
-    items.forEach((it) => { it.btn.hidden = byName.get(it.name).hidden; });
-    nav.querySelectorAll('.nav-group').forEach((lab) => {
-      let n = lab.nextElementSibling;
-      let any = false;
-      while (n && !n.classList.contains('nav-group')) { if (!n.hidden) any = true; n = n.nextElementSibling; }
-      lab.hidden = !any;
-    });
-    byName.forEach((f) => { if (f.hidden && f.dataset.on) show('Apariencia'); });
-  };
-  ['Modo administrador', 'Crear comunidad'].forEach((n) => {
-    const f = byName.get(n);
-    if (f) new MutationObserver(sync).observe(f, { attributes: true, attributeFilter: ['hidden'] });
-  });
-  sync();
+  const adm = byName.get('Modo administrador');
+  if (adm) {
+    const sync = () => { const it = items.find((x) => x.name === 'Modo administrador'); if (it) { it.btn.hidden = adm.hidden; const lab = it.btn.previousElementSibling; if (lab && lab.classList.contains('nav-group')) lab.hidden = adm.hidden; } if (adm.hidden && adm.dataset.on) show('Apariencia'); };
+    new MutationObserver(sync).observe(adm, { attributes: true, attributeFilter: ['hidden'] });
+    sync();
+  }
   show('Apariencia');
 })();

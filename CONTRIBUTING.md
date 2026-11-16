@@ -1,6 +1,6 @@
 # Cómo colaborar
 
-Gracias por ayudar con **Sagitta**.
+Gracias por ayudar con **Nova PX Event Launcher**.
 
 1. Haz un fork y crea una rama (`git checkout -b mi-cambio`).
 2. `npm install`, luego `npm start` para probar y `npm test` antes de enviar.

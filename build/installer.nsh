@@ -1,6 +1,5 @@
-; Al actualizar desde Nova PX Event Launcher a Sagitta: se quitan los accesos directos con el nombre anterior
-; (el nuevo instalador crea los de "Sagitta"), para que no queden duplicados.
+; Al volver a "Nova PX Event Launcher": se quitan los accesos directos "Sagitta" de las versiones 1.0.35 a 1.0.39.
 !macro customInstall
-  Delete "$DESKTOP\Nova PX Event Launcher.lnk"
-  Delete "$SMPROGRAMS\Nova PX Event Launcher.lnk"
+  Delete "$DESKTOP\Sagitta.lnk"
+  Delete "$SMPROGRAMS\Sagitta.lnk"
 !macroend

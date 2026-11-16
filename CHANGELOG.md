@@ -2,23 +2,8 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
-## 1.0.39
-- Limpieza de marca: README, guías, plantillas y textos del programa describen un launcher normal; los eventos son opcionales y por código. La novedad de bienvenida ya no menciona a ningún equipo.
-
-## 1.0.38
-- Nueva portada de Inicio: barra de acceso rápido (evento y modpacks), botón de jugar grande sobre lo elegido y fondo orbital animado.
-
-## 1.0.37
-- **Permisos por comunidad**: el dueño decide, en Ajustes → Crear comunidad, qué nicks administran cada evento ("Guardar permisos") y puede retirar un código. Los cambios llegan a los jugadores al abrir el launcher.
-- El modo administrador indica a qué comunidad pertenece y solo publica en el repositorio de esa comunidad.
-
-## 1.0.36
-- **Comunidades por código**: el launcher queda limpio y cada evento (Nova PX u otros) aparece solo con su código de invitación, en su propia pestaña y su propio repositorio.
-- Ajustes → Crear comunidad (solo propietario) y Comunidades (unirse/salir). Ver `docs/COMUNIDADES.md`.
-
-## 1.0.35
-- El launcher pasa a llamarse **Sagitta**: nuevo logo, nombre en la ventana, pantalla de inicio, instalador y bandeja.
-- Se conservan los datos, las instancias, los ajustes y la actualización automática de quienes ya lo tenían instalado.
+## 1.0.40
+- Vuelve el launcher **Nova PX** (diseño, nombre y logo de la 1.0.34). Se retiran la marca Sagitta, las comunidades por código y la portada nueva.
 
 ## 1.0.34
 - Nuevo diseño **Nova Neón** (futurista y animado) como tema por defecto.

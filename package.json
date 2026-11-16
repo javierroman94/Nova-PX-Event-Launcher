@@ -1,9 +1,9 @@
 {
   "name": "nova-px-event-launcher",
-  "version": "1.0.39",
-  "description": "Sagitta: launcher de Minecraft con comunidades y eventos (premium y no premium)",
+  "version": "1.0.40",
+  "description": "Nova PX - Event Launcher: launcher de Minecraft para los eventos del equipo (premium y no premium)",
   "main": "main.js",
-  "author": "Francisco Javier Román",
+  "author": "Nova PX",
   "repository": {
     "type": "git",
     "url": "https://github.com/javierroman94/Nova-PX-Event-Launcher.git"
@@ -25,7 +25,7 @@
   },
   "build": {
     "appId": "com.novapx.eventlauncher",
-    "productName": "Sagitta",
+    "productName": "Nova PX Event Launcher",
     "files": [
       "main.js",
       "preload.js",
@@ -45,8 +45,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.png",
-      "executableName": "Nova PX Event Launcher"
+      "icon": "build/icon.png"
     },
     "mac": {
       "target": "dmg",
@@ -59,8 +58,8 @@
     "fileAssociations": [
       {
         "ext": "novapx",
-        "name": "Modpack Sagitta",
-        "description": "Modpack de Sagitta Launcher",
+        "name": "Modpack Nova PX",
+        "description": "Modpack de Nova PX Event Launcher",
         "role": "Editor"
       }
     ]
