@@ -23,3 +23,7 @@ Límites del plan gratis de Cloudflare: 100 000 peticiones al día y unas 1 000 
 - *"La clave del contador no es correcta"*: la `ADMIN_KEY` del launcher no coincide con la de Cloudflare.
 - La lista sale vacía: nadie ha abierto todavía una versión con la dirección configurada. Abre el launcher tú y pulsa *Actualizar*.
 - Para borrar todo: elimina el Worker y el almacén KV en Cloudflare.
+
+## Publicación automática desde GitHub (la que usa Nova PX)
+
+El archivo `wrangler.jsonc` de la raíz ya enlaza el Worker `nova-px-event-launcher` con el almacén KV `novapx-users` (variable `USERS`). Si el Worker está conectado a este repositorio (Workers Builds), cada push a `main` lo vuelve a publicar con ese enlace. Lo único manual es el secreto `ADMIN_KEY` (Worker → Settings → Variables and Secrets → Secret) y copiar la dirección del Worker en `telemetryUrl`.
