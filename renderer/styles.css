@@ -1477,3 +1477,15 @@ html.no-fx .splash .ring, html.no-fx .splash .shine { animation: none; opacity: 
 .saved-actions { display: flex; gap: 6px; width: 100%; }
 .saved-actions button { flex: 1; font-size: 12.5px; padding: 6px 8px; }
 .saved-skin > .saved-del { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; padding: 0; border-radius: 50%; line-height: 1; }
+
+/* patrocinadores y créditos */
+.sponsors { margin-top: 18px; }
+.sponsors-title { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted, #8a93a8); margin: 0 0 10px; }
+.sponsors-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.sponsor { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: inherit; text-align: left; font: inherit; }
+button.sponsor { cursor: pointer; }
+button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255,255,255,.07); }
+.sponsor-logo { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; flex: none; }
+.sponsor-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sponsor-role { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+.sponsor-empty { flex-direction: column; align-items: flex-start; border-style: dashed; gap: 4px; }

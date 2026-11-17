@@ -183,3 +183,15 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { status: 'active' }).event.active, true);
   console.log('ok estado del evento (próximamente/activo/finalizado)');
 }
+
+{
+  const m = a.mergeManifest({ event: { name: 'X' } }, { sponsors: [
+    { role: 'Servidor hospedado por', name: 'HoliHosting', url: 'https://holihosting.example', logo: 'images/h.png', text: 'Gracias' },
+    { name: '', url: 'https://x.y' }, { name: 'Malo', url: 'javascript:alert(1)', logo: 'http://x/y.png' }
+  ] });
+  assert.strictEqual(m.sponsors.length, 2);
+  assert.strictEqual(m.sponsors[0].url, 'https://holihosting.example');
+  assert.strictEqual(m.sponsors[1].url, undefined);
+  assert.strictEqual(m.sponsors[1].logo, undefined);
+  console.log('ok patrocinadores');
+}

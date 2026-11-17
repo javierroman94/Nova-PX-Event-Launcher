@@ -194,8 +194,12 @@
         </div>
       </div>
 
+      <section class="sponsors" id="sponsors" aria-label="Patrocinadores y créditos">
+        <h3 class="sponsors-title">Patrocinadores y créditos</h3>
+        <div id="sponsors-list" class="sponsors-list"></div>
+      </section>
+
       <div class="event-links">
-        <button type="button" class="ghost" data-tab="mods" hidden>Ver mods del evento</button>
         <button type="button" class="ghost" data-tab="events">Ver historial de eventos</button>
       </div>
     </section>
@@ -520,6 +524,10 @@
                 <div class="btn-row"><button id="ad-banner-pick" type="button">Banner…</button><button id="ad-logo-pick" type="button">Logo…</button><button id="ad-art-clear" type="button">Quitar</button></div>
                 <small id="ad-art-state" class="muted"></small></div>
             </div>
+            <div class="field">
+              <label>Patrocinadores y créditos <small class="muted">(se ven en Evento: "Servidor hospedado por…", "Evento creado por…")</small></label>
+              <div id="ad-sponsors"></div>
+            </div>
             <div class="field inline">
               <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
               <div><label for="ad-start">Empieza</label><input id="ad-start" type="datetime-local" /></div>
@@ -543,7 +551,7 @@
           </div>
           <progress id="ad-progress" max="1" value="0" hidden></progress>
           <p id="ad-status" class="muted" role="status"></p>
-          <div class="mp-actions"><button id="ad-publish" type="button" class="primary ad-big">Publicar evento</button></div>
+          <div class="mp-actions"><button id="ad-finish" type="button" class="ad-big">Finalizar evento</button><button id="ad-publish" type="button" class="primary ad-big">Publicar evento</button></div>
         </article>
       </div>
 

@@ -215,6 +215,31 @@ let eventActive = true;
 let eventState = 'active';
 let eventInfo = { name: 'Evento', tagline: '', logo: '' };
 
+// Patrocinadores y créditos del evento (Evento). Sin datos muestra una tarjeta de invitación.
+function paintSponsors(list) {
+  const box = $('sponsors-list');
+  box.replaceChildren();
+  const items = Array.isArray(list) ? list : [];
+  if (!items.length) {
+    const c = el('div', 'sponsor sponsor-empty');
+    c.append(el('span', 'sponsor-role', 'Tu marca aquí'), el('strong', '', 'Espacio para patrocinadores'), el('span', 'muted', 'Habla con el equipo de Nova PX para aparecer en los eventos.'));
+    box.append(c);
+    return;
+  }
+  for (const x of items) {
+    const c = el(x.url ? 'button' : 'div', 'sponsor');
+    if (x.url) { c.type = 'button'; c.addEventListener('click', () => window.api.openLink(x.url).catch(() => {})); }
+    const logo = imageUrl(x.logo);
+    if (logo) { const im = el('img', 'sponsor-logo'); im.alt = ''; im.src = logo; c.append(im); }
+    const t = el('div', 'sponsor-text');
+    if (x.role) t.append(el('span', 'sponsor-role', x.role));
+    t.append(el('strong', '', x.name));
+    if (x.text) t.append(el('span', 'muted', x.text));
+    c.append(t);
+    box.append(c);
+  }
+}
+
 async function renderHero() {
   try {
     const m = await window.api.getData('manifest');
@@ -253,6 +278,7 @@ async function renderHero() {
     $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
     startCountdown(m.event && m.event.startsAt);
     lastEventLinks = m.links;
+    paintSponsors(m.sponsors);
     window.refreshLinks();
   } catch {
     $('hero-tagline').textContent = 'No se pudo leer la configuración del evento.';
@@ -2450,7 +2476,6 @@ let isAdmin = false;
 let adminProgress = null;
 function setAdminUi(on, repo, err, eligible) {
   isAdmin = on;
-  document.querySelectorAll('[data-tab="mods"]').forEach((b) => { b.hidden = !on; });
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
   $('adm-login-box').hidden = on;
@@ -2483,7 +2508,7 @@ $('adm-logout').addEventListener('click', async () => {
   if ($('page-admin').classList.contains('active')) goTo('settings');
 });
 
-const adm = { team: [], news: [], reco: [], launcher: null, manifest: {}, summary: null };
+const adm = { sponsors: [], team: [], news: [], reco: [], launcher: null, manifest: {}, summary: null };
 const AD_PACK_KEY = 'novapx.eventPack';
 const keep = (k, v) => { try { v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch {} return (() => { try { return localStorage.getItem(k); } catch { return null; } })(); };
 
@@ -2496,6 +2521,47 @@ document.querySelectorAll('[data-ad-tab]').forEach((b) =>
 );
 
 function chip(text, cls) { return el('span', `ad-chip${cls ? ' ' + cls : ''}`, text); }
+
+function sponsorsEditor() {
+  const box = $('ad-sponsors');
+  const list = adm.sponsors;
+  const roles = ['Servidor hospedado por', 'Evento creado por', 'Patrocina', 'Colabora'];
+  const paint = () => {
+    box.replaceChildren();
+    list.forEach((x, i) => {
+      const row = el('div', 'person-row');
+      const head = el('div', 'person-head');
+      const r = el('input'); r.type = 'text'; r.maxLength = 60; r.placeholder = 'Rol (Servidor hospedado por…)'; r.value = x.role || ''; r.setAttribute('list', 'ad-sponsor-roles');
+      r.addEventListener('input', () => { x.role = r.value; });
+      const n = el('input'); n.type = 'text'; n.maxLength = 60; n.placeholder = 'Nombre (HoliHosting…)'; n.value = x.name || '';
+      n.addEventListener('input', () => { x.name = n.value; });
+      const u = el('input'); u.type = 'url'; u.maxLength = 300; u.placeholder = 'https://… (opcional)'; u.value = x.url || '';
+      u.addEventListener('input', () => { x.url = u.value; });
+      const t = el('input'); t.type = 'text'; t.maxLength = 160; t.placeholder = 'Texto corto (opcional)'; t.value = x.text || '';
+      t.addEventListener('input', () => { x.text = t.value; });
+      const lg = el('button', '', x.logo ? 'Cambiar logo' : 'Logo…'); lg.type = 'button';
+      lg.addEventListener('click', async () => {
+        try { const a = await window.api.adminPickImage(`sponsor-${x.name || 'logo'}`); if (a) { x.logo = a.path; lg.textContent = 'Cambiar logo'; } } catch (e) { toast(cleanError(e), 'error'); }
+      });
+      const q = el('button', '', 'Quitar'); q.type = 'button';
+      q.addEventListener('click', () => { list.splice(i, 1); paint(); });
+      head.append(r, n, u, t, lg, q);
+      row.append(head);
+      box.append(row);
+    });
+    if (list.length < 8) {
+      const add = el('button', '', '+ Patrocinador o crédito'); add.type = 'button';
+      add.addEventListener('click', () => { list.push({ role: roles[Math.min(list.length, roles.length - 1)], name: '', url: '', text: '' }); paint(); });
+      box.append(add);
+    }
+    if (!$('ad-sponsor-roles')) {
+      const dl = el('datalist'); dl.id = 'ad-sponsor-roles';
+      roles.forEach((v) => { const o = el('option'); o.value = v; dl.append(o); });
+      box.append(dl);
+    }
+  };
+  paint();
+}
 
 function paintArtState() {
   $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con logo' : 'sin logo'}`;
@@ -2526,6 +2592,8 @@ async function loadAdmin() {
     $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
     adm.evImage = ev.image || '';
     adm.evLogo = ev.logo || '';
+    adm.sponsors = (m.sponsors || []).map((x) => ({ ...x }));
+    sponsorsEditor();
     paintArtState();
     $('ad-name').value = ev.name || '';
     $('ad-tag').value = ev.tagline || '';
@@ -2627,6 +2695,7 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+$('ad-finish').addEventListener('click', () => { $('ad-state').value = 'ended'; $('ad-publish').click(); });
 $('ad-publish').addEventListener('click', async () => {
   const id = $('ad-pack').value;
   const name = $('ad-name').value.trim();
@@ -2645,7 +2714,7 @@ $('ad-publish').addEventListener('click', async () => {
     const r = await window.api.adminPublishEvent({
       id: id || undefined, password: $('ad-pass').value,
       form: {
-        status: state, active, image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
+        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
         server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 }
       }
     });

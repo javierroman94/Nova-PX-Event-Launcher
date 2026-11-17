@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.50
+- **Skins que no cargaban**: si Mojang limita o falla, el launcher reintenta y usa servicios alternos; un fallo ya no se recuerda 10 minutos.
+- **Finalizar evento**: botón "Finalizar evento" en el panel de administración (publica el evento como finalizado de un clic).
+- **Evento**: se quitó "Ver mods del evento". Nuevo apartado de **patrocinadores y créditos** ("Servidor hospedado por…", "Evento creado por…") con nombre, enlace, logo y texto; se edita desde Admin y, sin datos, muestra un espacio "Tu marca aquí".
+
 ## 1.0.49
 Correcciones del tablero de pruebas:
 - **Equipo**: al hacer clic en una persona ya no se congela la pantalla (la ventana de información estaba dentro de una pestaña oculta).

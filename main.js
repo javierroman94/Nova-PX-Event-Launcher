@@ -2096,20 +2096,37 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
       } catch {}
     }
     if (!skinUrl) {
+      // Mojang limita las consultas (429) y a veces falla: se reintenta y, si sigue, se usan servicios alternos.
+      const attempt = async (fn) => { try { return await fn(); } catch { await new Promise((r) => setTimeout(r, 700)); try { return await fn(); } catch { return null; } } };
       let uuid = own ? String(session.uuid || '').replace(/-/g, '') : '';
       if (!uuid) {
-        const found = await fetchJson(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(name)}`);
+        const found = await attempt(() => fetchJson(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(name)}`));
         uuid = found && found.id;
       }
-      if (/^[0-9a-f]{32}$/i.test(uuid || '')) {
-        const prof = await fetchJson(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`);
-        const prop = (prof.properties || []).find((p) => p.name === 'textures');
+      let alt = null;
+      if (!/^[0-9a-f]{32}$/i.test(uuid || '')) {
+        alt = await attempt(() => fetchJson(`https://playerdb.co/api/player/minecraft/${encodeURIComponent(name)}`));
+        const pl = alt && alt.data && alt.data.player;
+        uuid = pl && String(pl.raw_id || '').replace(/-/g, '');
+        if (pl && pl.skin_texture && TEXTURE_URL.test(https(pl.skin_texture))) skinUrl = https(pl.skin_texture);
+      }
+      if (!skinUrl && /^[0-9a-f]{32}$/i.test(uuid || '')) {
+        const prof = await attempt(() => fetchJson(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`));
+        const prop = prof && (prof.properties || []).find((p) => p.name === 'textures');
         const tex = prop && JSON.parse(Buffer.from(prop.value, 'base64').toString('utf8')).textures;
         if (tex && tex.SKIN) {
           skinUrl = https(tex.SKIN.url);
           slim = !!(tex.SKIN.metadata && tex.SKIN.metadata.model === 'slim');
         }
         if (tex && tex.CAPE) capeUrl = https(tex.CAPE.url);
+      }
+      if (!skinUrl && /^[0-9a-f]{32}$/i.test(uuid || '')) {
+        // Último recurso: Crafatar sirve la skin por UUID.
+        try {
+          const buf = await downloadBuffer(`https://crafatar.com/skins/${uuid}`);
+          skinsApi.validateSkinPng(buf);
+          value = { dataUrl: `data:image/png;base64,${buf.toString('base64')}`, slim: false, cape: null };
+        } catch {}
       }
     }
     if (skinUrl && TEXTURE_URL.test(skinUrl)) {
@@ -2123,7 +2140,8 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
   } catch {
     value = null;
   }
-  skinCache.set(key, { at: Date.now(), value });
+  // Un fallo no se recuerda 10 minutos: se vuelve a intentar pronto.
+  skinCache.set(key, { at: value ? Date.now() : Date.now() - SKIN_TTL + 30 * 1000, value });
   return value;
 });
 
