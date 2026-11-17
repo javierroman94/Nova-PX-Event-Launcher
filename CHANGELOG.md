@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.46
+- **Anuncios con imágenes y enlaces**: las noticias pueden llevar imagen y varios botones de enlace; la franja global puede llevar imagen y un texto propio en el botón. Se editan en el panel administrador.
+
 ## 1.0.45
 Correcciones y mejoras pedidas en el tablero de pruebas:
 - Inicio: las miniaturas de eventos ya no muestran ganadores (se ven al abrir el evento). Enlaces de la comunidad grandes, con icono y brillo.

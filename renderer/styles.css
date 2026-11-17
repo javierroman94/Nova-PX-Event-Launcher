@@ -1386,3 +1386,6 @@ html.win .topbar button, html.win .topbar input, html.win .topbar a, html.win .t
 .member-profile { text-align: center; }
 .mm-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); }
 .mm-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 12px 0; }
+
+.news-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
+.announce-img { height: 34px; width: auto; border-radius: 6px; object-fit: cover; }

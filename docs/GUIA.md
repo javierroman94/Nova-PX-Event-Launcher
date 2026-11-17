@@ -239,7 +239,7 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Tema:** Ajustes → Apariencia → Nova Neón (por defecto en la 1.0.34; puedes volver a Oscuro, Claro u OLED).
 - **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática: Halloween 10–31 oct, Navidad 1 nov–27 dic, Año Nuevo 28 dic–6 ene. Se apaga con «Sin decoración» o quitando «Efectos animados».
 
-## 4l. Novedades 1.0.44 y 1.0.45
+## 4l. Novedades 1.0.44, 1.0.45 y 1.0.46
 
 - **Modo streamer** (Ajustes > Privacidad): oculta tu nick de forma manual o automática al detectar OBS, Streamlabs, XSplit y similares.
 - **Ajustes** rediseñados con buscador, perfil y grupos. Estas secciones llevan "Mi cuenta" y "Privacidad".
@@ -247,6 +247,7 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Admins con su propio nombre**: en **Admin → Permisos** invita a cada persona como colaboradora de GitHub; cada una crea su token y sus cambios salen con su nombre, sin compartir el tuyo.
 - **Sesión premium**: vuelve a pedir inicio de sesión a los 30 días. Los no premium no caducan.
 - **Skins guardadas**: elige un archivo, pulsa "Guardar en mi lista" y cámbiate con un clic.
+- **Anuncios (1.0.46)**: las noticias (`data/news.json`) aceptan `image` y `links`; el anuncio global acepta `image` y `urlLabel`.
 - **Botones laterales del mouse**: atrás y adelante. Los diálogos tienen ✕ y las confirmaciones usan la estética del launcher.
 
 ## 5. Límites de esta primera versión

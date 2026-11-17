@@ -131,3 +131,18 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(t[1].avatar, undefined);
   console.log('ok admin perfil');
 }
+
+{
+  const assert = require('assert');
+  const A = require('../lib/admin');
+  const R = require('../lib/remote');
+  const n = A.sanitizeNews([{ title: 'T', text: 'x', image: 'images/a.png', links: [{ name: 'Web', url: 'https://nova.px' }, { name: 'x', url: 'http://mal' }] }, { title: 'U', image: 'file:///etc/passwd' }]);
+  assert.strictEqual(n[0].image, 'images/a.png');
+  assert.strictEqual(n[0].links.length, 1);
+  assert.strictEqual(n[1].image, undefined);
+  const c = R.sanitize({ announcement: { enabled: true, text: 'Hola', url: 'https://a.b', urlLabel: 'Ver', image: 'images/b.png' } });
+  assert.strictEqual(c.announcement.urlLabel, 'Ver');
+  assert.strictEqual(c.announcement.image, 'images/b.png');
+  assert.strictEqual(R.sanitize({ announcement: { image: 'javascript:1' } }).announcement.image, '');
+  console.log('ok noticias/anuncio con imagen y enlaces');
+}

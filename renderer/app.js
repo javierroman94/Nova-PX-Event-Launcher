@@ -430,7 +430,10 @@ async function renderNews() {
     news.forEach((n) => {
       const item = el('article', 'news-item');
       const time = el('time', '', n.date);
+      const src = imageUrl(n.image);
+      if (src) { const im = el('img', 'news-img'); im.alt = ''; im.loading = 'lazy'; im.src = src; item.append(im); }
       item.append(el('h3', '', n.title), time, el('p', '', n.text));
+      if (n.links && n.links.length) item.append(linkChips(n.links));
       box.append(item);
     });
   } catch {
@@ -2887,6 +2890,18 @@ function paintNews() {
     del.type = 'button';
     del.addEventListener('click', () => { adm.news.splice(idx, 1); paintNews(); });
     row.append(f.title, f.date, f.text, del);
+    const more = el('details', 'team-links');
+    more.append(el('summary', '', `Imagen y enlaces (${(n.links || []).length}${n.image ? ' · con imagen' : ''})`));
+    const imgRow = el('div', 'links-row');
+    const pick = el('button', '', n.image ? 'Cambiar imagen' : 'Subir imagen'); pick.type = 'button';
+    pick.addEventListener('click', async () => {
+      try { const r = await window.api.adminPickImage(n.title || 'noticia'); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
+    });
+    const clr = el('button', '', 'Quitar imagen'); clr.type = 'button';
+    clr.addEventListener('click', () => { delete n.image; pick.textContent = 'Subir imagen'; });
+    imgRow.append(pick, clr);
+    more.append(imgRow, linksEditor(n));
+    row.append(more);
     box.append(row);
   });
   if (window.makeSortable) window.makeSortable(box, adm.news, paintNews);

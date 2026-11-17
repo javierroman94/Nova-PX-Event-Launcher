@@ -27,12 +27,16 @@
     return out;
   };
 
-  function bar(level, text, url, onClose) {
+  function bar(level, text, url, onClose, extra) {
     const b = mk('div', `announce announce-${level}`);
     b.setAttribute('role', level === 'danger' ? 'alert' : 'status');
+    if (extra && extra.image && typeof imageUrl === 'function') {
+      const src = imageUrl(extra.image);
+      if (src) { const im = mk('img', 'announce-img'); im.alt = ''; im.src = src; b.append(im); }
+    }
     b.append(mk('span', 'announce-text', text));
     if (url) {
-      const more = mk('button', 'ghost', 'Más información');
+      const more = mk('button', 'ghost', (extra && extra.label) || 'Más información');
       more.type = 'button';
       more.addEventListener('click', () => window.api.openLink(url).catch(() => {}));
       b.append(more);
@@ -62,7 +66,7 @@
       box.append(bar(cfg.announcement.level, cfg.announcement.text, cfg.announcement.url, () => {
         try { sessionStorage.setItem(key, '1'); } catch {}
         paintAnnounce(cfg);
-      }));
+      }, { image: cfg.announcement.image, label: cfg.announcement.urlLabel }));
     }
   }
   function cmp(a, b) {

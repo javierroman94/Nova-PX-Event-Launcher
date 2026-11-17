@@ -52,7 +52,7 @@
   const F = {
     name: 'lk-name', sub: 'lk-sub', preset: 'lk-preset', season: 'lk-season', accent: 'lk-accent', wtitle: 'lk-wtitle', wtext: 'lk-wtext',
     ram: 'cf-ram', discord: 'cf-discord', x: 'cf-x', youtube: 'cf-youtube', web: 'cf-web', nonPremium: 'cf-nonpremium', imp: 'cf-import', usage: 'cf-usage',
-    anOn: 'ct-an-on', anLevel: 'ct-an-level', anUrl: 'ct-an-url', anText: 'ct-an-text', mtOn: 'ct-mt-on', mtText: 'ct-mt-text', minVer: 'ct-minver'
+    anOn: 'ct-an-on', anLevel: 'ct-an-level', anUrl: 'ct-an-url', anText: 'ct-an-text', anLabel: 'ct-an-label', anImg: 'ct-an-img', mtOn: 'ct-mt-on', mtText: 'ct-mt-text', minVer: 'ct-minver'
   };
   let accentSet = false;
   let snap = ''; // JSON de lo publicado, para saber si hay cambios
@@ -65,7 +65,7 @@
       brand: { name: v('name'), subtitle: v('sub') },
       theme: { preset: v('preset'), accent: accentSet ? g(F.accent).value : '', season: v('season') },
       welcome: { title: v('wtitle'), text: v('wtext') },
-      announcement: { enabled: g(F.anOn).checked, level: v('anLevel'), text: v('anText'), url: v('anUrl') },
+      announcement: { enabled: g(F.anOn).checked, level: v('anLevel'), text: v('anText'), url: v('anUrl'), urlLabel: v('anLabel'), image: v('anImg') },
       maintenance: { enabled: g(F.mtOn).checked, text: v('mtText') },
       minVersion: v('minVer'),
       links: { discord: v('discord'), x: v('x'), youtube: v('youtube'), web: v('web') },
@@ -83,7 +83,7 @@
     set('ram', c.defaults.ramGb || '');
     set('discord', c.links.discord); set('x', c.links.x); set('youtube', c.links.youtube); set('web', c.links.web);
     g(F.nonPremium).checked = c.features.nonPremium; g(F.imp).checked = c.features.importPacks; g(F.usage).checked = c.features.usageCounter;
-    g(F.anOn).checked = c.announcement.enabled; set('anLevel', c.announcement.level); set('anUrl', c.announcement.url); set('anText', c.announcement.text);
+    g(F.anOn).checked = c.announcement.enabled; set('anLevel', c.announcement.level); set('anUrl', c.announcement.url); set('anLabel', c.announcement.urlLabel); set('anImg', c.announcement.image); set('anText', c.announcement.text);
     g(F.mtOn).checked = c.maintenance.enabled; set('mtText', c.maintenance.text); set('minVer', c.minVersion);
   }
   const dirty = () => JSON.stringify(readForm()) !== snap;
@@ -294,6 +294,14 @@
       n.addEventListener('change', () => { if (id === F.accent) accentSet = true; onFormChange(); });
     });
     g('lk-accent-clear').addEventListener('click', () => { accentSet = false; onFormChange(); });
+    g('ct-an-imgpick').addEventListener('click', async () => {
+      try {
+        setStatus('Eligiendo imagen…');
+        const r = await window.api.adminPickImage('anuncio');
+        if (r) { g(F.anImg).value = r.path; onFormChange(); } else setStatus('');
+      } catch (err) { setStatus(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
+    });
+    g('ct-an-imgclear').addEventListener('click', () => { g(F.anImg).value = ''; onFormChange(); });
     g('ad-prev-discard').addEventListener('click', discard);
     document.querySelectorAll('[data-history]').forEach((b) => b.addEventListener('click', () => openHistory(b.dataset.history)));
     g('adh-close').addEventListener('click', () => g('ad-history-modal').close());
