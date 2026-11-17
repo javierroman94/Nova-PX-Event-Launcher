@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('api', {
   skinsPick: () => ipcRenderer.invoke('skins:pick'),
   skinsSavedList: () => ipcRenderer.invoke('skins:saved:list'),
   skinsSavedAdd: (o) => ipcRenderer.invoke('skins:saved:add', o),
+  skinsSavedRename: (id, name) => ipcRenderer.invoke('skins:saved:rename', id, name),
   skinsSavedRemove: (id) => ipcRenderer.invoke('skins:saved:remove', id),
   skinsSavedUse: (id) => ipcRenderer.invoke('skins:saved:use', id),
   skinsLocalGet: () => ipcRenderer.invoke('skins:local:get'),

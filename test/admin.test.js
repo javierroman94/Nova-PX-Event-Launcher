@@ -159,3 +159,15 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(e[0].roster[0].skin, 'images/d.png');
   console.log('ok skins subidas por admin');
 }
+
+{
+  const assert = require('assert');
+  const A = require('../lib/admin');
+  const e = A.sanitizeEvents([{ name: 'E', background: 'images/bg.png', commissioner: { name: 'LaosOneView', url: 'https://youtube.com/@laos' }, posts: [{ name: 'Trailer', url: 'https://youtu.be/x' }, { name: 'mal', url: 'javascript:1' }] }, { name: 'F', background: 'file:///x', commissioner: { name: '', url: 'https://a.b' } }]);
+  assert.strictEqual(e[0].background, 'images/bg.png');
+  assert.strictEqual(e[0].commissioner.name, 'LaosOneView');
+  assert.strictEqual(e[0].posts.length, 1);
+  assert.strictEqual(e[1].background, undefined);
+  assert.strictEqual(e[1].commissioner, undefined);
+  console.log('ok eventos: fondo, comisionado y posts');
+}

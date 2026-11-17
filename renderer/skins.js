@@ -175,8 +175,20 @@
     await renderCapes(p, seq);
   }
 
+  // Capas: fila horizontal plegada; la flecha del extremo la despliega con todas las capas.
+  function setCapesOpen(open) {
+    g('capes').classList.toggle('collapsed', !open);
+    g('capes-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    g('capes-toggle').classList.toggle('open', open);
+    try { localStorage.setItem('px.capesOpen', open ? '1' : '0'); } catch {}
+  }
+  g('capes-toggle').addEventListener('click', () => setCapesOpen(g('capes').classList.contains('collapsed')));
+  try { if (localStorage.getItem('px.capesOpen') === '1') setCapesOpen(true); } catch {}
+
   async function renderCapes(p, seq) {
     const box = g('capes');
+    g('capes-current').textContent = p.activeCape ? `Capa: ${p.activeCape.alias}` : `Capas (${p.capes.length})`;
+    g('capes-toggle').hidden = p.capes.length === 0;
     box.replaceChildren();
     g('capes-empty').hidden = p.capes.length > 0;
 
@@ -349,7 +361,14 @@
       const im = new Image();
       im.onload = () => { const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64); c.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64); };
       im.src = s.dataUrl;
-      const name = document.createElement('div'); name.className = 'saved-name'; name.textContent = `${s.name} · ${s.variant === 'slim' ? 'Slim' : 'Default'}`;
+      const name = document.createElement('div'); name.className = 'saved-name';
+      name.textContent = `${s.name} · ${s.variant === 'slim' ? 'Slim' : 'Default'}${s.cape ? ' · con capa' : ''}`;
+      name.title = 'Clic para cambiar el nombre';
+      name.style.cursor = 'pointer';
+      name.addEventListener('click', async () => {
+        const nn = await askName('Cambiar nombre', s.name);
+        if (nn !== null) { await window.api.skinsSavedRename(s.id, nn); paintSaved(); }
+      });
       const use = document.createElement('button'); use.type = 'button'; use.className = 'primary'; use.textContent = 'Usar';
       use.addEventListener('click', async () => {
         use.disabled = true; msg('Cambiando tu skin…');
@@ -368,11 +387,44 @@
       box.append(card);
     });
   }
+  // Cuadro para ponerle nombre a una skin (con la estética del launcher).
+  function askName(title, initial) {
+    return new Promise((resolve) => {
+      const dlg = document.createElement('dialog');
+      dlg.className = 'event-modal';
+      dlg.setAttribute('aria-label', title);
+      const body = document.createElement('form');
+      body.className = 'event-modal-body';
+      const h = document.createElement('h3'); h.textContent = title;
+      const inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 40; inp.value = initial || ''; inp.placeholder = 'Nombre de la skin';
+      const row = document.createElement('div'); row.className = 'mp-actions';
+      const no = document.createElement('button'); no.type = 'button'; no.textContent = 'Cancelar';
+      const ok = document.createElement('button'); ok.type = 'submit'; ok.className = 'primary'; ok.textContent = 'Guardar';
+      row.append(no, ok);
+      body.append(h, inp, row);
+      dlg.append(body);
+      let done = false;
+      const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
+      body.addEventListener('submit', (e) => { e.preventDefault(); finish(inp.value.trim() || initial || 'Mi skin'); });
+      no.addEventListener('click', () => finish(null));
+      dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
+      document.body.append(dlg);
+      dlg.showModal();
+      inp.focus(); inp.select();
+    });
+  }
+
   g('skin-save').addEventListener('click', async () => {
     try {
       const variant = document.querySelector('input[name="skin-variant"]:checked').value;
       const label = (g('skin-name').textContent || '').replace(/^Vista previa: /, '').replace(/\.png$/i, '');
-      await window.api.skinsSavedAdd({ name: label, variant });
+      const name = await askName('Nombre de la skin', label);
+      if (name === null) return;
+      const premiumNow = user && user.mode === 'premium' && profile;
+      await window.api.skinsSavedAdd({
+        name, variant,
+        ...(premiumNow ? { capeId: profile.activeCape ? profile.activeCape.id : '', capeName: profile.activeCape ? profile.activeCape.alias : '' } : {})
+      });
       g('skin-save').disabled = true;
       msg('Skin guardada en tu lista.');
       paintSaved();

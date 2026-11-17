@@ -1439,3 +1439,30 @@ html.no-fx .splash .ring, html.no-fx .splash .shine { animation: none; opacity: 
 .season-banner p { margin: 2px 0 0; opacity: .85; }
 
 .saved-skins > p { grid-column: 1 / -1; margin: 0; }
+
+/* capas desplegables */
+.capes-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.capes-arrow { transition: transform .2s ease; }
+.capes-toggle.open .capes-arrow { transform: rotate(180deg); }
+.capes.collapsed { flex-wrap: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.capes.collapsed .cape-opt { flex: 0 0 auto; }
+
+/* eventos: ganadores en cabezas, comisionado, botones y fondo */
+.winners-heads { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.winner-head { width: 64px; text-align: center; }
+.winner-head canvas, .winner-head img { width: 56px; height: 56px; image-rendering: pixelated; border-radius: 8px; }
+.winner-head .nick { font-size: 12px; margin-top: 4px; word-break: break-all; }
+.commissioner { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin: 12px 0; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.commissioner[hidden] { display: none; }
+.commissioner:not(:disabled):hover { box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+.commissioner .com-ico { font-size: 28px; display: grid; place-items: center; }
+.commissioner .brand-ico { width: 30px; height: 30px; }
+.commissioner .com-text { display: grid; }
+.people-row.compact { gap: 10px; }
+.people-row.compact .person { width: 84px; }
+.people-row.compact .person img, .people-row.compact .person canvas { width: 40px; height: 40px; }
+.people-row.compact .nick { font-size: 12px; }
+#event-modal-posts .link-chips { justify-content: flex-start; margin: 10px 0; }
+.event-modal.has-bg { background-image: linear-gradient(rgba(8, 10, 18, .82), rgba(8, 10, 18, .9)), var(--ev-bg); background-size: cover; background-position: center; }
+
+.people-row.compact { justify-content: flex-start; }

@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.48
+Cambios pedidos desde el tablero de pruebas:
+- **Eventos**: los ganadores salen solo como cabezas en una fila horizontal; nuevo recuadro "Comisionado por…" (va primero y abre el canal de quien comisionó); botones de tráiler, tweet o póster; fondo propio para la publicación del evento. Los colaboradores se ven en pequeño.
+- **Skins**: la capa se guarda junto con la skin y se vuelve a poner al usarla; puedes ponerle nombre a cada skin al guardarla y cambiarlo después (clic en el nombre); las capas se muestran en una fila plegada con una flecha para desplegarlas todas.
+
 ## 1.0.47
 - **Skins**: el visor 3D ya no se anima, solo gira con el mouse. La skin que tienes puesta en tu cuenta premium se guarda sola en tu lista (Mojang no da el pasado, así que el historial se arma desde ahora).
 - **Sin premium, sin Steve**: eliges una skin local que se ve en el launcher y, en Fabric y Forge, dentro del juego mediante el mod CustomSkinLoader (solo la ve quien la usa). El administrador también puede subir una skin PNG para personas del Equipo y de los eventos que no tengan cuenta premium.

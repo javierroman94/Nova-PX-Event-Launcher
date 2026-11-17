@@ -226,6 +226,8 @@
           <p id="event-modal-date" class="muted"></p>
           <p id="event-modal-desc"></p>
           <div id="event-modal-facts" class="facts"></div>
+          <div id="event-modal-posts"></div>
+          <button id="event-modal-commissioner" class="commissioner" type="button" hidden></button>
           <div id="event-modal-winners" class="winners" hidden></div>
           <div id="event-modal-people" class="winners" hidden></div>
           <button id="event-modal-close" type="button">Cerrar</button>
@@ -744,6 +746,15 @@
             <div class="input-row"><input id="ade-win" type="text" maxlength="16" placeholder="Nick de Minecraft" /><button id="ade-win-add" type="button">Añadir</button></div></div>
         </div>
         <div id="ade-winners" class="ade-winners"></div>
+        <h4 class="ade-sub">Comisionado por <span class="muted">(opcional)</span></h4>
+        <div class="field inline">
+          <div><label for="ade-com-name">Nombre</label><input id="ade-com-name" type="text" maxlength="60" placeholder="LaosOneView" /></div>
+          <div><label for="ade-com-url">Enlace a su canal</label><input id="ade-com-url" type="url" maxlength="300" placeholder="https://youtube.com/@…" /></div>
+        </div>
+        <h4 class="ade-sub">Tráiler, tweet o póster <span class="muted">(botones del evento)</span></h4>
+        <div id="ade-posts"></div>
+        <h4 class="ade-sub">Fondo de la publicación <span class="muted">(opcional)</span></h4>
+        <div class="mp-actions"><button id="ade-bg-pick" type="button">Elegir fondo…</button><button id="ade-bg-clear" type="button">Quitar fondo</button><span id="ade-bg-state" class="muted"></span></div>
         <h4 class="ade-sub">Participantes con nombre <span class="muted">(opcional)</span></h4>
         <div id="ade-roster" class="people-editor"></div>
         <h4 class="ade-sub">Colaboraron con Nova PX <span class="muted">(opcional)</span></h4>
@@ -800,7 +811,8 @@
           <fieldset id="cape-box">
             <legend>Capa</legend>
             <div class="field">
-              <div id="capes" class="capes"></div>
+              <button id="capes-toggle" class="capes-toggle" type="button" aria-expanded="false"><span id="capes-current">Capas</span><span class="capes-arrow" aria-hidden="true">▾</span></button>
+              <div id="capes" class="capes collapsed"></div>
               <small id="capes-empty" class="muted" hidden>Tu cuenta no tiene capas.</small>
             </div>
           </fieldset>

@@ -1866,6 +1866,12 @@ ipcMain.handle('skins:apply', async (_e, variant) => {
 /* ---------- skins guardadas (cambio con un clic) ---------- */
 const SAVED_SKINS_DIR = path.join(app.getPath('userData'), 'saved-skins');
 const SAVED_SKINS_INDEX = path.join(SAVED_SKINS_DIR, 'index.json');
+// Capa guardada junto a la skin: '' = sin capa; id = capa de Mojang; sin campo = no se toca.
+function capeFields(p) {
+  if (p && p.capeId === '') return { cape: '' };
+  if (p && typeof p.capeId === 'string' && /^[A-Za-z0-9-]{1,64}$/.test(p.capeId)) return { cape: p.capeId, ...(p.capeName ? { capeName: cleanStr(p.capeName, 40) } : {}) };
+  return {};
+}
 function readSavedSkins() {
   try { const l = JSON.parse(fs.readFileSync(SAVED_SKINS_INDEX, 'utf8')); return Array.isArray(l) ? l.filter((s) => /^[a-f0-9]{16}$/.test(String(s.id))) : []; } catch { return []; }
 }
@@ -1874,7 +1880,7 @@ function writeSavedSkins(list) {
   fs.writeFileSync(SAVED_SKINS_INDEX, JSON.stringify(list));
 }
 ipcMain.handle('skins:saved:list', () => readSavedSkins().map((s) => {
-  try { return { id: s.id, name: s.name, variant: s.variant, dataUrl: `data:image/png;base64,${fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`)).toString('base64')}` }; } catch { return null; }
+  try { return { id: s.id, name: s.name, variant: s.variant, cape: s.cape, capeName: s.capeName, dataUrl: `data:image/png;base64,${fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`)).toString('base64')}` }; } catch { return null; }
 }).filter(Boolean));
 ipcMain.handle('skins:saved:add', (_e, p = {}) => {
   if (!pendingSkin) throw new Error('Primero elige un archivo de skin.');
@@ -1883,7 +1889,15 @@ ipcMain.handle('skins:saved:add', (_e, p = {}) => {
   const id = crypto.randomBytes(8).toString('hex');
   fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
   fs.writeFileSync(path.join(SAVED_SKINS_DIR, `${id}.png`), pendingSkin);
-  list.push({ id, name: cleanStr(p.name, 40) || 'Mi skin', variant: p.variant === 'slim' ? 'slim' : 'classic' });
+  list.push({ id, name: cleanStr(p.name, 40) || 'Mi skin', variant: p.variant === 'slim' ? 'slim' : 'classic', ...capeFields(p) });
+  writeSavedSkins(list);
+  return true;
+});
+ipcMain.handle('skins:saved:rename', (_e, id, name) => {
+  const list = readSavedSkins();
+  const s = list.find((x) => x.id === id);
+  if (!s) return false;
+  s.name = cleanStr(name, 40) || s.name;
   writeSavedSkins(list);
   return true;
 });
@@ -1904,6 +1918,11 @@ ipcMain.handle('skins:saved:use', async (_e, id) => {
   await skinsApi.uploadSkin(token, buf, s.variant);
   pendingSkin = null;
   lastProfile = await skinsApi.getProfile(token);
+  if (s.cape === '') {
+    if (lastProfile.activeCape) { await skinsApi.hideCape(token); lastProfile = await skinsApi.getProfile(token); }
+  } else if (s.cape && lastProfile.capes.some((c) => c.id === s.cape)) {
+    if (!lastProfile.activeCape || lastProfile.activeCape.id !== s.cape) { await skinsApi.setCape(token, s.cape); lastProfile = await skinsApi.getProfile(token); }
+  }
   return lastProfile;
 });
 
@@ -1975,7 +1994,7 @@ ipcMain.handle('skins:saved:auto', async () => {
     const id = crypto.randomBytes(8).toString('hex');
     fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
     fs.writeFileSync(path.join(SAVED_SKINS_DIR, `${id}.png`), buf);
-    list.push({ id, name: `Skin del ${new Date().toLocaleDateString('es')}`, variant: sk.variant === 'slim' ? 'slim' : 'classic', hash, auto: true });
+    list.push({ id, name: `Skin del ${new Date().toLocaleDateString('es')}`, variant: sk.variant === 'slim' ? 'slim' : 'classic', hash, auto: true, ...capeFields({ capeId: lastProfile.activeCape ? lastProfile.activeCape.id : '', capeName: lastProfile.activeCape && lastProfile.activeCape.alias }) });
     writeSavedSkins(list);
     return true;
   } catch { return false; }

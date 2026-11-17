@@ -239,7 +239,7 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Tema:** Ajustes → Apariencia → Nova Neón (por defecto en la 1.0.34; puedes volver a Oscuro, Claro u OLED).
 - **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática: Halloween 10–31 oct, Navidad 1 nov–27 dic, Año Nuevo 28 dic–6 ene. Se apaga con «Sin decoración» o quitando «Efectos animados».
 
-## 4l. Novedades 1.0.44 a 1.0.47
+## 4l. Novedades 1.0.44 a 1.0.48
 
 - **Modo streamer** (Ajustes > Privacidad): oculta tu nick de forma manual o automática al detectar OBS, Streamlabs, XSplit y similares.
 - **Ajustes** rediseñados con buscador, perfil y grupos. Estas secciones llevan "Mi cuenta" y "Privacidad".
@@ -247,6 +247,7 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Admins con su propio nombre**: en **Admin → Permisos** invita a cada persona como colaboradora de GitHub; cada una crea su token y sus cambios salen con su nombre, sin compartir el tuyo.
 - **Sesión premium**: vuelve a pedir inicio de sesión a los 30 días. Los no premium no caducan.
 - **Skins guardadas**: elige un archivo, pulsa "Guardar en mi lista" y cámbiate con un clic.
+- **Eventos (1.0.48)**: un evento acepta además `background` (imagen de fondo de la publicación), `commissioner` (`{ "name": "LaosOneView", "url": "https://youtube.com/@…" }`, sale primero como "Comisionado por…") y `posts` (hasta 4 botones `{ "name": "Tráiler", "url": "https://…" }`). Se editan en **Admin → Eventos**.
 - **Skins sin premium (1.0.47)**: eligen una skin local; en Fabric/Forge el launcher instala CustomSkinLoader para verla en el juego (solo quien la usa). En `team.json` y en `roster`/`collabs` de los eventos puedes poner `"skin": "images/nombre.png"` (y `"slim": true`) para quien no tenga cuenta premium.
 - **Intro, logos y temporadas (1.0.47)**: intro animada (se desactiva en Ajustes), iconos de marca en Comunidad y las temporadas `sanvalentin`, `carnaval`, `madres` y `ecuador`.
 - **Anuncios (1.0.46)**: las noticias (`data/news.json`) aceptan `image` y `links`; el anuncio global acepta `image` y `urlLabel`.

@@ -478,6 +478,31 @@ function askConfirm(message, okLabel, cancelLabel) {
 const winnersOf = (ev) => (Array.isArray(ev.winners) ? ev.winners : ev.winner ? [ev.winner] : []).slice(0, 12);
 let winViewers = [];
 let winEnv = null;
+// Fondo propio, "Comisionado por" (primero), y botones de tráiler / tweet / póster.
+function paintEventExtras(ev) {
+  const modal = $('event-modal');
+  const bg = imageUrl(ev.background);
+  modal.classList.toggle('has-bg', !!bg);
+  modal.style.setProperty('--ev-bg', bg ? `url("${String(bg).replace(/"/g, '%22')}")` : 'none');
+  const com = $('event-modal-commissioner');
+  com.hidden = !ev.commissioner;
+  com.replaceChildren();
+  com.onclick = null;
+  if (ev.commissioner) {
+    const ic = window.brandIcon && ev.commissioner.url ? window.brandIcon({ name: '', url: ev.commissioner.url }) : null;
+    const left = el('span', 'com-ico');
+    if (ic) left.append(ic); else left.textContent = '🎬';
+    const txt = el('span', 'com-text');
+    txt.append(el('small', 'muted', 'Comisionado por'), el('b', '', ev.commissioner.name));
+    com.append(left, txt);
+    com.disabled = !ev.commissioner.url;
+    if (ev.commissioner.url) com.onclick = () => window.api.openLink(ev.commissioner.url).catch(() => {});
+  }
+  const posts = $('event-modal-posts');
+  posts.replaceChildren();
+  if (ev.posts && ev.posts.length) posts.append(linkChips(ev.posts));
+}
+
 function paintWinners(ev) {
   const box = $('event-modal-winners');
   winViewers.forEach((v) => v.destroy());
@@ -487,37 +512,13 @@ function paintWinners(ev) {
   box.hidden = !list.length;
   if (!list.length) return;
   box.append(el('h4', 'winners-title', list.length === 1 ? '🏆 Ganador' : `🏆 Ganadores (${list.length})`));
-  const row = el('div', 'winners-row');
-  list.forEach((nick, i) => {
-    const card = el('div', 'winner');
-    const stage = el('div', 'winner-stage');
-    const canvas = el('canvas', 'member-3d');
-    canvas.setAttribute('aria-label', `Skin 3D de ${nick}`);
-    stage.append(canvas);
-    let viewer = null;
-    try {
-      winEnv = winEnv || window.SkinViewer.createEnv();
-      if (winEnv) viewer = window.SkinViewer.create(canvas, { env: winEnv, distance: 106, states: ['idle', 'wave', 'jump'], start: i % 3, animated: !document.documentElement.classList.contains('no-fx') });
-    } catch {}
-    if (viewer) {
-      winViewers.push(viewer);
-      setTimeout(async () => {
-        try {
-          const r = await window.api.skinTexture(nick);
-          if (!r) return;
-          viewer.setSkin(await loadImageUrl(r.dataUrl), r.slim);
-          viewer.setCape(r.cape ? await loadImageUrl(r.cape) : null);
-        } catch {}
-      }, 120 * i);
-      card.addEventListener('mouseenter', () => viewer.trigger('wave'));
-    } else {
-      canvas.remove();
-      const img = el('img');
-      img.alt = `Skin de ${nick}`;
-      img.src = skinBust(nick);
-      stage.append(img);
-    }
-    card.append(stage, el('div', 'nick', nick));
+  // Solo la cabeza de cada jugador, en una fila horizontal (si tiene skin subida por el admin, se usa esa).
+  const extra = [...(ev.roster || []), ...(ev.collabs || [])];
+  const row = el('div', 'winners-heads');
+  list.forEach((nick) => {
+    const known = extra.find((p) => p.nick.toLowerCase() === nick.toLowerCase());
+    const card = el('div', 'winner-head');
+    card.append(personFace({ nick, ...(known && known.skin ? { skin: known.skin, slim: known.slim } : {}), forceCanvas: true }), el('div', 'nick', nick));
     row.append(card);
   });
   box.append(row);
@@ -533,7 +534,7 @@ function paintPeople(ev) {
     if (!list || !list.length) return;
     any = true;
     box.append(el('h4', 'winners-title', `${title} (${list.length})`));
-    const row = el('div', 'people-row');
+    const row = el('div', 'people-row compact');
     list.forEach((p) => {
       const c = el('div', 'person');
       c.append(personFace(p), el('div', 'nick', p.nick));
@@ -568,6 +569,7 @@ async function renderEvents() {
       $('event-modal-date').textContent = ev.date || '';
       $('event-modal-desc').textContent = ev.description || '';
       $('event-modal-facts').replaceChildren(...facts(ev, true).childNodes);
+      paintEventExtras(ev);
       paintWinners(ev);
       paintPeople(ev);
       if (!modal.open) modal.showModal();
@@ -1615,20 +1617,25 @@ async function textureFor(p) {
 }
 // Cabeza (cara + capa exterior) dibujada desde una skin subida; si no hay, el busto de siempre.
 function personFace(p) {
-  if (!p.skin) {
+  if (!p.skin && !p.forceCanvas) {
     const img = el('img'); img.alt = `Skin de ${p.nick}`; img.loading = 'lazy'; img.src = skinBust(p.nick);
     return img;
   }
   const c = el('canvas'); c.width = 64; c.height = 64;
   c.setAttribute('aria-label', `Skin de ${p.nick}`);
+  const fallback = () => {
+    if (!c.isConnected) return;
+    const img = el('img'); img.alt = `Skin de ${p.nick}`; img.loading = 'lazy'; img.src = skinBust(p.nick);
+    c.replaceWith(img);
+  };
   textureFor(p).then(async (r) => {
-    if (!r) return;
+    if (!r || !r.dataUrl) { fallback(); return; }
     const im = await loadImageUrl(r.dataUrl);
     const x = c.getContext('2d');
     x.imageSmoothingEnabled = false;
     x.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64);
     x.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64);
-  }).catch(() => {});
+  }).catch(fallback);
   return c;
 }
 
@@ -2793,6 +2800,11 @@ function openAdminEvent(idx) {
   peopleEditor($('ade-roster'), ade.draft.roster, false, '+ Participante');
   peopleEditor($('ade-collabs'), ade.draft.collabs, true, '+ Colaborador');
   ade.preview = '';
+  ade.posts = { links: (base.posts || []).map((l) => ({ ...l })) };
+  $('ade-posts').replaceChildren(linksEditor(ade.posts));
+  $('ade-com-name').value = (base.commissioner && base.commissioner.name) || '';
+  $('ade-com-url').value = (base.commissioner && base.commissioner.url) || '';
+  $('ade-bg-state').textContent = ade.draft.background ? 'Con fondo' : '';
   $('ade-title').textContent = idx >= 0 ? 'Editar evento' : 'Evento nuevo';
   $('ade-name').value = ade.draft.name;
   $('ade-date').value = ade.draft.date || '';
@@ -2819,6 +2831,17 @@ $('ade-pick').addEventListener('click', async () => {
     $('ade-status').textContent = 'Imagen subida. Se verá en el historial al guardar.';
   } catch (e) { $('ade-status').textContent = cleanError(e); }
 });
+$('ade-bg-clear').addEventListener('click', () => { delete ade.draft.background; $('ade-bg-state').textContent = ''; });
+$('ade-bg-pick').addEventListener('click', async () => {
+  $('ade-status').textContent = 'Eligiendo fondo…';
+  try {
+    const r = await window.api.adminPickImage(`fondo-${$('ade-name').value}`);
+    if (!r) { $('ade-status').textContent = ''; return; }
+    ade.draft.background = r.path;
+    $('ade-bg-state').textContent = 'Con fondo';
+    $('ade-status').textContent = 'Fondo subido. Se verá al guardar.';
+  } catch (e) { $('ade-status').textContent = cleanError(e); }
+});
 function addWinner() {
   const n = $('ade-win').value.trim();
   if (!/^[A-Za-z0-9_]{1,16}$/.test(n)) { $('ade-status').textContent = 'Escribe un nick de Minecraft válido (letras, números y _).'; return; }
@@ -2843,6 +2866,9 @@ $('ade-save').addEventListener('click', () => {
   if (!name) { $('ade-status').textContent = 'Ponle un título al evento.'; return; }
   const ev = { ...ade.draft, name, date: $('ade-date').value, description: $('ade-desc').value, participants: Number($('ade-part').value) || 0 };
   delete ev.winner;
+  ev.posts = ade.posts.links;
+  const comName = $('ade-com-name').value.trim();
+  if (comName) ev.commissioner = { name: comName, url: $('ade-com-url').value.trim() }; else delete ev.commissioner;
   const list = [...adm.events];
   if (ade.index >= 0) list[ade.index] = ev; else list.unshift(ev);
   saveAdminEvents(list, true);
