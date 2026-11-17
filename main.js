@@ -193,8 +193,8 @@ async function fetchWithTimeout(url, ms = 8000) {
   }
 }
 
-async function fetchJson(url) {
-  return (await fetchWithTimeout(url)).json();
+async function fetchJson(url, ms) {
+  return (await fetchWithTimeout(url, ms)).json();
 }
 
 // Orden de lectura: 1) GitHub (siempre lo más nuevo), 2) última copia descargada (sin internet),
@@ -216,19 +216,30 @@ ipcMain.handle('streamer:get', async () => { await checkStreamer(); return strea
 // Lo que el administrador acaba de publicar se ve al instante en su propio launcher (GitHub tarda un poco en servirlo).
 const justPublished = new Map();
 function remember(name, data) {
+  dataMemo.delete(name);
   justPublished.set(name, { data, until: Date.now() + 5 * 60 * 1000 });
   try {
     fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
     fs.writeFileSync(path.join(DATA_CACHE_DIR, `${name}.json`), JSON.stringify(data));
   } catch {}
 }
+const dataMemo = new Map();
 async function loadData(name) {
   const mine = justPublished.get(name);
   if (mine && mine.until > Date.now()) return mine.data;
+  // Varias partes del launcher piden lo mismo al abrir: se comparte una sola descarga durante 20 s.
+  const memo = dataMemo.get(name);
+  if (memo && memo.until > Date.now()) return memo.promise;
+  const promise = loadDataFresh(name);
+  dataMemo.set(name, { promise, until: Date.now() + 20 * 1000 });
+  promise.catch(() => dataMemo.delete(name));
+  return promise;
+}
+async function loadDataFresh(name) {
   if (config.remoteBase) {
     const cacheFile = path.join(DATA_CACHE_DIR, `${name}.json`);
     try {
-      const remote = await fetchJson(`${config.remoteBase.replace(/\/$/, '')}/${name}.json?t=${Date.now()}`);
+      const remote = await fetchJson(`${config.remoteBase.replace(/\/$/, '')}/${name}.json?t=${Date.now()}`, 4000);
       try {
         fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
         fs.writeFileSync(cacheFile, JSON.stringify(remote));
@@ -688,10 +699,16 @@ ipcMain.handle('mods:list', async () => {
   const dir = path.join(instanceDir(GAME_DIR, manifest), 'mods');
   const jars = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.jar$/i.test(f)).sort() : [];
   if (manifest.protected && manifest.showMods !== true) return { hidden: true, count: jars.length, eventName };
-  const files = jars.map((f) => ({ file: f, hash: modrinth.sha1File(path.join(dir, f)) }));
+  const files = [];
+  for (const f of jars) files.push({ file: f, hash: await cachedSha1(path.join(dir, f)) });
   const key = crypto.createHash('sha1').update(files.map((f) => f.hash).join(',')).digest('hex');
   let mods;
   let offline = false;
+  // Mismos mods que la última vez: se muestra al instante, sin esperar a Modrinth.
+  try {
+    const c = JSON.parse(fs.readFileSync(MODS_CACHE, 'utf8'));
+    if (c.key === key && Array.isArray(c.mods)) return { hidden: false, count: jars.length, mods: c.mods, offline: false, eventName };
+  } catch {}
   try {
     const { byHash, projects } = files.length ? await modrinth.lookup(files, modrinthRequest) : { byHash: {}, projects: {} };
     mods = modrinth.buildModList(files, byHash, projects);
@@ -1008,6 +1025,20 @@ async function pingUsage() {
   }
 }
 
+// Cifras públicas del contador (jugadores activos). Se guardan 10 minutos; sin contador devuelve null.
+let communityCache = { at: 0, value: null };
+ipcMain.handle('community:stats', async () => {
+  if (!USAGE_URL) return null;
+  if (Date.now() - communityCache.at < 10 * 60 * 1000) return communityCache.value;
+  let value = null;
+  try {
+    const r = await fetchJson(`${USAGE_URL}/stats`, 5000);
+    if ([r.total, r.day, r.week].every((n) => Number.isInteger(n) && n >= 0)) value = { total: r.total, day: r.day, week: r.week };
+  } catch {}
+  communityCache = { at: Date.now(), value };
+  return value;
+});
+
 /* ---------- modo administrador (token de GitHub) ---------- */
 
 const ADMIN_FILE = path.join(app.getPath('userData'), 'admin.token');
@@ -1283,6 +1314,18 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
   } finally {
     publishing = false;
   }
+});
+
+// Cambia solo el estado del evento (Próximamente / Activo / Finalizado) sin volver a subir mods.
+ipcMain.handle('admin:setEventState', async (_e, state) => {
+  const st = ['soon', 'active', 'ended'].includes(state) ? state : null;
+  if (!st) throw new Error('Estado no válido.');
+  const r = await requireAdmin();
+  const cur = ((await r.getJson('data/manifest.json')) || {}).data || {};
+  const merged = adminLib.mergeManifest(cur, { status: st });
+  await r.putJson('data/manifest.json', merged, `Estado del evento: ${st} (desde el launcher)`);
+  remember('manifest', merged);
+  return { status: st, name: (merged.event && merged.event.name) || '' };
 });
 
 /* ---------- importar de otros launchers y exportar .novapx ---------- */

@@ -57,10 +57,29 @@ async function listUsers(env) {
   return users;
 }
 
+// Cifras públicas (sin nombres): total de instalaciones y activas en 24 h / 7 días. Se guardan 10 min para no gastar lecturas.
+async function stats(env) {
+  const now = Date.now();
+  const cached = await env.USERS.get('stats', 'json');
+  if (cached && now - cached.at < 10 * 60 * 1000) return cached;
+  const users = await listUsers(env);
+  const out = { at: now, total: users.length, day: 0, week: 0 };
+  for (const u of users) {
+    if (now - u.last < 86400000) out.day++;
+    if (now - u.last < 7 * 86400000) out.week++;
+  }
+  await env.USERS.put('stats', JSON.stringify(out), { expirationTtl: 3600 });
+  return out;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/ping') return handlePing(request, env);
+    if (request.method === 'GET' && url.pathname === '/stats') {
+      const { total, day, week } = await stats(env);
+      return json({ total, day, week });
+    }
     if (request.method === 'GET' && url.pathname === '/users') {
       if (!isAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
       return json({ users: await listUsers(env) });

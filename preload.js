@@ -95,6 +95,8 @@ contextBridge.exposeInMainWorld('api', {
   adminSaveNews: (l) => ipcRenderer.invoke('admin:saveNews', l),
   adminPackSummary: (id) => ipcRenderer.invoke('admin:packSummary', id),
   adminPublishEvent: (p) => ipcRenderer.invoke('admin:publishEvent', p),
+  communityStats: () => ipcRenderer.invoke('community:stats'),
+  adminSetEventState: (state) => ipcRenderer.invoke('admin:setEventState', state),
   modpackMcVersions: () => ipcRenderer.invoke('modpacks:mcVersions'),
   modpackCreate: (p) => ipcRenderer.invoke('modpacks:create', p),
   modpackUpdate: (p) => ipcRenderer.invoke('modpacks:update', p),

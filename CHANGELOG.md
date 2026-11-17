@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.52
+- **Más rápido**: los datos del evento se descargan una sola vez al abrir (antes se repetían), con espera máxima de 4 s si GitHub tarda; la lista de mods se muestra al instante cuando no cambió.
+- **Estado del evento**: en Admin hay botones Próximamente / Activo / Finalizado que cambian el estado al momento, sin volver a subir los mods.
+- **Contador de la comunidad** en Inicio (jugadores activos hoy y total), con cifras públicas sin nombres.
+- Incluye la dirección del contador de Cloudflare para que empiece a registrar usuarios.
+
 ## 1.0.50
 - **Skins que no cargaban**: si Mojang limita o falla, el launcher reintenta y usa servicios alternos; un fallo ya no se recuerda 10 minutos.
 - **Finalizar evento**: botón "Finalizar evento" en el panel de administración (publica el evento como finalizado de un clic).
