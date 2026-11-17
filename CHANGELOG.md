@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.49
+Correcciones del tablero de pruebas:
+- **Equipo**: al hacer clic en una persona ya no se congela la pantalla (la ventana de información estaba dentro de una pestaña oculta).
+- **Eventos**: al publicar, el administrador elige el estado (Próximamente, Activo o Finalizado) y puede subir el banner y el logo del evento; Inicio los muestra y marca "Evento finalizado" cuando corresponde.
+- **Skins guardadas**: cada skin se ve con el cuerpo completo en 3D (girable), con su capa si se guardó con una, su nombre editable y botón Usar.
+
 ## 1.0.48
 Cambios pedidos desde el tablero de pruebas:
 - **Eventos**: los ganadores salen solo como cabezas en una fila horizontal; nuevo recuadro "Comisionado por…" (va primero y abre el canal de quien comisionó); botones de tráiler, tweet o póster; fondo propio para la publicación del evento. Los colaboradores se ven en pequeño.

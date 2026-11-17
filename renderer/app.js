@@ -212,16 +212,20 @@ document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('c
 
 /* ---------- inicio: hero ---------- */
 let eventActive = true;
+let eventState = 'active';
 let eventInfo = { name: 'Evento', tagline: '', logo: '' };
 
 async function renderHero() {
   try {
     const m = await window.api.getData('manifest');
-    eventActive = !(m.event && m.event.active === false);
+    const evState = (m.event && m.event.status) || (m.event && m.event.active === false ? 'soon' : 'active');
+    eventState = evState;
+    eventActive = evState === 'active';
     const heroBox = document.querySelector('.hero');
     heroBox.classList.toggle('soon', !eventActive);
-    $('hero-badge-text').textContent = eventActive ? 'Evento actual' : 'Próximamente';
-    $('soon-art').hidden = eventActive;
+    heroBox.classList.toggle('ended', evState === 'ended');
+    $('hero-badge-text').textContent = evState === 'ended' ? 'Evento finalizado' : eventActive ? 'Evento actual' : 'Próximamente';
+    $('soon-art').hidden = eventActive || !!(m.event && (m.event.logo || m.event.image));
     setPlaying(playing);
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
     eventInfo = { name: (m.event && m.event.name) || 'Evento', logo: imageUrl(m.event && m.event.logo), mc: m.minecraftVersion, loader: String((m.loader && m.loader.type) || 'vanilla') };
@@ -1908,8 +1912,8 @@ function setPlaying(value) {
   playing = value;
   $('play-btn').disabled = value || !eventActive;
   const other = value && launchTarget && launchTarget.kind === 'pack';
-  $('play-label').textContent = value ? (other ? 'Jugando otro modpack' : 'Iniciando…') : eventActive ? 'Jugar' : 'Próximamente';
-  if (!value && !eventActive) $('status').textContent = 'Todavía no hay un evento activo';
+  $('play-label').textContent = value ? (other ? 'Jugando otro modpack' : 'Iniciando…') : eventActive ? 'Jugar' : eventState === 'ended' ? 'Finalizado' : 'Próximamente';
+  if (!value && !eventActive) $('status').textContent = eventState === 'ended' ? 'Este evento ya finalizó' : 'Todavía no hay un evento activo';
   const runName = launchTarget && launchTarget.title ? launchTarget.title : eventInfo.name;
   $('run-text').textContent = value ? `Jugando: ${runName}` : 'Sin partidas en curso';
   $('run-dot').classList.toggle('on', value);
@@ -2031,7 +2035,7 @@ window.api.onClose((d) => {
   const wasPack = launchTarget && launchTarget.kind === 'pack';
   if (!wasPack) $('status').textContent =
     d.code === 0 ? 'Minecraft se cerró' : `Minecraft se cerró con el código ${d.code}. Revisa la consola.`;
-  else $('status').textContent = eventActive ? 'Listo para jugar' : 'Todavía no hay un evento activo';
+  else $('status').textContent = eventActive ? 'Listo para jugar' : eventState === 'ended' ? 'Este evento ya finalizó' : 'Todavía no hay un evento activo';
   if (d.code !== 0) toast(`Minecraft se cerró con el código ${d.code}. Revisa Inicio o la Consola.`, 'error');
   setPlaying(false);
   renderContinue();
@@ -2493,6 +2497,23 @@ document.querySelectorAll('[data-ad-tab]').forEach((b) =>
 
 function chip(text, cls) { return el('span', `ad-chip${cls ? ' ' + cls : ''}`, text); }
 
+function paintArtState() {
+  $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con logo' : 'sin logo'}`;
+}
+async function pickEventArt(kind) {
+  $('ad-status').textContent = 'Eligiendo imagen…';
+  try {
+    const r = await window.api.adminPickImage(`${kind}-${$('ad-name').value || 'evento'}`);
+    if (!r) { $('ad-status').textContent = ''; return; }
+    if (kind === 'banner') adm.evImage = r.path; else adm.evLogo = r.path;
+    paintArtState();
+    $('ad-status').textContent = `${kind === 'banner' ? 'Banner' : 'Logo'} subido. Se verá al publicar el evento.`;
+  } catch (e) { $('ad-status').textContent = cleanError(e); }
+}
+$('ad-banner-pick').addEventListener('click', () => pickEventArt('banner'));
+$('ad-logo-pick').addEventListener('click', () => pickEventArt('logo'));
+$('ad-art-clear').addEventListener('click', () => { adm.evImage = ''; adm.evLogo = ''; paintArtState(); });
+
 async function loadAdmin() {
   if (!isAdmin) return;
   try {
@@ -2501,8 +2522,11 @@ async function loadAdmin() {
     adm.manifest = m;
     const ev = m.event || {};
     $('ad-live-name').textContent = ev.name || 'Sin evento';
-    $('ad-live-meta').textContent = `${ev.active ? 'Activo' : 'Inactivo'} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.server && m.server.host ? ' · ' + m.server.host : ''}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
-    $('ad-active').checked = !!ev.active;
+    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.server && m.server.host ? ' · ' + m.server.host : ''}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
+    $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
+    adm.evImage = ev.image || '';
+    adm.evLogo = ev.logo || '';
+    paintArtState();
     $('ad-name').value = ev.name || '';
     $('ad-tag').value = ev.tagline || '';
     $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
@@ -2606,8 +2630,9 @@ function toLocalInput(iso) {
 $('ad-publish').addEventListener('click', async () => {
   const id = $('ad-pack').value;
   const name = $('ad-name').value.trim();
-  const active = $('ad-active').checked;
-  const msg = `¿Publicar "${name}"?\n\n${active ? 'El evento queda ACTIVO: los jugadores podrán entrar.' : 'El evento queda inactivo.'}${id && adm.summary ? `\nSe publican ${adm.summary.mods} mods cifrados.` : ''}`;
+  const state = $('ad-state').value;
+  const active = state === 'active';
+  const msg = `¿Publicar "${name}"?\n\n${active ? 'El evento queda ACTIVO: los jugadores podrán entrar.' : state === 'ended' ? 'El evento queda FINALIZADO.' : 'El evento queda como próximamente.'}${id && adm.summary ? `\nSe publican ${adm.summary.mods} mods cifrados.` : ''}`;
   if (!await askConfirm(msg)) return;
   const btn = $('ad-publish');
   btn.disabled = true;
@@ -2620,7 +2645,7 @@ $('ad-publish').addEventListener('click', async () => {
     const r = await window.api.adminPublishEvent({
       id: id || undefined, password: $('ad-pass').value,
       form: {
-        active, name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
+        status: state, active, image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
         server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 }
       }
     });

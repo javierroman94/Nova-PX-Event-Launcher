@@ -208,16 +208,7 @@
       </div>
       <p id="events-count" class="muted"></p>
       <div id="events-list" class="events-grid"></div>
-      <dialog id="member-modal" class="event-modal" aria-label="Perfil">
-        <div class="event-modal-body member-profile">
-          <img id="mm-avatar" class="mm-avatar" alt="" hidden />
-          <h3 id="mm-name"></h3>
-          <div id="mm-role" class="muted"></div>
-          <p id="mm-bio"></p>
-          <div id="mm-links" class="mm-links"></div>
-          <div class="mp-actions"><button id="mm-close" type="button">Cerrar</button></div>
-        </div>
-      </dialog>
+
 
       <dialog id="event-modal" class="event-modal" aria-label="Detalle del evento">
         <img id="event-modal-img" class="event-modal-img" alt="" />
@@ -522,7 +513,13 @@
 
           <article class="ad-card">
             <header><span class="ad-step">2</span><div><h3>Datos del evento</h3><p class="muted">Lo que verán los jugadores en el launcher.</p></div></header>
-            <label class="check"><input id="ad-active" type="checkbox" /> Evento activo (los jugadores pueden entrar)</label>
+            <div class="field inline">
+              <div><label for="ad-state">Estado del evento</label>
+                <select id="ad-state"><option value="soon">Próximamente</option><option value="active">Activo (los jugadores pueden entrar)</option><option value="ended">Finalizado</option></select></div>
+              <div><label>Banner y logo</label>
+                <div class="btn-row"><button id="ad-banner-pick" type="button">Banner…</button><button id="ad-logo-pick" type="button">Logo…</button><button id="ad-art-clear" type="button">Quitar</button></div>
+                <small id="ad-art-state" class="muted"></small></div>
+            </div>
             <div class="field inline">
               <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
               <div><label for="ad-start">Empieza</label><input id="ad-start" type="datetime-local" /></div>
@@ -1049,6 +1046,17 @@
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
   <!-- Asistente de primer uso -->
+  <dialog id="member-modal" class="event-modal" aria-label="Perfil">
+        <div class="event-modal-body member-profile">
+          <img id="mm-avatar" class="mm-avatar" alt="" hidden />
+          <h3 id="mm-name"></h3>
+          <div id="mm-role" class="muted"></div>
+          <p id="mm-bio"></p>
+          <div id="mm-links" class="mm-links"></div>
+          <div class="mp-actions"><button id="mm-close" type="button">Cerrar</button></div>
+        </div>
+      </dialog>
+
   <dialog id="welcome-modal" class="event-modal welcome" aria-label="Bienvenida">
     <div class="event-modal-body">
       <div class="wz-dots" id="wz-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>

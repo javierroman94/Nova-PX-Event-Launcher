@@ -171,3 +171,15 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(e[1].commissioner, undefined);
   console.log('ok eventos: fondo, comisionado y posts');
 }
+
+{
+  const assert = require('assert');
+  const A = require('../lib/admin');
+  const m = A.mergeManifest({ event: { name: 'X' } }, { status: 'ended', image: 'images/b.png', logo: 'javascript:1' });
+  assert.strictEqual(m.event.status, 'ended');
+  assert.strictEqual(m.event.active, false);
+  assert.strictEqual(m.event.image, 'images/b.png');
+  assert.strictEqual(m.event.logo, '');
+  assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { status: 'active' }).event.active, true);
+  console.log('ok estado del evento (próximamente/activo/finalizado)');
+}

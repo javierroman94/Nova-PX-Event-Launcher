@@ -239,7 +239,10 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Tema:** Ajustes → Apariencia → Nova Neón (por defecto en la 1.0.34; puedes volver a Oscuro, Claro u OLED).
 - **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática: Halloween 10–31 oct, Navidad 1 nov–27 dic, Año Nuevo 28 dic–6 ene. Se apaga con «Sin decoración» o quitando «Efectos animados».
 
-## 4l. Novedades 1.0.44 a 1.0.48
+## 4l. Novedades 1.0.44 a 1.0.49
+
+En 1.0.49 el manifiesto del evento admite `event.status` (`soon`, `active`, `ended`), `event.image` (banner) y `event.logo`.
+
 
 - **Modo streamer** (Ajustes > Privacidad): oculta tu nick de forma manual o automática al detectar OBS, Streamlabs, XSplit y similares.
 - **Ajustes** rediseñados con buscador, perfil y grupos. Estas secciones llevan "Mi cuenta" y "Privacidad".

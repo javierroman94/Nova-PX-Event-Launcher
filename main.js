@@ -1880,7 +1880,7 @@ function writeSavedSkins(list) {
   fs.writeFileSync(SAVED_SKINS_INDEX, JSON.stringify(list));
 }
 ipcMain.handle('skins:saved:list', () => readSavedSkins().map((s) => {
-  try { return { id: s.id, name: s.name, variant: s.variant, cape: s.cape, capeName: s.capeName, dataUrl: `data:image/png;base64,${fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`)).toString('base64')}` }; } catch { return null; }
+  try { return { id: s.id, name: s.name, variant: s.variant, cape: s.cape, capeName: s.capeName, capeUrl: s.capeUrl, dataUrl: `data:image/png;base64,${fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`)).toString('base64')}` }; } catch { return null; }
 }).filter(Boolean));
 ipcMain.handle('skins:saved:add', (_e, p = {}) => {
   if (!pendingSkin) throw new Error('Primero elige un archivo de skin.');
@@ -1889,7 +1889,10 @@ ipcMain.handle('skins:saved:add', (_e, p = {}) => {
   const id = crypto.randomBytes(8).toString('hex');
   fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
   fs.writeFileSync(path.join(SAVED_SKINS_DIR, `${id}.png`), pendingSkin);
-  list.push({ id, name: cleanStr(p.name, 40) || 'Mi skin', variant: p.variant === 'slim' ? 'slim' : 'classic', ...capeFields(p) });
+  const entry = { id, name: cleanStr(p.name, 40) || 'Mi skin', variant: p.variant === 'slim' ? 'slim' : 'classic', ...capeFields(p) };
+  const capeObj = entry.cape && lastProfile && (lastProfile.capes || []).find((c) => c.id === entry.cape);
+  if (capeObj && TEXTURE_URL.test(String(capeObj.url || ''))) entry.capeUrl = capeObj.url;
+  list.push(entry);
   writeSavedSkins(list);
   return true;
 });
@@ -1994,7 +1997,8 @@ ipcMain.handle('skins:saved:auto', async () => {
     const id = crypto.randomBytes(8).toString('hex');
     fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
     fs.writeFileSync(path.join(SAVED_SKINS_DIR, `${id}.png`), buf);
-    list.push({ id, name: `Skin del ${new Date().toLocaleDateString('es')}`, variant: sk.variant === 'slim' ? 'slim' : 'classic', hash, auto: true, ...capeFields({ capeId: lastProfile.activeCape ? lastProfile.activeCape.id : '', capeName: lastProfile.activeCape && lastProfile.activeCape.alias }) });
+    const ac = lastProfile.activeCape;
+    list.push({ id, name: `Skin del ${new Date().toLocaleDateString('es')}`, variant: sk.variant === 'slim' ? 'slim' : 'classic', hash, auto: true, ...capeFields({ capeId: ac ? ac.id : '', capeName: ac && ac.alias }), ...(ac && TEXTURE_URL.test(String(ac.url || '')) ? { capeUrl: ac.url } : {}) });
     writeSavedSkins(list);
     return true;
   } catch { return false; }

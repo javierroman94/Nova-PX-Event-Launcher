@@ -348,27 +348,46 @@
   });
 
   /* --- skins guardadas: cambio con un clic --- */
+  // Skins guardadas: cuerpo completo en 3D (con su capa si la tenía), nombre editable y botón para usarla.
+  let savedEnv = null;
+  let savedViewers = [];
   async function paintSaved() {
     const box = g('saved-skins');
+    savedViewers.forEach((v) => v.destroy());
+    savedViewers = [];
     box.replaceChildren();
     let list = [];
     try { list = await window.api.skinsSavedList(); } catch {}
     if (!list.length) { const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'Elige un archivo y pulsa "Guardar en mi lista" para tenerlo aquí.'; box.append(p); return; }
-    list.forEach((s) => {
+    savedEnv = savedEnv || (window.SkinViewer && window.SkinViewer.createEnv());
+    list.forEach((s, i) => {
       const card = document.createElement('div');
       card.className = 'saved-skin';
-      const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64;
-      const im = new Image();
-      im.onload = () => { const c = cv.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64); c.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64); };
-      im.src = s.dataUrl;
-      const name = document.createElement('div'); name.className = 'saved-name';
-      name.textContent = `${s.name} · ${s.variant === 'slim' ? 'Slim' : 'Default'}${s.cape ? ' · con capa' : ''}`;
-      name.title = 'Clic para cambiar el nombre';
-      name.style.cursor = 'pointer';
-      name.addEventListener('click', async () => {
-        const nn = await askName('Cambiar nombre', s.name);
-        if (nn !== null) { await window.api.skinsSavedRename(s.id, nn); paintSaved(); }
-      });
+      const stageBox = document.createElement('div'); stageBox.className = 'saved-stage';
+      const cv = document.createElement('canvas'); cv.className = 'member-3d';
+      cv.setAttribute('aria-label', `Skin 3D: ${s.name}`);
+      stageBox.append(cv);
+      let viewer = null;
+      try { viewer = window.SkinViewer.create(cv, { env: savedEnv, static: true, distance: 106 }); } catch {}
+      if (viewer) {
+        savedViewers.push(viewer);
+        setTimeout(async () => {
+          try {
+            const im = await loadImage(s.dataUrl);
+            viewer.setSkin(im, s.variant === 'slim');
+            if (s.capeUrl && onlyMojang(s.capeUrl)) {
+              const ct = await window.api.skinFetch(s.capeUrl, 'cape');
+              viewer.setCape(await loadImage(ct.dataUrl));
+            } else viewer.setCape(null);
+          } catch {}
+        }, 80 * i);
+      } else {
+        cv.remove();
+        const img = document.createElement('img'); img.alt = s.name; img.src = s.dataUrl; stageBox.append(img);
+      }
+      const name = document.createElement('div'); name.className = 'saved-name'; name.textContent = s.name;
+      const meta = document.createElement('div'); meta.className = 'saved-meta muted';
+      meta.textContent = `${s.variant === 'slim' ? 'Slim' : 'Default'}${s.cape === '' ? ' · sin capa' : s.cape ? ` · capa${s.capeName ? `: ${s.capeName}` : ''}` : ''}`;
       const use = document.createElement('button'); use.type = 'button'; use.className = 'primary'; use.textContent = 'Usar';
       use.addEventListener('click', async () => {
         use.disabled = true; msg('Cambiando tu skin…');
@@ -381,9 +400,16 @@
         } catch (err) { failure(err); }
         use.disabled = false;
       });
-      const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', 'Quitar skin guardada');
+      const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Editar nombre';
+      edit.addEventListener('click', async () => {
+        const nn = await askName('Cambiar nombre', s.name);
+        if (nn !== null) { await window.api.skinsSavedRename(s.id, nn); paintSaved(); }
+      });
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'saved-del'; del.textContent = '×'; del.setAttribute('aria-label', 'Quitar skin guardada');
       del.addEventListener('click', async () => { await window.api.skinsSavedRemove(s.id); paintSaved(); });
-      card.append(cv, name, use, del);
+      const actions = document.createElement('div'); actions.className = 'saved-actions';
+      actions.append(use, edit);
+      card.append(stageBox, name, meta, actions, del);
       box.append(card);
     });
   }
