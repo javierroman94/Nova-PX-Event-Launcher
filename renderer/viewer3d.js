@@ -258,7 +258,8 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     if (!env) return null;
     const { gl, atlas, blockMesh, shadowMesh, makeTexture, makeMesh, drawMesh } = env;
     const out2d = shared ? canvas.getContext('2d') : null;
-    const states = opts.states ? STATES.filter((s) => opts.states.includes(s.name)) : STATES;
+    const still = !!opts.static; // sin animación: solo se gira con el mouse
+    const states = still ? STATES.filter((s) => s.name === 'idle') : opts.states ? STATES.filter((s) => opts.states.includes(s.name)) : STATES;
 
     let skinTex = null;
     let capeTex = null;
@@ -333,7 +334,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     let dragging = false;
     let moved = 0;
     let lastX = 0;
-    let animated = opts.animated !== false;
+    let animated = !still && opts.animated !== false;
     let blockScale = 0;
     let particles = [];
     let lastHitPhase = 0;
@@ -410,7 +411,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
         p.rx += dt * 5; p.ry += dt * 6;
         return p.life > 0 && p.y > -1;
       });
-      if (!dragging && performance.now() - lastDrag > 2500) yawUser *= Math.exp(-dt * 1.6);
+      if (!still && !dragging && performance.now() - lastDrag > 2500) yawUser *= Math.exp(-dt * 1.6);
     }
 
     function copyOut() {
@@ -427,7 +428,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
       const proj = persp((28 * Math.PI) / 180, aspect, 10, 400);
       const dist = opts.distance || (aspect < 0.85 ? 108 : 92); // en pantallas estrechas se aleja para que quepan los saltos
       const view = mul(proj, mul(T(0, -2, -dist), RX(0.18)));
-      const sway = Math.sin(clock * 0.5) * 0.12;
+      const sway = still ? 0 : Math.sin(clock * 0.5) * 0.12;
       const world = mul(view, mul(RY(0.5 + sway + yawUser + pose.spin), T(0, -14, 0)));
 
       drawMesh(shadowMesh, atlas, mul(world, T(0, 0.05, 0)), 0.02, 0);
@@ -503,12 +504,13 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
       if (!dragging) return;
       dragging = false;
       lastDrag = performance.now();
-      if (moved < 5) trigger(Math.random() < 0.5 ? 'wave' : 'jump');
+      if (!still && moved < 5) trigger(Math.random() < 0.5 ? 'wave' : 'jump');
     };
     canvas.addEventListener('pointerup', endDrag);
     canvas.addEventListener('pointercancel', () => { dragging = false; });
 
     function trigger(name) {
+      if (still) return;
       const st = STATES.find((s) => s.name === name);
       if (!st) return;
       override = { name, t: 0, len: Math.min(st.len, 2.4) };
@@ -524,7 +526,7 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     return {
       setSkin,
       setCape,
-      setAnimated(v) { animated = !!v; requestDraw(); },
+      setAnimated(v) { animated = !still && !!v; requestDraw(); },
       trigger,
       destroy() { alive = false; cancelAnimationFrame(raf); }
     };

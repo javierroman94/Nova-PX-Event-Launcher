@@ -5,7 +5,7 @@
 
   let stage = null;
   try {
-    stage = window.SkinViewer.create(g('skin3d'));
+    stage = window.SkinViewer.create(g('skin3d'), { static: true });
   } catch {}
   if (!stage) {
     g('skin3d').hidden = true;
@@ -245,18 +245,46 @@
     if (!premium) {
       notice.hidden = false;
       notice.textContent =
-        'Las cuentas no premium no pueden cambiar la skin desde el launcher: Mojang solo lo permite con una cuenta de Microsoft. ' +
-        'En los servidores con SkinsRestorer o similar, la skin la define el servidor.';
+        'Sin cuenta de Microsoft no se puede cambiar la skin en Mojang. Aquí eliges una skin que se guarda en este equipo: ' +
+        'la ves en el launcher y, en Fabric y Forge, el launcher añade un mod pequeño para verla también dentro del juego (solo tú). ' +
+        'Para que todos la vean, el servidor debe usar SkinsRestorer o similar.';
+      g('skins-grid').hidden = false;
+      g('skin-apply').textContent = 'Usar esta skin';
+      await renderLocal();
       return;
     }
+    g('cape-box').hidden = false;
+    g('skin-apply').textContent = 'Aplicar skin';
     notice.hidden = true;
     g('skins-grid').hidden = false;
     msg('Cargando tu perfil…');
     try {
       await renderProfile(await window.api.skinsProfile());
       msg('');
+      window.api.skinsSavedAuto().then((added) => { if (added) paintSaved(); }).catch(() => {});
     } catch (err) {
       failure(err);
+    }
+  }
+
+  // Cuentas no premium: la skin se guarda en este equipo (launcher y, con mod, dentro del juego).
+  async function renderLocal() {
+    const seq = ++loadSeq;
+    g('cape-box').hidden = true;
+    let local = null;
+    try { local = await window.api.skinsLocalGet(); } catch {}
+    if (local && !pickedImage) {
+      try {
+        const img = await loadImage(local.dataUrl);
+        if (seq !== loadSeq) return;
+        drawBoth(img, local.slim);
+        g('skin-name').textContent = `${user.name} · tu skin local · ${local.slim ? 'Slim' : 'Default'}`;
+        const r = document.querySelector('input[name="skin-variant"][value="' + (local.slim ? 'slim' : 'classic') + '"]');
+        if (r) r.checked = true;
+      } catch {}
+    } else if (!pickedImage) {
+      g('skin-name').textContent = `${user.name} · sin skin elegida (se ve Steve)`;
+      drawBoth(null, false);
     }
   }
 
@@ -288,6 +316,14 @@
     msg('Subiendo la skin a Mojang…');
     try {
       const variant = document.querySelector('input[name="skin-variant"]:checked').value;
+      if (!user || user.mode !== 'premium') {
+        await window.api.skinsLocalSet(variant);
+        pickedImage = null;
+        await renderLocal();
+        window.dispatchEvent(new Event('nova-skin-changed'));
+        msg('Skin guardada en este equipo. La verás en el launcher y en el juego (Fabric/Forge).');
+        return;
+      }
       const applied = await window.api.skinsApply(variant);
       pickedImage = null;
       await renderProfile(applied);
@@ -319,7 +355,8 @@
         use.disabled = true; msg('Cambiando tu skin…');
         try {
           pickedImage = null; g('skin-apply').disabled = true; g('skin-save').disabled = true;
-          await renderProfile(await window.api.skinsSavedUse(s.id));
+          const res = await window.api.skinsSavedUse(s.id);
+          if (res && res.local) await renderLocal(); else await renderProfile(res);
           window.dispatchEvent(new Event('nova-skin-changed'));
           msg('Skin cambiada. Puede tardar un momento en verse en el juego.');
         } catch (err) { failure(err); }

@@ -31,3 +31,18 @@ assert.deepStrictEqual(enforce(dir, { mods: false, resourcepacks: false, shaderp
 assert.ok(fs.existsSync(path.join(dir, 'mods/libre.jar')));
 fs.rmSync(dir, { recursive: true, force: true });
 console.log('lock.test OK');
+
+{
+  const assert = require('assert');
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const L = require('../lib/lock');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'lk-'));
+  fs.mkdirSync(path.join(d, 'mods'));
+  fs.writeFileSync(path.join(d, 'mods', 'csl.jar'), 'x');
+  fs.writeFileSync(path.join(d, 'mods', 'otro.jar'), 'y');
+  fs.writeFileSync(path.join(d, '.managed-mods.json'), '[]');
+  fs.writeFileSync(path.join(d, '.extra-mods.json'), JSON.stringify(['csl.jar']));
+  L.enforce(d);
+  assert.deepStrictEqual(fs.readdirSync(path.join(d, 'mods')), ['csl.jar']);
+  console.log('ok lock respeta .extra-mods.json');
+}

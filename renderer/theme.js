@@ -7,16 +7,43 @@
 
   let state = { theme: 'nova', accent: '#35d6ff', bgDim: 55, bgBlur: 6, effects: true, season: 'auto' };
 
-  // Temporada según la fecha: Halloween (10-31 oct), Navidad (1 nov-27 dic), Año Nuevo (28 dic-6 ene).
+  // Temporada según la fecha: San Valentín (7-14 feb), Carnaval (15-28 feb), Día de la Madre (5-14 may), 10 de Agosto (1-10 ago), Halloween (10-31 oct), Navidad (1 nov-27 dic), Año Nuevo (28 dic-6 ene).
   function seasonNow(choice) {
     if (choice === 'off') return '';
     if (choice && choice !== 'auto') return choice;
     const d = new Date();
     const md = (d.getMonth() + 1) * 100 + d.getDate();
+    if (md >= 207 && md <= 214) return 'sanvalentin';
+    if (md >= 215 && md <= 228) return 'carnaval';
+    if (md >= 505 && md <= 514) return 'madres';
+    if (md >= 801 && md <= 810) return 'ecuador';
     if (md >= 1010 && md <= 1031) return 'halloween';
     if (md >= 1101 && md <= 1227) return 'navidad';
     if (md >= 1228 || md <= 106) return 'anio';
     return '';
+  }
+  const BANNERS = {
+    navidad: ['🎄', 'Navidad en Nova PX', 'Felices fiestas, jugadores. ¡Gracias por acompañarnos este año!'],
+    halloween: ['🎃', 'Noche de Halloween', 'Semana de sustos: prepárate para lo que viene en Nova PX.'],
+    anio: ['🎆', 'Feliz Año Nuevo', 'Nuevo año, nuevos eventos. ¡Vamos con todo!'],
+    sanvalentin: ['💘', 'San Valentín', 'Juega en equipo, que en Nova PX nadie juega solo.'],
+    carnaval: ['🎉', 'Carnaval', 'Días de fiesta y de eventos. ¡A divertirse!'],
+    madres: ['🌸', 'Día de la Madre', 'Un abrazo a todas las mamás de la comunidad.'],
+    ecuador: ['🇪🇨', '10 de Agosto', 'Primer Grito de la Independencia: orgullo ecuatoriano en Nova PX.']
+  };
+  function paintSeasonBanner(season) {
+    const box = document.getElementById('season-banner');
+    if (!box) return;
+    const b = BANNERS[season];
+    box.hidden = !b;
+    if (!b) return;
+    box.replaceChildren();
+    const ico = document.createElement('span'); ico.className = 'sb-ico'; ico.textContent = b[0];
+    const txt = document.createElement('div');
+    const h = document.createElement('b'); h.textContent = b[1];
+    const p = document.createElement('p'); p.textContent = b[2];
+    txt.append(h, p);
+    box.append(ico, txt);
   }
   let saveTimer = 0;
 
@@ -31,6 +58,7 @@
     state = { ...state, ...s };
     root.dataset.theme = state.theme;
     root.dataset.season = seasonNow(state.season);
+    paintSeasonBanner(root.dataset.season);
     if (g('season-select')) g('season-select').value = state.season;
     root.style.setProperty('--accent', state.accent);
     root.style.setProperty('--accent-ink', inkFor(state.accent));
@@ -103,7 +131,10 @@
     const s = root.dataset.season;
     if (s === 'navidad') return 'snow';
     if (s === 'halloween') return 'embers';
-    if (s === 'anio') return 'confetti';
+    if (s === 'anio' || s === 'carnaval') return 'confetti';
+    if (s === 'sanvalentin') return 'hearts';
+    if (s === 'madres') return 'petals';
+    if (s === 'ecuador') return 'tri';
     return state.theme === 'nova' ? 'net' : 'dots';
   }
 
@@ -130,6 +161,9 @@
         const p = { x: Math.random() * w, y: Math.random() * h, r: 0.8 + Math.random() * 2.1, vy: -(8 + Math.random() * 22), vx: (Math.random() - 0.5) * 8, a: 0.15 + Math.random() * 0.4, ph: Math.random() * 6.28 };
         if (mode === 'snow') { p.r = 1 + Math.random() * 2.6; p.vy = 18 + Math.random() * 34; p.a = 0.35 + Math.random() * 0.5; }
         if (mode === 'embers') { p.vy = -(20 + Math.random() * 40); p.a = 0.3 + Math.random() * 0.6; }
+        if (mode === 'hearts') { p.r = 6 + Math.random() * 8; p.vy = -(14 + Math.random() * 26); p.a = 0.3 + Math.random() * 0.5; }
+        if (mode === 'petals') { p.r = 2.5 + Math.random() * 2.5; p.vy = 14 + Math.random() * 24; p.a = 0.55 + Math.random() * 0.35; }
+        if (mode === 'tri') { p.r = 2 + Math.random() * 2.5; p.vy = 25 + Math.random() * 45; p.tri = Math.floor(Math.random() * 3); p.a = 0.85; }
         if (mode === 'confetti') { p.r = 2 + Math.random() * 2.5; p.vy = 25 + Math.random() * 45; p.hue = Math.floor(Math.random() * 360); p.a = 0.8; }
         if (mode === 'net') { p.vy = (Math.random() - 0.5) * 22; p.vx = (Math.random() - 0.5) * 22; p.r = 1 + Math.random() * 1.6; p.a = 0.5 + Math.random() * 0.4; }
         return p;
@@ -143,11 +177,11 @@
       last = t;
       ctx.clearRect(0, 0, w, h);
       const mode = fxMode();
-      const color = mode === 'snow' ? '#ffffff' : mode === 'embers' ? '#ff8a3d' : state.accent;
+      const color = mode === 'snow' ? '#ffffff' : mode === 'hearts' ? '#ff4d79' : mode === 'embers' ? '#ff8a3d' : state.accent;
       ctx.fillStyle = color;
       for (const p of parts) {
         p.ph += dt;
-        p.x += (p.vx + (mode === 'snow' || mode === 'confetti' ? Math.sin(p.ph * 1.3) * 14 : 0)) * dt;
+        p.x += (p.vx + (mode === 'snow' || mode === 'confetti' || mode === 'petals' || mode === 'tri' || mode === 'hearts' ? Math.sin(p.ph * 1.3) * 14 : 0)) * dt;
         p.y += p.vy * dt;
         const down = p.vy > 0 && mode !== 'net';
         if (mode === 'net') {
@@ -160,8 +194,17 @@
         if (p.x > w + 6) p.x = -6;
         ctx.globalAlpha = p.a;
         if (mode === 'confetti') ctx.fillStyle = `hsl(${p.hue} 90% 60%)`;
+        if (mode === 'tri') ctx.fillStyle = ['#ffd100', '#0033a0', '#ef3340'][p.tri];
+        if (mode === 'petals') ctx.fillStyle = '#ffb3d1';
+        if (mode === 'hearts') {
+          ctx.fillStyle = '#ff4d79';
+          ctx.font = `${p.r * 2}px sans-serif`;
+          ctx.fillText('♥', p.x, p.y);
+          continue;
+        }
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        if (mode === 'petals') ctx.ellipse(p.x, p.y, p.r * 1.5, p.r * 0.8, p.ph, 0, Math.PI * 2);
+        else ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
       }
       if (mode === 'net') {

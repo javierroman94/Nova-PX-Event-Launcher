@@ -1211,7 +1211,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .season-lights { position: fixed; top: 0; left: 0; right: 0; height: 18px; z-index: 90; pointer-events: none; display: none; }
 :root[data-season="navidad"] .season-lights,
 :root[data-season="halloween"] .season-lights,
-:root[data-season="anio"] .season-lights { display: block; }
+:root[data-season="anio"] .season-lights,
+:root[data-season="sanvalentin"] .season-lights,
+:root[data-season="carnaval"] .season-lights,
+:root[data-season="madres"] .season-lights,
+:root[data-season="ecuador"] .season-lights { display: block; }
 .season-lights i { position: absolute; inset: 0; background-repeat: repeat-x; background-size: 56px 18px; }
 /* luces de colores: dos capas que se encienden por turnos */
 :root[data-season="navidad"] .season-lights i:nth-child(1) {
@@ -1389,3 +1393,49 @@ html.win .topbar button, html.win .topbar input, html.win .topbar a, html.win .t
 
 .news-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
 .announce-img { height: 34px; width: auto; border-radius: 6px; object-fit: cover; }
+
+.skin-row { grid-template-columns: auto auto 1fr; align-items: center; }
+.person canvas { width: 64px; height: 64px; image-rendering: pixelated; border-radius: 10px; }
+
+.brand-ico { width: 1em; height: 1em; display: inline-block; vertical-align: -0.12em; }
+.link-ico .brand-ico { width: 38px; height: 38px; object-fit: contain; border-radius: 8px; }
+.link-chip { display: inline-flex; align-items: center; gap: 6px; }
+.link-chip .brand-ico { width: 14px; height: 14px; }
+.link-tile:hover .link-ico .brand-ico { filter: drop-shadow(0 0 8px var(--accent)); }
+
+/* intro: logo con anillos de luz y destello */
+.splash-orb { position: relative; width: 150px; height: 150px; display: grid; place-items: center; }
+.splash-logo-wrap { position: relative; width: 96px; height: 96px; border-radius: 24px; overflow: hidden; animation: sp-pop .9s cubic-bezier(.2, .9, .25, 1.15) both; }
+.splash-logo-wrap .splash-logo { width: 96px; height: 96px; animation: none; }
+.splash .shine { position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .85) 50%, transparent 65%); transform: translateX(-120%); animation: sp-shine 1s ease .9s both; mix-blend-mode: soft-light; }
+.splash .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent, #35d6ff); opacity: 0; animation: sp-ring 1.8s ease-out both; }
+.splash .ring.r2 { animation-delay: .35s; }
+.splash .ring.r3 { animation-delay: .7s; }
+.splash-bar i { animation: bar-load 1.4s cubic-bezier(.45, 0, .2, 1) .5s both; }
+.splash.ready .splash-bar i { animation: none; transform: scaleX(1); }
+@keyframes sp-pop { 0% { opacity: 0; transform: scale(.4) rotate(-12deg); } 100% { opacity: 1; transform: none; } }
+@keyframes sp-ring { 0% { opacity: .8; transform: scale(.55); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes sp-shine { to { transform: translateX(120%); } }
+@keyframes bar-load { from { transform: scaleX(0); } to { transform: scaleX(.88); } }
+html.no-fx .splash .ring, html.no-fx .splash .shine { animation: none; opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .splash .ring, .splash .shine { animation: none; opacity: 0; } }
+
+/* nuevas temporadas: luces y tono */
+:root[data-season="sanvalentin"] .season-lights i:nth-child(1) { background-image: radial-gradient(circle at 10px 6px, #ff4d79 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #ff9ebb 0 3.5px, transparent 4.5px); filter: drop-shadow(0 0 6px #ff4d79); animation: lights-a 2s ease-in-out infinite; }
+:root[data-season="sanvalentin"] .season-lights i:nth-child(2) { background-image: radial-gradient(circle at 24px 6px, #fff 0 3px, transparent 4px); filter: drop-shadow(0 0 6px #ff9ebb); animation: lights-b 2s ease-in-out infinite; }
+:root[data-season="carnaval"] .season-lights i:nth-child(1) { background-image: radial-gradient(circle at 10px 6px, #ff3b4e 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #34e08a 0 3.5px, transparent 4.5px); filter: drop-shadow(0 0 5px #ff3b4e); animation: lights-a 1.2s ease-in-out infinite; }
+:root[data-season="carnaval"] .season-lights i:nth-child(2) { background-image: radial-gradient(circle at 24px 6px, #ffd23f 0 3.5px, transparent 4.5px), radial-gradient(circle at 52px 6px, #b46bff 0 3.5px, transparent 4.5px); filter: drop-shadow(0 0 5px #ffd23f); animation: lights-b 1.2s ease-in-out infinite; }
+:root[data-season="madres"] .season-lights i:nth-child(1) { background-image: radial-gradient(circle at 10px 6px, #ffb3d1 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #ffe28a 0 3.5px, transparent 4.5px); filter: drop-shadow(0 0 6px #ffb3d1); animation: lights-a 2.4s ease-in-out infinite; }
+:root[data-season="madres"] .season-lights i:nth-child(2) { background-image: radial-gradient(circle at 24px 6px, #b5f0c8 0 3px, transparent 4px); filter: drop-shadow(0 0 6px #b5f0c8); animation: lights-b 2.4s ease-in-out infinite; }
+:root[data-season="ecuador"] .season-lights i:nth-child(1) { background-image: radial-gradient(circle at 10px 6px, #ffd100 0 3.5px, transparent 4.5px), radial-gradient(circle at 38px 6px, #3b6df0 0 3.5px, transparent 4.5px); filter: drop-shadow(0 0 5px #ffd100); animation: lights-a 1.8s ease-in-out infinite; }
+:root[data-season="ecuador"] .season-lights i:nth-child(2) { background-image: radial-gradient(circle at 24px 6px, #ef3340 0 3.5px, transparent 4.5px); filter: drop-shadow(0 0 5px #ef3340); animation: lights-b 1.8s ease-in-out infinite; }
+:root[data-theme="nova"][data-season="sanvalentin"] body { --violet: #ff4d79; }
+:root[data-theme="nova"][data-season="carnaval"] body { --violet: #b46bff; }
+:root[data-theme="nova"][data-season="madres"] body { --violet: #ffb3d1; }
+:root[data-theme="nova"][data-season="ecuador"] body { --violet: #ffd100; }
+.season-banner { display: flex; align-items: center; gap: 14px; margin: 14px 0 0; padding: 14px 18px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--violet) 55%, var(--line)); background: linear-gradient(100deg, color-mix(in srgb, var(--violet) 22%, var(--surface)), var(--surface)); }
+.season-banner[hidden] { display: none; }
+.season-banner .sb-ico { font-size: 34px; line-height: 1; }
+.season-banner p { margin: 2px 0 0; opacity: .85; }
+
+.saved-skins > p { grid-column: 1 / -1; margin: 0; }

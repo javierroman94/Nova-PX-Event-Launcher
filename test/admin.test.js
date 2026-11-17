@@ -146,3 +146,16 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(R.sanitize({ announcement: { image: 'javascript:1' } }).announcement.image, '');
   console.log('ok noticias/anuncio con imagen y enlaces');
 }
+
+{
+  const assert = require('assert');
+  const A = require('../lib/admin');
+  const t = A.sanitizeTeam([{ nick: 'Ana', skin: 'images/ana-skin.png', slim: true }, { nick: 'Bo', skin: 'https://x.com/a.png' }, { nick: 'Cy', skin: 'images/c.jpg' }]);
+  assert.strictEqual(t[0].skin, 'images/ana-skin.png');
+  assert.strictEqual(t[0].slim, true);
+  assert.strictEqual(t[1].skin, undefined);
+  assert.strictEqual(t[2].skin, undefined);
+  const e = A.sanitizeEvents([{ name: 'E', roster: [{ nick: 'Dan', skin: 'images/d.png' }] }]);
+  assert.strictEqual(e[0].roster[0].skin, 'images/d.png');
+  console.log('ok skins subidas por admin');
+}

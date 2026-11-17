@@ -120,6 +120,7 @@ function defaultSettings() {
     notifyEvents: true,
     shareUsage: true,
     streamer: 'auto',
+    intro: true,
     welcomed: false,
     playSeconds: 0
   };
@@ -167,6 +168,7 @@ function cleanSettings(s) {
     notifyEvents: s.notifyEvents !== false,
     shareUsage: s.shareUsage !== false,
     streamer: streamer.cleanMode(s.streamer),
+    intro: s.intro !== false,
     welcomed: s.welcomed === true,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
@@ -1895,14 +1897,111 @@ ipcMain.handle('skins:saved:remove', (_e, id) => {
 ipcMain.handle('skins:saved:use', async (_e, id) => {
   const s = readSavedSkins().find((x) => x.id === id);
   if (!s) throw new Error('Esa skin ya no está guardada.');
-  const token = premiumToken();
   const buf = fs.readFileSync(path.join(SAVED_SKINS_DIR, `${s.id}.png`));
   skinsApi.validateSkinPng(buf);
+  if (!session || session.mode !== 'premium') { setLocalSkin(buf, s.variant); return { local: true }; }
+  const token = premiumToken();
   await skinsApi.uploadSkin(token, buf, s.variant);
   pendingSkin = null;
   lastProfile = await skinsApi.getProfile(token);
   return lastProfile;
 });
+
+/* ---------- skin local (cuentas no premium) y historial automático ---------- */
+const LOCAL_SKIN_FILE = path.join(app.getPath('userData'), 'local-skin.png');
+const LOCAL_SKIN_META = path.join(app.getPath('userData'), 'local-skin.json');
+function readLocalSkin() {
+  try {
+    const buf = fs.readFileSync(LOCAL_SKIN_FILE);
+    const meta = JSON.parse(fs.readFileSync(LOCAL_SKIN_META, 'utf8'));
+    return { buf, slim: meta.variant === 'slim' };
+  } catch { return null; }
+}
+function setLocalSkin(buf, variant) {
+  skinsApi.validateSkinPng(buf);
+  fs.mkdirSync(path.dirname(LOCAL_SKIN_FILE), { recursive: true });
+  fs.writeFileSync(LOCAL_SKIN_FILE, buf);
+  fs.writeFileSync(LOCAL_SKIN_META, JSON.stringify({ variant: variant === 'slim' ? 'slim' : 'classic' }));
+  skinCache.clear();
+}
+ipcMain.handle('skins:local:get', () => {
+  const s = readLocalSkin();
+  return s ? { dataUrl: `data:image/png;base64,${s.buf.toString('base64')}`, slim: s.slim } : null;
+});
+ipcMain.handle('skins:local:set', (_e, variant) => {
+  if (!pendingSkin) throw new Error('Primero elige un archivo de skin.');
+  setLocalSkin(pendingSkin, variant);
+  pendingSkin = null;
+  return true;
+});
+ipcMain.handle('skins:local:clear', () => {
+  fs.rmSync(LOCAL_SKIN_FILE, { force: true });
+  fs.rmSync(LOCAL_SKIN_META, { force: true });
+  skinCache.clear();
+  return true;
+});
+// Descarga la skin PNG de una persona del equipo/evento que el administrador subió (jugadores sin premium).
+ipcMain.handle('skin:custom', async (_e, rawUrl) => {
+  const url = String(rawUrl || '');
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return null;
+  const key = `custom:${url}`;
+  const hit = skinCache.get(key);
+  if (hit && Date.now() - hit.at < SKIN_TTL) return hit.value;
+  try {
+    const buf = await downloadBuffer(url);
+    skinsApi.validateSkinPng(buf);
+    const value = { dataUrl: `data:image/png;base64,${buf.toString('base64')}` };
+    skinCache.set(key, { at: Date.now(), value });
+    return value;
+  } catch { return null; }
+});
+// Guarda sola la skin que tienes puesta en tu cuenta (así se va armando tu historial; Mojang no da el pasado).
+ipcMain.handle('skins:saved:auto', async () => {
+  try {
+    const sk = lastProfile && lastProfile.activeSkin;
+    const url = sk && https(sk.url);
+    if (!url || !TEXTURE_URL.test(url)) return false;
+    const buf = await downloadBuffer(url);
+    skinsApi.validateSkinPng(buf);
+    const hash = crypto.createHash('sha1').update(buf).digest('hex');
+    let list = readSavedSkins();
+    if (list.some((s) => s.hash === hash)) return false;
+    if (list.length >= 50) {
+      const old = list.find((s) => s.auto);
+      if (!old) return false;
+      fs.rmSync(path.join(SAVED_SKINS_DIR, `${old.id}.png`), { force: true });
+      list = list.filter((s) => s !== old);
+    }
+    const id = crypto.randomBytes(8).toString('hex');
+    fs.mkdirSync(SAVED_SKINS_DIR, { recursive: true });
+    fs.writeFileSync(path.join(SAVED_SKINS_DIR, `${id}.png`), buf);
+    list.push({ id, name: `Skin del ${new Date().toLocaleDateString('es')}`, variant: sk.variant === 'slim' ? 'slim' : 'classic', hash, auto: true });
+    writeSavedSkins(list);
+    return true;
+  } catch { return false; }
+});
+
+// En el juego: sin premium, el mod CustomSkinLoader enseña tu skin local (solo Fabric y Forge).
+async function ensureLocalSkinInGame(dir, manifest, loaderType) {
+  const local = readLocalSkin();
+  if (!local || !session || session.mode === 'premium' || !session.name || loaderType === 'vanilla') return;
+  try {
+    const r = await content.installFromModrinth({
+      request: apiRequest, download: (u) => downloadBuffer(u), root: dir, type: 'mod',
+      projectId: 'customskinloader', mc: manifest.minecraftVersion, loader: loaderType,
+      onStatus: (text) => send('game:status', { text })
+    });
+    const extraFile = path.join(dir, '.extra-mods.json');
+    let extra = [];
+    try { extra = JSON.parse(fs.readFileSync(extraFile, 'utf8')); } catch {}
+    fs.writeFileSync(extraFile, JSON.stringify([...new Set([...(Array.isArray(extra) ? extra : []), ...r.installed])]));
+    const skinDir = path.join(dir, 'CustomSkinLoader', 'LocalSkin', 'skins');
+    fs.mkdirSync(skinDir, { recursive: true });
+    fs.writeFileSync(path.join(skinDir, `${session.name}.png`), local.buf);
+  } catch (e) {
+    send('game:status', { text: 'No se pudo preparar tu skin para el juego (se verá la de siempre).' });
+  }
+}
 
 ipcMain.handle('skins:cape', async (_e, capeId) => {
   const token = premiumToken();
@@ -1957,6 +2056,8 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
   const hit = skinCache.get(key);
   if (!fresh && hit && Date.now() - hit.at < SKIN_TTL) return hit.value;
   let value = null;
+  const localOwn = session && session.mode !== 'premium' && session.name === name ? readLocalSkin() : null;
+  if (localOwn) return { dataUrl: `data:image/png;base64,${localOwn.buf.toString('base64')}`, slim: localOwn.slim, cape: null };
   try {
     let skinUrl = null;
     let capeUrl = null;
@@ -2055,6 +2156,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     enforceLock();
     if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
     enforceLock();
+    await ensureLocalSkinInGame(eventDir, manifest, loaderType);
     // Los ajustes propios del modpack (RAM, Java, argumentos, ventana) pesan más que los de Ajustes.
     const st = packs.mergeSettings(readSettings(), pack && pack.settings);
     const javaPath = await resolveJava(manifest, loaderType, st);

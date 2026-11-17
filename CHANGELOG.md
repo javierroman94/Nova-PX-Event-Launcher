@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.47
+- **Skins**: el visor 3D ya no se anima, solo gira con el mouse. La skin que tienes puesta en tu cuenta premium se guarda sola en tu lista (Mojang no da el pasado, así que el historial se arma desde ahora).
+- **Sin premium, sin Steve**: eliges una skin local que se ve en el launcher y, en Fabric y Forge, dentro del juego mediante el mod CustomSkinLoader (solo la ve quien la usa). El administrador también puede subir una skin PNG para personas del Equipo y de los eventos que no tengan cuenta premium.
+- **Comunidad**: logos reales de Discord, YouTube, X, Twitch, TikTok, Instagram, GitHub y Facebook; la web de Nova PX usa el logo del launcher.
+- **Intro animada**: el logo aparece con anillos de luz y destello, y se cierra cuando el launcher termina de cargar. Se puede desactivar en Ajustes > Apariencia o saltar con un clic.
+- **Más temporadas**: San Valentín, Carnaval, Día de la Madre y 10 de Agosto, con su decoración y un banner en Inicio.
+
 ## 1.0.46
 - **Anuncios con imágenes y enlaces**: las noticias pueden llevar imagen y varios botones de enlace; la franja global puede llevar imagen y un texto propio en el botón. Se editan en el panel administrador.
 

@@ -16,7 +16,9 @@
 
   <div id="splash" class="splash" role="status" aria-label="Cargando Nova PX - Event Launcher">
     <div class="splash-content">
-      <img class="splash-logo" src="images/logo.png" alt="" width="96" height="96" />
+      <div class="splash-orb" aria-hidden="true"><i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>
+        <div class="splash-logo-wrap"><img class="splash-logo" src="images/logo.png" alt="" width="96" height="96" /><b class="shine"></b></div>
+      </div>
       <h1 class="splash-name">Nova PX</h1>
       <p class="splash-sub">Event Launcher</p>
       <div class="splash-bar" aria-hidden="true"><i></i></div>
@@ -105,6 +107,8 @@
       </section>
 
       <div id="crash" class="crash" role="alert" hidden></div>
+
+      <section id="season-banner" class="season-banner" hidden></section>
 
       <section id="links-card" class="links-hero" aria-labelledby="links-title" hidden>
         <h2 id="links-title">Comunidad</h2>
@@ -591,7 +595,7 @@
           </div>
           <div class="field inline">
             <div><label for="lk-preset">Tema por defecto</label><select id="lk-preset"><option value="">Sin cambiar</option><option value="nova">Nova Neón</option><option value="dark">Oscuro</option><option value="light">Claro</option><option value="oled">OLED</option></select></div>
-            <div><label for="lk-season">Temporada</label><select id="lk-season"><option value="">Sin cambiar</option><option value="auto">Automática</option><option value="off">Sin decoración</option><option value="halloween">Halloween</option><option value="navidad">Navidad</option><option value="anio">Año Nuevo</option></select></div>
+            <div><label for="lk-season">Temporada</label><select id="lk-season"><option value="">Sin cambiar</option><option value="auto">Automática</option><option value="off">Sin decoración</option><option value="halloween">Halloween</option><option value="navidad">Navidad</option><option value="anio">Año Nuevo</option><option value="sanvalentin">San Valentín</option><option value="carnaval">Carnaval</option><option value="madres">Día de la Madre</option><option value="ecuador">10 de Agosto</option></select></div>
             <div><label for="lk-accent">Color principal</label><div class="ad-color"><input id="lk-accent" type="color" value="#35d6ff" /><button id="lk-accent-clear" type="button" class="ghost">Sin cambiar</button></div></div>
           </div>
           <div class="field"><label for="lk-wtitle">Mensaje de bienvenida (título)</label><input id="lk-wtitle" type="text" maxlength="80" placeholder="¡Bienvenido al evento!" /></div>
@@ -793,7 +797,7 @@
               <div id="saved-skins" class="saved-skins"></div>
             </div>
           </fieldset>
-          <fieldset>
+          <fieldset id="cape-box">
             <legend>Capa</legend>
             <div class="field">
               <div id="capes" class="capes"></div>
@@ -894,9 +898,14 @@
               <option value="navidad">Navidad</option>
               <option value="halloween">Halloween</option>
               <option value="anio">Año Nuevo</option>
+              <option value="sanvalentin">San Valentín</option>
+              <option value="carnaval">Carnaval</option>
+              <option value="madres">Día de la Madre</option>
+              <option value="ecuador">10 de Agosto</option>
             </select>
           </div>
           <label class="check"><input id="effects" type="checkbox" /> Efectos animados (partículas y transiciones)</label>
+          <label class="check"><input id="intro-on" type="checkbox" /> Animación de inicio con el logo de Nova PX</label>
           <small id="theme-msg" class="msg" role="status"></small>
         </fieldset>
 
@@ -1081,6 +1090,7 @@
   </dialog>
 
 
+  <script src="brand-icons.js"></script>
   <script src="remote.js"></script>
   <script src="admin-ext.js"></script>
   <script src="app.js"></script>

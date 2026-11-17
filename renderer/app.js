@@ -14,18 +14,28 @@ const skinBust = (nick) => `https://minotar.net/armor/bust/${encodeURIComponent(
 const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}/64.png`;
 
 /* ---------- animación de inicio ---------- */
-// Dura menos de 2 segundos. Se puede saltar con clic o cualquier tecla.
+// El launcher se muestra cuando termina de cargar (mínimo ~2,3 s para que se vea la animación, máximo 6 s).
+// Se salta con clic o cualquier tecla, y se puede desactivar en Ajustes > Apariencia.
 (function splash() {
   const s = document.getElementById('splash');
   if (!s) return;
   let closed = false;
+  let ready = !!window.__novaReady;
+  let minDone = false;
+  const MIN = 2300;
   function close() {
     if (closed) return;
     closed = true;
     s.classList.add('hide');
     setTimeout(() => s.remove(), 600);
   }
-  setTimeout(close, 1900);
+  function tryClose() { if (ready && minDone) { s.classList.add('ready'); setTimeout(close, 250); } }
+  window.addEventListener('nova-ready', () => { ready = true; tryClose(); });
+  setTimeout(() => { minDone = true; tryClose(); }, MIN);
+  setTimeout(close, 6000);
+  window.api.getSettings().then((st) => {
+    if (st && st.intro === false) { minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); }
+  }).catch(() => {});
   s.addEventListener('click', close);
   document.addEventListener('keydown', close, { once: true });
 })();
@@ -381,25 +391,12 @@ function renderLinks(links) {
   box.replaceChildren();
   const valid = (Array.isArray(links) ? links : []).filter((l) => l && l.name && /^https:\/\//i.test(String(l.url || ''))).slice(0, 8);
   card.hidden = valid.length === 0;
-  const iconFor = (l) => {
-    const t = `${l.name} ${l.url}`.toLowerCase();
-    if (/discord/.test(t)) return '💬';
-    if (/youtu/.test(t)) return '▶️';
-    if (/twitch|kick/.test(t)) return '🎮';
-    if (/tiktok/.test(t)) return '🎵';
-    if (/instagram/.test(t)) return '📸';
-    if (/twitter|x\.com|\bx\b/.test(t)) return '🐦';
-    if (/github/.test(t)) return '💻';
-    if (/mail|correo|contacto/.test(t)) return '✉️';
-    if (/web|nova|portafolio|portfolio/.test(t)) return '🌐';
-    return '🔗';
-  };
   valid.forEach((l) => {
     const b = el('button', 'link-tile');
     b.type = 'button';
     b.dataset.tilt = '';
     const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
-    b.append(el('span', 'link-ico', iconFor(l)), el('span', 'link-name', String(l.name).slice(0, 30)), el('span', 'link-host muted', host));
+    b.append(linkIcon(l), el('span', 'link-name', String(l.name).slice(0, 30)), el('span', 'link-host muted', host));
     b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
     box.append(b);
   });
@@ -539,8 +536,7 @@ function paintPeople(ev) {
     const row = el('div', 'people-row');
     list.forEach((p) => {
       const c = el('div', 'person');
-      const img = el('img'); img.alt = `Skin de ${p.nick}`; img.loading = 'lazy'; img.src = skinBust(p.nick);
-      c.append(img, el('div', 'nick', p.nick));
+      c.append(personFace(p), el('div', 'nick', p.nick));
       if (p.role) c.append(el('div', 'role', p.role));
       if (p.links && p.links.length) c.append(linkChips(p.links));
       row.append(c);
@@ -1531,10 +1527,26 @@ const TEAM_STATES = ['idle', 'wave', 'walk', 'jump', 'spin'];
 window.addEventListener('nova-fx', (e) => teamViewers.forEach((v) => v.setAnimated(e.detail)));
 
 /* --- enlaces (redes / portafolio) --- */
+// Logo de la red (SVG real); la web de Nova PX usa el logo del launcher; el resto, un emoji.
+function linkIcon(l) {
+  const box = el('span', 'link-ico');
+  const svg = window.brandIcon && window.brandIcon(l);
+  if (svg) { box.append(svg); return box; }
+  const t = `${l.name} ${l.url}`.toLowerCase();
+  if (/nova|novapx|web|portafolio|portfolio/.test(t)) {
+    const im = el('img', 'brand-ico'); im.alt = ''; im.src = 'images/logo.png';
+    box.append(im);
+  } else box.textContent = /mail|correo|contacto/.test(t) ? '✉️' : '🔗';
+  return box;
+}
+
 function linkChips(links) {
   const box = el('div', 'link-chips');
   (links || []).forEach((l) => {
-    const b = el('button', 'link-chip', l.name);
+    const b = el('button', 'link-chip');
+    const ic = window.brandIcon && window.brandIcon(l);
+    if (ic) b.append(ic);
+    b.append(document.createTextNode(l.name));
     b.type = 'button';
     b.title = l.url;
     b.addEventListener('click', (e) => { e.stopPropagation(); window.api.openLink(l.url).catch(() => {}); });
@@ -1584,7 +1596,7 @@ function openMember(m) {
     const b = el('button', 'link-tile');
     b.type = 'button';
     const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
-    b.append(el('span', 'link-ico', '🔗'), el('span', 'link-name', l.name), el('span', 'link-host muted', host));
+    b.append(linkIcon(l), el('span', 'link-name', l.name), el('span', 'link-host muted', host));
     b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
     box.append(b);
   });
@@ -1592,6 +1604,33 @@ function openMember(m) {
 }
 $('mm-close').addEventListener('click', () => $('member-modal').close());
 $('member-modal').addEventListener('click', (e) => { if (e.target === $('member-modal')) $('member-modal').close(); });
+
+// Textura de una persona: la skin que subió el admin (sin premium) o la de Mojang por su nick.
+async function textureFor(p) {
+  if (p.skin) {
+    const r = await window.api.skinCustom(imageUrl(p.skin));
+    if (r) return { dataUrl: r.dataUrl, slim: !!p.slim, cape: null };
+  }
+  return window.api.skinTexture(p.nick);
+}
+// Cabeza (cara + capa exterior) dibujada desde una skin subida; si no hay, el busto de siempre.
+function personFace(p) {
+  if (!p.skin) {
+    const img = el('img'); img.alt = `Skin de ${p.nick}`; img.loading = 'lazy'; img.src = skinBust(p.nick);
+    return img;
+  }
+  const c = el('canvas'); c.width = 64; c.height = 64;
+  c.setAttribute('aria-label', `Skin de ${p.nick}`);
+  textureFor(p).then(async (r) => {
+    if (!r) return;
+    const im = await loadImageUrl(r.dataUrl);
+    const x = c.getContext('2d');
+    x.imageSmoothingEnabled = false;
+    x.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64);
+    x.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64);
+  }).catch(() => {});
+  return c;
+}
 
 function teamCard(m, index, featured) {
   const card = el('div', m.tribute ? 'member tribute' : featured ? 'member featured' : 'member');
@@ -1620,7 +1659,7 @@ function teamCard(m, index, featured) {
     // la skin se pide de a poco para no saturar a Mojang
     setTimeout(async () => {
       try {
-        const r = await window.api.skinTexture(m.nick);
+        const r = await textureFor(m);
         if (!r) return;
         viewer.setSkin(await loadImageUrl(r.dataUrl), r.slim);
         viewer.setCape(r.cape ? await loadImageUrl(r.cape) : null);
@@ -1765,10 +1804,27 @@ $('ac-logout').addEventListener('click', () => $('logout-btn').click());
 $('streamer-mode').addEventListener('change', async () => {
   try { await window.api.saveSettings({ streamer: $('streamer-mode').value }); applyStreamer(await window.api.streamerGet()); } catch {}
 });
+$('intro-on').addEventListener('change', () => { window.api.saveSettings({ intro: $('intro-on').checked }).catch(() => {}); });
 async function initStreamer(settings) {
+  try { $('intro-on').checked = !settings || settings.intro !== false; } catch {}
   try { $('streamer-mode').value = (settings && settings.streamer) || 'auto'; } catch {}
   try { window.api.onStreamerChanged(applyStreamer); applyStreamer(await window.api.streamerGet()); } catch {}
 }
+
+// Cuenta no premium con skin local: la cabeza del chip sale de esa skin en vez de Steve.
+async function paintLocalHead(imgEl) {
+  try {
+    const l = await window.api.skinsLocalGet();
+    if (!l) return;
+    const im = await loadImageUrl(l.dataUrl);
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+    const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+    x.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64);
+    x.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64);
+    imgEl.src = c.toDataURL();
+  } catch {}
+}
+window.addEventListener('nova-skin-changed', () => { if (currentUser && currentUser.mode !== 'premium') paintLocalHead($('chip-avatar')); });
 
 function setSession(info) {
   currentUser = info;
@@ -1784,6 +1840,7 @@ function setSession(info) {
     $('chip-mode').textContent = label;
     chipAvatar.src = skinHead(info.name);
     chipAvatar.hidden = false;
+    if (info.mode !== 'premium') paintLocalHead(chipAvatar);
     bust.src = skinBust(info.name);
     loadHomeSkin(info.name);
     $('player-name').textContent = info.name;
@@ -2372,6 +2429,8 @@ $('wz-offline').addEventListener('click', async () => {
   setInterval(() => { if (!document.hidden) window.refreshContent(); }, 3 * 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastContent > 60 * 1000) window.refreshContent(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
+  window.__novaReady = true;
+  window.dispatchEvent(new Event('nova-ready'));
 })();
 
 
@@ -2671,6 +2730,26 @@ function paintAdeWinners() {
     box.append(chip);
   });
 }
+// Skin subida (PNG) para quien no tiene cuenta premium: reemplaza al Steve que se vería por no existir en Mojang.
+function skinEditor(obj) {
+  const row = el('div', 'links-row skin-row');
+  const pick = el('button', '', obj.skin ? 'Cambiar skin (PNG)' : 'Subir skin (PNG)'); pick.type = 'button';
+  pick.addEventListener('click', async () => {
+    try {
+      const r = await window.api.adminPickImage(`skin-${obj.nick || 'jugador'}`);
+      if (!r) return;
+      if (!/\.png$/i.test(r.path)) { toast('La skin tiene que ser un PNG de 64x64.', 'error'); return; }
+      obj.skin = r.path; pick.textContent = 'Cambiar skin (PNG)';
+    } catch (e) { toast(cleanError(e), 'error'); }
+  });
+  const clr = el('button', '', 'Quitar skin'); clr.type = 'button';
+  clr.addEventListener('click', () => { delete obj.skin; delete obj.slim; pick.textContent = 'Subir skin (PNG)'; });
+  const lab = el('label', 'check'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!obj.slim;
+  cb.addEventListener('change', () => { obj.slim = cb.checked; });
+  lab.append(cb, el('span', '', 'Brazos Slim'));
+  row.append(pick, clr, lab);
+  return row;
+}
 // Editor de personas nombradas (participantes / colaboradores): nick, rol opcional y enlaces.
 function peopleEditor(box, list, withRole, addLabel) {
   const paint = () => {
@@ -2691,7 +2770,7 @@ function peopleEditor(box, list, withRole, addLabel) {
       x.addEventListener('click', () => { list.splice(i, 1); paint(); });
       head.append(x);
       const lk = el('details', 'team-links');
-      lk.append(el('summary', '', `Enlaces (${(p.links || []).length})`), linksEditor(p));
+      lk.append(el('summary', '', `Skin y enlaces (${(p.links || []).length})`), skinEditor(p), linksEditor(p));
       row.append(head, lk);
       box.append(row);
     });
@@ -2864,7 +2943,7 @@ function paintTeam() {
     const avClear = el('button', '', 'Quitar foto'); avClear.type = 'button';
     avClear.addEventListener('click', () => { delete m.avatar; avPick.textContent = 'Subir foto'; });
     av.append(avPick, avClear);
-    lk.append(pf.name, pf.bio, av, linksEditor(m));
+    lk.append(pf.name, pf.bio, av, skinEditor(m), linksEditor(m));
     row.append(lk);
     if (m.tribute) {
       row.classList.add('has-tribute');
