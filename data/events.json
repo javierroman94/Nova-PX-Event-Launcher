@@ -1,5 +1,16 @@
 [
   {
+    "name": "EL AGUA SUBE",
+    "date": "2026-02-15",
+    "image": "images/evento-mwk1dnnk.jpg",
+    "description": "Evento realizado para el Streamer LaosOneView donde 100 jugadores intentan sobrevivir mientras el agua sube cada minuto, solo un jugador quedara en pie.",
+    "collabs": [
+      {
+        "nick": "LaosOneView"
+      }
+    ]
+  },
+  {
     "name": "LA LAVA SUBE 100 JUGADORES",
     "date": "2026-01-30",
     "image": "images/evento-mwinri46.png",
