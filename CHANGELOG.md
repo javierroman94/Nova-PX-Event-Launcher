@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.74
+- Permisos rediseñado: tarjetas de personas con cabeza 3D y rol, estadísticas, vista previa del nick al escribir, pasos de invitación en línea de tiempo y confirmación al quitar permiso.
+- Paneles de administración: interruptores en lugar de casillas y listas de noticias/recomendados con más espacio.
+- Barra superior compacta estilo Modrinth: título en línea, botón de descargas con progreso, estado del juego siempre visible.
+
 ## 1.0.73
 - Pantalla de inicio rediseñada: portada con brillo y fondo de color, icono del modpack grande con efecto, botón Jugar con destello, secciones con acento, tarjetas de "Continuar" en dos columnas y noticias/amigos más cuidados.
 

@@ -208,7 +208,7 @@ function goTo(tab) {
   $('top-sub').textContent = sub;
   moveIndicator();
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
-  document.querySelector('.top-right').hidden = !(tab === 'event' || tab === 'mods');
+  $('top-server').hidden = !(tab === 'event' || tab === 'mods');
   if (tab === 'mods' && !isAdmin) { goTo('event'); return; }
   if (tab === 'mods') renderMods();
   if (tab === 'modpacks') openModpacks();
@@ -2555,8 +2555,19 @@ window.api.onStatus((d) => {
   if (!launchTarget || launchTarget.kind === 'event') $('status').textContent = d.text;
 });
 
+let dlTimer = 0;
+function topDownload(pct) {
+  const b = $('top-dl'), t = $('top-dl-text');
+  if (!b) return;
+  b.classList.add('busy'); t.hidden = false; t.textContent = `${pct}%`;
+  b.style.setProperty('--p', `${pct}%`);
+  clearTimeout(dlTimer);
+  dlTimer = setTimeout(() => { b.classList.remove('busy'); t.hidden = true; }, 5000);
+}
+$('top-dl').addEventListener('click', () => { const t = document.querySelector('[data-tab=modpacks]'); if (t) t.click(); });
 window.api.onProgress((d) => {
   if (!d.total) return;
+  topDownload(Math.min(100, Math.round(d.type === 'java' ? d.task : (d.task / d.total) * 100)));
   const text = d.type === 'java' ? `Instalando Java… ${Math.round(d.task)}%` : `Descargando archivos del juego (${d.task} de ${d.total})`;
   const npBar = $('np-progress');
   npBar.hidden = false;
@@ -3584,24 +3595,36 @@ $('ade-delete').addEventListener('click', async () => {
 function paintPerms() {
   const box = $('ad-perms');
   box.replaceChildren();
-  (adm.owners || []).forEach((o) => {
-    const row = el('div', 'mod-card');
-    row.append(el('strong', '', o), el('span', 'muted', 'Dueño (siempre tiene acceso)'));
-    box.append(row);
+  const owners = adm.owners || [], admins = adm.admins || [];
+  const stats = $('ad-perm-stats');
+  if (stats) {
+    stats.replaceChildren();
+    [[owners.length, 'Dueños'], [admins.length, 'Administradores'], [owners.length + admins.length, 'Con acceso al panel']].forEach(([n, l]) => {
+      const t = el('div', 'ad-stat'); t.append(el('strong', '', String(n)), el('span', 'muted', l)); stats.append(t);
+    });
+  }
+  owners.forEach((o) => {
+    const c = el('div', 'perm-card owner');
+    c.append(head3d({ nick: o }, 46));
+    const b = el('div', 'perm-body'); b.append(el('strong', '', o), el('span', 'perm-role owner', '👑 Dueño'), el('small', 'muted', 'Siempre tiene acceso'));
+    c.append(b); box.append(c);
   });
-  (adm.admins || []).forEach((a, idx) => {
-    const row = el('div', 'mod-card');
-    const del = el('button', '', 'Quitar permiso');
-    del.type = 'button';
+  admins.forEach((a, idx) => {
+    const c = el('div', 'perm-card');
+    c.append(head3d({ nick: a.nick }, 46));
+    const b = el('div', 'perm-body'); b.append(el('strong', '', a.nick), el('span', 'perm-role', '🛡 Administrador'), el('small', 'muted', 'Puede ver el panel'));
+    const del = el('button', 'perm-del ghost', 'Quitar');
+    del.type = 'button'; del.title = 'Quitar permiso';
     del.addEventListener('click', async () => {
+      if (!await askConfirm(`¿Quitar el permiso a ${a.nick}?`)) return;
       try {
         adm.admins = await window.api.adminSaveAdmins(adm.admins.filter((_, i) => i !== idx));
         paintPerms();
       } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
     });
-    row.append(el('strong', '', a.nick), el('span', 'muted', 'Puede ver el panel'), del);
-    box.append(row);
+    c.append(b, del); box.append(c);
   });
+  if (!owners.length && !admins.length) box.append(el('p', 'muted', 'Aún no hay nadie con acceso.'));
 }
 $('ad-invite').addEventListener('click', async () => {
   const st = $('ad-invite-status');
@@ -4413,5 +4436,20 @@ async function autoDiscord(kind, payload) {
     const t = (h.querySelector('h3') || {}).textContent || '';
     const hit = cardIcons.find(([re]) => re.test(t));
     h.prepend(el('span', 'ad-ico', hit ? hit[1] : '•'));
+  });
+})();
+
+// Vista previa 3D del nick mientras se escribe en Permisos.
+(function permPreview() {
+  const inp = $('ad-perm-nick'), box = $('ad-perm-preview');
+  if (!inp || !box) return;
+  let t = 0;
+  inp.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      const n = inp.value.trim();
+      box.replaceChildren();
+      if (/^[A-Za-z0-9_]{3,16}$/.test(n)) box.append(head3d({ nick: n }, 40));
+    }, 400);
   });
 })();
