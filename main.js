@@ -267,7 +267,20 @@ function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
 }
 
-function pushLog(source, line) {
+// IPs que no deben verse en la consola del launcher (la del servidor del evento).
+const hiddenHosts = new Set();
+function hideHost(host) {
+  const h = String(host || '').trim();
+  if (h.length >= 3) hiddenHosts.add(h);
+}
+function redact(text) {
+  let out = String(text);
+  for (const h of hiddenHosts) out = out.split(h).join('•••');
+  return out;
+}
+
+function pushLog(source, raw) {
+  const line = redact(raw);
   logBuffer.push(`[${source}] ${line}`);
   if (logBuffer.length > 1500) logBuffer.shift();
   send('game:log', { source, line });
@@ -1749,18 +1762,14 @@ ipcMain.handle('modpacks:serverStatus', async (_e, id) => {
 ipcMain.handle('server:status', async () => {
   try {
     const manifest = await loadData('manifest');
-    let { host, port } = manifest.server || {};
-    if (!host) {
-      // Sin IP en el manifest: se toma la del servers.dat del modpack del evento.
-      const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
-      if (found) ({ host, port } = found);
-    }
-    if (!host) return { configured: false };
-    const target = port && Number(port) !== 25565 ? `${host}:${port}` : host;
+    // La IP sale del servers.dat del modpack del evento y nunca se devuelve a la interfaz.
+    const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
+    if (!found) return { configured: false };
+    hideHost(found.host);
+    const target = found.port && Number(found.port) !== 25565 ? `${found.host}:${found.port}` : found.host;
     const data = await fetchJson(`https://api.mcsrvstat.us/3/${encodeURIComponent(target)}`);
     return {
       configured: true,
-      host: target,
       online: !!data.online,
       players: data.players ? { online: data.players.online, max: data.players.max } : null,
       version: data.version || null
@@ -2322,8 +2331,11 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       ...(customArgs.length ? { customArgs } : {}),
       ...(javaPath ? { javaPath } : {})
     };
-    if (st.joinServer && manifest.server && manifest.server.host) {
-      launchOpts.server = { host: manifest.server.host, port: String(manifest.server.port || 25565) };
+    // Entrar directo al servidor del evento: la IP sale del servers.dat del modpack (nunca del manifest público).
+    const eventServer = !pack ? serversLib.findPackServer(eventDir) : null;
+    if (eventServer) hideHost(eventServer.host);
+    if (st.joinServer && eventServer) {
+      launchOpts.server = { host: eventServer.host, port: String(eventServer.port || 25565) };
     }
 
     const launcher = new Client();

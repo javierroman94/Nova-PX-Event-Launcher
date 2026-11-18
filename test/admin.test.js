@@ -26,12 +26,12 @@ const { GithubRepo, GithubError } = require('../lib/github');
   });
   assert.strictEqual(m.event.name, 'Gran Evento');
   assert.match(m.event.id, /^gran-evento-\d{4}-\d{2}-\d{2}$/);
-  assert.deepStrictEqual(m.server, { host: 'play.nova.com', port: 25570 });
+  assert.strictEqual(m.server, undefined, 'la IP nunca se publica en el manifest');
+  assert.strictEqual(a.mergeManifest({ server: { host: 'vieja.ip', port: 1 } }, {}).server, undefined);
   assert.strictEqual(m.links.length, 1);
   assert.strictEqual(m.loader.type, 'fabric');
   assert.deepStrictEqual(m.mods, []);
   assert.throws(() => a.mergeManifest({}, { startsAt: 'ayer' }), /fecha/);
-  assert.throws(() => a.mergeManifest({}, { server: { host: 'a b' } }), /servidor/);
   assert.throws(() => a.mergeManifest({}, { minecraftVersion: '../' }), /versión/);
 
   // equipo / noticias

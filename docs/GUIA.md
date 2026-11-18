@@ -25,7 +25,7 @@ Hay dos tipos de cambio y cada uno se actualiza de forma distinta. En los dos ca
 
 | Qué cambias | Cómo llega a los jugadores | Qué haces tú |
 |---|---|---|
-| **Contenido**: noticias, eventos, equipo, evento actual, imágenes, lista de mods, IP del servidor | Al abrir el launcher se lee directo de GitHub (carpeta `data/`). Sin internet usa la última copia guardada. | Editas el archivo en GitHub y lo guardas ("Commit changes"). Sin más pasos. |
+| **Contenido**: noticias, eventos, equipo, evento actual, imágenes, lista de mods | Al abrir el launcher se lee directo de GitHub (carpeta `data/`). Sin internet usa la última copia guardada. | Editas el archivo en GitHub y lo guardas ("Commit changes"). Sin más pasos. |
 | **El programa**: diseño, botones, funciones nuevas | El launcher detecta la versión nueva, la descarga solo y muestra un aviso "Reiniciar e instalar". | Publicas una versión (ver abajo). GitHub compila el instalador solo. |
 
 ### Primera vez: instalar el launcher en los jugadores
@@ -61,7 +61,7 @@ Notas:
 | `data/news.json` | Noticias de la pantalla de inicio |
 | `data/events.json` | Historial de eventos realizados |
 | `data/team.json` | Miembros del equipo (nick y rol; la skin se obtiene sola por el nick) |
-| `data/manifest.json` | Nombre y frase del evento (`event`), versión de Minecraft, Fabric, IP del servidor y lista de mods |
+| `data/manifest.json` | Nombre y frase del evento (`event`), versión de Minecraft, Fabric y lista de mods (la IP del servidor va dentro del modpack, en `servers.dat`, y nunca aquí: este archivo es público) |
 
 Cada jugador también tiene su propia pantalla de **Ajustes** dentro del launcher: memoria RAM, ruta de Java, argumentos de Java, tamaño de ventana, pantalla completa, entrar directo al servidor y abrir la carpeta del juego. La pestaña **Consola** muestra el registro de Minecraft para detectar errores (con botones para copiar y limpiar). El estado del servidor (en línea y jugadores conectados) se consulta con el servicio público mcsrvstat.us.
 
@@ -285,7 +285,7 @@ Archivo `data/manifest.json`, bloque `event`:
 ```
 
 - Sube la imagen a la carpeta `data/images/` del repositorio (recomendado 1600 x 600 px) y escribe su ruta en `image`. También puedes usar un enlace `https://` completo. Si lo dejas vacío, se usa el paisaje por defecto. Los jugadores la ven al abrir el launcher, sin reinstalar.
-- La versión de Minecraft, Fabric y la IP del servidor están en el mismo archivo (`minecraftVersion`, `loader`, `server`).
+- La versión de Minecraft y Fabric están en el mismo archivo (`minecraftVersion`, `loader`). La IP del servidor no: va dentro del modpack (`servers.dat`), el launcher la usa para "Entrar directo" y para el estado del servidor, y nunca la muestra (también se oculta en la consola).
 
 ### Modpack del evento (mods)
 1. Crea la carpeta `mods-evento/` dentro del proyecto y copia ahí todos los `.jar` del evento (deben ser de Fabric y de la misma versión de Minecraft).

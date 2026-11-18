@@ -2672,7 +2672,7 @@ async function loadAdmin() {
     adm.manifest = m;
     const ev = m.event || {};
     $('ad-live-name').textContent = ev.name || 'Sin evento';
-    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.server && m.server.host ? ' · ' + m.server.host : ''}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
+    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
     $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
     $('ad-state-quick').querySelectorAll('button').forEach((x) => x.classList.toggle('active', x.dataset.st === $('ad-state').value));
     adm.evImage = ev.image || '';
@@ -2684,8 +2684,6 @@ async function loadAdmin() {
     $('ad-tag').value = ev.tagline || '';
     $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
     $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
-    $('ad-host').value = (m.server && m.server.host) || '';
-    $('ad-port').value = (m.server && m.server.port) || 25565;
     $('ad-new').checked = false;
     adm.team = d.team;
     adm.news = d.news;
@@ -2815,8 +2813,7 @@ $('ad-publish').addEventListener('click', async () => {
     const r = await window.api.adminPublishEvent({
       id: id || undefined, password: $('ad-pass').value,
       form: {
-        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
-        server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 }
+        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked
       }
     });
     $('ad-status').textContent = r.mods
