@@ -1744,6 +1744,14 @@ ipcMain.handle('instance:install', async (_e, p = {}) => {
   }
 });
 
+function ownPackRoot(id) {
+  const t = packRoot(id);
+  if (!packs.isOwnPack(t.entry)) throw new Error('Solo puedes hacer esto en los modpacks que creaste tú.');
+  if (launching) throw new Error('Cierra Minecraft antes de cambiar los mundos.');
+  return t;
+}
+ipcMain.handle('instance:worldDuplicate', (_e, p = {}) => packs.duplicateWorld(ownPackRoot(p.id).root, cleanStr(p.world, 200)));
+ipcMain.handle('instance:worldDelete', (_e, p = {}) => packs.deleteWorld(ownPackRoot(p.id).root, cleanStr(p.world, 200)));
 ipcMain.handle('instance:worlds', (_e, id) => {
   const { root } = packRoot(id);
   const dir = path.join(root, 'saves');

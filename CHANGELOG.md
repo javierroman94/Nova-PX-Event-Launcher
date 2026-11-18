@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.70
+- Clic derecho en mundos: duplicar y eliminar (antes de eliminar se guarda un respaldo), y «Activar/Desactivar todo» en el contenido. Solo funcionan en los modpacks que crea el usuario (perfil propio, copia o importado), nunca en los de Modrinth ni en los de eventos; el launcher lo comprueba también por dentro.
+- La biblioteca nunca muestra instancias protegidas de eventos.
+
 ## 1.0.69
 - Clic derecho en todo el launcher: biblioteca de modpacks (jugar, abrir, carpeta, duplicar, exportar, fijar arriba, ocultar, eliminar; en el fondo: nuevo perfil, importar, mostrar ocultos), mods/shaders/texturas (activar o desactivar, copiar nombre, quitar; en el fondo: cargar, explorar, activar o desactivar todo), mundos, skins guardadas y eventos del administrador (editar, duplicar, eliminar).
 - Detalle del modpack rediseñado: cabecera con banner difuminado de su icono, fichas (versión, loader, origen, último juego, cuántos mods/shaders/texturas y peso), pestañas subrayadas, etiquetas de tipo y de desactivado, y ajustes en tarjetas con barra de acciones fija.

@@ -119,6 +119,8 @@ contextBridge.exposeInMainWorld('api', {
   modpackPickIcon: (p) => ipcRenderer.invoke('modpacks:pickIcon', p),
   onModpacksChanged: (cb) => ipcRenderer.on('modpacks:changed', () => cb()),
   modpackDuplicate: (p) => ipcRenderer.invoke('modpacks:duplicate', p),
+  instanceWorldDuplicate: (p) => ipcRenderer.invoke('instance:worldDuplicate', p),
+  instanceWorldDelete: (p) => ipcRenderer.invoke('instance:worldDelete', p),
   instanceBackup: (p) => ipcRenderer.invoke('instance:backup', p),
   instanceBackups: (id) => ipcRenderer.invoke('instance:backups', id),
   instanceOpenBackups: (id) => ipcRenderer.invoke('instance:openBackups', id),

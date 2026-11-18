@@ -58,6 +58,19 @@ try {
   assert.ok(!fs.existsSync(path.join(tmp, 'copia', 'logs')));
   assert.ok(!fs.existsSync(path.join(tmp, 'copia', 'backups')));
 
+  // mundos: solo en modpacks propios
+  assert.strictEqual(packs.isOwnPack({ provider: 'custom' }), true);
+  assert.strictEqual(packs.isOwnPack({ provider: 'copy' }), true);
+  assert.strictEqual(packs.isOwnPack({ provider: 'modrinth' }), false);
+  assert.strictEqual(packs.isOwnPack({ provider: 'custom', protected: {} }), false);
+  assert.strictEqual(packs.duplicateWorld(root, 'Mundo 1').name, 'Mundo 1 (copia)');
+  assert.strictEqual(packs.duplicateWorld(root, 'Mundo 1').name, 'Mundo 1 (copia 2)');
+  assert.ok(!fs.existsSync(path.join(root, 'saves', 'Mundo 1 (copia)', 'session.lock')));
+  assert.throws(() => packs.deleteWorld(root, '../x'), /no válido/);
+  const del = packs.deleteWorld(root, 'Mundo 1 (copia)');
+  assert.ok(fs.existsSync(path.join(root, 'backups', del.backup)));
+  assert.ok(!fs.existsSync(path.join(root, 'saves', 'Mundo 1 (copia)')));
+
   // actualizar mods
   (async () => {
     const h1 = 'a'.repeat(40), h2 = 'b'.repeat(40), h3 = 'c'.repeat(40);

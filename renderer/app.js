@@ -904,6 +904,8 @@ const prefSave = (k, set) => { try { localStorage.setItem(k, JSON.stringify([...
 const libPins = prefSet('novapx-lib-pins');
 const libHidden = prefSet('novapx-lib-hidden');
 let libShowHidden = false;
+const OWN_PROVIDERS = ['custom', 'copy', 'imported'];
+const isOwnPack = (p) => !!p && OWN_PROVIDERS.includes(p.provider) && !p.protected;
 const copyText = async (t, ok) => { try { await navigator.clipboard.writeText(t); toast(ok || 'Copiado'); } catch { toast('No se pudo copiar', 'error'); } };
 
 async function duplicatePack(p) {
@@ -980,7 +982,7 @@ async function renderLibrary() {
   await loadInstalled();
   const q = $('mp-lib-search').value.trim().toLowerCase();
   const f = libView.filter;
-  let list = mp.installed.filter((p) => (!q || p.title.toLowerCase().includes(q)) && (f === 'all' || (f === 'custom' ? p.provider === 'custom' : (p.loader && p.loader.type) === f)));
+  let list = mp.installed.filter((p) => !p.protected && p.provider !== 'event').filter((p) => (!q || p.title.toLowerCase().includes(q)) && (f === 'all' || (f === 'custom' ? p.provider === 'custom' : (p.loader && p.loader.type) === f)));
   const byName = (a, b) => a.title.localeCompare(b.title, 'es', { sensitivity: 'base' });
   const sorters = {
     recent: (a, b) => String(b.lastPlayedAt || '').localeCompare(String(a.lastPlayedAt || '')) || byName(a, b),
@@ -1242,9 +1244,11 @@ ctx($('mp-tab-content'), () => [
   { icon: '🔎', label: 'Explorar contenido', onClick: () => $('mp-add-explore').click() },
   { icon: '＋', label: 'Cargar archivos…', onClick: () => $('mp-add-local').click() },
   { icon: '⟳', label: 'Buscar actualizaciones', onClick: () => $('mp-check-updates').click() },
-  'sep',
-  { icon: '▶', label: 'Activar todo', hint: mp.filter === 'all' ? '' : 'este tipo', onClick: () => bulkToggle(true) },
-  { icon: '⏸', label: 'Desactivar todo', hint: mp.filter === 'all' ? '' : 'este tipo', onClick: () => bulkToggle(false) }
+  ...(isOwnPack(mp.pack) ? [
+    'sep',
+    { icon: '▶', label: 'Activar todo', hint: mp.filter === 'all' ? '' : 'este tipo', onClick: () => bulkToggle(true) },
+    { icon: '⏸', label: 'Desactivar todo', hint: mp.filter === 'all' ? '' : 'este tipo', onClick: () => bulkToggle(false) }
+  ] : [])
 ]);
 
 $('mp-content-search').addEventListener('input', () => paintContent(false));
@@ -1305,7 +1309,15 @@ async function renderWorlds() {
         { title: w.name },
         { icon: '💾', label: 'Respaldar este mundo', onClick: () => bk.click() },
         { icon: '📋', label: 'Copiar nombre', onClick: () => copyText(w.name, 'Nombre copiado') },
-        { icon: '🗂', label: 'Abrir carpeta del modpack', onClick: () => window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')) }
+        { icon: '🗂', label: 'Abrir carpeta del modpack', onClick: () => window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')) },
+        ...(isOwnPack(mp.pack) ? [
+          'sep',
+          { icon: '⧉', label: 'Duplicar mundo', onClick: async () => { try { const r = await window.api.instanceWorldDuplicate({ id: mp.pack.id, world: w.name }); toast(`Copia creada: ${r.name}`, 'success'); renderWorlds(); } catch (e) { toast(cleanError(e), 'error'); } } },
+          { icon: '🗑', label: 'Eliminar mundo…', danger: true, onClick: async () => {
+            if (!await askConfirm(`¿Eliminar el mundo "${w.name}"?\n\nAntes se guarda un respaldo en la pestaña Mundos > Respaldos.`, 'Eliminar', 'Cancelar')) return;
+            try { const r = await window.api.instanceWorldDelete({ id: mp.pack.id, world: w.name }); toast(`Mundo eliminado. Respaldo: ${r.backup}`); renderWorlds(); renderBackups(); } catch (e) { toast(cleanError(e), 'error'); }
+          } }
+        ] : [])
       ]);
       list.append(row);
     });
