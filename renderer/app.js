@@ -1477,7 +1477,7 @@ async function searchPacks(reset) {
   if (reset) loadRecommended();
   note.textContent = 'Buscando…';
   try {
-    const r = await window.api.modpackSearch({ provider: mp.provider, query: mp.query, offset: mp.offset });
+    const r = await window.api.modpackSearch({ provider: mp.provider, query: mp.query, offset: mp.offset, loader: mp.fLoader || '', mc: mp.fMc || '', sort: mp.fSort || '' });
     if (seq !== mp.seq) return;
     mp.total = r.total;
     r.items.forEach((it) => {
@@ -3301,14 +3301,64 @@ $('np-search-form').addEventListener('submit', (e) => {
   searchPacks(true);
 });
 
-/* --- buscador de ajustes --- */
-$('settings-search').addEventListener('input', () => {
-  const q = $('settings-search').value.trim().toLowerCase();
-  let shown = 0;
-  document.querySelectorAll('#page-settings .settings > fieldset').forEach((fs) => {
-    const hit = !q || fs.textContent.toLowerCase().includes(q);
-    fs.hidden = !hit;
-    if (hit) shown += 1;
-  });
-  $('settings-empty').hidden = shown > 0;
+
+/* --- filtros de Explorar --- */
+document.querySelectorAll('#mp-f-loader button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#mp-f-loader button').forEach((x) => x.classList.toggle('active', x === b));
+  mp.fLoader = b.dataset.fl;
+  searchPacks(true);
+}));
+$('mp-f-mc').addEventListener('change', () => { mp.fMc = $('mp-f-mc').value; searchPacks(true); });
+$('mp-f-sort').addEventListener('change', () => { mp.fSort = $('mp-f-sort').value; searchPacks(true); });
+$('mp-go-discover').addEventListener('click', async () => {
+  if ($('mp-f-mc').options.length > 1) return;
+  await loadMcVersions();
+  (mcList || []).slice(0, 60).forEach((v) => { const o = el('option', '', v); o.value = v; $('mp-f-mc').append(o); });
 });
+
+/* --- barra lateral compacta (solo iconos) --- */
+(function rail() {
+  const root = document.documentElement;
+  try { root.classList.toggle('rail', localStorage.getItem('novapx-rail') === '1'); } catch {}
+  document.querySelectorAll('.tab-btn').forEach((b) => { const l = b.querySelector('.nav-label'); if (l) b.title = l.textContent; });
+  $('rail-toggle').addEventListener('click', () => {
+    const on = root.classList.toggle('rail');
+    try { localStorage.setItem('novapx-rail', on ? '1' : '0'); } catch {}
+  });
+})();
+
+
+/* --- Amigos y estado en línea --- */
+async function renderFriends() {
+  const list = $('friends-list');
+  try {
+    const r = await window.api.friendsList();
+    if (!r.enabled) { $('friends-card').hidden = true; return; }
+    list.replaceChildren();
+    const online = r.friends.filter((f) => f.online).length;
+    $('friends-count').textContent = `(${online} en línea)`;
+    $('friends-note').textContent = r.friends.length ? (r.reachable ? '' : 'No se pudo consultar el estado ahora.') : 'Añade el nick de un amigo para ver cuándo está en línea.';
+    r.friends.forEach((f) => {
+      const li = el('li', 'friend');
+      const dot = el('span', 'live-dot');
+      dot.classList.toggle('off', !f.online);
+      const name = el('span', 'friend-name pii', f.nick);
+      const st = el('span', 'muted friend-st', f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado');
+      const rm = el('button', 'ghost friend-rm', '✕');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', `Quitar a ${f.nick}`);
+      rm.addEventListener('click', async () => { await window.api.friendsRemove(f.nick); renderFriends(); });
+      li.append(dot, name, st, rm);
+      list.append(li);
+    });
+  } catch { $('friends-note').textContent = 'No se pudo cargar la lista de amigos.'; }
+}
+$('friends-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const n = $('friends-input').value.trim();
+  if (!n) return;
+  try { await window.api.friendsAdd(n); $('friends-input').value = ''; await renderFriends(); }
+  catch (err) { $('friends-note').textContent = cleanError(err); }
+});
+renderFriends();
+setInterval(() => { if (!document.hidden) renderFriends(); }, 60 * 1000);

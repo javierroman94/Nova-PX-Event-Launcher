@@ -1,10 +1,12 @@
 {
-  // Contador de usuarios de Nova PX (ver docs/CLOUDFLARE.md). Cloudflare lo publica desde este repositorio.
+  // Contador de usuarios y estado en línea de Nova PX (ver docs/CLOUDFLARE.md). Cloudflare lo publica desde este repositorio.
   "name": "nova-px-event-launcher",
   "main": "worker/index.mjs",
   "compatibility_date": "2025-01-01",
   "workers_dev": true,
   "kv_namespaces": [
     { "binding": "USERS", "id": "7a6ae0b0b55f45099bf81d1de39797f9" }
-  ]
+  ],
+  "durable_objects": { "bindings": [{ "name": "PRESENCE", "class_name": "Presence" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Presence"] }]
 }

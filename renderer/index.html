@@ -53,6 +53,7 @@
     </nav>
 
     <div class="sidebar-foot">
+      <button id="rail-toggle" type="button" class="ghost rail-toggle" aria-label="Barra lateral compacta" title="Barra lateral compacta">⇤</button>
       <button class="account-chip" id="account-chip" data-tab="account" aria-label="Cuenta">
         <img id="chip-avatar" alt="" width="36" height="36" hidden />
         <span class="chip-text">
@@ -139,6 +140,12 @@
         </section>
 
         <aside aria-label="Tu jugador">
+          <section class="friends-card" id="friends-card" aria-label="Amigos">
+            <div class="friends-head"><strong id="friends-title">Amigos</strong><span id="friends-count" class="muted"></span></div>
+            <form id="friends-form" class="friends-form"><input id="friends-input" class="events-search pii" type="text" maxlength="16" placeholder="Añadir amigo (su nick)" autocomplete="off" aria-label="Nick del amigo" /><button type="submit" class="primary">+</button></form>
+            <ul id="friends-list" class="friends-list"></ul>
+            <p id="friends-note" class="muted" role="status"></p>
+          </section>
           <div class="player-card" data-tilt>
             <div class="player-skin"><canvas id="player3d" class="skin3d" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas><img id="player-bust" alt="" width="120" height="120" hidden /></div>
             <div class="player-info">
@@ -296,6 +303,17 @@
           <input id="mp-search" class="events-search" type="search" placeholder="Buscar modpacks…" aria-label="Buscar modpacks" autocomplete="off" />
           <button type="submit" class="primary">Buscar</button>
         </form>
+        <div class="mp-filters" id="mp-filters">
+          <div class="seg" id="mp-f-loader" role="group" aria-label="Loader">
+            <button type="button" class="active" data-fl="">Todos</button>
+            <button type="button" data-fl="fabric">Fabric</button>
+            <button type="button" data-fl="forge">Forge</button>
+            <button type="button" data-fl="neoforge">NeoForge</button>
+            <button type="button" data-fl="quilt">Quilt</button>
+          </div>
+          <select id="mp-f-mc" aria-label="Versión del juego"><option value="">Cualquier versión</option></select>
+          <select id="mp-f-sort" aria-label="Ordenar"><option value="">Mejor resultado</option><option value="downloads">Descargas</option><option value="follows">Seguidores</option><option value="newest">Más nuevos</option><option value="updated">Actualizados</option></select>
+        </div>
         <div id="mp-reco" hidden>
           <h3 class="mp-heading">Recomendados por Nova PX</h3>
           <div id="mp-reco-grid" class="events-grid"></div>
@@ -866,8 +884,6 @@
     <!-- AJUSTES -->
     <section class="page" id="page-settings">
       <h2 class="page-title">Ajustes</h2>
-      <input id="settings-search" class="events-search settings-search" type="search" placeholder="Buscar ajustes…" aria-label="Buscar ajustes" autocomplete="off" />
-      <p id="settings-empty" class="muted" hidden>Ningún ajuste coincide con la búsqueda.</p>
       <div class="settings">
         <fieldset>
           <legend>Mi cuenta</legend>
@@ -1048,17 +1064,25 @@
     <!-- CUENTA -->
     <section class="page" id="page-account">
       <h2 class="page-title">Cuenta</h2>
-      <div class="account-grid">
-        <div class="card">
-          <h3>Cuenta premium</h3>
-          <p>Inicia sesión con tu cuenta de Microsoft si compraste Minecraft Java.</p>
-          <button id="login-ms" class="primary">Iniciar sesión con Microsoft</button>
+      <div class="login-split">
+        <div class="login-art" aria-hidden="true">
+          <img src="images/logo.png" alt="" width="96" height="96" />
+          <h3>Nova PX</h3>
+          <p>Eventos, modpacks y skins en un solo lugar.</p>
         </div>
-        <div class="card" id="card-offline">
-          <h3>Cuenta no premium</h3>
-          <p>Elige un nick de 3 a 16 caracteres con letras, números o guion bajo. Usa siempre el mismo para conservar tu progreso.</p>
-          <input id="offline-nick" class="pii" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
-          <button id="login-offline">Entrar con este nick</button>
+        <div class="login-panel">
+          <ul class="login-feats">
+            <li><b>Eventos de la comunidad</b><span>Únete con un clic al modpack del evento actual.</span></li>
+            <li><b>Tus propios modpacks</b><span>Crea, importa y exporta perfiles con Modrinth.</span></li>
+            <li><b>Skins en 3D</b><span>Guarda tus skins y capas, también sin cuenta premium.</span></li>
+          </ul>
+          <button id="login-ms" class="primary login-big">Iniciar sesión con Microsoft</button>
+          <div class="card" id="card-offline">
+            <h3>Continuar sin premium</h3>
+            <p>Elige un nick de 3 a 16 caracteres (letras, números o guion bajo). Usa siempre el mismo para conservar tu progreso.</p>
+            <input id="offline-nick" class="pii" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
+            <button id="login-offline">Entrar con este nick</button>
+          </div>
         </div>
       </div>
       <div id="account-msg" class="msg" role="status"></div>
