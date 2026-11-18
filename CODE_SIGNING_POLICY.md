@@ -10,7 +10,8 @@ is available, signed so Windows can show the publisher name.
   computer is signed.
 - **Who can approve a signing request:** the repository owner, Francisco Javier
   Román Fajardo (`javierroman94`).
-- **Privacy:** the launcher only sends an anonymous usage counter if the player
+- **Signing service:** free code signing provided by SignPath.io, certificate by SignPath Foundation.
+- **Privacy:** see [PRIVACY.md](PRIVACY.md).  the launcher only sends an anonymous usage counter if the player
   allows it in Settings. It does not collect IP addresses or personal data
   beyond what the player chooses to share (for example a nickname for friends).
 - **Not affiliated:** this project is not made by or affiliated with Mojang
