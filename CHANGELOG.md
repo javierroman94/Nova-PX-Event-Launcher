@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.66
+- **Perfil del Equipo rediseñado**: al pulsar a alguien se abre una tarjeta con banner (con su foto difuminada), foto con aro de color, nombre, @nick, rol, presentación en cita, enlaces como botones con su icono y botón «Copiar nick». Los destacados llevan aro dorado y los homenajes un diseño propio.
+- **Equipo en Administración rediseñado**: cada persona es una tarjeta plegable con su foto, rol y etiquetas; al abrirla se edita por secciones (datos, presentación con contador, foto con vista previa, skin, enlaces, etiquetas). A la derecha, una vista previa en vivo de cómo se verá su perfil. Buscador, contadores, botones ↑↓ y arrastrar para ordenar (el arrastre no funcionaba antes).
+- Al abrir la pestaña Equipo se vuelve a pedir lo publicado, para ver al instante los cambios que hizo otra persona del equipo.
+
 ## 1.0.65
 - **Idiomas con banderas**: el selector de Ajustes → Idioma ahora son tarjetas con la bandera de cada país. Nuevos idiomas: Português, Français, Deutsch, Italiano, Русский y 日本語 (además de Español y English). Las banderas son dibujos propios, así se ven bien también en Windows. Lo que aún no esté traducido sigue saliendo en español.
 - **Ajustes rediseñado**: cabecera con tu perfil y resumen (memoria, Java, idioma y tema) con atajos, cada sección con su icono y descripción, interruptores en lugar de casillas, atajos de memoria (2/4/6/8 GB) y de resolución de ventana, y una barra de guardado fija que avisa de los cambios sin guardar.

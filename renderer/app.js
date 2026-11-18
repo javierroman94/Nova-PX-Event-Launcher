@@ -201,6 +201,8 @@ function goTo(tab) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === navTab));
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   $(`page-${tab}`).classList.add('active');
+  // Al abrir el Equipo se vuelve a pedir lo publicado, para ver al momento lo que cambió otra persona del equipo.
+  if (tab === 'team' && window.refreshContent && Date.now() - (window.__teamAt || 0) > 15000) { window.__teamAt = Date.now(); window.refreshContent(); }
   const [title, sub] = PAGE_TITLES[tab] || ['', ''];
   $('top-title').textContent = title;
   $('top-sub').textContent = sub;
@@ -1812,25 +1814,62 @@ function linksEditor(obj) {
   return box;
 }
 
+// Tarjeta de perfil: la usa el diálogo del Equipo y la vista previa del editor de Administración.
+const avatarPreviews = new WeakMap(); // foto recién subida (todavía sin publicar) → vista previa
+function profileCard(m, preview) {
+  const kind = m.tribute ? 'tribute' : m.featured ? 'featured' : 'normal';
+  const card = el('div', `pf-card pf-${kind}`);
+  const avatarSrc = avatarPreviews.get(m) || imageUrl(m.avatar);
+  const banner = el('div', 'pf-banner');
+  if (avatarSrc) banner.style.setProperty('--pf-img', `url("${avatarSrc.replace(/"/g, '%22')}")`);
+  else banner.classList.add('no-img');
+  const badges = el('div', 'pf-badges');
+  if (m.tribute) badges.append(el('span', 'pf-badge pf-b-tribute', '🕊 Homenaje'));
+  else if (m.featured) badges.append(el('span', 'pf-badge pf-b-featured', '★ Destacado'));
+  banner.append(badges);
+  const ring = el('div', 'pf-ring');
+  const face = el('img', 'pf-avatar'); face.alt = '';
+  const nick = String(m.nick || '').trim();
+  if (avatarSrc) face.src = avatarSrc;
+  else { face.classList.add('is-bust'); face.src = /^[A-Za-z0-9_]{1,16}$/.test(nick) ? skinBust(nick) : 'images/logo.png'; }
+  ring.append(face);
+  const body = el('div', 'pf-body');
+  body.append(el('h3', 'pf-name', m.name || nick || 'Nueva persona'));
+  const sub = el('div', 'pf-sub');
+  if (m.name && nick) sub.append(el('span', 'pf-handle', '@' + nick));
+  if (m.role) sub.append(el('span', 'pf-role', m.role));
+  if (sub.childNodes.length) body.append(sub);
+  if (m.tribute && m.years) body.append(el('div', 'pf-years', m.years));
+  const text = m.tribute && m.tributeText ? m.tributeText : m.bio;
+  if (text) { const q = el('blockquote', 'pf-bio'); q.append(el('span', '', text)); body.append(q); }
+  const links = (m.links || []).filter((l) => l && l.url);
+  if (links.length) {
+    body.append(el('div', 'pf-section', 'Enlaces'));
+    const box = el('div', 'pf-links');
+    links.forEach((l) => {
+      const b = el('button', 'link-tile');
+      b.type = 'button';
+      const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
+      b.append(linkIcon(l), el('span', 'link-name', l.name || host), el('span', 'link-host muted', host));
+      if (!preview) b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
+      box.append(b);
+    });
+    body.append(box);
+  }
+  if (!text && !links.length) body.append(el('p', 'pf-empty muted', preview ? 'Añade una presentación y enlaces para que se vea completo.' : ''));
+  card.append(banner, ring, body);
+  return card;
+}
+
 function openMember(m) {
-  const img = $('mm-avatar');
-  const src = imageUrl(m.avatar);
-  img.hidden = !src;
-  if (src) img.src = src;
-  $('mm-name').textContent = m.name || m.nick;
-  $('mm-role').textContent = `${m.name ? m.nick + ' · ' : ''}${m.role || ''}`;
-  $('mm-bio').textContent = m.bio || '';
-  $('mm-bio').hidden = !m.bio;
-  const box = $('mm-links');
-  box.replaceChildren();
-  (m.links || []).forEach((l) => {
-    const b = el('button', 'link-tile');
-    b.type = 'button';
-    const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
-    b.append(linkIcon(l), el('span', 'link-name', l.name), el('span', 'link-host muted', host));
-    b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
-    box.append(b);
-  });
+  const host = $('mm-card');
+  host.replaceChildren(profileCard(m, false));
+  const copy = $('mm-copy');
+  copy.hidden = !m.nick;
+  copy.textContent = 'Copiar nick';
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(m.nick); copy.textContent = 'Copiado ✓'; setTimeout(() => { copy.textContent = 'Copiar nick'; }, 1600); } catch { toast('No se pudo copiar', 'error'); }
+  };
   if (!$('member-modal').open) $('member-modal').showModal();
 }
 $('mm-close').addEventListener('click', () => $('member-modal').close());
@@ -3281,65 +3320,172 @@ function rowInputs(row, fields) {
   });
   return inputs;
 }
+const tmOpen = new WeakSet();
+let tmSel = null;
+let tmQuery = '';
 function paintTeam() {
   const box = $('ad-team');
   box.replaceChildren();
+  const q = tmQuery.trim().toLowerCase();
+  const prev = $('ad-team-preview');
+  const showPreview = (m) => { tmSel = m; prev.replaceChildren(m ? profileCard(m, true) : el('p', 'muted', 'Elige a alguien para ver su perfil.')); };
+  const refreshPreview = (m) => { if (tmSel === m) showPreview(m); };
+  if (!tmSel || !adm.team.includes(tmSel)) tmSel = adm.team[0] || null;
+
+  // Contadores
+  const st = $('ad-team-stats');
+  st.replaceChildren(
+    el('span', 'tm-stat', `${adm.team.length} personas`),
+    el('span', 'tm-stat', `★ ${adm.team.filter((m) => m.featured && !m.tribute).length} destacados`),
+    el('span', 'tm-stat', `🕊 ${adm.team.filter((m) => m.tribute).length} homenaje`)
+  );
+
   adm.team.forEach((m, idx) => {
-    const row = el('div', 'tm-card');
-    const f = rowInputs(m, [['nick', 'Nick de Minecraft', 16], ['role', 'Rol (ej. Lead Systems Architect)', 80]]);
-    const bust = el('img', 'tm-av'); bust.alt = '';
-    const paintBust = () => { bust.src = /^[A-Za-z0-9_]{1,16}$/.test(m.nick || '') ? skinBust(m.nick) : 'images/logo.png'; };
-    paintBust();
-    f.nick.addEventListener('change', paintBust);
-    const star = el('input');
-    star.type = 'checkbox'; star.checked = !!m.featured; star.title = 'Destacado';
-    star.setAttribute('aria-label', 'Destacado');
-    star.addEventListener('change', () => { m.featured = star.checked; });
-    const del = el('button', '', 'Quitar');
-    del.type = 'button';
-    del.addEventListener('click', () => { adm.team.splice(idx, 1); paintTeam(); });
-    const tr = el('input');
-    tr.type = 'checkbox'; tr.checked = !!m.tribute; tr.title = 'Homenaje';
-    tr.setAttribute('aria-label', 'Homenaje');
-    const trLab = el('label', 'tribute-toggle');
-    trLab.append(tr, el('span', '', '🕊'));
-    trLab.title = 'Homenaje: tarjeta especial arriba del todo';
-    tr.addEventListener('change', () => { m.tribute = tr.checked; paintTeam(); });
-    const starLab = el('label', 'tribute-toggle');
-    starLab.append(star, el('span', 'muted', 'Destacado'));
-    trLab.append(el('span', 'muted', 'Homenaje'));
-    del.className = 'danger';
-    const fields = el('div', 'tm-fields'); fields.append(f.nick, f.role);
-    const toggles = el('div', 'tm-toggles'); toggles.append(starLab, trLab);
-    const mainCol = el('div', 'tm-main'); mainCol.append(fields, toggles);
-    row.append(bust, mainCol, del);
-    const lk = el('details', 'team-links');
-    lk.append(el('summary', '', `Perfil, skin y enlaces (${(m.links || []).length})`));
-    const pf = rowInputs(m, [['name', 'Nombre real', 40], ['bio', 'Presentación corta', 300]]);
-    const av = el('div', 'links-row');
+    const hay = `${m.nick || ''} ${m.name || ''} ${m.role || ''}`.toLowerCase();
+    const row = el('div', 'mod-card tm2');
+    if (q && !hay.includes(q)) row.hidden = true;
+    row.classList.toggle('open', tmOpen.has(m));
+    row.classList.toggle('is-sel', tmSel === m);
+    if (m.tribute) row.classList.add('is-tribute'); else if (m.featured) row.classList.add('is-featured');
+
+    // ----- cabecera (siempre visible)
+    const head = el('div', 'tm2-head');
+    const av = el('img', 'tm-av'); av.alt = '';
+    const paintAv = () => {
+      const src = avatarPreviews.get(m) || imageUrl(m.avatar);
+      av.classList.toggle('is-photo', !!src);
+      av.src = src || (/^[A-Za-z0-9_]{1,16}$/.test(m.nick || '') ? skinBust(m.nick) : 'images/logo.png');
+    };
+    paintAv();
+    const id = el('div', 'tm2-id');
+    const title = el('strong', '', m.nick || 'Nueva persona');
+    const role = el('span', 'muted', m.role || 'Sin rol todavía');
+    id.append(title, role);
+    const chips = el('div', 'tm2-chips');
+    const paintChips = () => {
+      chips.replaceChildren();
+      if (m.tribute) chips.append(el('span', 'tm2-chip tr', '🕊 Homenaje'));
+      else if (m.featured) chips.append(el('span', 'tm2-chip ft', '★ Destacado'));
+      if (m.avatar) chips.append(el('span', 'tm2-chip', 'Foto'));
+      if (m.skin) chips.append(el('span', 'tm2-chip', 'Skin'));
+      if ((m.links || []).length) chips.append(el('span', 'tm2-chip', `${m.links.length} enlace${m.links.length > 1 ? 's' : ''}`));
+    };
+    paintChips();
+    const caret = el('span', 'tm2-caret', '▾'); caret.setAttribute('aria-hidden', 'true');
+    const mv = el('div', 'tm2-move');
+    const up = el('button', 'ghost', '↑'); up.type = 'button'; up.title = 'Subir'; up.disabled = idx === 0;
+    const dn = el('button', 'ghost', '↓'); dn.type = 'button'; dn.title = 'Bajar'; dn.disabled = idx === adm.team.length - 1;
+    const swap = (to) => { const [it] = adm.team.splice(idx, 1); adm.team.splice(to, 0, it); paintTeam(); };
+    up.addEventListener('click', (e) => { e.stopPropagation(); swap(idx - 1); });
+    dn.addEventListener('click', (e) => { e.stopPropagation(); swap(idx + 1); });
+    mv.append(up, dn);
+    head.append(av, id, chips, mv, caret);
+    head.tabIndex = 0;
+    head.setAttribute('role', 'button');
+    const toggle = () => {
+      if (tmOpen.has(m)) tmOpen.delete(m); else tmOpen.add(m);
+      row.classList.toggle('open', tmOpen.has(m));
+      showPreview(m);
+      box.querySelectorAll('.tm2').forEach((r) => r.classList.toggle('is-sel', r === row));
+    };
+    head.addEventListener('click', toggle);
+    head.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+
+    // ----- cuerpo (se abre al pulsar la cabecera)
+    const bodyEl = el('div', 'tm2-body');
+    const sec = (title2, hint) => { const s2 = el('section', 'tm2-sec'); const h = el('div', 'tm2-sec-h'); h.append(el('b', '', title2)); if (hint) h.append(el('small', 'muted', hint)); s2.append(h); return s2; };
+    const field = (label, input) => { const l = el('label', 'tm2-field'); l.append(el('span', 'muted', label), input); return l; };
+    const sync = () => { title.textContent = m.nick || 'Nueva persona'; role.textContent = m.role || 'Sin rol todavía'; paintChips(); refreshPreview(m); };
+
+    const base = rowInputs(m, [['nick', 'Nick de Minecraft', 16], ['role', 'Ej. Lead Systems Architect', 80]]);
+    const nm = rowInputs(m, [['name', 'Nombre real (opcional)', 40]]);
+    [base.nick, base.role, nm.name].forEach((i) => i.addEventListener('input', sync));
+    base.nick.addEventListener('change', paintAv);
+    const s1 = sec('Datos', 'Lo primero que se ve en la tarjeta');
+    const g1 = el('div', 'tm2-grid'); g1.append(field('Nick', base.nick), field('Rol', base.role), field('Nombre real', nm.name));
+    s1.append(g1);
+
+    const s2 = sec('Presentación', 'Aparece en su perfil');
+    const bio = el('textarea'); bio.rows = 3; bio.maxLength = 300; bio.placeholder = 'Cuéntanos quién es y qué hace en Nova PX…'; bio.value = m.bio || '';
+    const cnt = el('small', 'muted tm2-count', `${bio.value.length}/300`);
+    bio.addEventListener('input', () => { m.bio = bio.value; cnt.textContent = `${bio.value.length}/300`; refreshPreview(m); });
+    s2.append(bio, cnt);
+
+    const s3 = sec('Foto de perfil', 'Cuadrada se ve mejor · PNG, JPG o WEBP hasta 3 MB');
+    const phRow = el('div', 'tm2-photo');
+    const phImg = el('img', 'tm2-photo-img'); phImg.alt = '';
+    const paintPh = () => { const src = avatarPreviews.get(m) || imageUrl(m.avatar); phImg.hidden = !src; if (src) phImg.src = src; phNo.hidden = !!src; };
+    const phNo = el('div', 'tm2-photo-none muted', 'Sin foto: se usa el busto de su skin');
     const avPick = el('button', '', m.avatar ? 'Cambiar foto' : 'Subir foto'); avPick.type = 'button';
     avPick.addEventListener('click', async () => {
-      try { const r = await window.api.adminPickImage(m.nick || 'perfil'); if (r) { m.avatar = r.path; avPick.textContent = 'Cambiar foto'; } } catch (e) { $('ad-team-status').textContent = cleanError(e); }
+      try {
+        const r = await window.api.adminPickImage(m.nick || 'perfil');
+        if (r) { m.avatar = r.path; if (r.preview) avatarPreviews.set(m, r.preview); avPick.textContent = 'Cambiar foto'; paintPh(); paintAv(); sync(); }
+      } catch (e) { $('ad-team-status').textContent = cleanError(e); }
     });
-    const avClear = el('button', '', 'Quitar foto'); avClear.type = 'button';
-    avClear.addEventListener('click', () => { delete m.avatar; avPick.textContent = 'Subir foto'; });
-    av.append(avPick, avClear);
-    lk.append(pf.name, pf.bio, av, skinEditor(m), linksEditor(m));
-    row.append(lk);
+    const avClear = el('button', 'ghost', 'Quitar foto'); avClear.type = 'button';
+    avClear.addEventListener('click', () => { delete m.avatar; avatarPreviews.delete(m); avPick.textContent = 'Subir foto'; paintPh(); paintAv(); sync(); });
+    const phBtns = el('div', 'tm2-photo-btns'); phBtns.append(avPick, avClear);
+    phRow.append(phImg, phNo, phBtns);
+    paintPh();
+    s3.append(phRow);
+
+    const s4 = sec('Skin 3D', 'Para quien no tiene cuenta premium');
+    s4.append(skinEditor(m));
+
+    const s5 = sec('Enlaces', 'Redes, canal, portafolio…');
+    s5.append(linksEditor(m));
+    s5.addEventListener('click', () => setTimeout(() => { paintChips(); refreshPreview(m); }, 0));
+    s5.addEventListener('input', () => { paintChips(); refreshPreview(m); });
+
+    const s6 = sec('Etiquetas');
+    const tags = el('div', 'tm2-tags');
+    const tag = (icon, name, desc, key, onSet) => {
+      const t = el('label', 'tm2-tag');
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!m[key];
+      cb.addEventListener('change', () => { m[key] = cb.checked; onSet(); });
+      const tx = el('div'); tx.append(el('b', '', `${icon} ${name}`), el('small', 'muted', desc));
+      t.append(cb, tx);
+      return t;
+    };
+    tags.append(
+      tag('★', 'Destacado', 'Tarjeta grande arriba del Equipo', 'featured', () => { paintTeam(); }),
+      tag('🕊', 'Homenaje', 'Tarjeta especial para recordar a alguien', 'tribute', () => { paintTeam(); })
+    );
+    s6.append(tags);
+    bodyEl.append(s1, s2, s3, s4, s5, s6);
+
     if (m.tribute) {
-      row.classList.add('has-tribute');
-      const sub = el('div', 'team-tribute-fields');
+      const s7 = sec('Homenaje', 'Se muestra con una tarjeta especial');
       const yrs = el('input'); yrs.type = 'text'; yrs.maxLength = 30; yrs.placeholder = 'Años (ej. 1994 – 2024)'; yrs.value = m.years || '';
-      yrs.addEventListener('input', () => { m.years = yrs.value; });
-      const txt = el('input'); txt.type = 'text'; txt.maxLength = 300; txt.placeholder = 'Mensaje de homenaje'; txt.value = m.tributeText || '';
-      txt.addEventListener('input', () => { m.tributeText = txt.value; });
-      sub.append(yrs, txt);
-      row.append(sub);
+      yrs.addEventListener('input', () => { m.years = yrs.value; refreshPreview(m); });
+      const txt = el('textarea'); txt.rows = 2; txt.maxLength = 300; txt.placeholder = 'Mensaje de homenaje'; txt.value = m.tributeText || '';
+      txt.addEventListener('input', () => { m.tributeText = txt.value; refreshPreview(m); });
+      const g7 = el('div', 'tm2-grid one'); g7.append(field('Años', yrs), field('Mensaje', txt));
+      s7.append(g7);
+      bodyEl.append(s7);
     }
+    const foot = el('div', 'tm2-foot');
+    const del = el('button', 'danger', 'Quitar de la lista'); del.type = 'button';
+    del.addEventListener('click', () => { adm.team.splice(idx, 1); paintTeam(); });
+    foot.append(del);
+    bodyEl.append(foot);
+
+    row.append(head, bodyEl);
+    row.addEventListener('focusin', () => { if (tmSel !== m) { showPreview(m); box.querySelectorAll('.tm2').forEach((r) => r.classList.toggle('is-sel', r === row)); } });
     box.append(row);
   });
+  if (!adm.team.length) box.append(el('p', 'muted tm2-empty', 'Todavía no hay nadie. Pulsa «+ Persona» para añadir al primero.'));
+  showPreview(tmSel);
   if (window.makeSortable) window.makeSortable(box, adm.team, paintTeam);
 }
+$('ad-team-search').addEventListener('input', (e) => { tmQuery = e.target.value; paintTeam(); });
+$('ad-team-toggle').addEventListener('click', () => {
+  const all = adm.team.length && adm.team.every((m) => tmOpen.has(m));
+  adm.team.forEach((m) => (all ? tmOpen.delete(m) : tmOpen.add(m)));
+  $('ad-team-toggle').textContent = all ? 'Expandir todo' : 'Contraer todo';
+  paintTeam();
+});
 function paintNews() {
   const box = $('ad-news');
   box.replaceChildren();
@@ -3366,7 +3512,7 @@ function paintNews() {
   });
   if (window.makeSortable) window.makeSortable(box, adm.news, paintNews);
 }
-$('ad-team-add').addEventListener('click', () => { adm.team.push({ nick: '', role: '' }); paintTeam(); });
+$('ad-team-add').addEventListener('click', () => { const n = { nick: '', role: '' }; adm.team.push(n); tmOpen.add(n); tmSel = n; paintTeam(); });
 $('ad-news-add').addEventListener('click', () => { adm.news.unshift({ title: '', date: new Date().toISOString().slice(0, 10), text: '' }); paintNews(); });
 $('ad-team-save').addEventListener('click', async () => {
   try {

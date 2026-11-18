@@ -657,7 +657,15 @@
       <div id="ad-tab-team" hidden>
         <article class="ad-card">
           <header><div><h3>Equipo</h3><p class="muted">Quién aparece en la pestaña Equipo. Arrastra para ordenar. Marca la casilla para destacar a alguien.</p></div><button type="button" class="ghost" data-history="team">Historial</button></header>
-          <div id="ad-team" class="mods-list"></div>
+          <div class="tm-toolbar">
+            <input id="ad-team-search" class="events-search" type="search" placeholder="Buscar persona…" aria-label="Buscar persona" autocomplete="off" />
+            <div id="ad-team-stats" class="tm-stats"></div>
+            <button id="ad-team-toggle" type="button" class="ghost">Expandir todo</button>
+          </div>
+          <div class="tm-layout">
+            <div id="ad-team" class="mods-list"></div>
+            <aside class="tm-preview"><span class="tm-prev-label">Así se verá su perfil</span><div id="ad-team-preview"></div></aside>
+          </div>
           <div class="mp-actions"><button id="ad-team-add" type="button">+ Persona</button><button id="ad-team-undo" type="button" class="ghost">Deshacer</button><button id="ad-team-save" type="button" class="primary">Guardar equipo</button></div>
           <p id="ad-team-status" class="muted" role="status"></p>
         </article>
@@ -1208,16 +1216,10 @@
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
   <!-- Asistente de primer uso -->
-  <dialog id="member-modal" class="event-modal" aria-label="Perfil">
-        <div class="event-modal-body member-profile">
-          <img id="mm-avatar" class="mm-avatar" alt="" hidden />
-          <h3 id="mm-name"></h3>
-          <div id="mm-role" class="muted"></div>
-          <p id="mm-bio"></p>
-          <div id="mm-links" class="mm-links"></div>
-          <div class="mp-actions"><button id="mm-close" type="button">Cerrar</button></div>
-        </div>
-      </dialog>
+  <dialog id="member-modal" class="event-modal member-dialog" aria-label="Perfil">
+    <div id="mm-card"></div>
+    <div class="mm-actions"><button id="mm-copy" type="button" class="ghost">Copiar nick</button><button id="mm-close" type="button">Cerrar</button></div>
+  </dialog>
 
   <dialog id="welcome-modal" class="event-modal welcome" aria-label="Bienvenida">
     <div class="event-modal-body">
