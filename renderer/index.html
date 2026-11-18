@@ -140,6 +140,12 @@
         </section>
 
         <aside aria-label="Tu jugador">
+          <section class="friends-card" id="friends-card" aria-label="Amigos">
+            <div class="friends-head"><strong id="friends-title">Amigos</strong><span id="friends-count" class="muted"></span></div>
+            <form id="friends-form" class="friends-form"><input id="friends-input" class="events-search pii" type="text" maxlength="16" placeholder="Añadir amigo (su nick)" autocomplete="off" aria-label="Nick del amigo" /><button type="submit" class="primary">+</button></form>
+            <ul id="friends-list" class="friends-list"></ul>
+            <p id="friends-note" class="muted" role="status"></p>
+          </section>
           <div class="player-card" data-tilt>
             <div class="player-skin"><canvas id="player3d" class="skin3d" aria-label="Tu skin en 3D. Arrastra para girarla, haz clic para que salude."></canvas><img id="player-bust" alt="" width="120" height="120" hidden /></div>
             <div class="player-info">

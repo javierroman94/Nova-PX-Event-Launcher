@@ -72,10 +72,55 @@ async function stats(env) {
   return out;
 }
 
+// ---- Amigos y estado en línea (Durable Object en memoria: no gasta escrituras de KV) ----
+const ONLINE_MS = 150 * 1000;
+const MAX_NICKS = 50;
+export class Presence {
+  constructor() { this.m = new Map(); }
+  prune(now) { if (this.m.size > 5000) for (const [k, v] of this.m) if (now - v.last > ONLINE_MS) this.m.delete(k); }
+  async fetch(request) {
+    const url = new URL(request.url);
+    const now = Date.now();
+    let b = {};
+    try { b = JSON.parse(await request.text()); } catch { return json({ error: 'bad_json' }, 400); }
+    if (url.pathname === '/beat') {
+      const nick = String(b.nick || '');
+      if (!/^[A-Za-z0-9_]{3,16}$/.test(nick)) return json({ error: 'bad_nick' }, 400);
+      this.m.set(nick.toLowerCase(), { last: now, playing: !!b.playing });
+      this.prune(now);
+      return json({ ok: true });
+    }
+    if (url.pathname === '/leave') {
+      const nick = String(b.nick || '').toLowerCase();
+      this.m.delete(nick);
+      return json({ ok: true });
+    }
+    if (url.pathname === '/query') {
+      const nicks = (Array.isArray(b.nicks) ? b.nicks : []).map(String).filter((n) => /^[A-Za-z0-9_]{3,16}$/.test(n)).slice(0, MAX_NICKS);
+      const out = {};
+      for (const n of nicks) {
+        const v = this.m.get(n.toLowerCase());
+        out[n] = v && now - v.last <= ONLINE_MS ? { online: true, playing: v.playing } : { online: false, playing: false };
+      }
+      return json({ status: out });
+    }
+    return json({ error: 'not_found' }, 404);
+  }
+}
+
+async function presence(request, env, path) {
+  if (!env.PRESENCE) return json({ error: 'no_presence' }, 503);
+  const text = await request.text();
+  if (text.length > 2048) return json({ error: 'too_big' }, 413);
+  const stub = env.PRESENCE.get(env.PRESENCE.idFromName('global'));
+  return stub.fetch(new Request(`https://presence${path}`, { method: 'POST', body: text }));
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/ping') return handlePing(request, env);
+    if (request.method === 'POST' && ['/presence/beat', '/presence/leave', '/presence/query'].includes(url.pathname)) return presence(request, env, url.pathname.slice(9));
     if (request.method === 'GET' && url.pathname === '/stats') {
       const { total, day, week } = await stats(env);
       return json({ total, day, week });

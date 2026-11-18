@@ -1566,3 +1566,15 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 :root.rail .rail-toggle { transform: scaleX(-1); }
 .mp-filters select { width: auto; min-width: 190px; }
 .login-art img { background: #fff; border-radius: 24px; padding: 10px; box-sizing: content-box; }
+
+/* Amigos */
+.friends-card { padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--raised); margin-bottom: 14px; display: grid; gap: 10px; }
+.friends-head { display: flex; justify-content: space-between; align-items: baseline; }
+.friends-form { display: flex; gap: 8px; }
+.friends-form input { flex: 1; min-width: 0; }
+.friends-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow: auto; }
+.friend { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: color-mix(in srgb, var(--text) 5%, transparent); }
+.friend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.friend-st { font-size: 12px; }
+.friend-rm { padding: 2px 8px; }
+.live-dot.off { background: var(--muted, #6b7280); box-shadow: none; animation: none; }

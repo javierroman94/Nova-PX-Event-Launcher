@@ -3326,3 +3326,39 @@ $('mp-go-discover').addEventListener('click', async () => {
     try { localStorage.setItem('novapx-rail', on ? '1' : '0'); } catch {}
   });
 })();
+
+
+/* --- Amigos y estado en línea --- */
+async function renderFriends() {
+  const list = $('friends-list');
+  try {
+    const r = await window.api.friendsList();
+    if (!r.enabled) { $('friends-card').hidden = true; return; }
+    list.replaceChildren();
+    const online = r.friends.filter((f) => f.online).length;
+    $('friends-count').textContent = `(${online} en línea)`;
+    $('friends-note').textContent = r.friends.length ? (r.reachable ? '' : 'No se pudo consultar el estado ahora.') : 'Añade el nick de un amigo para ver cuándo está en línea.';
+    r.friends.forEach((f) => {
+      const li = el('li', 'friend');
+      const dot = el('span', 'live-dot');
+      dot.classList.toggle('off', !f.online);
+      const name = el('span', 'friend-name pii', f.nick);
+      const st = el('span', 'muted friend-st', f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado');
+      const rm = el('button', 'ghost friend-rm', '✕');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', `Quitar a ${f.nick}`);
+      rm.addEventListener('click', async () => { await window.api.friendsRemove(f.nick); renderFriends(); });
+      li.append(dot, name, st, rm);
+      list.append(li);
+    });
+  } catch { $('friends-note').textContent = 'No se pudo cargar la lista de amigos.'; }
+}
+$('friends-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const n = $('friends-input').value.trim();
+  if (!n) return;
+  try { await window.api.friendsAdd(n); $('friends-input').value = ''; await renderFriends(); }
+  catch (err) { $('friends-note').textContent = cleanError(err); }
+});
+renderFriends();
+setInterval(() => { if (!document.hidden) renderFriends(); }, 60 * 1000);

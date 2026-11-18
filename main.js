@@ -25,6 +25,7 @@ const packs = require('./lib/packs');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const telemetry = require('./lib/telemetry');
+const friendsLib = require('./lib/friends');
 const remote = require('./lib/remote');
 const sess = require('./lib/session');
 const streamer = require('./lib/streamer');
@@ -1037,6 +1038,46 @@ ipcMain.handle('community:stats', async () => {
   } catch {}
   communityCache = { at: Date.now(), value };
   return value;
+});
+
+/* ---------- amigos y estado en línea ---------- */
+
+const FRIENDS_FILE = path.join(app.getPath('userData'), 'friends.json');
+async function presencePost(pth, body, ms = 5000) {
+  if (!USAGE_URL) return null;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(`${USAGE_URL}/presence/${pth}`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+    return r.ok ? await r.json() : null;
+  } catch { return null; } finally { clearTimeout(timer); }
+}
+// Latido: dice que sigues conectado (solo con sesión y con "compartir uso" activado).
+function presenceBeat() {
+  if (!session || !/^[A-Za-z0-9_]{3,16}$/.test(session.name || '') || !readSettings().shareUsage) return;
+  presencePost('beat', { nick: session.name, playing: launching });
+}
+setInterval(presenceBeat, 90 * 1000).unref();
+setTimeout(presenceBeat, 8000).unref();
+app.on('before-quit', () => { if (session) presencePost('leave', { nick: session.name }, 1500); });
+
+ipcMain.handle('friends:list', async () => {
+  const list = friendsLib.load(FRIENDS_FILE);
+  let status = null;
+  if (list.length) {
+    const r = await presencePost('query', { nicks: list });
+    status = r && r.status;
+  }
+  return { enabled: !!USAGE_URL, friends: friendsLib.merge(list, status), reachable: !!status || !list.length };
+});
+ipcMain.handle('friends:add', (_e, nick) => {
+  const list = friendsLib.add(friendsLib.load(FRIENDS_FILE), nick, session ? session.name : '');
+  friendsLib.save(FRIENDS_FILE, list);
+  return true;
+});
+ipcMain.handle('friends:remove', (_e, nick) => {
+  friendsLib.save(FRIENDS_FILE, friendsLib.remove(friendsLib.load(FRIENDS_FILE), String(nick)));
+  return true;
 });
 
 /* ---------- modo administrador (token de GitHub) ---------- */
