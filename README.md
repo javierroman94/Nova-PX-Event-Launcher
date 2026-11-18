@@ -87,7 +87,7 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 | | |
 |---|---|
 | 🛡️ **Mods protegidos** | Los mods del evento viajan cifrados (AES-256-GCM); la contraseña se pide solo en la primera instalación. |
-| 🎨 **Temas y temporadas** | Oscuro, claro, OLED y **Nova Neón** (animado). Decoración automática de Halloween, Navidad y Año Nuevo. |
+| 🎨 **Temas y temporadas** | Oscuro, claro, OLED y **Nova Neón** (animado). Decoración automática por temporada (Halloween, Navidad, San Valentín, Carnaval…), estela del cursor propia de cada tema y criaturas pixeladas paseando por la pantalla. |
 | 🌍 **Idiomas** | Paquetes de idioma (inglés incluido); la comunidad puede añadir más con un `.json`. |
 | 🧭 **Asistente de primer uso** | Te guía: cuenta, RAM recomendada según tu equipo y listo. |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y **Reparar instalación**. |

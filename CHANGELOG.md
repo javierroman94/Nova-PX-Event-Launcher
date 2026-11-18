@@ -4,6 +4,8 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 
 ## 1.0.83
 - Tema secreto «Laos ✦ Edición secreta» (azul noche con rojo): solo aparece en Ajustes → Apariencia para la cuenta premium de LaosOneView (se comprueba su UUID, no el nick) y para los administradores.
+- Estela del cursor distinta para cada tema y temporada (copos en Navidad, brasas en Halloween, corazones en San Valentín, pétalos, confeti, chispas, píxeles…) y ráfaga al hacer clic.
+- Criaturas pixeladas de diseño propio (conejo, pollito, zorro, pingüino, fantasma, calabaza, abeja y robot Nova) que pasean por abajo según el tema y la temporada; huyen si les acercas el cursor. Se apagan con «Efectos animados» o por separado en Ajustes → Apariencia.
 
 ## 1.0.82
 - Varias cuentas: guarda cuentas de Microsoft y nicks sin conexión a la vez y cambia entre ellas con un clic en Cuenta → «Tus cuentas». Cada cuenta conserva su skin, amigos y tiempo de juego. «Cerrar sesión» quita solo la cuenta activa.
