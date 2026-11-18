@@ -1300,6 +1300,7 @@ async function renderContent() {
     mp.items = r.items;
     paintPackChips(p);
     paintContent(r.offline);
+    if (!r.offline && r.items.length) autoCheckUpdates(p);
   } catch (err) {
     list.replaceChildren();
     note.textContent = cleanError(err);
@@ -1770,23 +1771,24 @@ $('mp-modal').addEventListener('close', async () => {
 function updatesDialog(ups) {
   return new Promise((resolve) => {
     const dlg = el('dialog', 'event-modal upd-dialog');
-    dlg.setAttribute('aria-label', 'Actualizar mods');
+    dlg.setAttribute('aria-label', 'Actualizar contenido');
     const body = el('div', 'event-modal-body');
-    const known = (f) => (mp.items || []).find((i) => i.file === f);
+    const known = (f, t) => (mp.items || []).find((i) => i.file === f && (!t || i.type === t));
     const head = el('div', 'upd-head');
-    head.append(el('h3', '', `${ups.length} mod${ups.length === 1 ? '' : 's'} con versión nueva`), el('p', 'muted', 'Elige cuáles quieres actualizar. Se descargan de Modrinth y se comprueba su huella antes de reemplazar el archivo.'));
+    head.append(el('h3', '', `${ups.length} elemento${ups.length === 1 ? '' : 's'} con versión nueva`), el('p', 'muted', 'Elige cuáles quieres actualizar. Se descargan de Modrinth y se comprueba su huella antes de reemplazar el archivo.'));
     const tools = el('div', 'upd-tools');
     const all = el('button', 'ghost', 'Marcar todos'); all.type = 'button';
     const none = el('button', 'ghost', 'Quitar todos'); none.type = 'button';
     tools.append(all, none);
     const list = el('div', 'upd-list');
     const rows = ups.map((u) => {
-      const it = known(u.file);
+      const it = known(u.file, u.type);
       const row = el('label', 'upd-row');
       const cb = el('input'); cb.type = 'checkbox'; cb.checked = true;
       const txt = el('div', 'upd-txt');
       const top = el('div', 'upd-top');
       top.append(el('strong', '', it ? it.name : u.file.replace(/\.disabled$/i, '').replace(/\.jar$/i, '')));
+      top.append(el('span', `type-chip t-${u.type || 'mod'}`, TYPE_NAMES[u.type || 'mod']));
       if (!u.enabled) top.append(el('span', 'type-chip t-off', 'Desactivado'));
       const ver = el('div', 'upd-ver');
       ver.append(el('span', 'upd-old', (it && it.version) || 'actual'), el('span', 'upd-arrow', '→'), el('span', 'upd-new', u.version || 'nueva'));
@@ -1812,7 +1814,7 @@ function updatesDialog(ups) {
     let done = false;
     const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
     cancel.addEventListener('click', () => finish(null));
-    ok.addEventListener('click', () => finish(rows.filter((r) => r.cb.checked).map((r) => r.u.file)));
+    ok.addEventListener('click', () => finish(rows.filter((r) => r.cb.checked).map((r) => `${r.u.type || 'mod'}:${r.u.file}`)));
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
     body.append(head, tools, list, foot);
     dlg.append(body);
@@ -1822,6 +1824,21 @@ function updatesDialog(ups) {
   });
 }
 
+// Aviso en el botón: al abrir el contenido se busca solo en segundo plano y se muestra cuántas hay.
+function setUpdBadge(n) {
+  const b = $('mp-check-updates');
+  if (b) b.textContent = n ? `Buscar actualizaciones (${n})` : 'Buscar actualizaciones';
+  if (b) b.classList.toggle('has-upd', n > 0);
+}
+let updAuto = 0;
+async function autoCheckUpdates(p) {
+  const my = ++updAuto;
+  setUpdBadge(0);
+  try {
+    const ups = await window.api.instanceUpdatesCheck(p.id);
+    if (my === updAuto && mp.pack === p) setUpdBadge(ups.length);
+  } catch { /* sin conexión: no se avisa */ }
+}
 $('mp-check-updates').addEventListener('click', async () => {
   const btn = $('mp-check-updates');
   const note = $('mp-content-note');
@@ -1829,12 +1846,12 @@ $('mp-check-updates').addEventListener('click', async () => {
   try {
     note.textContent = 'Buscando actualizaciones en Modrinth…';
     const ups = await window.api.instanceUpdatesCheck(mp.pack.id);
-    if (!ups.length) { note.textContent = 'Todos tus mods están al día.'; return; }
+    if (!ups.length) { note.textContent = 'Todo está al día.'; setUpdBadge(0); return; }
     const chosen = await updatesDialog(ups);
     if (!chosen) { note.textContent = `${ups.length} actualizaciones disponibles.`; return; }
     note.textContent = 'Actualizando…';
     const r = await window.api.instanceUpdatesApply({ id: mp.pack.id, only: chosen });
-    toast(`${r.updated} mod${r.updated === 1 ? '' : 's'} actualizado${r.updated === 1 ? '' : 's'}`, 'success');
+    toast(`${r.updated} elemento${r.updated === 1 ? '' : 's'} actualizado${r.updated === 1 ? '' : 's'}`, 'success');
     r.errors.forEach((m) => toast(m, 'error'));
     await renderContent();
   } catch (e) {

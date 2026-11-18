@@ -1025,45 +1025,55 @@ ipcMain.handle('instance:openBackups', async (_e, id) => {
   if (err) throw new Error(err);
 });
 
-// Busca versiones nuevas de los mods (Modrinth) compatibles con la versión y loader del modpack.
+// Busca versiones nuevas de mods, shaders y texturas (Modrinth) compatibles con la versión y el loader del modpack.
+async function planAllUpdates(entry, root) {
+  const plan = [];
+  for (const type of Object.keys(content.TYPES)) {
+    const items = [];
+    for (const it of content.listContent(root, type)) {
+      items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, type), it.file)) });
+    }
+    if (!items.length) continue;
+    try {
+      plan.push(...(await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type, type })));
+    } catch (e) {
+      if (type === 'mod') throw e; // sin conexión: que lo vea el usuario; un shader que falle no debe tapar a los mods
+    }
+  }
+  return plan;
+}
 ipcMain.handle('instance:updatesCheck', async (_e, id) => {
   const { entry, root } = packRoot(id);
-  const items = [];
-  for (const it of content.listContent(root, 'mod')) {
-    items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, 'mod'), it.file)) });
-  }
-  const plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
-  return plan.map((u) => ({ file: u.file, newFile: u.newFile, version: u.version }));
+  const plan = await planAllUpdates(entry, root);
+  return plan.map((u) => ({ type: u.type, file: u.file, enabled: u.enabled, newFile: u.newFile, version: u.version }));
 });
 ipcMain.handle('instance:updatesApply', async (_e, arg) => {
   assertEditable();
   const id = arg && typeof arg === 'object' ? arg.id : arg;
-  const only = arg && Array.isArray(arg.only) ? new Set(arg.only.map((f) => String(f))) : null; // solo estos archivos (si se pasa)
+  const only = arg && Array.isArray(arg.only) ? new Set(arg.only.map((f) => String(f))) : null; // "tipo:archivo" de lo elegido
   const { entry, root } = packRoot(id);
-  const items = [];
-  for (const it of content.listContent(root, 'mod')) {
-    items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, 'mod'), it.file)) });
-  }
-  let plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
-  if (only) plan = plan.filter((u) => only.has(u.file));
-  const dir = content.contentDir(root, 'mod');
+  let plan = await planAllUpdates(entry, root);
+  if (only) plan = plan.filter((u) => only.has(`${u.type}:${u.file}`));
   let done = 0;
   const errors = [];
-  for (const u of plan) {
-    try {
-      const name = content.safeFileName(u.newFile, 'mod');
-      if (!name || !modpacks.allowedUrl(u.url, ['cdn.modrinth.com'])) throw new Error('descarga no permitida');
-      send('modpack:progress', { text: `Actualizando ${name} (${done + 1} de ${plan.length})…` });
-      const data = await downloadBuffer(u.url);
-      if (crypto.createHash('sha1').update(data).digest('hex') !== u.sha1) throw new Error('la huella no coincide');
-      const dest = path.join(dir, u.enabled ? name : `${name}.disabled`);
-      fs.writeFileSync(dest, data);
-      if (path.basename(dest) !== u.file) fs.rmSync(path.join(dir, u.file), { force: true });
-      done++;
-    } catch (err) {
-      errors.push(`${u.file}: ${err.message}`);
+  try {
+    for (const u of plan) {
+      try {
+        const dir = content.contentDir(root, u.type);
+        const name = content.safeFileName(u.newFile, u.type);
+        if (!name || !modpacks.allowedUrl(u.url, ['cdn.modrinth.com'])) throw new Error('descarga no permitida');
+        send('modpack:progress', { text: `Actualizando ${name} (${done + 1} de ${plan.length})…` });
+        const data = await downloadBuffer(u.url);
+        if (crypto.createHash('sha1').update(data).digest('hex') !== u.sha1) throw new Error('la huella no coincide');
+        const dest = path.join(dir, u.enabled ? name : `${name}.disabled`);
+        fs.writeFileSync(dest, data);
+        if (path.basename(dest) !== u.file) fs.rmSync(path.join(dir, u.file), { force: true });
+        done++;
+      } catch (err) {
+        errors.push(`${u.file}: ${err.message}`);
+      }
     }
-  }
+  } finally { send('modpack:progress', { text: 'Listo' }); }
   return { updated: done, errors };
 });
 

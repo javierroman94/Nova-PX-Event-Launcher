@@ -2479,3 +2479,5 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .ad-edit .ad-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ad-edit .ad-on { display: inline-flex; align-items: center; gap: 6px; }
 .ad-fineprint { font-size: 12px; margin-top: 8px; }
+
+#mp-check-updates.has-upd { border-color: var(--accent, #f7b733); color: var(--accent, #f7b733); }

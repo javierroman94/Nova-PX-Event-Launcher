@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.81
+- Actualizaciones en un clic también para shaders y texturas (antes solo mods). La lista muestra el tipo de cada elemento.
+- Al abrir el contenido de un modpack, el launcher busca solo las versiones nuevas y las cuenta en el botón «Buscar actualizaciones (N)».
+
 ## 1.0.80
 - Nueva zona de Publicidad: banners de anunciantes en Inicio y Evento, siempre con la etiqueta «Publicidad». Admin → Publicidad: anunciante, imagen, enlace, texto, fechas, dónde sale y activar/desactivar; se rota entre los anuncios activos.
 - Vistas y clics por anuncio (contador anónimo, respeta la opción de compartir uso) visibles en el panel con el porcentaje de clics.

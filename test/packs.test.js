@@ -87,6 +87,12 @@ try {
     assert.strictEqual(r.length, 1);
     assert.strictEqual(r[0].newFile, 'a-2.jar');
     assert.strictEqual(r[0].sha1, 'd'.repeat(40));
+    // shaders/texturas: no llevan loader y se marcan con su tipo
+    let seen = null;
+    const r2 = await packs.planModUpdates({ type: 'shader', request: async (u, o) => { seen = o.body; return { [h1]: { version_number: '3', files: [{ filename: 's.zip', url: 'https://cdn.modrinth.com/s', hashes: { sha1: 'e'.repeat(40) } }] } }; }, mc: '1.21.1', loader: 'fabric', items: [{ hash: h1, file: 's-1.zip', enabled: true }] });
+    assert.strictEqual(seen.loaders, undefined);
+    assert.strictEqual(r2[0].type, 'shader');
+    assert.strictEqual(r[0].type, 'mod');
     console.log('packs.test OK');
     fs.rmSync(tmp, { recursive: true, force: true });
   })().catch((e2) => { console.error(e2); process.exit(1); });
