@@ -16,8 +16,8 @@
         "url": "https://t.co/yEEAOI3xaY"
       }
     ],
-    "bio": "Director de NovaPX & Streamer",
-    "avatar": "images/ezluiiz-mwlibsyf.jpg"
+    "bio": "Director de NovaPX",
+    "avatar": "images/ezluiiz-mwlhxpmr.png"
   },
   {
     "nick": "MegaDeker",
@@ -28,6 +28,20 @@
     "nick": "javierroman94",
     "role": "Lead Systems Architect & Software Engineer",
     "featured": true,
+    "links": [
+      {
+        "name": "Twitch",
+        "url": "https://www.twitch.tv/javierroman94"
+      },
+      {
+        "name": "TikTok",
+        "url": "https://www.tiktok.com/@javierroman94"
+      },
+      {
+        "name": "Discord",
+        "url": "https://discord.com/invite/fVtUYQb8QV"
+      }
+    ],
     "skin": "images/skin-javierroman94-mwlav2u3.png",
     "name": "JAVIER ROMAN",
     "bio": "FELIZ PERO NO MUCHO"
