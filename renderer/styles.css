@@ -1519,7 +1519,6 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .ver-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
 .ver-chip { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
 .ver-chip.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.settings-search { width: min(420px, 100%); margin: 0 0 14px; }
 @media (max-width: 640px) { .np-grid { grid-template-columns: 1fr; } }
 
 /* Launchpad (Inicio) */
@@ -1541,3 +1540,29 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .lp-event { position: absolute; right: 16px; bottom: 14px; }
 .home-grid #news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .news-card .news-img { max-height: 180px; }
+
+.mod-icon img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.mp-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 14px; }
+.mp-filters select { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); color: var(--text); font: inherit; }
+/* Entrada (login) en dos columnas */
+.login-split { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.1fr); border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: var(--surface, var(--raised)); max-width: 980px; }
+.login-art { display: grid; align-content: center; justify-items: center; gap: 10px; padding: 40px 28px; text-align: center; background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 60%), linear-gradient(160deg, #141a33, #0b0e18); }
+.login-art h3 { margin: 6px 0 0; font-size: 34px; letter-spacing: -.02em; }
+.login-art p { margin: 0; color: var(--text-2); max-width: 26ch; }
+.login-panel { display: grid; gap: 16px; padding: 28px; align-content: start; }
+.login-feats { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.login-feats li { display: grid; gap: 2px; }
+.login-feats span { color: var(--text-2); font-size: 14px; }
+.login-big { padding: 14px 18px; font-size: 16px; }
+.login-panel .card { box-shadow: none; }
+@media (max-width: 760px) { .login-split { grid-template-columns: 1fr; } }
+/* Barra lateral compacta */
+.rail-toggle { align-self: center; padding: 4px 10px; }
+:root.rail .sidebar { width: 78px; padding: 18px 10px 14px; align-items: center; }
+:root.rail .brand-text, :root.rail .nav-label, :root.rail .chip-text, :root.rail .side-version, :root.rail .nav-group { display: none; }
+:root.rail .brand { padding: 0; }
+:root.rail .tab-btn { justify-content: center; padding: 12px; }
+:root.rail .account-chip { justify-content: center; padding: 8px; width: auto; }
+:root.rail .rail-toggle { transform: scaleX(-1); }
+.mp-filters select { width: auto; min-width: 190px; }
+.login-art img { background: #fff; border-radius: 24px; padding: 10px; box-sizing: content-box; }

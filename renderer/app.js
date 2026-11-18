@@ -1477,7 +1477,7 @@ async function searchPacks(reset) {
   if (reset) loadRecommended();
   note.textContent = 'Buscando…';
   try {
-    const r = await window.api.modpackSearch({ provider: mp.provider, query: mp.query, offset: mp.offset });
+    const r = await window.api.modpackSearch({ provider: mp.provider, query: mp.query, offset: mp.offset, loader: mp.fLoader || '', mc: mp.fMc || '', sort: mp.fSort || '' });
     if (seq !== mp.seq) return;
     mp.total = r.total;
     r.items.forEach((it) => {
@@ -3301,14 +3301,28 @@ $('np-search-form').addEventListener('submit', (e) => {
   searchPacks(true);
 });
 
-/* --- buscador de ajustes --- */
-$('settings-search').addEventListener('input', () => {
-  const q = $('settings-search').value.trim().toLowerCase();
-  let shown = 0;
-  document.querySelectorAll('#page-settings .settings > fieldset').forEach((fs) => {
-    const hit = !q || fs.textContent.toLowerCase().includes(q);
-    fs.hidden = !hit;
-    if (hit) shown += 1;
-  });
-  $('settings-empty').hidden = shown > 0;
+
+/* --- filtros de Explorar --- */
+document.querySelectorAll('#mp-f-loader button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#mp-f-loader button').forEach((x) => x.classList.toggle('active', x === b));
+  mp.fLoader = b.dataset.fl;
+  searchPacks(true);
+}));
+$('mp-f-mc').addEventListener('change', () => { mp.fMc = $('mp-f-mc').value; searchPacks(true); });
+$('mp-f-sort').addEventListener('change', () => { mp.fSort = $('mp-f-sort').value; searchPacks(true); });
+$('mp-go-discover').addEventListener('click', async () => {
+  if ($('mp-f-mc').options.length > 1) return;
+  await loadMcVersions();
+  (mcList || []).slice(0, 60).forEach((v) => { const o = el('option', '', v); o.value = v; $('mp-f-mc').append(o); });
 });
+
+/* --- barra lateral compacta (solo iconos) --- */
+(function rail() {
+  const root = document.documentElement;
+  try { root.classList.toggle('rail', localStorage.getItem('novapx-rail') === '1'); } catch {}
+  document.querySelectorAll('.tab-btn').forEach((b) => { const l = b.querySelector('.nav-label'); if (l) b.title = l.textContent; });
+  $('rail-toggle').addEventListener('click', () => {
+    const on = root.classList.toggle('rail');
+    try { localStorage.setItem('novapx-rail', on ? '1' : '0'); } catch {}
+  });
+})();
