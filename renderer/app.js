@@ -273,6 +273,7 @@ async function renderHero() {
     if (artUrl) art.src = artUrl;
     const heroImg = imageUrl(m.event && m.event.image);
     const hero = document.querySelector('.hero');
+    hero.classList.toggle('has-banner', !!heroImg);
     if (heroImg) hero.style.setProperty('--hero-image', `url(${JSON.stringify(heroImg)})`);
     else hero.style.removeProperty('--hero-image');
     const chips = $('hero-chips');
@@ -1136,10 +1137,27 @@ $('mp-go-create').addEventListener('click', async () => {
   $('mc-create').disabled = true;
   $('mp-create-modal').showModal();
   await loadMcVersions($('mc-version'));
+  paintPopularVersions();
   $('mc-status').textContent = mcList.length ? '' : 'No se pudo cargar la lista de versiones.';
   $('mc-create').disabled = !mcList.length;
   $('mc-name').focus();
 });
+/* versiones populares en cuadrícula */
+function paintPopularVersions() {
+  const box = $('mc-popular');
+  box.replaceChildren();
+  const pops = ['1.21.4', '1.21.1', '1.20.1', '1.19.2', '1.18.2', '1.16.5', '1.12.2', '1.8.9'].filter((v) => mcList && mcList.includes(v));
+  const latest = mcList && mcList[0];
+  [latest, ...pops].filter((v, i, a) => v && a.indexOf(v) === i).forEach((v) => {
+    const b = el('button', 'ver-chip', v);
+    b.type = 'button';
+    b.classList.toggle('active', $('mc-version').value === v);
+    b.addEventListener('click', () => { $('mc-version').value = v; paintPopularVersions(); });
+    box.append(b);
+  });
+}
+$('mc-version').addEventListener('change', paintPopularVersions);
+
 $('mc-cancel').addEventListener('click', () => $('mp-create-modal').close());
 $('mp-create-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -3239,3 +3257,33 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   }
   show('Mi cuenta');
 })();
+
+
+/* --- Nuevo perfil (asistente) --- */
+$('mp-new-profile').addEventListener('click', () => { $('np-search').value = ''; $('np-modal').showModal(); });
+$('np-close').addEventListener('click', () => $('np-modal').close());
+$('np-modal').addEventListener('click', (e) => { if (e.target === $('np-modal')) $('np-modal').close(); });
+$('np-wizard').addEventListener('click', () => { $('np-modal').close(); $('mp-go-create').click(); });
+$('np-install').addEventListener('click', () => { $('np-modal').close(); $('mp-go-discover').click(); });
+$('np-file').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'file' }); });
+$('np-other').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'folder' }); });
+$('np-search-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = $('np-search').value.trim();
+  $('np-modal').close();
+  showView('discover');
+  $('mp-search').value = q;
+  searchPacks(true);
+});
+
+/* --- buscador de ajustes --- */
+$('settings-search').addEventListener('input', () => {
+  const q = $('settings-search').value.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('#page-settings .settings > fieldset').forEach((fs) => {
+    const hit = !q || fs.textContent.toLowerCase().includes(q);
+    fs.hidden = !hit;
+    if (hit) shown += 1;
+  });
+  $('settings-empty').hidden = shown > 0;
+});

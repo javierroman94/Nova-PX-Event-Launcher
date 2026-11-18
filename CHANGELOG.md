@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.53
+- **Imágenes de eventos completas**: el banner de Inicio, las noticias y las imágenes de eventos ya no se recortan (se ven enteras, con fondo difuminado).
+- **Nuevo perfil**: asistente con cuatro opciones (Asistente, Instalar modpack, Importar archivo, Desde otros launchers) y buscador, inspirado en Lunar.
+- **Versiones populares** en forma de cuadrícula al crear una instancia.
+- **Buscador en Ajustes** para encontrar rápido cada opción.
+
 ## 1.0.52
 - **Más rápido**: los datos del evento se descargan una sola vez al abrir (antes se repetían), con espera máxima de 4 s si GitHub tarda; la lista de mods se muestra al instante cuando no cambió.
 - **Estado del evento**: en Admin hay botones Próximamente / Activo / Finalizado que cambian el estado al momento, sin volver a subir los mods.

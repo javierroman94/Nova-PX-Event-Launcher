@@ -251,8 +251,9 @@
           <div class="mp-actions">
             <button id="mp-import-file" type="button">Importar archivo</button>
             <button id="mp-import-folder" type="button">Importar carpeta</button>
-            <button id="mp-go-create" type="button">+ Crear instancia</button>
-            <button id="mp-go-discover" type="button" class="primary">+ Explorar modpacks</button>
+            <button id="mp-go-create" type="button" hidden>+ Crear instancia</button>
+            <button id="mp-new-profile" type="button" class="primary">+ Nuevo perfil</button>
+            <button id="mp-go-discover" type="button">Explorar modpacks</button>
           </div>
         </div>
         <div class="mp-toolbar">
@@ -433,6 +434,22 @@
         </div>
       </dialog>
 
+      <!-- Nuevo perfil (asistente) -->
+      <dialog id="np-modal" class="event-modal np-modal" aria-label="Nuevo perfil">
+        <div class="event-modal-body">
+          <div class="np-top"><h3>Nuevo perfil</h3><button id="np-close" type="button" class="ghost" aria-label="Cerrar">✕</button></div>
+          <p class="muted">Crea un perfil nuevo o importa uno que ya tengas.</p>
+          <label for="np-search">¿Ya sabes qué quieres jugar?</label>
+          <form id="np-search-form"><input id="np-search" class="events-search np-search" type="search" placeholder="Busca mods, modpacks y más…" autocomplete="off" /></form>
+          <div class="np-grid">
+            <button type="button" class="np-card" id="np-wizard"><b>Asistente</b><span>Crea tu propio perfil desde cero en pocos clics.</span></button>
+            <button type="button" class="np-card" id="np-install"><b>Instalar modpack</b><span>Explora modpacks de la comunidad (Modrinth) e instala uno.</span></button>
+            <button type="button" class="np-card" id="np-file"><b>Importar archivo</b><span>Elige un archivo y yo me encargo del resto.</span><small>Admite .novapx, .mrpack y .zip</small></button>
+            <button type="button" class="np-card" id="np-other"><b>Desde otros launchers</b><span>Pasa tus perfiles de Prism, MultiMC, ATLauncher o Modrinth.</span><small>Selecciona la carpeta de la instancia</small></button>
+          </div>
+        </div>
+      </dialog>
+
       <!-- Crear instancia propia -->
       <dialog id="mp-create-modal" class="event-modal" aria-label="Crear instancia">
         <form id="mp-create-form" class="event-modal-body">
@@ -446,6 +463,7 @@
             <div><label for="mc-loader">Loader</label>
               <select id="mc-loader"><option value="fabric">Fabric</option><option value="forge">Forge</option><option value="vanilla">Vanilla</option></select></div>
           </div>
+          <div id="mc-popular" class="ver-grid" role="group" aria-label="Versiones populares"></div>
           <small class="muted">Se crea una carpeta vacía y propia. Después añades mods, shaders y texturas desde la instancia.</small>
           <p id="mc-status" class="muted" role="status"></p>
           <div class="mp-actions">
@@ -836,6 +854,8 @@
     <!-- AJUSTES -->
     <section class="page" id="page-settings">
       <h2 class="page-title">Ajustes</h2>
+      <input id="settings-search" class="events-search settings-search" type="search" placeholder="Buscar ajustes…" aria-label="Buscar ajustes" autocomplete="off" />
+      <p id="settings-empty" class="muted" hidden>Ningún ajuste coincide con la búsqueda.</p>
       <div class="settings">
         <fieldset>
           <legend>Mi cuenta</legend>
