@@ -240,7 +240,9 @@
       ctx.clearRect(0, 0, w, h);
     }
     function sync() {
-      const on = state.effects && !document.hidden;
+      // Quien pidió al sistema "reducir movimiento" no ve partículas aunque los efectos estén activos.
+      const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const on = state.effects && !document.hidden && !calm;
       if (on) start();
       else stop();
     }

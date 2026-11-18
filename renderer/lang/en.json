@@ -519,7 +519,14 @@
   "👁 Vista previa en vivo: ya lo ves en tu launcher, pero todavía no está publicado.": "👁 Live preview: you can already see it in your launcher, but it is not published yet.",
   "👥 Participantes": "👥 Participants",
   "🕊 Homenaje": "🕊 Tribute",
-  "🤝 Colaboraron con Nova PX": "🤝 Collaborated with Nova PX"
+  "🤝 Colaboraron con Nova PX": "🤝 Collaborated with Nova PX",
+  "Tu biblioteca está vacía": "Your library is empty",
+  "Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.": "Create your own instance, import one from another launcher or browse Modrinth.",
+  "Ningún modpack coincide": "No modpacks match",
+  "Prueba con otro nombre o cambia el filtro.": "Try another name or change the filter.",
+  "Ningún ajuste coincide.": "No settings match.",
+  "Finalizado": "Ended",
+  "Estado del evento": "Event status"
  },
  "patterns": [
   {

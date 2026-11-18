@@ -521,6 +521,7 @@ button.ghost { background: none; }
   color: var(--text);
 }
 .notice[hidden] { display: none; }
+.notice { margin-bottom: 16px; line-height: 1.55; border-left-width: 3px; }
 
 /* ---------- apariencia ---------- */
 .swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -1203,7 +1204,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), 0 0 24px -6px var(--accent);
 }
 :root[data-theme="nova"] progress, :root[data-theme="nova"] .splash-bar i { accent-color: var(--accent); }
-:root[data-theme="nova"] ::-webkit-scrollbar-thumb { background: linear-gradient(var(--accent), var(--violet)); border-radius: 8px; }
+:root[data-theme="nova"] ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+:root[data-theme="nova"] ::-webkit-scrollbar-thumb:hover { background: linear-gradient(var(--accent), var(--violet)); border: 3px solid transparent; background-clip: content-box; }
 
 /* =====================================================================
    Decoración de temporada (se activa por fecha o desde Ajustes)
@@ -1540,3 +1542,30 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .lp-event { position: absolute; right: 16px; bottom: 14px; }
 .home-grid #news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .news-card .news-img { max-height: 180px; }
+
+/* =====================================================================
+   Pulido general (revisión 2026-11)
+   ===================================================================== */
+/* Estado vacío de la biblioteca de modpacks */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
+  padding: 44px 24px; margin-top: 6px;
+  border: 1px dashed var(--line); border-radius: var(--r-lg, 16px);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.empty-state .empty-ico { font-size: 34px; line-height: 1; margin-bottom: 4px; filter: saturate(.9); }
+.empty-state .empty-title { font-size: 17px; letter-spacing: -0.01em; }
+.empty-state p { margin: 0; max-width: 420px; }
+.empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+.set-empty { margin: 6px 4px 0; font-size: 13px; }
+.set-empty[hidden] { display: none; }
+
+/* Texto más nítido y números que no "bailan" en contadores */
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+#stat-next, .cont-when, .run-pill { font-variant-numeric: tabular-nums; }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+
+/* Respeta "reducir movimiento" del sistema */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

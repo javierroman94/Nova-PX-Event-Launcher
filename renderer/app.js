@@ -853,7 +853,8 @@ async function renderLibrary() {
   $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
     ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}`
-    : 'Aún no tienes modpacks. Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.';
+    : '';
+  if (!list.length) host.append(libraryEmptyState(mp.installed.length === 0));
   const groups = new Map();
   list.forEach((p) => {
     const key = libView.group === 'loader' ? LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla' : libView.group === 'mc' ? `Minecraft ${p.mcVersion}` : '';
@@ -866,6 +867,29 @@ async function renderLibrary() {
     items.forEach((p) => grid.append(packCard(p)));
     host.append(grid);
   });
+}
+// Estado vacío de la biblioteca: con acciones directas en vez de una línea de texto suelta.
+function libraryEmptyState(firstTime) {
+  const box = el('div', 'empty-state');
+  if (firstTime) {
+    box.append(
+      el('div', 'empty-ico', '📦'),
+      el('strong', 'empty-title', 'Tu biblioteca está vacía'),
+      el('p', 'muted', 'Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.')
+    );
+    const row = el('div', 'empty-actions');
+    const create = el('button', 'primary', '+ Nuevo perfil');
+    create.type = 'button';
+    create.addEventListener('click', () => $('mp-new-profile').click());
+    const explore = el('button', '', 'Explorar modpacks');
+    explore.type = 'button';
+    explore.addEventListener('click', () => $('mp-go-discover').click());
+    row.append(create, explore);
+    box.append(row);
+  } else {
+    box.append(el('div', 'empty-ico', '🔍'), el('strong', 'empty-title', 'Ningún modpack coincide'), el('p', 'muted', 'Prueba con otro nombre o cambia el filtro.'));
+  }
+  return box;
 }
 $('mp-lib-sort').addEventListener('change', (e) => { libView.sort = e.target.value; renderLibrary(); });
 $('mp-lib-group').addEventListener('change', (e) => { libView.group = e.target.value; renderLibrary(); });
@@ -3239,7 +3263,9 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   prof.append(pav, ptx);
   const search = document.createElement('input');
   search.type = 'search'; search.className = 'set-search'; search.placeholder = 'Buscar ajustes'; search.setAttribute('aria-label', 'Buscar ajustes');
-  nav.append(prof, search);
+  const noHits = el('p', 'set-empty muted', 'Ningún ajuste coincide.');
+  noHits.hidden = true;
+  nav.append(prof, search, noHits);
   const body = el('div', 'set-body');
   const items = [];
   const show = (name) => {
@@ -3275,6 +3301,7 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
       while (n && n.classList.contains('set-item')) { if (!n.dataset.hide && !n.hidden) any = true; n = n.nextElementSibling; }
       g.dataset.hide = any ? '' : '1';
     });
+    noHits.hidden = !q || !!first;
     if (q && first) show(first);
   });
   root.append(nav, body);
