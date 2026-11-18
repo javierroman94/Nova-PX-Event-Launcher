@@ -160,7 +160,7 @@ function cleanSettings(s) {
     theme: s.design !== 2 ? 'nova' : ['light', 'oled', 'nova'].includes(s.theme) ? s.theme : 'dark',
     accent: s.design !== 2 && String(s.accent).toLowerCase() === '#f2b84b' ? '#35d6ff' : /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
     lang: s.lang === 'auto' || langLib.CODE_RE.test(String(s.lang || '')) ? String(s.lang || 'auto') : 'auto',
-    season: ['auto', 'off', 'navidad', 'halloween', 'anio'].includes(s.season) ? s.season : 'auto',
+    season: ['auto', 'off', 'navidad', 'halloween', 'anio', 'sanvalentin', 'carnaval', 'madres', 'ecuador'].includes(s.season) ? s.season : 'auto',
     bgDim: num(s.bgDim, 0, 90, d.bgDim),
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
     effects: s.effects !== false,

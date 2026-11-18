@@ -127,26 +127,75 @@
     setTimeout(() => (m.textContent = ''), 3500);
   }
 
-  function fxMode() {
-    const s = root.dataset.season;
-    if (s === 'navidad') return 'snow';
-    if (s === 'halloween') return 'embers';
-    if (s === 'anio' || s === 'carnaval') return 'confetti';
-    if (s === 'sanvalentin') return 'hearts';
-    if (s === 'madres') return 'petals';
-    if (s === 'ecuador') return 'tri';
-    return state.theme === 'nova' ? 'net' : 'dots';
-  }
-
   /* ---------- partículas ---------- */
+  // Cada temporada tiene su propio efecto: nieve con copos de verdad, murciélagos y brasas, fuegos artificiales,
+  // corazones, confeti que gira, pétalos... Se dibuja a unos 30 cuadros por segundo y se pausa si la ventana no se ve.
   const fx = (function () {
     const canvas = g('fx');
     const ctx = canvas.getContext('2d');
+    const TAU = Math.PI * 2;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
     let parts = [];
+    let extra = []; // chispas de fuegos artificiales, murciélagos…
     let raf = 0;
     let last = 0;
+    let clock = 0;
+    let nextRocket = 0;
     let w = 0;
     let h = 0;
+    let mode = '';
+
+    // Brillo suave pre-dibujado (mucho más barato que shadowBlur en cada cuadro).
+    const glowCache = new Map();
+    function glow(color) {
+      if (glowCache.has(color)) return glowCache.get(color);
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const x = c.getContext('2d');
+      const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, color);
+      gr.addColorStop(0.25, color);
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = gr;
+      x.fillRect(0, 0, 64, 64);
+      glowCache.set(color, c);
+      return c;
+    }
+    function drawGlow(color, x, y, r, a) {
+      ctx.globalAlpha = a;
+      ctx.drawImage(glow(color), x - r, y - r, r * 2, r * 2);
+    }
+
+    const CONFETTI = { carnaval: ['#ff3b4e', '#ffd23f', '#34e08a', '#4cc9f0', '#b46bff', '#ff8a3d'], ecuador: ['#ffd100', '#ffd100', '#0033a0', '#ef3340'], anio: ['#ffd23f', '#fff4c2', '#e8c15a'] };
+
+    function spawn(m, anywhere) {
+      const y0 = anywhere ? Math.random() * h : -20;
+      if (m === 'snow') {
+        const depth = Math.random();
+        return { x: Math.random() * w, y: y0, depth, r: 1 + depth * 3.4, vy: 14 + depth * 38, a: 0.25 + depth * 0.6, ph: Math.random() * TAU, rot: Math.random() * TAU, vr: rnd(-0.6, 0.6), crystal: depth > 0.72 };
+      }
+      if (m === 'embers') return { x: Math.random() * w, y: anywhere ? Math.random() * h : h + 10, r: rnd(1, 2.6), vy: -rnd(18, 52), vx: rnd(-6, 6), a: rnd(0.35, 0.9), ph: Math.random() * TAU, color: pick(['#ff8a1f', '#ff5a1f', '#ffb347']) };
+      if (m === 'hearts') return { x: Math.random() * w, y: anywhere ? Math.random() * h : h + 20, s: rnd(5, 13), vy: -rnd(14, 34), a: rnd(0.35, 0.8), ph: Math.random() * TAU, rot: rnd(-0.3, 0.3), color: pick(['#ff4d79', '#ff7aa2', '#e63462', '#ffb3c8']) };
+      if (m === 'petals') return { x: Math.random() * w, y: y0, s: rnd(4, 8), vy: rnd(16, 34), a: rnd(0.6, 0.95), ph: Math.random() * TAU, rot: Math.random() * TAU, vr: rnd(-1.4, 1.4), flip: Math.random() * TAU, color: pick(['#ffb3d1', '#ffc9de', '#ff9ec4', '#fff0f6']) };
+      if (m === 'confetti') {
+        const list = CONFETTI[mode === 'tri' ? 'ecuador' : root.dataset.season] || CONFETTI.carnaval;
+        return { x: Math.random() * w, y: y0, cw: rnd(5, 9), chh: rnd(3, 5), vy: rnd(30, 70), a: 0.9, ph: Math.random() * TAU, rot: Math.random() * TAU, vr: rnd(-3, 3), flip: Math.random() * TAU, vf: rnd(4, 9), color: pick(list) };
+      }
+      return { x: Math.random() * w, y: Math.random() * h, r: 1 + Math.random() * 1.6, vx: (Math.random() - 0.5) * 22, vy: (Math.random() - 0.5) * 22, a: 0.5 + Math.random() * 0.4 };
+    }
+
+    // Qué dibuja cada temporada: las partículas principales y lo que va encima.
+    function engineFor(season) {
+      if (season === 'navidad') return 'snow';
+      if (season === 'halloween') return 'embers';
+      if (season === 'anio') return 'fireworks';
+      if (season === 'sanvalentin') return 'hearts';
+      if (season === 'madres') return 'petals';
+      if (season === 'carnaval') return 'confetti';
+      if (season === 'ecuador') return 'tri';
+      return state.theme === 'nova' ? 'net' : 'dots';
+    }
 
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -155,75 +204,265 @@
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const mode = fxMode();
-      const count = Math.round(Math.min(mode === 'net' ? 60 : 90, Math.max(24, (w * h) / (mode === 'net' ? 30000 : 22000))));
-      parts = Array.from({ length: count }, () => {
-        const p = { x: Math.random() * w, y: Math.random() * h, r: 0.8 + Math.random() * 2.1, vy: -(8 + Math.random() * 22), vx: (Math.random() - 0.5) * 8, a: 0.15 + Math.random() * 0.4, ph: Math.random() * 6.28 };
-        if (mode === 'snow') { p.r = 1 + Math.random() * 2.6; p.vy = 18 + Math.random() * 34; p.a = 0.35 + Math.random() * 0.5; }
-        if (mode === 'embers') { p.vy = -(20 + Math.random() * 40); p.a = 0.3 + Math.random() * 0.6; }
-        if (mode === 'hearts') { p.r = 6 + Math.random() * 8; p.vy = -(14 + Math.random() * 26); p.a = 0.3 + Math.random() * 0.5; }
-        if (mode === 'petals') { p.r = 2.5 + Math.random() * 2.5; p.vy = 14 + Math.random() * 24; p.a = 0.55 + Math.random() * 0.35; }
-        if (mode === 'tri') { p.r = 2 + Math.random() * 2.5; p.vy = 25 + Math.random() * 45; p.tri = Math.floor(Math.random() * 3); p.a = 0.85; }
-        if (mode === 'confetti') { p.r = 2 + Math.random() * 2.5; p.vy = 25 + Math.random() * 45; p.hue = Math.floor(Math.random() * 360); p.a = 0.8; }
-        if (mode === 'net') { p.vy = (Math.random() - 0.5) * 22; p.vx = (Math.random() - 0.5) * 22; p.r = 1 + Math.random() * 1.6; p.a = 0.5 + Math.random() * 0.4; }
-        return p;
-      });
+      mode = engineFor(root.dataset.season);
+      const base = mode === 'tri' ? 'confetti' : mode === 'fireworks' ? 'confetti' : mode;
+      const per = { net: 30000, snow: 9000, embers: 26000, hearts: 34000, petals: 26000, confetti: 12000, dots: 22000 }[base] || 22000;
+      const max = { net: 60, snow: 150, fireworks: 22, confetti: 110, tri: 110 }[mode] || 80;
+      const count = Math.round(Math.min(max, Math.max(18, (w * h) / per)));
+      parts = Array.from({ length: mode === 'fireworks' ? Math.min(22, count) : count }, () => spawn(base, true));
+      extra = [];
+      if (mode === 'embers') extra = Array.from({ length: 5 }, () => newBat(true));
+    }
+
+    /* --- formas --- */
+    function snowflake(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = p.a;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.1;
+      ctx.lineCap = 'round';
+      const r = p.r * 2.4;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const an = (i * TAU) / 6;
+        const cx = Math.cos(an), sy = Math.sin(an);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(cx * r, sy * r);
+        // ramitas del copo
+        const bx = cx * r * 0.55, by = sy * r * 0.55;
+        const b = r * 0.32;
+        ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(an + 0.8) * b, by + Math.sin(an + 0.8) * b);
+        ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(an - 0.8) * b, by + Math.sin(an - 0.8) * b);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    function heart(x, y, s, rot, color, a) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.globalAlpha = a;
+      const gr = ctx.createLinearGradient(0, -s, 0, s);
+      gr.addColorStop(0, '#ffffff');
+      gr.addColorStop(0.18, color);
+      gr.addColorStop(1, color);
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.35);
+      ctx.bezierCurveTo(-s * 1.1, -s * 0.35, -s * 0.55, -s * 1.15, 0, -s * 0.5);
+      ctx.bezierCurveTo(s * 0.55, -s * 1.15, s * 1.1, -s * 0.35, 0, s * 0.35);
+      ctx.lineTo(0, s * 0.95);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    function petal(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.scale(1, 0.35 + Math.abs(Math.cos(p.flip)) * 0.65); // gira en el aire
+      ctx.globalAlpha = p.a;
+      const s = p.s;
+      const gr = ctx.createLinearGradient(-s, 0, s, 0);
+      gr.addColorStop(0, '#ffffff');
+      gr.addColorStop(1, p.color);
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.moveTo(-s, 0);
+      ctx.bezierCurveTo(-s * 0.4, -s * 0.9, s * 0.6, -s * 0.8, s, -s * 0.15);
+      ctx.lineTo(s * 0.7, 0); // la muesca del pétalo de cerezo
+      ctx.lineTo(s, s * 0.15);
+      ctx.bezierCurveTo(s * 0.6, s * 0.8, -s * 0.4, s * 0.9, -s, 0);
+      ctx.fill();
+      ctx.restore();
+    }
+    function confetto(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      const k = Math.cos(p.flip); // se da la vuelta: se ve más fino y más oscuro de canto
+      ctx.scale(1, Math.max(0.08, Math.abs(k)));
+      ctx.globalAlpha = p.a * (0.65 + Math.abs(k) * 0.35);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.cw / 2, -p.chh / 2, p.cw, p.chh);
+      ctx.restore();
+    }
+
+    /* --- murciélagos (Halloween) --- */
+    function newBat(anywhere) {
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      return { x: anywhere ? Math.random() * w : dir > 0 ? -40 : w + 40, y: rnd(h * 0.06, h * 0.2), vx: dir * rnd(55, 110), s: rnd(14, 24), ph: Math.random() * TAU, flap: rnd(10, 15), bob: rnd(18, 40), a: rnd(0.75, 1) };
+    }
+    function bat(b) {
+      const wing = Math.sin(b.ph * b.flap); // aleteo
+      const s = b.s;
+      const by = b.y + Math.sin(b.ph * 1.7) * b.bob * 0.3;
+      drawGlow('#b46bff', b.x, by, s * 3.4, 0.38 * b.a); // halo morado para que se vea sobre el fondo oscuro
+      ctx.save();
+      ctx.translate(b.x, by);
+      if (b.vx < 0) ctx.scale(-1, 1);
+      ctx.globalAlpha = b.a;
+      ctx.fillStyle = '#2e1a40';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.28, s * 0.42, 0, 0, TAU); // cuerpo
+      ctx.fill();
+      const tip = -s * 0.9 * wing;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 0.15);
+        ctx.quadraticCurveTo(side * s * 0.9, tip - s * 0.4, side * s * 1.9, tip);
+        ctx.quadraticCurveTo(side * s * 1.45, tip * 0.4 + s * 0.25, side * s * 1.2, s * 0.25);
+        ctx.quadraticCurveTo(side * s * 0.9, s * 0.05, side * s * 0.65, s * 0.35);
+        ctx.quadraticCurveTo(side * s * 0.4, s * 0.1, 0, s * 0.2);
+        ctx.fill();
+      }
+      // orejitas
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.18, -s * 0.3); ctx.lineTo(-s * 0.1, -s * 0.62); ctx.lineTo(0, -s * 0.36);
+      ctx.lineTo(s * 0.1, -s * 0.62); ctx.lineTo(s * 0.18, -s * 0.3);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* --- fuegos artificiales (Año Nuevo) --- */
+    function launchRocket() {
+      const color = pick(['#ffd23f', '#ff4fa8', '#4cc9f0', '#ffffff', '#ff8a3d', '#9dff4f']);
+      extra.push({ kind: 'rocket', x: rnd(w * 0.12, w * 0.88), y: h + 10, vy: -rnd(h * 0.75, h * 0.95), top: rnd(h * 0.08, h * 0.24), color }); // estallan arriba, donde la interfaz deja ver el fondo
+    }
+    function explode(r, into) {
+      const n = 46;
+      const speed = rnd(120, 190);
+      const second = Math.random() < 0.4 ? pick(['#ffffff', '#ffd23f']) : r.color;
+      for (let i = 0; i < n; i++) {
+        const an = (i / n) * TAU + rnd(-0.05, 0.05);
+        const v = speed * rnd(0.75, 1);
+        into.push({ kind: 'spark', x: r.x, y: r.y, vx: Math.cos(an) * v, vy: Math.sin(an) * v, life: 1, decay: rnd(0.45, 0.65), color: i % 3 === 0 ? second : r.color });
+      }
+      into.push({ kind: 'flash', x: r.x, y: r.y, life: 1, color: r.color });
     }
 
     function frame(t) {
       raf = requestAnimationFrame(frame);
       if (t - last < 33) return; // unos 30 cuadros por segundo bastan y gastan poco
-      const dt = Math.min(0.1, (t - last) / 1000);
+      const dt = last ? Math.min(0.1, (t - last) / 1000) : 0.033;
       last = t;
+      clock += dt;
       ctx.clearRect(0, 0, w, h);
-      const mode = fxMode();
-      const color = mode === 'snow' ? '#ffffff' : mode === 'hearts' ? '#ff4d79' : mode === 'embers' ? '#ff8a3d' : state.accent;
-      ctx.fillStyle = color;
-      for (const p of parts) {
-        p.ph += dt;
-        p.x += (p.vx + (mode === 'snow' || mode === 'confetti' || mode === 'petals' || mode === 'tri' || mode === 'hearts' ? Math.sin(p.ph * 1.3) * 14 : 0)) * dt;
-        p.y += p.vy * dt;
-        const down = p.vy > 0 && mode !== 'net';
-        if (mode === 'net') {
+      const wind = Math.sin(clock * 0.23) * 18 + Math.sin(clock * 0.71) * 8; // ráfagas suaves
+
+      if (mode === 'net' || mode === 'dots') {
+        ctx.fillStyle = state.accent;
+        for (const p of parts) {
+          p.x += p.vx * dt; p.y += p.vy * dt;
           if (p.x < -6) p.x = w + 6; else if (p.x > w + 6) p.x = -6;
           if (p.y < -6) p.y = h + 6; else if (p.y > h + 6) p.y = -6;
-        } else if (down) {
-          if (p.y > h + 6) { p.y = -6; p.x = Math.random() * w; }
-        } else if (p.y < -6) { p.y = h + 6; p.x = Math.random() * w; }
-        if (p.x < -6) p.x = w + 6;
-        if (p.x > w + 6) p.x = -6;
-        ctx.globalAlpha = p.a;
-        if (mode === 'confetti') ctx.fillStyle = `hsl(${p.hue} 90% 60%)`;
-        if (mode === 'tri') ctx.fillStyle = ['#ffd100', '#0033a0', '#ef3340'][p.tri];
-        if (mode === 'petals') ctx.fillStyle = '#ffb3d1';
-        if (mode === 'hearts') {
-          ctx.fillStyle = '#ff4d79';
-          ctx.font = `${p.r * 2}px sans-serif`;
-          ctx.fillText('♥', p.x, p.y);
-          continue;
+          ctx.globalAlpha = p.a;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
         }
-        ctx.beginPath();
-        if (mode === 'petals') ctx.ellipse(p.x, p.y, p.r * 1.5, p.r * 0.8, p.ph, 0, Math.PI * 2);
-        else ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (mode === 'net') {
-        // constelación: une con líneas finas las partículas cercanas
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = state.accent;
-        for (let i = 0; i < parts.length; i++) {
-          for (let j = i + 1; j < parts.length; j++) {
-            const dx = parts[i].x - parts[j].x;
-            const dy = parts[i].y - parts[j].y;
-            const d2 = dx * dx + dy * dy;
-            if (d2 < 16900) {
-              ctx.globalAlpha = (1 - d2 / 16900) * 0.35;
-              ctx.beginPath();
-              ctx.moveTo(parts[i].x, parts[i].y);
-              ctx.lineTo(parts[j].x, parts[j].y);
-              ctx.stroke();
+        if (mode === 'net') {
+          // constelación: une con líneas finas las partículas cercanas
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = state.accent;
+          for (let i = 0; i < parts.length; i++) {
+            for (let j = i + 1; j < parts.length; j++) {
+              const dx = parts[i].x - parts[j].x;
+              const dy = parts[i].y - parts[j].y;
+              const d2 = dx * dx + dy * dy;
+              if (d2 < 16900) {
+                ctx.globalAlpha = (1 - d2 / 16900) * 0.35;
+                ctx.beginPath(); ctx.moveTo(parts[i].x, parts[i].y); ctx.lineTo(parts[j].x, parts[j].y); ctx.stroke();
+              }
             }
           }
+        }
+        ctx.globalAlpha = 1;
+        return;
+      }
+
+      if (mode === 'snow') {
+        for (const p of parts) {
+          p.ph += dt;
+          p.rot += p.vr * dt;
+          p.x += (wind * (0.4 + p.depth) + Math.sin(p.ph * 1.1) * 10) * dt;
+          p.y += p.vy * dt;
+          if (p.y > h + 10) Object.assign(p, spawn('snow', false));
+          if (p.x < -10) p.x = w + 10; else if (p.x > w + 10) p.x = -10;
+          if (p.crystal) snowflake(p);
+          else drawGlow('#ffffff', p.x, p.y, p.r * 2.2, p.a);
+        }
+      } else if (mode === 'embers') {
+        for (const p of parts) {
+          p.ph += dt;
+          p.x += (p.vx + Math.sin(p.ph * 2.3) * 12) * dt;
+          p.y += p.vy * dt;
+          if (p.y < -10) Object.assign(p, spawn('embers', false));
+          const flicker = 0.6 + Math.sin(p.ph * 9) * 0.4;
+          drawGlow(p.color, p.x, p.y, p.r * 4, p.a * flicker);
+        }
+        for (let i = 0; i < extra.length; i++) {
+          const b = extra[i];
+          b.ph += dt;
+          b.x += b.vx * dt;
+          if (b.x < -60 || b.x > w + 60) extra[i] = newBat(false);
+          bat(b);
+        }
+      } else if (mode === 'hearts') {
+        for (const p of parts) {
+          p.ph += dt;
+          p.x += Math.sin(p.ph * 1.2) * 16 * dt;
+          p.y += p.vy * dt;
+          if (p.y < -30) Object.assign(p, spawn('hearts', false));
+          heart(p.x, p.y, p.s, p.rot + Math.sin(p.ph) * 0.2, p.color, p.a);
+        }
+      } else if (mode === 'petals') {
+        for (const p of parts) {
+          p.ph += dt;
+          p.rot += p.vr * dt;
+          p.flip += dt * 2.2;
+          p.x += (wind * 0.8 + Math.sin(p.ph * 1.3) * 22) * dt;
+          p.y += p.vy * dt;
+          if (p.y > h + 20) Object.assign(p, spawn('petals', false));
+          if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
+          petal(p);
+        }
+      } else if (mode === 'confetti' || mode === 'tri' || mode === 'fireworks') {
+        for (const p of parts) {
+          p.ph += dt;
+          p.rot += p.vr * dt;
+          p.flip += p.vf * dt;
+          p.x += (wind * 0.6 + Math.sin(p.ph * 2) * 18) * dt;
+          p.y += p.vy * dt * (mode === 'fireworks' ? 0.6 : 1);
+          if (p.y > h + 20) Object.assign(p, spawn('confetti', false));
+          if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
+          confetto(p);
+        }
+        if (mode === 'fireworks') {
+          if (clock > nextRocket) { launchRocket(); nextRocket = clock + rnd(0.9, 2.2); }
+          const next = [];
+          for (const e of extra) {
+            if (e.kind === 'rocket') {
+              e.y += e.vy * dt;
+              drawGlow('#fff4c2', e.x, e.y, 5, 0.9);
+              drawGlow(e.color, e.x, e.y + 10, 4, 0.4);
+              if (e.y <= e.top) explode(e, next); else next.push(e);
+            } else if (e.kind === 'spark') {
+              e.vy += 90 * dt; // gravedad
+              e.vx *= 0.985; e.vy *= 0.985;
+              e.x += e.vx * dt; e.y += e.vy * dt;
+              e.life -= e.decay * dt;
+              if (e.life > 0) {
+                const tw = e.life < 0.35 ? (Math.sin(clock * 40 + e.x) > 0 ? 1 : 0.3) : 1; // chisporroteo al final
+                drawGlow(e.color, e.x, e.y, 5.5, Math.min(1, e.life * 1.3) * tw);
+                next.push(e);
+              }
+            } else if (e.kind === 'flash') {
+              e.life -= dt * 3;
+              if (e.life > 0) { drawGlow(e.color, e.x, e.y, 70, e.life * 0.25); next.push(e); }
+            }
+          }
+          extra = next;
         }
       }
       ctx.globalAlpha = 1;
@@ -240,9 +479,7 @@
       ctx.clearRect(0, 0, w, h);
     }
     function sync() {
-      // Quien pidió al sistema "reducir movimiento" no ve partículas aunque los efectos estén activos.
-      const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const on = state.effects && !document.hidden && !calm;
+      const on = state.effects && !document.hidden;
       if (on) start();
       else stop();
     }

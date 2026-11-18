@@ -2747,7 +2747,6 @@ function paintChecklist() {
   const hasPack = !!$('ad-pack').value;
   const items = [
     [!!$('ad-name').value.trim(), 'Nombre del evento'],
-    [!!$('ad-host').value.trim(), 'Servidor del evento', true],
     [!hasPack || !!(sm && sm.mods), hasPack ? (sm ? `Modpack: ${sm.mods} mods activos de Minecraft ${sm.mcVersion}` : 'Modpack') : 'Sin modpack: solo se publican los datos', !hasPack],
     [!hasPack || $('ad-pass').value.length >= 10, 'Contraseña de al menos 10 caracteres', !hasPack]
   ];
@@ -2760,7 +2759,7 @@ function paintChecklist() {
   $('ad-publish').disabled = !ready;
   $('ad-pass').closest('.field').hidden = !hasPack;
 }
-['ad-name', 'ad-host', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
+['ad-name', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
 $('ad-pack').addEventListener('change', showAdminPack);
 $('ad-pack-edit').addEventListener('click', async () => {
   const p = (await window.api.modpackInstalled()).find((x) => x.id === $('ad-pack').value);
