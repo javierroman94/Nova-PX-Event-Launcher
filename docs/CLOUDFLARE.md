@@ -27,3 +27,8 @@ Límites del plan gratis de Cloudflare: 100 000 peticiones al día y unas 1 000 
 ## Publicación automática desde GitHub (la que usa Nova PX)
 
 El archivo `wrangler.jsonc` de la raíz ya enlaza el Worker `nova-px-event-launcher` con el almacén KV `novapx-users` (variable `USERS`). Si el Worker está conectado a este repositorio (Workers Builds), cada push a `main` lo vuelve a publicar con ese enlace. Lo único manual es el secreto `ADMIN_KEY` (Worker → Settings → Variables and Secrets → Secret) y copiar la dirección del Worker en `telemetryUrl`.
+
+
+## Amigos y estado en línea
+
+El Worker incluye un Durable Object (`Presence`) que guarda en memoria quién está en línea (latido cada 90 s, se considera desconectado a los 150 s). Rutas: `POST /presence/beat`, `/presence/leave` y `/presence/query`. No guarda nada en disco ni gasta escrituras de KV. Al desplegar con `wrangler`, la migración `v1` (en `wrangler.jsonc`) crea la clase.
