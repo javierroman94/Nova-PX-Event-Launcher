@@ -15,7 +15,24 @@ permissions:
   contents: write
 
 jobs:
+  # Antes de compilar nada: la etiqueta tiene que coincidir con package.json y
+  # apuntar a un commit nuevo (no al de la versión anterior).
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # historial y etiquetas completas para comparar con versiones anteriores
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verificar la etiqueta
+        run: node tools/verificar-etiqueta.js "$GITHUB_REF_NAME"
+
   release:
+    needs: verificar
     strategy:
       fail-fast: false
       matrix:
@@ -30,17 +47,6 @@ jobs:
 
       - name: Instalar dependencias
         run: npm install
-
-      # La versión del programa sale SIEMPRE de la etiqueta (v1.0.12 -> 1.0.12).
-      # Así nunca puede haber una etiqueta que no coincida con package.json.
-      - name: Fijar la versión según la etiqueta
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "La etiqueta '$GITHUB_REF_NAME' no tiene el formato vX.Y.Z"; exit 1
-          fi
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Compilar y publicar
         run: npx electron-builder --publish always
