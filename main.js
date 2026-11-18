@@ -1035,14 +1035,17 @@ ipcMain.handle('instance:updatesCheck', async (_e, id) => {
   const plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
   return plan.map((u) => ({ file: u.file, newFile: u.newFile, version: u.version }));
 });
-ipcMain.handle('instance:updatesApply', async (_e, id) => {
+ipcMain.handle('instance:updatesApply', async (_e, arg) => {
   assertEditable();
+  const id = arg && typeof arg === 'object' ? arg.id : arg;
+  const only = arg && Array.isArray(arg.only) ? new Set(arg.only.map((f) => String(f))) : null; // solo estos archivos (si se pasa)
   const { entry, root } = packRoot(id);
   const items = [];
   for (const it of content.listContent(root, 'mod')) {
     items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, 'mod'), it.file)) });
   }
-  const plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
+  let plan = await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type });
+  if (only) plan = plan.filter((u) => only.has(u.file));
   const dir = content.contentDir(root, 'mod');
   let done = 0;
   const errors = [];

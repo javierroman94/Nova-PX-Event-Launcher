@@ -1628,6 +1628,62 @@ $('mp-modal').addEventListener('close', async () => {
 });
 
 // Buscar y aplicar actualizaciones de mods.
+// Cuadro de actualizaciones: una fila por mod con su versión nueva y casilla para elegir cuáles actualizar.
+function updatesDialog(ups) {
+  return new Promise((resolve) => {
+    const dlg = el('dialog', 'event-modal upd-dialog');
+    dlg.setAttribute('aria-label', 'Actualizar mods');
+    const body = el('div', 'event-modal-body');
+    const known = (f) => (mp.items || []).find((i) => i.file === f);
+    const head = el('div', 'upd-head');
+    head.append(el('h3', '', `${ups.length} mod${ups.length === 1 ? '' : 's'} con versión nueva`), el('p', 'muted', 'Elige cuáles quieres actualizar. Se descargan de Modrinth y se comprueba su huella antes de reemplazar el archivo.'));
+    const tools = el('div', 'upd-tools');
+    const all = el('button', 'ghost', 'Marcar todos'); all.type = 'button';
+    const none = el('button', 'ghost', 'Quitar todos'); none.type = 'button';
+    tools.append(all, none);
+    const list = el('div', 'upd-list');
+    const rows = ups.map((u) => {
+      const it = known(u.file);
+      const row = el('label', 'upd-row');
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = true;
+      const txt = el('div', 'upd-txt');
+      const top = el('div', 'upd-top');
+      top.append(el('strong', '', it ? it.name : u.file.replace(/\.disabled$/i, '').replace(/\.jar$/i, '')));
+      if (!u.enabled) top.append(el('span', 'type-chip t-off', 'Desactivado'));
+      const ver = el('div', 'upd-ver');
+      ver.append(el('span', 'upd-old', (it && it.version) || 'actual'), el('span', 'upd-arrow', '→'), el('span', 'upd-new', u.version || 'nueva'));
+      txt.append(top, ver, el('small', 'muted upd-file', `${u.newFile}`));
+      row.append(cb, iconEl(it && it.icon, it ? it.name : u.file), txt);
+      list.append(row);
+      return { u, cb };
+    });
+    const foot = el('div', 'upd-foot');
+    const count = el('span', 'muted upd-count');
+    const cancel = el('button', '', 'Cancelar'); cancel.type = 'button';
+    const ok = el('button', 'primary', 'Actualizar'); ok.type = 'button';
+    foot.append(count, cancel, ok);
+    const refresh = () => {
+      const n = rows.filter((r) => r.cb.checked).length;
+      count.textContent = `${n} de ${rows.length} seleccionados`;
+      ok.disabled = !n;
+      ok.textContent = n ? `Actualizar ${n}` : 'Actualizar';
+    };
+    rows.forEach((r) => r.cb.addEventListener('change', refresh));
+    all.addEventListener('click', () => { rows.forEach((r) => (r.cb.checked = true)); refresh(); });
+    none.addEventListener('click', () => { rows.forEach((r) => (r.cb.checked = false)); refresh(); });
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
+    cancel.addEventListener('click', () => finish(null));
+    ok.addEventListener('click', () => finish(rows.filter((r) => r.cb.checked).map((r) => r.u.file)));
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
+    body.append(head, tools, list, foot);
+    dlg.append(body);
+    document.body.append(dlg);
+    refresh();
+    dlg.showModal();
+  });
+}
+
 $('mp-check-updates').addEventListener('click', async () => {
   const btn = $('mp-check-updates');
   const note = $('mp-content-note');
@@ -1636,9 +1692,11 @@ $('mp-check-updates').addEventListener('click', async () => {
     note.textContent = 'Buscando actualizaciones en Modrinth…';
     const ups = await window.api.instanceUpdatesCheck(mp.pack.id);
     if (!ups.length) { note.textContent = 'Todos tus mods están al día.'; return; }
-    if (!await askConfirm(`Hay ${ups.length} mod${ups.length === 1 ? '' : 's'} para actualizar:\n\n${ups.slice(0, 15).map((u) => `• ${u.file.replace(/\.disabled$/i, '')} → ${u.newFile}`).join('\n')}${ups.length > 15 ? '\n…' : ''}\n\n¿Actualizar ahora?`)) { note.textContent = `${ups.length} actualizaciones disponibles.`; return; }
-    const r = await window.api.instanceUpdatesApply(mp.pack.id);
-    toast(`${r.updated} mod${r.updated === 1 ? '' : 's'} actualizado${r.updated === 1 ? '' : 's'}`);
+    const chosen = await updatesDialog(ups);
+    if (!chosen) { note.textContent = `${ups.length} actualizaciones disponibles.`; return; }
+    note.textContent = 'Actualizando…';
+    const r = await window.api.instanceUpdatesApply({ id: mp.pack.id, only: chosen });
+    toast(`${r.updated} mod${r.updated === 1 ? '' : 's'} actualizado${r.updated === 1 ? '' : 's'}`, 'success');
     r.errors.forEach((m) => toast(m, 'error'));
     await renderContent();
   } catch (e) {
