@@ -135,8 +135,10 @@
   });
 
   /* ---------- criaturas pixeladas (diseños propios) ---------- */
-  const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff' };
+  const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0' };
   const SPRITES = {
+    // Mascota de Proyecto PX (panda rosa de bloques, diseño de @DekerModMaker). Va siempre en el elenco.
+    px: { scale: 4, rows: ['MM.......MM', 'MQM.....MQM', '.MMMMMMMMM.', '.MWWWWWWWM.', '.MQQWWWQQM.', '.MWKWWWKWM.', '.MWWWMWWWM.', '.MWWWWWWWM.', '..MQQQQQM..', 'HM.MWWWWM.MH', 'MM.MWWWWM.MM', 'MQ.MWWWWM.QM', '...MWWWWM...'], legs: ['..MWMQMWM..', '..MWM.MWM..'] },
     bunny: { rows: ['..WW...WW..', '..WP...PW..', '..WP...PW..', '..WWWWWWW..', '.WWWWWWWWW.', '.WWKWWWKWW.', '.WWWWPWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'W' },
     chick: { rows: ['...YYYYY...', '..YYYYYYY..', '..YKYYYKY..', '..YYYOYYY..', '..YYYOYYY..', '.YYYYYYYYY.', '.YYYYYYYYY.', '..YYYYYYY..'], feet: 'O' },
     fox: { rows: ['.R.......R.', '.RR.....RR.', '.RRRRRRRRR.', '.RRRRRRRRR.', '.RKRRRRRKR.', '.RRRRKRRRR.', '..RWWWWWR..', '...WWWWW...', '..RRRRRRR..'], feet: 'D' },
@@ -160,7 +162,6 @@
     deepdark: ['bot', 'ghost', 'fox'], nether: ['pumpkin', 'fox', 'ghost'], end: ['ghost', 'bot', 'bee'], sakura: ['bunny', 'bee', 'chick']
   };
   const DEFAULT_ROSTER = ['bunny', 'chick', 'fox'];
-  const SC = 3; // píxeles de pantalla por píxel del dibujo
 
   const spriteCache = new Map();
   function sheet(name, frame, acc) {
@@ -169,7 +170,9 @@
     const def = SPRITES[name];
     const rows = def.rows.slice();
     const wd = 11;
-    if (def.feet) rows.push(frame ? '..F...F....'.replace(/F/g, def.feet).padEnd(wd, '.') : '....F...F..'.replace(/F/g, def.feet).padEnd(wd, '.'));
+    const SC = def.scale || 3;
+    if (def.legs) { rows.push(def.legs[frame ? 1 : 0]); rows.push(def.legs[frame ? 0 : 1].replace(/Q/g, 'M')); }
+    else if (def.feet) rows.push(frame ? '..F...F....'.replace(/F/g, def.feet).padEnd(wd, '.') : '....F...F..'.replace(/F/g, def.feet).padEnd(wd, '.'));
     const c = document.createElement('canvas');
     c.width = wd * SC; c.height = rows.length * SC;
     const x = c.getContext('2d');
@@ -191,7 +194,7 @@
     const r = sb ? sb.getBoundingClientRect() : null;
     return (r && r.width ? r.right : 0) + 14;
   }
-  function rosterNow() { return ROSTER[root.dataset.season] || THEME_ROSTER[root.dataset.theme] || DEFAULT_ROSTER; }
+  function rosterNow() { return ['px'].concat((ROSTER[root.dataset.season] || THEME_ROSTER[root.dataset.theme] || DEFAULT_ROSTER).slice(0, 2)); }
   function makeCritters() {
     crits = [];
     if (!opt.critters || root.classList.contains('no-fx')) return;
@@ -206,7 +209,7 @@
   }
 
   function updateCritter(c, dt, lb) {
-    const sh = SPRITES[c.name].rows.length * SC + (SPRITES[c.name].feet ? SC : 0);
+    const sh = sheet(c.name, 0, '#fff').height;
     const ground = h - 4;
     c.t -= dt; c.ph += dt * (c.fly ? 6 : 9);
     const near = Math.hypot(mx - c.x, my - (ground - sh / 2));

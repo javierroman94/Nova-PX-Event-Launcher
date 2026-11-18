@@ -162,6 +162,8 @@ docs/                     Guía, Cloudflare, Microsoft y capturas
 
 ## 👥 Equipo y comunidad
 
+La mascota de Proyecto PX (el panda rosa) es un diseño de [@DekerModMaker](https://x.com/DekerModMaker).
+
 Hecho por el equipo de **Nova PX** · [Cómo colaborar](CONTRIBUTING.md) · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
 
 ## 📄 Licencia
