@@ -7,20 +7,11 @@
 
   let state = { theme: 'nova', accent: '#35d6ff', bgDim: 55, bgBlur: 6, effects: true, season: 'auto' };
 
-  // Temporada según la fecha: San Valentín (7-14 feb), Carnaval (15-28 feb), Día de la Madre (5-14 may), 10 de Agosto (1-10 ago), Halloween (10-31 oct), Navidad (1 nov-27 dic), Año Nuevo (28 dic-6 ene).
+  // Temporada según la fecha (ver seasons.js): Año Nuevo, San Valentín, Carnaval, Día de la Madre, 10 de Agosto, Halloween y Navidad.
   function seasonNow(choice) {
     if (choice === 'off') return '';
     if (choice && choice !== 'auto') return choice;
-    const d = new Date();
-    const md = (d.getMonth() + 1) * 100 + d.getDate();
-    if (md >= 207 && md <= 214) return 'sanvalentin';
-    if (md >= 215 && md <= 228) return 'carnaval';
-    if (md >= 505 && md <= 514) return 'madres';
-    if (md >= 801 && md <= 810) return 'ecuador';
-    if (md >= 1010 && md <= 1031) return 'halloween';
-    if (md >= 1101 && md <= 1227) return 'navidad';
-    if (md >= 1228 || md <= 106) return 'anio';
-    return '';
+    return window.NovaSeasons ? window.NovaSeasons.seasonFor(new Date()) : '';
   }
   const BANNERS = {
     navidad: ['🎄', 'Navidad en Nova PX', 'Felices fiestas, jugadores. ¡Gracias por acompañarnos este año!'],

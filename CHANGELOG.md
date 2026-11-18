@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.61
+- **Fechas de temporadas corregidas** (calendario de Ecuador): San Valentín 7–14 feb, Carnaval (se calcula cada año según la Pascua), Día de la Madre (semana del 2.º domingo de mayo), 10 de Agosto 1–10 ago, Halloween 15 oct–2 nov, Navidad 1–26 dic, Año Nuevo 27 dic–6 ene. Fuera de esas fechas no hay decoración (antes la Navidad empezaba el 1 de noviembre).
+- Arreglo: una marca de conflicto de git olvidada en los estilos hacía que la imagen de la instancia en Admin saliera enorme y tapara el texto.
+- Inicio: el arte del evento se ve completo y el botón JUGAR pasa abajo a la izquierda.
+
 ## 1.0.60
 - Los perfiles **Nova** ahora instalan también **Nova Client** (mod propio, repo javierroman94/Nova-Client): menú en el juego con Shift derecho y módulos FPS, CPS, coordenadas, teclas, armadura y zoom (tecla C). Por ahora solo para Minecraft 1.21.1.
 

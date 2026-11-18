@@ -237,7 +237,7 @@ La primera vez que abres el launcher aparece un asistente de 4 pasos: bienvenida
 - **Añadir un idioma:** Ajustes → Idioma → «Añadir idioma…» abre una carpeta con una plantilla. Un paquete es un `.json` con `code`, `name`, `strings` (texto en español → traducción) y, opcional, `patterns` para frases con números. Lo que no esté traducido se queda en español. Copia `renderer/lang/en.json` como modelo.
 - **Contenido del evento** (noticias, historial, equipo): se traduce igual si agregas su texto exacto a `strings`.
 - **Tema:** Ajustes → Apariencia → Nova Neón (por defecto en la 1.0.34; puedes volver a Oscuro, Claro u OLED).
-- **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática: Halloween 10–31 oct, Navidad 1 nov–27 dic, Año Nuevo 28 dic–6 ene. Se apaga con «Sin decoración» o quitando «Efectos animados».
+- **Temporada:** Ajustes → Apariencia → Decoración de temporada. Automática (calendario de Ecuador): San Valentín 7–14 feb, Carnaval (cambia cada año), Día de la Madre (semana del 2.º domingo de mayo), 10 de Agosto 1–10 ago, Halloween 15 oct–2 nov, Navidad 1–26 dic, Año Nuevo 27 dic–6 ene. El resto del año no hay decoración. Se apaga con «Sin decoración» o quitando «Efectos animados».
 
 ## 4l. Novedades 1.0.44 a 1.0.49
 
