@@ -1245,7 +1245,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .season-ground::before { inset: 0; }
 :root[data-season]:not([data-season=""]) .season-ground { display: block; }
 :root[data-season="navidad"] .season-ground::before { background: radial-gradient(1000px 420px at 85% -10%, rgba(214, 40, 57, .22), transparent 70%), radial-gradient(900px 400px at 15% -12%, rgba(47, 160, 90, .2), transparent 70%); }
-:root[data-season="navidad"] .season-ground::after { bottom: 0; height: 64px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='70' viewBox='0 0 1200 70' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='white' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%23cfe6ff' stop-opacity='.85'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 40 C120 18 220 30 330 34 S520 12 640 26 S860 40 960 22 S1130 30 1200 28 V70 H0Z' fill='url(%23g)' fill-opacity='.55'/%3E%3Cpath d='M0 52 C150 36 260 50 400 46 S640 32 760 44 S1000 54 1200 40 V70 H0Z' fill='url(%23g)'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; filter: drop-shadow(0 -4px 10px rgba(207, 230, 255, .25)); }
+:root[data-season="navidad"] .season-ground::after { bottom: 0; height: 42px; opacity: .75; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='70' viewBox='0 0 1200 70' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='white' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%23cfe6ff' stop-opacity='.85'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 40 C120 18 220 30 330 34 S520 12 640 26 S860 40 960 22 S1130 30 1200 28 V70 H0Z' fill='url(%23g)' fill-opacity='.55'/%3E%3Cpath d='M0 52 C150 36 260 50 400 46 S640 32 760 44 S1000 54 1200 40 V70 H0Z' fill='url(%23g)'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; filter: drop-shadow(0 -4px 10px rgba(207, 230, 255, .25)); }
 :root[data-season="halloween"] .season-ground::before { background: radial-gradient(900px 500px at 50% 120%, rgba(255, 138, 31, .22), transparent 70%), radial-gradient(800px 420px at 100% 0%, rgba(107, 47, 168, .28), transparent 70%); }
 :root[data-season="halloween"] .season-ground::after { bottom: -20px; height: 180px; opacity: .55; background: radial-gradient(40% 60% at 20% 80%, rgba(200, 190, 230, .35), transparent 70%), radial-gradient(35% 55% at 60% 90%, rgba(200, 190, 230, .3), transparent 70%), radial-gradient(40% 60% at 95% 75%, rgba(200, 190, 230, .3), transparent 70%); background-size: 200% 100%; animation: fog 28s linear infinite; }
 @keyframes fog { from { background-position: 0 0; } to { background-position: -200% 0; } }
@@ -1543,7 +1543,7 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .home-grid #news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .news-card .news-img { max-height: 180px; }
 
-/* =====================================================================
+/* ==============================================================
    Pulido general (revisión 2026-11)
    ===================================================================== */
 /* Estado vacío de la biblioteca de modpacks */
@@ -1564,3 +1564,29 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 #stat-next, .cont-when, .run-pill { font-variant-numeric: tabular-nums; }
 ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+=======
+.mod-icon img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.mp-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 14px; }
+.mp-filters select { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); color: var(--text); font: inherit; }
+/* Entrada (login) en dos columnas */
+.login-split { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.1fr); border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: var(--surface, var(--raised)); max-width: 980px; }
+.login-art { display: grid; align-content: center; justify-items: center; gap: 10px; padding: 40px 28px; text-align: center; background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 60%), linear-gradient(160deg, #141a33, #0b0e18); }
+.login-art h3 { margin: 6px 0 0; font-size: 34px; letter-spacing: -.02em; }
+.login-art p { margin: 0; color: var(--text-2); max-width: 26ch; }
+.login-panel { display: grid; gap: 16px; padding: 28px; align-content: start; }
+.login-feats { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.login-feats li { display: grid; gap: 2px; }
+.login-feats span { color: var(--text-2); font-size: 14px; }
+.login-big { padding: 14px 18px; font-size: 16px; }
+.login-panel .card { box-shadow: none; }
+@media (max-width: 760px) { .login-split { grid-template-columns: 1fr; } }
+/* Barra lateral compacta */
+.rail-toggle { align-self: center; padding: 4px 10px; }
+:root.rail .sidebar { width: 78px; padding: 18px 10px 14px; align-items: center; }
+:root.rail .brand-text, :root.rail .nav-label, :root.rail .chip-text, :root.rail .side-version, :root.rail .nav-group { display: none; }
+:root.rail .brand { padding: 0; }
+:root.rail .tab-btn { justify-content: center; padding: 12px; }
+:root.rail .account-chip { justify-content: center; padding: 8px; width: auto; }
+:root.rail .rail-toggle { transform: scaleX(-1); }
+.mp-filters select { width: auto; min-width: 190px; }
+.login-art img { background: #fff; border-radius: 24px; padding: 10px; box-sizing: content-box; }

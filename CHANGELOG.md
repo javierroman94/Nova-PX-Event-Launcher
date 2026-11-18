@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.55
+- **Explorar con filtros** (como el Centro de contenido): loader (Fabric, Forge, NeoForge, Quilt), versión del juego y orden (descargas, seguidores, nuevos, actualizados).
+- **Pantalla de entrada** en dos columnas con las ventajas del launcher, botón de Microsoft y opción sin premium.
+- **Barra lateral compacta** (solo iconos) con botón en la parte baja; se recuerda tu elección.
+- Arreglado el icono del modpack que se encimaba en Admin y un buscador de Ajustes duplicado.
+
 ## 1.0.54
 - **Inicio rediseñado (Launchpad)**: saludo con tu nombre, contador de jugadores en línea, portada grande con el banner del evento entero y botón JUGAR para tu último modpack.
 - Las novedades ahora se muestran como tarjetas con imagen.

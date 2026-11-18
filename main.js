@@ -794,7 +794,7 @@ async function downloadWithProgress(url, onProgress) {
 
 ipcMain.handle('modpacks:providers', () => ({ modrinth: true }));
 ipcMain.handle('modpacks:search', async (_e, p = {}) =>
-  providerFor(cleanStr(p.provider, 20)).search({ query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)) })
+  providerFor(cleanStr(p.provider, 20)).search({ query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)), loader: cleanStr(p.loader, 12), mc: cleanStr(p.mc, 24), sort: cleanStr(p.sort, 12) })
 );
 ipcMain.handle('modpacks:versions', async (_e, p = {}) => providerFor(cleanStr(p.provider, 20)).versions(cleanStr(p.id, 40)));
 ipcMain.handle('modpacks:installed', () => readModpacks());
