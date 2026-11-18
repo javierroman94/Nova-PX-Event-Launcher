@@ -106,7 +106,7 @@ contextBridge.exposeInMainWorld('api', {
   friendsAdd: (n) => ipcRenderer.invoke('friends:add', n),
   friendsRemove: (n) => ipcRenderer.invoke('friends:remove', n),
   adminSetEventState: (state) => ipcRenderer.invoke('admin:setEventState', state),
-  modpackMcVersions: () => ipcRenderer.invoke('modpacks:mcVersions'),
+  modpackMcVersions: (opts) => ipcRenderer.invoke('modpacks:mcVersions', opts),
   modpackCreate: (p) => ipcRenderer.invoke('modpacks:create', p),
   modpackUpdate: (p) => ipcRenderer.invoke('modpacks:update', p),
   langList: () => ipcRenderer.invoke('lang:list'),

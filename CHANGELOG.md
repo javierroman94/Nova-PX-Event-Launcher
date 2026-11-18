@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.59
+- Pantalla de carga animada: órbitas, halo giratorio, partículas, barra con flujo de color y mensajes de estado.
+- Crear instancia: nuevo perfil **Nova** (Fabric + Sodium, Lithium, FerriteCore, ModernFix, Entity Culling, ScalableLux, Iris… basado en packs optimizados como Keo Optimized), opción **OptiFine** (perfil Forge + .jar oficial que añade el jugador) y casilla para ver también snapshots.
+
 ## 1.0.58
 - **Discord y X desde Admin → Control**: guarda el webhook de tu canal de Discord (cifrado, nunca se muestra) y el launcher puede avisar solo cuando publiques una noticia nueva o cambies/publiques el evento. También hay un mensaje manual y el botón "Compartir en X", que abre X con el texto listo (sin claves de API ni costo).
 - Los avisos no mencionan a @everyone ni a roles aunque el texto lo lleve.

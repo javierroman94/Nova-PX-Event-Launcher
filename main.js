@@ -22,6 +22,7 @@ const modpacks = require('./lib/modpacks');
 const providers = require('./lib/providers');
 const content = require('./lib/content');
 const packs = require('./lib/packs');
+const novaLib = require('./lib/nova');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const telemetry = require('./lib/telemetry');
@@ -914,23 +915,38 @@ ipcMain.handle('modpacks:recommended', async () => {
 });
 
 let mcVersionsCache = null;
-ipcMain.handle('modpacks:mcVersions', async () => {
+let mcManifestCache = null;
+ipcMain.handle('modpacks:mcVersions', async (_e, opts = {}) => {
   try {
-    const m = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json');
-    mcVersionsCache = packs.releaseVersions(m);
+    mcManifestCache = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json');
   } catch {
-    if (!mcVersionsCache) throw new Error('No se pudo consultar la lista de versiones de Minecraft. Revisa tu conexión.');
+    if (!mcManifestCache) throw new Error('No se pudo consultar la lista de versiones de Minecraft. Revisa tu conexión.');
   }
+  mcVersionsCache = packs.releaseVersions(mcManifestCache, { snapshots: !!(opts && opts.snapshots) });
   return mcVersionsCache;
 });
 
-ipcMain.handle('modpacks:create', (_e, p = {}) => {
+ipcMain.handle('modpacks:create', async (_e, p = {}) => {
   const list = readModpacks();
   const entry = packs.buildCustomEntry({
     name: p.name, icon: p.icon, mcVersion: cleanStr(p.mcVersion, 20), loader: cleanStr(p.loader, 10), existingIds: list.map((x) => x.id)
   });
-  fs.mkdirSync(instanceDir(GAME_DIR, { event: { id: entry.id } }), { recursive: true });
+  const dir = instanceDir(GAME_DIR, { event: { id: entry.id } });
+  fs.mkdirSync(dir, { recursive: true });
   writeModpacks([...list, entry]);
+  // Perfil Nova: baja los mods de rendimiento de Modrinth (lo que no exista para esa versión se salta).
+  if (entry.preset === 'nova') {
+    const progress = (text) => send('modpack:progress', { text });
+    try {
+      const r = await novaLib.installNovaMods(
+        (slug) => content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: dir, type: 'mod', projectId: slug, mc: entry.mcVersion, loader: 'fabric' }),
+        { onStatus: progress }
+      );
+      entry.novaSkipped = r.skipped;
+    } finally {
+      progress('Listo');
+    }
+  }
   return entry;
 });
 

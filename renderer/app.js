@@ -14,7 +14,7 @@ const skinBust = (nick) => `https://minotar.net/armor/bust/${encodeURIComponent(
 const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}/64.png`;
 
 /* ---------- animación de inicio ---------- */
-// El launcher se muestra cuando termina de cargar (mínimo ~2,3 s para que se vea la animación, máximo 6 s).
+// El launcher se muestra cuando termina de cargar (mínimo ~3,2 s para que se vea la animación, máximo 6 s).
 // Se salta con clic o cualquier tecla, y se puede desactivar en Ajustes > Apariencia.
 (function splash() {
   const s = document.getElementById('splash');
@@ -22,14 +22,19 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   let closed = false;
   let ready = !!window.__novaReady;
   let minDone = false;
-  const MIN = 2300;
+  const MIN = 3200;
+  const steps = ['Iniciando…', 'Cargando tu perfil…', 'Buscando eventos…', 'Preparando el launcher…', '¡Listo!'];
+  const st = document.getElementById('sp-status');
+  let si = 0;
+  const tick = setInterval(() => { si = Math.min(si + 1, steps.length - 2); if (st) st.textContent = steps[si]; }, 700);
   function close() {
     if (closed) return;
     closed = true;
+    clearInterval(tick);
     s.classList.add('hide');
     setTimeout(() => s.remove(), 600);
   }
-  function tryClose() { if (ready && minDone) { s.classList.add('ready'); setTimeout(close, 250); } }
+  function tryClose() { if (ready && minDone) { clearInterval(tick); if (st) st.textContent = steps[steps.length - 1]; s.classList.add('ready'); setTimeout(close, 450); } }
   window.addEventListener('nova-ready', () => { ready = true; tryClose(); });
   setTimeout(() => { minDone = true; tryClose(); }, MIN);
   setTimeout(close, 6000);
@@ -818,7 +823,7 @@ function packCard(p) {
   card.setAttribute('aria-label', `${p.title}: abrir`);
   card.dataset.tilt = '';
   const media = el('div', 'mp-media');
-  media.append(packIcon(p, 'event-card-img mp-card-img'), el('span', 'mp-badge', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
+  media.append(packIcon(p, 'event-card-img mp-card-img'), el('span', 'mp-badge', p.preset === 'nova' ? '⚡ Nova' : LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'));
   const play = el('button', 'mp-play', '▶ Jugar');
   play.type = 'button';
   play.addEventListener('click', (e) => { e.stopPropagation(); playPack(p.id); });
@@ -1172,7 +1177,7 @@ async function renderPackLog() {
 let mcList = null;
 async function loadMcVersions(...selects) {
   try {
-    mcList = await window.api.modpackMcVersions();
+    mcList = await window.api.modpackMcVersions({ snapshots: !!($('mc-snap') && $('mc-snap').checked) });
   } catch (e) {
     mcList = mcList || [];
     toast(cleanError(e), 'error');
@@ -1189,6 +1194,7 @@ $('mp-go-create').addEventListener('click', async () => {
   $('mc-name').value = '';
   $('mc-emoji').value = '';
   $('mc-status').textContent = 'Cargando versiones de Minecraft…';
+  paintLoaderHint();
   $('mc-create').disabled = true;
   $('mp-create-modal').showModal();
   await loadMcVersions($('mc-version'));
@@ -1212,15 +1218,25 @@ function paintPopularVersions() {
   });
 }
 $('mc-version').addEventListener('change', paintPopularVersions);
+$('mc-snap').addEventListener('change', async () => { await loadMcVersions($('mc-version')); paintPopularVersions(); });
+const LOADER_HINTS = {
+  nova: 'Instala solo los mods de rendimiento que usan los packs optimizados (Sodium, Lithium, FerriteCore, ModernFix, Entity Culling, Iris…). Los que no existan para esa versión se saltan.',
+  optifine: 'OptiFine no se puede descargar desde aquí (su licencia lo impide). Se crea un perfil Forge: baja el .jar oficial de optifine.net y añádelo en Mods > Añadir archivo.',
+  fabric: '', forge: '', vanilla: ''
+};
+function paintLoaderHint() { $('mc-loader-hint').textContent = LOADER_HINTS[$('mc-loader').value] || ''; }
+$('mc-loader').addEventListener('change', paintLoaderHint);
 
 $('mc-cancel').addEventListener('click', () => $('mp-create-modal').close());
 $('mp-create-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('mc-create').disabled = true;
   try {
+    $('mc-status').textContent = $('mc-loader').value === 'nova' ? 'Instalando mods de rendimiento… puede tardar un poco.' : '';
     const entry = await window.api.modpackCreate({ name: $('mc-name').value, icon: $('mc-emoji').value, mcVersion: $('mc-version').value, loader: $('mc-loader').value });
     $('mp-create-modal').close();
-    toast(`Instancia "${entry.title}" creada`);
+    toast(`Instancia "${entry.title}" creada${entry.novaSkipped && entry.novaSkipped.length ? ` (sin ${entry.novaSkipped.length} mod(s) que no existen para esa versión)` : ''}`);
+    if (entry.preset === 'optifine') toast('Ahora descarga OptiFine en optifine.net y añade el .jar en Mods.');
     await loadInstalled();
     openDetail(entry);
   } catch (err) {

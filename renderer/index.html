@@ -17,13 +17,18 @@
   <div class="season-corner" aria-hidden="true"><i></i></div>
 
   <div id="splash" class="splash" role="status" aria-label="Cargando Nova PX - Event Launcher">
+    <div class="sp-stars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="splash-content">
-      <div class="splash-orb" aria-hidden="true"><i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>
+      <div class="splash-orb" aria-hidden="true">
+        <i class="sp-halo"></i>
+        <i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>
+        <span class="sp-orbit o1"><b></b></span><span class="sp-orbit o2"><b></b></span><span class="sp-orbit o3"><b></b></span>
         <div class="splash-logo-wrap"><img class="splash-logo" src="images/logo.png" alt="" width="96" height="96" /><b class="shine"></b></div>
       </div>
       <h1 class="splash-name">Nova PX</h1>
       <p class="splash-sub">Event Launcher</p>
       <div class="splash-bar" aria-hidden="true"><i></i></div>
+      <p class="sp-status" id="sp-status" aria-hidden="true">Iniciando…</p>
     </div>
   </div>
 
@@ -499,8 +504,16 @@
           <div class="field inline">
             <div><label for="mc-version">Versión de Minecraft</label><select id="mc-version"></select></div>
             <div><label for="mc-loader">Loader</label>
-              <select id="mc-loader"><option value="fabric">Fabric</option><option value="forge">Forge</option><option value="vanilla">Vanilla</option></select></div>
+              <select id="mc-loader">
+                <option value="nova">⚡ Nova (optimizado)</option>
+                <option value="fabric">Fabric</option>
+                <option value="forge">Forge</option>
+                <option value="optifine">OptiFine (vía Forge)</option>
+                <option value="vanilla">Vanilla</option>
+              </select></div>
           </div>
+          <label class="check"><input id="mc-snap" type="checkbox" /> Mostrar también snapshots (versiones de prueba)</label>
+          <small id="mc-loader-hint" class="muted"></small>
           <div id="mc-popular" class="ver-grid" role="group" aria-label="Versiones populares"></div>
           <small class="muted">Se crea una carpeta vacía y propia. Después añades mods, shaders y texturas desde la instancia.</small>
           <p id="mc-status" class="muted" role="status"></p>
