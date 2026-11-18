@@ -1794,3 +1794,84 @@ button.danger:hover { background: color-mix(in srgb, #ff5a5a 18%, transparent); 
 /* El bloque grande de Inicio es siempre oscuro: en los temas claros su botón secundario debe leerse. */
 :root[data-theme="light"] .lp-event:not(.live),
 :root[data-theme="sakura"] .lp-event:not(.live) { color: #fff; border-color: rgba(255,255,255,.45); }
+
+/* =====================================================================
+   Ajustes rediseñado (1.0.64): resumen, cabeceras con icono, interruptores, atajos y selector de idioma con banderas
+   ===================================================================== */
+.settings.set-split { max-width: 1120px; grid-template-columns: 240px minmax(0, 1fr); }
+.set-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.set-item { display: flex; align-items: center; gap: 11px; position: relative; }
+.set-item .set-ico { opacity: .75; }
+.set-item.active { box-shadow: inset 3px 0 0 var(--accent); }
+.set-item.active .set-ico { opacity: 1; }
+.set-body > fieldset { padding: 22px 26px 24px; border-radius: var(--r-lg); animation: setIn .28s ease both; }
+.set-body > fieldset > legend { display: none; }
+@keyframes setIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.set-head { display: flex; align-items: center; gap: 16px; margin: -6px 0 18px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.set-badge { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; flex: none; color: var(--accent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 26%, transparent), color-mix(in srgb, var(--accent) 6%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 16%, transparent); }
+.set-badge .set-ico { width: 24px; height: 24px; }
+.set-head h3 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.set-head p { margin: 3px 0 0; font-size: 13.5px; }
+
+/* Tarjeta de resumen */
+.set-hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 18px 20px; border-radius: var(--r-lg); border: 1px solid var(--line);
+  background: radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 60%), var(--surface-solid, var(--surface)); }
+.set-hero-avatar, .set-hero-ph { width: 56px; height: 56px; border-radius: 16px; flex: none; object-fit: cover; image-rendering: pixelated; background: var(--raised); border: 1px solid var(--line); }
+.set-hero-ph { display: grid; place-items: center; font-size: 24px; font-weight: 800; color: var(--accent); image-rendering: auto; }
+.set-hero-tx { display: flex; flex-direction: column; gap: 2px; min-width: 120px; flex: 1 1 140px; }
+.set-hero-tx strong { font-size: 18px; }
+.set-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+.set-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 104px; padding: 9px 13px; border-radius: 12px; border: 1px solid var(--line); background: color-mix(in srgb, var(--raised) 70%, transparent); text-align: left; }
+.set-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.set-chip small { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.set-chip b { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.set-chip .flag { width: 20px; height: 14px; }
+
+/* Interruptores en lugar de casillas */
+.set-body .check { justify-content: space-between; flex-direction: row-reverse; margin-top: 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--raised) 55%, transparent); transition: border-color .15s, background .15s; }
+.set-body .check:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.set-body .check input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; width: 42px; height: 24px; margin: 0; border-radius: 999px; position: relative; cursor: pointer; background: var(--line); border: 0; transition: background .2s; }
+.set-body .check input[type="checkbox"]::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); transition: transform .2s; }
+.set-body .check input[type="checkbox"]:checked { background: var(--accent); }
+.set-body .check input[type="checkbox"]:checked::after { transform: translateX(18px); }
+.set-body .check input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Atajos (memoria, resolución) */
+.preset-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }
+.preset { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 112px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--raised); }
+.preset b { font-size: 15px; }
+.preset small { font-size: 11.5px; }
+.preset:hover { border-color: var(--accent); }
+.preset.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--raised)); box-shadow: inset 0 0 0 1px var(--accent); }
+.set-body .range-row output { min-width: 64px; text-align: center; padding: 6px 10px; border-radius: 10px; font-weight: 800; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+
+/* Selector de idioma con banderas */
+.flag { display: inline-block; width: 36px; height: 24px; border-radius: 5px; overflow: hidden; flex: none; box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 2px 6px rgba(0,0,0,.3); vertical-align: middle; }
+.flag svg { display: block; width: 100%; height: 100%; }
+.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 4px; }
+.lang-card { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-align: left; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--raised); transition: transform .15s, border-color .15s, box-shadow .15s; }
+.lang-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.lang-card .flag { width: 44px; height: 30px; border-radius: 6px; }
+.lang-txt { display: flex; flex-direction: column; min-width: 0; }
+.lang-name { font-size: 15.5px; }
+.lang-txt small { font-size: 12px; }
+.lang-check { margin-left: auto; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.lang-card.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--raised)); box-shadow: 0 0 0 1px var(--accent), 0 8px 24px color-mix(in srgb, var(--accent) 18%, transparent); }
+.lang-card.active .lang-check { border-color: var(--accent); background: var(--accent) radial-gradient(circle, var(--accent-ink, #1a1405) 0 28%, transparent 32%); }
+.lang-actions { margin-top: 16px; }
+.lang-note { display: block; margin-top: 10px; }
+
+/* Actualizaciones y archivos como tarjetas */
+#page-settings .path { display: inline-block; padding: 8px 12px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); font-family: ui-monospace, Consolas, monospace; font-size: 13px; word-break: break-all; }
+#app-version { font-size: 20px; font-weight: 800; font-family: inherit; }
+
+/* Barra de guardado fija */
+#page-settings .save-row { position: sticky; bottom: 0; display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 12px 16px; border-radius: var(--r-lg); border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-solid, var(--surface)) 88%, transparent); backdrop-filter: blur(10px); z-index: 5; }
+.set-dirty { display: inline-flex; align-items: center; gap: 8px; margin-right: auto; font-size: 13px; font-weight: 600; color: var(--accent); }
+.set-dirty::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+@media (max-width: 800px) { .set-hero { flex-direction: column; align-items: flex-start; } }
+.set-head + .row-setting { border-top: 0; }

@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.65
+- **Idiomas con banderas**: el selector de Ajustes → Idioma ahora son tarjetas con la bandera de cada país. Nuevos idiomas: Português, Français, Deutsch, Italiano, Русский y 日本語 (además de Español y English). Las banderas son dibujos propios, así se ven bien también en Windows. Lo que aún no esté traducido sigue saliendo en español.
+- **Ajustes rediseñado**: cabecera con tu perfil y resumen (memoria, Java, idioma y tema) con atajos, cada sección con su icono y descripción, interruptores en lugar de casillas, atajos de memoria (2/4/6/8 GB) y de resolución de ventana, y una barra de guardado fija que avisa de los cambios sin guardar.
+
 ## 1.0.64
 - **10 temas nuevos** de lo que está en tendencia: Catppuccin, Tokyo Night, Dracula, Rosé Pine, Synthwave, Cyberpunk, Sakura (claro), Deep Dark, Nether y The End. Cada uno trae su paleta, su fondo y su color principal propio (puedes cambiar el color después).
 - Los administradores también pueden poner cualquiera de ellos como tema por defecto de todos los jugadores.

@@ -1020,10 +1020,9 @@
 
         <fieldset>
           <legend>Idioma</legend>
-          <div class="field inline">
-            <div><label for="lang-select">Idioma del launcher</label><select id="lang-select"></select></div>
-            <div class="mp-actions"><button id="lang-folder" type="button">Añadir idioma…</button></div>
-          </div>
+          <div class="lang-grid" id="lang-grid" role="radiogroup" aria-label="Idioma del launcher"></div>
+          <div class="field" hidden><label for="lang-select">Idioma del launcher</label><select id="lang-select"></select></div>
+          <div class="mp-actions lang-actions"><button id="lang-folder" type="button">Añadir idioma…</button></div>
           <small class="muted">Lo que no esté traducido se muestra en español. Para añadir otro idioma, copia un paquete .json a la carpeta que se abre con «Añadir idioma…».</small>
         </fieldset>
 
@@ -1203,6 +1202,7 @@
   </div>
 
   <script src="i18n.js"></script>
+  <script src="flags.js"></script>
   <script src="seasons.js"></script>
   <script src="theme.js"></script>
   <script src="viewer3d.js"></script>

@@ -526,7 +526,26 @@
   "Prueba con otro nombre o cambia el filtro.": "Try another name or change the filter.",
   "Ningún ajuste coincide.": "No settings match.",
   "Finalizado": "Ended",
-  "Estado del evento": "Event status"
+  "Estado del evento": "Event status",
+  "Tu perfil de jugador y cómo entras al juego": "Your player profile and how you get into the game",
+  "Qué se ve y qué se comparte mientras juegas o transmites": "What is shown and shared while you play or stream",
+  "Herramientas para publicar eventos y noticias": "Tools to publish events and news",
+  "Tema, color, fondo y decoración de temporada": "Theme, color, background and seasonal decoration",
+  "Elige el idioma del launcher": "Choose the launcher language",
+  "Rendimiento y versión de Java para Minecraft": "Performance and Java version for Minecraft",
+  "Tamaño de la ventana y pantalla completa": "Window size and fullscreen",
+  "Qué pasa cuando pulsas Jugar": "What happens when you press Play",
+  "Mantén el launcher al día": "Keep the launcher up to date",
+  "Carpeta de datos y reparación": "Data folder and repair",
+  "Idioma del sistema": "System language",
+  "Ligero": "Light",
+  "Equilibrado": "Balanced",
+  "Pesado": "Heavy",
+  "Manual": "Manual",
+  "Cambios sin guardar": "Unsaved changes",
+  "Automático": "Automatic",
+  "Buscar ajustes": "Search settings",
+  "Inicia sesión desde Mi cuenta": "Sign in from My account"
  },
  "patterns": [
   {
@@ -706,14 +725,6 @@
    "to": "Only what is compatible with Minecraft $1$2 is shown."
   },
   {
-   "match": "^Tu equipo tiene (\\d+) GB en total\\. Deja al menos 2 GB libres para el sistema\\.$",
-   "to": "Your computer has $1 GB in total. Leave at least 2 GB free for the system."
-  },
-  {
-   "match": "^Tu equipo tiene (\\d+) GB en total\\. Te recomendamos (\\d+) GB\\.$",
-   "to": "Your computer has $1 GB in total. We recommend $2 GB."
-  },
-  {
    "match": "^Versión (.+)$",
    "to": "Version $1"
   },
@@ -808,6 +819,14 @@
   {
    "match": "^Historial: (.+)$",
    "to": "History: $1"
+  },
+  {
+   "match": "^Tu equipo tiene (\\d+) GB en total\\. Deja al menos 2 GB libres para el sistema\\.$",
+   "to": "Your computer has $1 GB in total. Leave at least 2 GB free for the system."
+  },
+  {
+   "match": "^Tu equipo tiene (\\d+) GB en total\\. Te recomendamos (\\d+) GB\\.$",
+   "to": "Your computer has $1 GB in total. We recommend $2 GB."
   }
  ]
 }

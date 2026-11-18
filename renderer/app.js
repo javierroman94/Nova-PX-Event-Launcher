@@ -2516,22 +2516,55 @@ $('update-check').addEventListener('click', async () => {
 });
 
 /* ---------- idioma ---------- */
+// Nombre del idioma en su propio idioma (no se traduce: cada jugador lo reconoce en el suyo).
+const LANG_NATIVE = { es: 'Español', en: 'English', pt: 'Português', fr: 'Français', de: 'Deutsch', it: 'Italiano', ru: 'Русский', ja: '日本語', ko: '한국어', zh: '中文', tr: 'Türkçe', ca: 'Català' };
 async function initLanguage(saved) {
   const sel = $('lang-select');
+  const grid = $('lang-grid');
   let list = [];
   try { list = await window.api.langList(); } catch {}
+  if (!Array.isArray(list)) list = [];
   sel.replaceChildren();
   const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.append(o); };
   add('auto', 'Automático (idioma del sistema)');
   add('es', 'Español');
-  list.filter((l) => l.code !== 'es').forEach((l) => add(l.code, l.name));
+  list.filter((l) => l.code !== 'es').forEach((l) => add(l.code, LANG_NATIVE[l.code] || l.name));
   sel.value = [...sel.options].some((o) => o.value === saved) ? saved : 'auto';
+
+  // Tarjetas con bandera: una por idioma, más «Automático».
+  const cards = [];
+  const card = (code, title, sub, flagCode) => {
+    const b = el('button', 'lang-card');
+    b.type = 'button';
+    b.dataset.code = code;
+    b.setAttribute('role', 'radio');
+    const txt = el('span', 'lang-txt');
+    const t = el('strong', 'lang-name'); t.textContent = title; t.translate = false;
+    txt.append(t);
+    if (sub) txt.append(el('small', 'muted', sub));
+    b.append(window.NovaFlags.node(flagCode), txt, el('span', 'lang-check'));
+    b.addEventListener('click', () => { if (sel.value !== code) { sel.value = code; sel.dispatchEvent(new Event('change')); } });
+    cards.push(b);
+    grid.append(b);
+  };
+  grid.replaceChildren();
+  card('auto', 'Automático', 'Idioma del sistema', 'globe');
+  [...sel.options].filter((o) => o.value !== 'auto').forEach((o) => {
+    const l = list.find((x) => x.code === o.value);
+    card(o.value, o.textContent, l && l.author && !l.builtin ? l.author : '', o.value);
+  });
+  const paint = () => cards.forEach((c) => { const on = c.dataset.code === sel.value; c.classList.toggle('active', on); c.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  paint();
+
   await NovaI18n.setLanguage(await NovaI18n.resolve(sel.value));
   sel.addEventListener('change', async () => {
+    paint();
     await NovaI18n.setLanguage(await NovaI18n.resolve(sel.value));
     window.api.saveSettings({ lang: sel.value });
+    window.dispatchEvent(new CustomEvent('nova-lang', { detail: sel.value }));
   });
   $('lang-folder').addEventListener('click', () => window.api.langOpenFolder());
+  window.dispatchEvent(new CustomEvent('nova-lang', { detail: sel.value }));
 }
 
 /* ---------- asistente de primer uso ---------- */
@@ -3445,6 +3478,144 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
     sync();
   }
   show('Mi cuenta');
+})();
+
+
+/* ---------- Ajustes: cabecera, resumen, iconos y atajos (se apoya en settingsLayout) ---------- */
+(function settingsPolish() {
+  const root = document.querySelector('#page-settings .settings.set-split');
+  if (!root) return;
+  const ICON = {
+    'Mi cuenta': '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+    'Privacidad': '<path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z"/>',
+    'Modo administrador': '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',
+    'Apariencia': '<path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2-.6-1.2.2-2.5 1.5-2.5H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
+    'Idioma': '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+    'Memoria y Java': '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    'Ventana del juego': '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    'Al jugar': '<path d="M7 4l13 8-13 8z"/>',
+    'Actualizaciones': '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
+    'Archivos del juego': '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>'
+  };
+  const DESC = {
+    'Mi cuenta': 'Tu perfil de jugador y cómo entras al juego',
+    'Privacidad': 'Qué se ve y qué se comparte mientras juegas o transmites',
+    'Modo administrador': 'Herramientas para publicar eventos y noticias',
+    'Apariencia': 'Tema, color, fondo y decoración de temporada',
+    'Idioma': 'Elige el idioma del launcher',
+    'Memoria y Java': 'Rendimiento y versión de Java para Minecraft',
+    'Ventana del juego': 'Tamaño de la ventana y pantalla completa',
+    'Al jugar': 'Qué pasa cuando pulsas Jugar',
+    'Actualizaciones': 'Mantén el launcher al día',
+    'Archivos del juego': 'Carpeta de datos y reparación'
+  };
+  const svg = (inner) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', 'set-ico'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = inner; return s; };
+
+  // Iconos en el menú y cabecera de cada sección (el <legend> se conserva para la búsqueda pero ya no se ve).
+  root.querySelectorAll('.set-item').forEach((b) => { const n = b.textContent.trim(); if (ICON[n]) b.prepend(svg(ICON[n])); });
+  root.querySelectorAll('.set-body > fieldset').forEach((f) => {
+    const n = f.querySelector('legend').textContent.trim();
+    const head = el('div', 'set-head');
+    const badge = el('span', 'set-badge'); if (ICON[n]) badge.append(svg(ICON[n]));
+    const tx = el('div', 'set-head-tx');
+    tx.append(el('h3', '', n), el('p', 'muted', DESC[n] || ''));
+    head.append(badge, tx);
+    f.prepend(head);
+  });
+
+  // Resumen arriba: quién eres y cómo está configurado, con atajos a cada sección.
+  const body = root.querySelector('.set-body');
+  const hero = el('div', 'set-hero');
+  const hav = el('img', 'set-hero-avatar'); hav.alt = ''; hav.hidden = true;
+  const hph = el('span', 'set-hero-ph', '?');
+  const htx = el('div', 'set-hero-tx');
+  const hname = el('strong', 'pii', 'Sin sesión');
+  const hmode = el('span', 'muted', '');
+  htx.append(hname, hmode);
+  const chips = el('div', 'set-chips');
+  const mkChip = (id, label, target) => {
+    const c = el('button', 'set-chip'); c.type = 'button'; c.dataset.go = target;
+    const l = el('small', 'muted', label); const v = el('b', '', '–'); v.id = id;
+    c.append(l, v);
+    c.addEventListener('click', () => [...root.querySelectorAll('.set-item')].find((b) => b.textContent.trim() === target)?.click());
+    chips.append(c);
+    return v;
+  };
+  const vRam = mkChip('chip-ram', 'Memoria RAM', 'Memoria y Java');
+  const vJava = mkChip('chip-java', 'Java', 'Memoria y Java');
+  const vLang = mkChip('chip-lang', 'Idioma', 'Idioma');
+  const vTheme = mkChip('chip-theme', 'Tema', 'Apariencia');
+  hero.append(hav, hph, htx, chips);
+  body.prepend(hero);
+
+  const $$ = (id) => document.getElementById(id);
+  const refresh = () => {
+    const pn = $$('set-prof-name'); const pm = $$('set-prof-mode'); const pa = $$('set-prof-avatar');
+    hname.textContent = pn ? pn.textContent : 'Sin sesión';
+    hmode.textContent = pm ? pm.textContent : '';
+    const showAv = pa && !pa.hidden && pa.getAttribute('src');
+    hav.hidden = !showAv; hph.hidden = !!showAv;
+    if (showAv) hav.src = pa.getAttribute('src');
+    hph.textContent = '?';
+    vRam.textContent = $$('ram') ? `${$$('ram').value} GB` : '–';
+    vJava.textContent = $$('java-path') && $$('java-path').value.trim() ? 'Manual' : 'Automática';
+    const ls = $$('lang-select');
+    vLang.replaceChildren();
+    if (ls && ls.value) {
+      const code = ls.value === 'auto' ? 'globe' : ls.value;
+      const o = ls.options[ls.selectedIndex];
+      vLang.append(window.NovaFlags.node(code), document.createTextNode(' ' + (o ? o.textContent.replace(/\s*\(.*\)$/, '') : '')));
+    }
+    const tc = document.querySelector('#theme-seg .theme-card.active .tc-name');
+    vTheme.textContent = tc ? tc.textContent : '–';
+  };
+  const prof = $$('set-prof-name');
+  if (prof) new MutationObserver(refresh).observe(prof.parentElement.parentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+  window.addEventListener('nova-lang', refresh);
+  root.addEventListener('input', refresh);
+  root.addEventListener('change', refresh);
+  root.addEventListener('click', () => setTimeout(refresh, 80));
+  setTimeout(refresh, 400);
+
+  // Atajos de memoria y de tamaño de ventana.
+  const presets = (afterEl, items, apply, isOn) => {
+    if (!afterEl) return;
+    const row = el('div', 'preset-row');
+    const btns = items.map((it) => {
+      const b = el('button', 'preset'); b.type = 'button';
+      b.append(el('b', '', it.big), it.small ? el('small', 'muted', it.small) : document.createTextNode(''));
+      b.addEventListener('click', () => { apply(it); refresh(); mark(); });
+      row.append(b);
+      return { b, it };
+    });
+    const mark = () => btns.forEach(({ b, it }) => b.classList.toggle('on', isOn(it)));
+    afterEl.after(row);
+    root.addEventListener('input', mark); root.addEventListener('click', () => setTimeout(mark, 60));
+    setTimeout(mark, 500);
+    return { btns, mark };
+  };
+  const ram = $$('ram');
+  if (ram) {
+    const items = [{ big: '2 GB', v: 2, small: 'Ligero' }, { big: '4 GB', v: 4, small: 'Equilibrado' }, { big: '6 GB', v: 6, small: 'Recomendado' }, { big: '8 GB', v: 8, small: 'Pesado' }];
+    const r = presets(ram.closest('.range-row'), items, (it) => { ram.value = String(Math.min(it.v, Number(ram.max) || it.v)); ram.dispatchEvent(new Event('input', { bubbles: true })); }, (it) => Number(ram.value) === it.v);
+    const hide = () => r && r.btns.forEach(({ b, it }) => { b.hidden = it.v > (Number(ram.max) || 16); });
+    setTimeout(hide, 700);
+  }
+  const rw = $$('res-w'); const rh = $$('res-h');
+  if (rw && rh) {
+    const items = [{ big: '1280×720', w: 1280, h: 720, small: 'HD' }, { big: '1600×900', w: 1600, h: 900, small: 'HD+' }, { big: '1920×1080', w: 1920, h: 1080, small: 'Full HD' }, { big: '2560×1440', w: 2560, h: 1440, small: '2K' }];
+    presets(rh.closest('.field'), items, (it) => { rw.value = it.w; rh.value = it.h; rw.dispatchEvent(new Event('input', { bubbles: true })); }, (it) => Number(rw.value) === it.w && Number(rh.value) === it.h);
+  }
+
+  // Aviso de cambios sin guardar junto al botón.
+  const saveRow = document.querySelector('#page-settings .save-row');
+  if (saveRow) {
+    const dirty = el('span', 'set-dirty', 'Cambios sin guardar'); dirty.hidden = true;
+    saveRow.prepend(dirty);
+    const on = (e) => { if (e.target.closest('.set-nav') || e.target.id === 'lang-select') return; dirty.hidden = false; };
+    root.addEventListener('input', on); root.addEventListener('change', on);
+    $$('save-settings')?.addEventListener('click', () => { dirty.hidden = true; });
+  }
 })();
 
 

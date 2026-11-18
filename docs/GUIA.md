@@ -256,7 +256,7 @@ En 1.0.49 el manifiesto del evento admite `event.status` (`soon`, `active`, `end
 - **Anuncios (1.0.46)**: las noticias (`data/news.json`) aceptan `image` y `links`; el anuncio global acepta `image` y `urlLabel`.
 - **Botones laterales del mouse**: atrás y adelante. Los diálogos tienen ✕ y las confirmaciones usan la estética del launcher.
 
-## 4m. Novedades 1.0.50 a 1.0.64
+## 4m. Novedades 1.0.50 a 1.0.65
 
 - **Inicio tipo Lunar**: bloque grande con tu modpack reciente (imagen, nombre, última partida y **JUGAR**), «Continuar», comunidad, amigos y novedades. El evento va aparte y solo sube arriba si está activo.
 - **Barra lateral compacta** (botón ⇤ abajo), **inicio de sesión** en dos columnas y **amigos con estado en línea** (Worker de Cloudflare, ver `docs/CLOUDFLARE.md`).
@@ -271,6 +271,8 @@ En 1.0.49 el manifiesto del evento admite `event.status` (`soon`, `active`, `end
 - **Admin (1.0.63)**: «Editar evento» en tarjetas y miembros del equipo con avatar. **Patrocinadores y créditos**: Admin → Evento → «+ Patrocinador o crédito» (se ven en la pestaña Evento).
 
 **Temas populares (1.0.64):** Ajustes → Apariencia ahora tiene 14 temas. Los 10 nuevos viven en `renderer/styles.css` (bloques `:root[data-theme="id"]`) y su lista en `lib/themes.js`. Para añadir uno más: agrega el bloque de CSS y `.tc-id`, la tarjeta en `#theme-seg` de `index.html` (con `data-accent`), la opción en `#lk-preset` y su entrada en `lib/themes.js`; `node test/themes.test.js` te avisa si falta algo.
+
+**Idiomas y banderas (1.0.65):** los paquetes viven en `renderer/lang/<código>.json` (`strings` con el texto en español como clave). Cada código necesita su bandera en `renderer/flags.js` (si no la tiene sale un globo) y su nombre propio en `LANG_NATIVE` de `app.js`. Para añadir uno: copia `en.json`, traduce los valores, y `node test/lang.test.js` revisa que esté completo. Los jugadores también pueden dejar paquetes en la carpeta que abre «Añadir idioma…».
 
 ## 5. Límites de esta primera versión
 
