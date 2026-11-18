@@ -2601,6 +2601,7 @@ document.querySelectorAll('[data-ad-tab]').forEach((b) =>
   b.addEventListener('click', () => {
     document.querySelectorAll('[data-ad-tab]').forEach((x) => x.classList.toggle('active', x === b));
     window.AD_TABS.forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
+    if (b.dataset.adTab === 'control') refreshSocial();
     if (b.dataset.adTab === 'users') loadUsers();
   })
 );
@@ -2688,6 +2689,7 @@ async function loadAdmin() {
     $('ad-new').checked = false;
     adm.team = d.team;
     adm.news = d.news;
+    adm.newsSaved = (d.news || []).map((n) => ({ title: n.title, date: n.date }));
     adm.admins = d.admins;
     adm.events = d.events;
     paintAdminEvents();
@@ -2786,6 +2788,8 @@ $('ad-state-quick').addEventListener('click', async (e) => {
   try {
     await window.api.adminSetEventState(b.dataset.st);
     toast(`Estado del evento: ${b.textContent}`, 'success');
+    const evn = (adm.manifest && adm.manifest.event) || {};
+    await autoDiscord('event', { title: `${evn.name || 'Evento'}: ${b.textContent}`, text: evn.tagline || '', image: imageUrl(evn.image) });
     await loadAdmin();
     await renderHero();
   } catch (err) {
@@ -2822,6 +2826,7 @@ $('ad-publish').addEventListener('click', async () => {
     $('ad-pass').value = '';
     $('ad-new').checked = false;
     toast('Evento publicado');
+    await autoDiscord('event', { title: `${r.name}: evento publicado`, text: $('ad-tag').value, image: imageUrl(adm.evImage) });
     loadAdmin();
     window.refreshContent && window.refreshContent();
   } catch (e) {
@@ -3219,7 +3224,11 @@ $('ad-team-save').addEventListener('click', async () => {
 });
 $('ad-news-save').addEventListener('click', async () => {
   try {
+    const before = new Set((adm.newsSaved || []).map((n) => `${n.title}|${n.date}`));
     adm.news = await window.api.adminSaveNews(adm.news);
+    const fresh = adm.news.filter((n) => !before.has(`${n.title}|${n.date}`));
+    adm.newsSaved = adm.news.map((n) => ({ title: n.title, date: n.date }));
+    for (const n of fresh) await autoDiscord('news', { title: n.title, text: n.text, image: imageUrl(n.image), link: (n.links && n.links[0] && n.links[0].url) || '' });
     paintNews();
     window.adminListSaved('news');
     $('ad-news-status').textContent = 'Noticias publicadas.';
@@ -3476,3 +3485,40 @@ function openPicker(it) {
   if (!$('mp-pick-modal').open) $('mp-pick-modal').showModal();
 }
 $('mp-pick-close').addEventListener('click', () => $('mp-pick-modal').close());
+
+
+/* --- Discord y X (Admin → Control) --- */
+function socialMsg(t, bad) { const m = $('soc-msg'); m.textContent = t; m.classList.toggle('bad', !!bad); }
+async function refreshSocial() {
+  try {
+    const r = await window.api.socialStatus();
+    $('soc-state').textContent = r.hasWebhook ? 'Webhook guardado: los avisos a Discord están listos.' : 'Todavía no hay webhook: pega uno arriba para poder avisar en Discord.';
+  } catch { $('soc-state').textContent = ''; }
+}
+$('soc-auto-news').checked = keep('soc-auto-news') === '1';
+$('soc-auto-event').checked = keep('soc-auto-event') === '1';
+$('soc-auto-news').addEventListener('change', () => keep('soc-auto-news', $('soc-auto-news').checked ? '1' : '0'));
+$('soc-auto-event').addEventListener('change', () => keep('soc-auto-event', $('soc-auto-event').checked ? '1' : '0'));
+$('soc-save').addEventListener('click', async () => {
+  try { await window.api.socialSetWebhook($('soc-hook').value); $('soc-hook').value = ''; socialMsg('Webhook guardado.'); refreshSocial(); }
+  catch (e) { socialMsg(cleanError(e), true); }
+});
+$('soc-clear').addEventListener('click', async () => { await window.api.socialClearWebhook().catch(() => {}); socialMsg('Webhook quitado.'); refreshSocial(); });
+$('soc-send').addEventListener('click', async () => {
+  if (!$('soc-title').value.trim() && !$('soc-text').value.trim()) { socialMsg('Escribe un título o un texto.', true); return; }
+  $('soc-send').disabled = true;
+  try { await window.api.socialPost({ title: $('soc-title').value, text: $('soc-text').value, link: $('soc-link').value }); socialMsg('Enviado a Discord.'); }
+  catch (e) { socialMsg(cleanError(e), true); }
+  $('soc-send').disabled = false;
+});
+$('soc-x').addEventListener('click', async () => {
+  const text = [$('soc-title').value.trim(), $('soc-text').value.trim()].filter(Boolean).join(' - ');
+  if (!text) { socialMsg('Escribe un título o un texto.', true); return; }
+  try { await window.api.socialXShare({ text, link: $('soc-link').value }); socialMsg('Se abrió X con el texto listo; solo falta pulsar Publicar.'); }
+  catch (e) { socialMsg(cleanError(e), true); }
+});
+// Aviso automático (si está activado y hay webhook). Un fallo nunca rompe la publicación.
+async function autoDiscord(kind, payload) {
+  if (keep(kind === 'news' ? 'soc-auto-news' : 'soc-auto-event') !== '1') return;
+  try { await window.api.socialPost(payload); toast('Aviso enviado a Discord'); } catch (e) { toast(`No se pudo avisar en Discord: ${cleanError(e)}`, 'error'); }
+}

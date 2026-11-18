@@ -705,6 +705,20 @@
       </div>
 
       <div id="ad-tab-control" hidden>
+        <article class="ad-card" id="ad-social">
+          <header><div><h3>Discord y X</h3><p class="muted">Avisa de tus novedades en el Discord de Nova PX y comparte en X. El webhook se guarda cifrado en este equipo y nunca se muestra.</p></div></header>
+          <div class="field"><label for="soc-hook">Webhook de Discord</label>
+            <div class="ad-color"><input id="soc-hook" type="password" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" /><button id="soc-save" type="button">Guardar</button><button id="soc-clear" type="button" class="ghost">Quitar</button></div>
+            <small class="muted">En Discord: Ajustes del canal → Integraciones → Webhooks → Nuevo webhook → Copiar URL.</small></div>
+          <p id="soc-state" class="muted" role="status"></p>
+          <label class="check"><input id="soc-auto-news" type="checkbox" /> Avisar en Discord cada noticia nueva que publique</label>
+          <label class="check"><input id="soc-auto-event" type="checkbox" /> Avisar en Discord cuando publique o cambie el estado del evento</label>
+          <div class="field"><label for="soc-title">Mensaje manual</label><input id="soc-title" type="text" maxlength="120" placeholder="Título" /></div>
+          <div class="field"><textarea id="soc-text" rows="3" maxlength="1500" placeholder="Texto del anuncio"></textarea></div>
+          <div class="field"><input id="soc-link" type="url" placeholder="Enlace (opcional)" /></div>
+          <div class="mp-actions"><button id="soc-x" type="button">Compartir en X</button><button id="soc-send" type="button" class="primary">Enviar a Discord</button></div>
+          <p id="soc-msg" class="muted" role="status"></p>
+        </article>
         <article class="ad-card">
           <header><div><h3>Anuncio global</h3><p class="muted">Una franja arriba del launcher para todos los jugadores.</p></div><button type="button" class="ghost" data-history="launcher">Historial</button></header>
           <label class="check"><input id="ct-an-on" type="checkbox" /> Mostrar el anuncio</label>

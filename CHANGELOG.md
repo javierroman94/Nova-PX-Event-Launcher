@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.58
+- **Discord y X desde Admin → Control**: guarda el webhook de tu canal de Discord (cifrado, nunca se muestra) y el launcher puede avisar solo cuando publiques una noticia nueva o cambies/publiques el evento. También hay un mensaje manual y el botón "Compartir en X", que abre X con el texto listo (sin claves de API ni costo).
+- Los avisos no mencionan a @everyone ni a roles aunque el texto lo lleve.
+
 ## 1.0.57
 - **Explorar como Modrinth**: pestañas Modpacks, Mods, Texturas y Shaders. En las tres últimas pulsas "Instalar en…", eliges la instancia y se instala la versión compatible (con sus dependencias).
 - **Skins**: ya no falla si Mojang devuelve las capas incompletas, y el aviso de cuenta no premium tiene su espacio.

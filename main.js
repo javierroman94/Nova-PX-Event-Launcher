@@ -26,6 +26,7 @@ const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const telemetry = require('./lib/telemetry');
 const friendsLib = require('./lib/friends');
+const social = require('./lib/social');
 const remote = require('./lib/remote');
 const sess = require('./lib/session');
 const streamer = require('./lib/streamer');
@@ -1327,6 +1328,39 @@ ipcMain.handle('admin:pickImage', async (_e, label) => {
   const mime = kind === 'jpg' ? 'image/jpeg' : `image/${kind}`;
   return { path: `images/${name}`, preview: `data:${mime};base64,${buf.toString('base64')}` };
 });
+/* ---------- avisos a Discord y atajo a X (solo administrador) ---------- */
+const HOOK_FILE = path.join(app.getPath('userData'), 'discord.hook');
+function readHook() {
+  try { return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(fs.readFileSync(HOOK_FILE)) : null; } catch { return null; }
+}
+ipcMain.handle('social:status', async () => { await requireAdmin(); return { hasWebhook: !!readHook() }; });
+ipcMain.handle('social:setWebhook', async (_e, url) => {
+  await requireAdmin();
+  const u = String(url || '').trim();
+  if (!social.validWebhook(u)) throw new Error('Esa no parece una dirección de webhook de Discord (empieza con https://discord.com/api/webhooks/).');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar el webhook de forma cifrada.');
+  fs.writeFileSync(HOOK_FILE, safeStorage.encryptString(u));
+  return true;
+});
+ipcMain.handle('social:clearWebhook', async () => { await requireAdmin(); try { fs.unlinkSync(HOOK_FILE); } catch {} return true; });
+ipcMain.handle('social:post', async (_e, p = {}) => {
+  await requireAdmin();
+  const hook = readHook();
+  if (!hook) throw new Error('Primero guarda el webhook de Discord en Control.');
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 8000);
+  try {
+    return await social.post((u, o) => fetch(u, { ...o, signal: ctl.signal }), hook, social.buildPayload({
+      title: cleanStr(p.title, 250), text: cleanStr(p.text, 3500), image: cleanStr(p.image, 500), link: cleanStr(p.link, 500), footer: 'Enviado desde el launcher de Nova PX'
+    }));
+  } finally { clearTimeout(timer); }
+});
+ipcMain.handle('social:xShare', async (_e, p = {}) => {
+  await requireAdmin();
+  await shell.openExternal(social.xShareUrl(cleanStr(p.text, 260), cleanStr(p.link, 500)));
+  return true;
+});
+
 ipcMain.handle('admin:saveNews', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeNews(list);
