@@ -10,9 +10,14 @@
     "date": "2026-02-15",
     "image": "images/evento-mwk1dnnk.jpg",
     "description": "Evento realizado para el Streamer LaosOneView donde 100 jugadores intentan sobrevivir mientras el agua sube cada minuto, solo un jugador quedara en pie.",
-    "collabs": [
+    "commissioner": {
+      "name": "LaosOneView",
+      "url": "https://www.youtube.com/@LaosOneVieww"
+    },
+    "posts": [
       {
-        "nick": "LaosOneView"
+        "name": "Twitter",
+        "url": "https://x.com/LaosOneView/status/2020969054438293898"
       }
     ]
   },
