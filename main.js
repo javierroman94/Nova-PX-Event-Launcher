@@ -160,7 +160,7 @@ function cleanSettings(s) {
     gameBehavior: ['minimize', 'tray', 'keep'].includes(s.gameBehavior) ? s.gameBehavior : d.gameBehavior,
     // Diseño 2 (Nova Neón): quien aún no lo tenía lo recibe una vez; después puede volver al que prefiera.
     design: 2,
-    theme: s.design !== 2 ? 'nova' : ['light', 'oled', 'nova'].includes(s.theme) ? s.theme : 'dark',
+    theme: s.design !== 2 ? 'nova' : require('./lib/themes').ALL.includes(s.theme) ? s.theme : 'dark',
     accent: s.design !== 2 && String(s.accent).toLowerCase() === '#f2b84b' ? '#35d6ff' : /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
     lang: s.lang === 'auto' || langLib.CODE_RE.test(String(s.lang || '')) ? String(s.lang || 'auto') : 'auto',
     season: ['auto', 'off', 'navidad', 'halloween', 'anio', 'sanvalentin', 'carnaval', 'madres', 'ecuador'].includes(s.season) ? s.season : 'auto',

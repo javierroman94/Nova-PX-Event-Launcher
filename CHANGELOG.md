@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.64
+- **10 temas nuevos** de lo que está en tendencia: Catppuccin, Tokyo Night, Dracula, Rosé Pine, Synthwave, Cyberpunk, Sakura (claro), Deep Dark, Nether y The End. Cada uno trae su paleta, su fondo y su color principal propio (puedes cambiar el color después).
+- Los administradores también pueden poner cualquiera de ellos como tema por defecto de todos los jugadores.
+- Arreglo: en los temas claros el botón «Próximo evento» del bloque de Inicio se leía mal.
+
 ## 1.0.63
 - **Inicio**: el bloque grande ahora es de tu modpack reciente (su imagen, nombre, última partida y JUGAR). El evento ya no tapa tu modpack: en «Continuar» va después de tus modpacks, salvo que esté activo.
 - **Skins**: la fila de capas ya no se sale de la pantalla por la derecha.

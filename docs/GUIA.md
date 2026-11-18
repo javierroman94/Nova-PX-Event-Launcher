@@ -256,7 +256,7 @@ En 1.0.49 el manifiesto del evento admite `event.status` (`soon`, `active`, `end
 - **Anuncios (1.0.46)**: las noticias (`data/news.json`) aceptan `image` y `links`; el anuncio global acepta `image` y `urlLabel`.
 - **Botones laterales del mouse**: atrás y adelante. Los diálogos tienen ✕ y las confirmaciones usan la estética del launcher.
 
-## 4m. Novedades 1.0.50 a 1.0.63
+## 4m. Novedades 1.0.50 a 1.0.64
 
 - **Inicio tipo Lunar**: bloque grande con tu modpack reciente (imagen, nombre, última partida y **JUGAR**), «Continuar», comunidad, amigos y novedades. El evento va aparte y solo sube arriba si está activo.
 - **Barra lateral compacta** (botón ⇤ abajo), **inicio de sesión** en dos columnas y **amigos con estado en línea** (Worker de Cloudflare, ver `docs/CLOUDFLARE.md`).
@@ -269,6 +269,8 @@ En 1.0.49 el manifiesto del evento admite `event.status` (`soon`, `active`, `end
 - **Intro animada** más viva (órbitas, partículas, mensajes de estado).
 - **Temporadas con fechas de Ecuador (1.0.61)**: San Valentín 7–14 feb, Carnaval (se calcula cada año), Día de la Madre (semana del 2.º domingo de mayo), 10 de Agosto 1–10 ago, Halloween 15 oct–2 nov, Navidad 1–26 dic, Año Nuevo 27 dic–6 ene. Fuera de esas fechas no hay decoración (`renderer/seasons.js`).
 - **Admin (1.0.63)**: «Editar evento» en tarjetas y miembros del equipo con avatar. **Patrocinadores y créditos**: Admin → Evento → «+ Patrocinador o crédito» (se ven en la pestaña Evento).
+
+**Temas populares (1.0.64):** Ajustes → Apariencia ahora tiene 14 temas. Los 10 nuevos viven en `renderer/styles.css` (bloques `:root[data-theme="id"]`) y su lista en `lib/themes.js`. Para añadir uno más: agrega el bloque de CSS y `.tc-id`, la tarjeta en `#theme-seg` de `index.html` (con `data-accent`), la opción en `#lk-preset` y su entrada en `lib/themes.js`; `node test/themes.test.js` te avisa si falta algo.
 
 ## 5. Límites de esta primera versión
 

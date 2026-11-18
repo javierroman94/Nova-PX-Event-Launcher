@@ -508,7 +508,7 @@
 
   /* ---------- controles de Ajustes ---------- */
   function bindControls() {
-    document.querySelectorAll('[data-theme-value]').forEach((b) => b.addEventListener('click', () => change({ theme: b.dataset.themeValue })));
+    document.querySelectorAll('[data-theme-value]').forEach((b) => b.addEventListener('click', () => change(b.dataset.accent ? { theme: b.dataset.themeValue, accent: b.dataset.accent } : { theme: b.dataset.themeValue })));
 
     const box = g('swatches');
     PRESETS.forEach((c) => {

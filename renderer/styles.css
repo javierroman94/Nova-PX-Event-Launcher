@@ -6,7 +6,7 @@
   --raised: var(--raised-solid);
   --line: #2d3546;
   --text: #e8ebf3;
-  --text-2: var(--text-2);
+  --text-2: #b8c0d2;
   --muted: #8f99ad;
   --log-bg: #0c0e14;
   --lapis: var(--accent);
@@ -1736,3 +1736,61 @@ button.danger:hover { background: color-mix(in srgb, #ff5a5a 18%, transparent); 
 .tm-card .team-links { margin-top: 0; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .18); display: grid; gap: 8px; }
 .tm-card .team-links > summary { margin-bottom: 4px; }
 @media (max-width: 760px) { .tm-fields { grid-template-columns: 1fr; } }
+
+/* =====================================================================
+   Temas populares (v1.0.64): paletas + fondo propio. El color principal de cada uno se aplica al elegirlo.
+   ===================================================================== */
+:root[data-theme="catppuccin"] { --bg: #1e1e2e; --surface-solid: #181825; --raised-solid: #313244; --line: #45475a; --text: #cdd6f4; --text-2: #bac2de; --muted: #a6adc8; --log-bg: #11111b; color-scheme: dark; }
+:root[data-theme="catppuccin"] body { background: radial-gradient(50vmax 40vmax at 10% 0%, rgba(203,166,247,.14), transparent 60%), radial-gradient(45vmax 35vmax at 100% 100%, rgba(137,180,250,.12), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-catppuccin { background: #1e1e2e; }
+.tc-catppuccin i { background: #cba6f7; }
+.tc-catppuccin b { background: #45475a; }
+:root[data-theme="tokyonight"] { --bg: #1a1b26; --surface-solid: #16161e; --raised-solid: #24283b; --line: #3b4261; --text: #c0caf5; --text-2: #a9b1d6; --muted: #787c99; --log-bg: #13141c; color-scheme: dark; }
+:root[data-theme="tokyonight"] body { background: radial-gradient(50vmax 40vmax at 90% 0%, rgba(122,162,247,.14), transparent 60%), radial-gradient(40vmax 30vmax at 0% 100%, rgba(187,154,247,.12), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-tokyonight { background: #1a1b26; }
+.tc-tokyonight i { background: #7aa2f7; }
+.tc-tokyonight b { background: #3b4261; }
+:root[data-theme="dracula"] { --bg: #282a36; --surface-solid: #21222c; --raised-solid: #343746; --line: #44475a; --text: #f8f8f2; --text-2: #d6d6e0; --muted: #9aa0c4; --log-bg: #191a21; color-scheme: dark; }
+:root[data-theme="dracula"] body { background: radial-gradient(45vmax 35vmax at 0% 0%, rgba(255,121,198,.10), transparent 60%), radial-gradient(45vmax 35vmax at 100% 100%, rgba(189,147,249,.12), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-dracula { background: #282a36; }
+.tc-dracula i { background: #bd93f9; }
+.tc-dracula b { background: #44475a; }
+:root[data-theme="rosepine"] { --bg: #191724; --surface-solid: #1f1d2e; --raised-solid: #26233a; --line: #403d52; --text: #e0def4; --text-2: #c9c6e3; --muted: #908caa; --log-bg: #14121d; color-scheme: dark; }
+:root[data-theme="rosepine"] body { background: radial-gradient(50vmax 40vmax at 100% 0%, rgba(235,188,186,.10), transparent 60%), radial-gradient(40vmax 30vmax at 0% 100%, rgba(196,167,231,.12), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-rosepine { background: #191724; }
+.tc-rosepine i { background: #ebbcba; }
+.tc-rosepine b { background: #403d52; }
+:root[data-theme="synthwave"] { --bg: #1a0b2e; --surface-solid: #241046; --raised-solid: #2f1a5c; --line: #4b2a8a; --text: #f5e9ff; --text-2: #d6c3f5; --muted: #a58fd0; --log-bg: #12071f; color-scheme: dark; }
+:root[data-theme="synthwave"] body { background: linear-gradient(to top, rgba(255,47,185,.22), transparent 38%), radial-gradient(50vmax 35vmax at 50% 100%, rgba(0,229,255,.16), transparent 62%), radial-gradient(45vmax 30vmax at 0% 0%, rgba(124,58,237,.30), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-synthwave { background: #1a0b2e; }
+.tc-synthwave i { background: #ff2fb9; }
+.tc-synthwave b { background: #4b2a8a; }
+:root[data-theme="cyberpunk"] { --bg: #0b0b0e; --surface-solid: #131318; --raised-solid: #1d1d25; --line: #33331c; --text: #f4f4e4; --text-2: #d2d2bf; --muted: #a0a08a; --log-bg: #08080a; color-scheme: dark; }
+:root[data-theme="cyberpunk"] body { background: radial-gradient(45vmax 35vmax at 100% 0%, rgba(0,240,255,.12), transparent 60%), radial-gradient(40vmax 30vmax at 0% 100%, rgba(255,0,85,.10), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-cyberpunk { background: #0b0b0e; }
+.tc-cyberpunk i { background: #fcee0a; }
+.tc-cyberpunk b { background: #33331c; }
+:root[data-theme="sakura"] { --bg: #fdf1f5; --surface-solid: #ffffff; --raised-solid: #fbe4ec; --line: #f0c9d6; --text: #4a2433; --text-2: #6e3b4f; --muted: #8f5f72; --log-bg: #fff6f9; color-scheme: light; }
+:root[data-theme="sakura"] body { background: radial-gradient(50vmax 40vmax at 100% 0%, rgba(255,183,213,.45), transparent 60%), radial-gradient(45vmax 35vmax at 0% 100%, rgba(255,214,230,.6), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-sakura { background: #fdf1f5; }
+.tc-sakura i { background: #e0679a; }
+.tc-sakura b { background: #f0c9d6; }
+:root[data-theme="deepdark"] { --bg: #04141a; --surface-solid: #082029; --raised-solid: #0d2f3b; --line: #134555; --text: #d6f3f7; --text-2: #a8d4dc; --muted: #6fa1ad; --log-bg: #020d11; color-scheme: dark; }
+:root[data-theme="deepdark"] body { background: radial-gradient(50vmax 40vmax at 50% 110%, rgba(46,230,214,.16), transparent 60%), radial-gradient(35vmax 25vmax at 0% 0%, rgba(19,69,85,.5), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-deepdark { background: #04141a; }
+.tc-deepdark i { background: #2ee6d6; }
+.tc-deepdark b { background: #134555; }
+:root[data-theme="nether"] { --bg: #1a0505; --surface-solid: #260a0a; --raised-solid: #351010; --line: #5a1d1a; --text: #ffe9dd; --text-2: #f0c3ad; --muted: #c29a86; --log-bg: #120303; color-scheme: dark; }
+:root[data-theme="nether"] body { background: linear-gradient(to top, rgba(255,106,43,.22), transparent 42%), radial-gradient(45vmax 30vmax at 100% 0%, rgba(160,20,20,.30), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-nether { background: #1a0505; }
+.tc-nether i { background: #ff6a2b; }
+.tc-nether b { background: #5a1d1a; }
+:root[data-theme="end"] { --bg: #0b0714; --surface-solid: #130d22; --raised-solid: #1c1233; --line: #35245a; --text: #efe6ff; --text-2: #cdbdf0; --muted: #a090cc; --log-bg: #080510; color-scheme: dark; }
+:root[data-theme="end"] body { background: radial-gradient(40vmax 40vmax at 80% 15%, rgba(184,107,255,.20), transparent 60%), radial-gradient(35vmax 30vmax at 5% 90%, rgba(120,60,200,.18), transparent 60%), var(--bg); background-attachment: fixed; }
+.tc-end { background: #0b0714; }
+.tc-end i { background: #b86bff; }
+.tc-end b { background: #35245a; }
+
+/* El bloque grande de Inicio es siempre oscuro: en los temas claros su botón secundario debe leerse. */
+:root[data-theme="light"] .lp-event:not(.live),
+:root[data-theme="sakura"] .lp-event:not(.live) { color: #fff; border-color: rgba(255,255,255,.45); }
