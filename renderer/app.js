@@ -2830,15 +2830,24 @@ function renderUpdate(s) {
   const install = $('update-install');
   const line = $('update-line');
   install.hidden = true;
+  const track = $('update-track'), fill = $('update-fill'), pct = $('update-pct');
+  track.hidden = true; pct.hidden = true; banner.classList.remove('ready');
 
   if (s.state === 'downloading') {
     banner.hidden = false;
-    text.textContent = `Descargando la versión ${s.version || 'nueva'}… ${s.percent || 0}%`;
+    $('update-ico').textContent = '⬇';
+    $('update-title').textContent = `Descargando la versión ${s.version || 'nueva'}`;
+    text.textContent = 'Se instalará al reiniciar el launcher. Puedes seguir usándolo.';
+    const n = Math.max(0, Math.min(100, Math.round(s.percent || 0)));
+    track.hidden = false; pct.hidden = false; fill.style.width = `${n}%`; pct.textContent = `${n}%`;
     line.textContent = `Descargando la versión ${s.version || 'nueva'} (${s.percent || 0}%).`;
   } else if (s.state === 'ready') {
     banner.hidden = false;
     install.hidden = false;
-    text.textContent = `La versión ${s.version} está lista. Reinicia el launcher para instalarla.`;
+    banner.classList.add('ready');
+    $('update-ico').textContent = '✨';
+    $('update-title').textContent = `La versión ${s.version} está lista`;
+    text.textContent = 'Reinicia el launcher para instalarla. Tus ajustes y modpacks no cambian.';
     if (!window.__readyToast) {
       window.__readyToast = true;
       toast(`Nueva versión ${s.version} lista para instalar`);

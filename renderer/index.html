@@ -94,9 +94,16 @@
   <div id="announce" class="announce-stack" aria-live="polite"></div>
 
   <div id="update-banner" class="update-banner" role="status" hidden>
-    <span id="update-text"></span>
+    <span class="upd-ico" id="update-ico" aria-hidden="true">⬇</span>
+    <div class="upd-body">
+      <strong id="update-title">Nueva versión</strong>
+      <span id="update-text" class="muted"></span>
+      <div class="upd-track" id="update-track" hidden><i id="update-fill"></i></div>
+    </div>
+    <span id="update-pct" class="upd-pct" hidden></span>
     <button id="update-install" class="primary" type="button" hidden>Reiniciar e instalar</button>
   </div>
+
 
   <main>
     <!-- INICIO -->

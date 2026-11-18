@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.77
+- Aviso de actualización rediseñado: tarjeta con icono, barra de progreso con porcentaje y, al terminar, aviso verde con botón para reiniciar e instalar.
+
 ## 1.0.76
 - Permisos: las instrucciones para colaboradores ahora indican un token **classic** con permiso `public_repo` (GitHub no muestra repositorios ajenos al crear tokens fine-grained). El launcher acepta ambos tipos.
 

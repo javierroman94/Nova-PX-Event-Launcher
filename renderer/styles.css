@@ -2362,3 +2362,17 @@ button.sponsor:hover { transform: translateY(-2px); border-color: color-mix(in s
 @media (max-width: 760px) { .brand-line { flex-direction: column; } .brand-row { flex-wrap: wrap; } }
 .ad-brands + .ad-publish { margin-top: 16px; }
 .sp-group .sponsors-list { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); } .sponsor-paid .sponsor-role { white-space: nowrap; }
+
+/* ===== Aviso de actualización (v1.0.77) ===== */
+.update-banner { display: flex; align-items: center; gap: 14px; margin: 10px 20px 4px; padding: 12px 16px; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); background: radial-gradient(60% 200% at 0% 50%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%), var(--surface); box-shadow: 0 18px 40px -28px var(--accent); }
+.update-banner[hidden] { display: none; }
+.upd-ico { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; font-size: 18px; color: var(--accent-ink); background: var(--accent); box-shadow: 0 10px 22px -12px var(--accent); }
+.update-banner:not(.ready) .upd-ico { animation: dlbob 1.2s ease-in-out infinite; }
+.upd-body { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.upd-body strong { font-size: 14.5px; }
+.upd-body .muted { font-size: 12.5px; }
+.upd-track { margin-top: 4px; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.upd-track i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #fff)); box-shadow: 0 0 12px var(--accent); transition: width .3s ease; }
+.upd-pct { flex: none; min-width: 46px; text-align: right; font-weight: 800; font-size: 18px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.update-banner.ready { border-color: var(--ok, #4ade80); background: radial-gradient(60% 200% at 0% 50%, color-mix(in srgb, var(--ok, #4ade80) 16%, transparent), transparent 70%), var(--surface); }
+.update-banner.ready .upd-ico { background: var(--ok, #4ade80); }
