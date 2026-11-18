@@ -1624,6 +1624,13 @@ ipcMain.handle('instance:search', async (_e, p = {}) => {
   const t = searchTarget(p);
   return content.searchContent(apiRequest, { type: t.type, mc: t.entry.mcVersion, loader: t.loader, query: cleanStr(p.query, 80), offset: p.offset });
 });
+// Explorar contenido suelto (mods, texturas, shaders) sin elegir aún la instancia.
+ipcMain.handle('content:search', async (_e, p = {}) => {
+  const type = typeOf(p.type);
+  const loader = ['fabric', 'forge', 'neoforge', 'quilt'].includes(p.loader) ? p.loader : '';
+  const mc = /^[0-9][0-9a-zA-Z.\-]{0,20}$/.test(String(p.mc || '')) ? String(p.mc) : '';
+  return content.searchContent(apiRequest, { type, mc, loader, query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)), sort: cleanStr(p.sort, 12) });
+});
 ipcMain.handle('instance:install', async (_e, p = {}) => {
   assertEditable();
   const t = searchTarget(p);

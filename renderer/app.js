@@ -1496,6 +1496,7 @@ async function loadRecommended() {
 }
 
 async function searchPacks(reset) {
+  if (mp.dType && mp.dType !== 'modpack') return searchLoose(reset);
   const seq = ++mp.seq;
   const note = $('mp-note');
   const grid = $('mp-results');
@@ -3148,7 +3149,10 @@ function paintTeam() {
     trLab.append(tr, el('span', '', '🕊'));
     trLab.title = 'Homenaje: tarjeta especial arriba del todo';
     tr.addEventListener('change', () => { m.tribute = tr.checked; paintTeam(); });
-    row.append(f.nick, f.role, star, trLab, del);
+    const starLab = el('label', 'tribute-toggle');
+    starLab.append(star, el('span', 'muted', 'Destacado'));
+    trLab.append(el('span', 'muted', 'Homenaje'));
+    row.append(f.nick, f.role, starLab, trLab, del);
     const lk = el('details', 'team-links');
     lk.append(el('summary', '', `Perfil y enlaces (${(m.links || []).length})`));
     const pf = rowInputs(m, [['name', 'Nombre real', 40], ['bio', 'Presentación corta', 300]]);
@@ -3391,3 +3395,84 @@ $('friends-form').addEventListener('submit', async (e) => {
 });
 renderFriends();
 setInterval(() => { if (!document.hidden) renderFriends(); }, 60 * 1000);
+
+
+/* --- Explorar mods, texturas y shaders (como la app de Modrinth) --- */
+const D_NAMES = { mod: 'mods', resourcepack: 'texturas', shader: 'shaders' };
+document.querySelectorAll('#mp-d-types button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#mp-d-types button').forEach((x) => x.classList.toggle('active', x === b));
+  mp.dType = b.dataset.dt;
+  const isPack = mp.dType === 'modpack';
+  $('mp-f-loader').hidden = !(isPack || mp.dType === 'mod');
+  $('mp-search').placeholder = isPack ? 'Buscar modpacks…' : `Buscar ${D_NAMES[mp.dType]}…`;
+  if (!isPack) $('mp-reco').hidden = true;
+  searchPacks(true);
+}));
+
+async function searchLoose(reset) {
+  const seq = ++mp.seq;
+  const note = $('mp-note');
+  const grid = $('mp-results');
+  if (reset) { mp.offset = 0; grid.replaceChildren(); }
+  $('mp-more').hidden = true;
+  $('mp-reco').hidden = true;
+  note.textContent = 'Buscando…';
+  try {
+    const r = await window.api.contentSearch({ type: mp.dType, query: mp.query, offset: mp.offset, loader: mp.dType === 'mod' ? (mp.fLoader || '') : '', mc: mp.fMc || '', sort: mp.fSort || '' });
+    if (seq !== mp.seq) return;
+    mp.total = r.total;
+    r.items.forEach((it) => {
+      const card = el('div', 'event-card');
+      card.append(iconEl(it.icon, it.title, 'event-card-img mp-card-img'));
+      const body = el('div', 'event-card-body');
+      body.append(el('h3', '', it.title), el('span', 'muted', `${it.author ? 'por ' + it.author + ' · ' : ''}${compact.format(it.downloads)} descargas`), el('p', 'mp-summary', it.summary));
+      const btn = el('button', 'primary', 'Instalar en…');
+      btn.type = 'button';
+      btn.addEventListener('click', () => openPicker(it));
+      body.append(btn);
+      card.append(body);
+      grid.append(card);
+    });
+    mp.offset += r.items.length;
+    note.textContent = r.items.length || grid.childNodes.length ? `${grid.childNodes.length} de ${compact.format(mp.total)} ${D_NAMES[mp.dType]}` : 'No se encontró nada con ese nombre.';
+    $('mp-more').hidden = mp.offset >= mp.total || !r.items.length;
+  } catch (err) {
+    if (seq === mp.seq) note.textContent = `No se pudo buscar: ${cleanError(err)}`;
+  }
+}
+
+function openPicker(it) {
+  $('mp-pick-title').textContent = `Instalar ${it.title}`;
+  $('mp-pick-status').textContent = '';
+  const list = $('mp-pick-list');
+  list.replaceChildren();
+  const cands = mp.installed.filter((p) => mp.dType !== 'mod' || (p.loader && p.loader.type && p.loader.type !== 'vanilla'));
+  $('mp-pick-info').textContent = cands.length ? 'Elige la instancia. Se instala la última versión compatible con su Minecraft.' : 'No tienes instancias compatibles. Crea una en Biblioteca con "+ Nuevo perfil".';
+  cands.forEach((p) => {
+    const row = el('div', 'mod-card');
+    row.append(packIcon(p, 'mod-icon'));
+    const body = el('div', 'mod-body');
+    body.append(el('strong', '', p.title), el('span', 'muted', `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}`));
+    const btn = el('button', 'primary', 'Instalar');
+    btn.type = 'button';
+    btn.addEventListener('click', async () => {
+      if (mp.busy) return;
+      mp.busy = true;
+      btn.disabled = true;
+      btn.textContent = 'Instalando…';
+      try {
+        const res = await window.api.instanceInstall({ id: p.id, type: mp.dType, projectId: it.id });
+        btn.textContent = res.installed.length ? 'Instalado' : 'Ya lo tenías';
+        if (res.installed.length) toast(`${it.title} instalado en ${p.title}`);
+      } catch (e) {
+        btn.textContent = 'Instalar';
+        btn.disabled = false;
+        $('mp-pick-status').textContent = cleanError(e);
+      } finally { mp.busy = false; busyHide(); }
+    });
+    row.append(body, btn);
+    list.append(row);
+  });
+  if (!$('mp-pick-modal').open) $('mp-pick-modal').showModal();
+}
+$('mp-pick-close').addEventListener('click', () => $('mp-pick-modal').close());

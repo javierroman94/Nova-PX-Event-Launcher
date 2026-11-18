@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.57
+- **Explorar como Modrinth**: pestañas Modpacks, Mods, Texturas y Shaders. En las tres últimas pulsas "Instalar en…", eliges la instancia y se instala la versión compatible (con sus dependencias).
+- **Skins**: ya no falla si Mojang devuelve las capas incompletas, y el aviso de cuenta no premium tiene su espacio.
+- **Admin**: el campo de enlace del anuncio tiene el mismo estilo que los demás, las tarjetas de Control ya no se pegan y las casillas del equipo muestran su texto (Destacado, Homenaje).
+
 ## 1.0.56
 - **Amigos y estado en línea**: en Inicio añade el nick de un amigo y verás si está en línea, jugando o desconectado. La lista se guarda solo en tu equipo. Aparecer en línea usa el mismo permiso de "Compartir uso" de Ajustes; si lo apagas, no apareces.
 - El Worker de Cloudflare ahora incluye el servicio de estado (en memoria, sin gastar escrituras de KV).

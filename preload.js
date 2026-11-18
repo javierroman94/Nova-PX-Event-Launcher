@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld('api', {
   instanceRemove: (p) => ipcRenderer.invoke('instance:remove', p),
   instanceAddLocal: (p) => ipcRenderer.invoke('instance:addLocal', p),
   instanceSearch: (p) => ipcRenderer.invoke('instance:search', p),
+  contentSearch: (p) => ipcRenderer.invoke('content:search', p),
   instanceInstall: (p) => ipcRenderer.invoke('instance:install', p),
   instanceWorlds: (id) => ipcRenderer.invoke('instance:worlds', id),
   instanceScreenshots: (id) => ipcRenderer.invoke('instance:screenshots', id),

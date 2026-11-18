@@ -305,6 +305,12 @@
           <input id="mp-search" class="events-search" type="search" placeholder="Buscar modpacks…" aria-label="Buscar modpacks" autocomplete="off" />
           <button type="submit" class="primary">Buscar</button>
         </form>
+        <div class="seg mp-types" id="mp-d-types" role="group" aria-label="Qué buscar">
+          <button type="button" class="active" data-dt="modpack">Modpacks</button>
+          <button type="button" data-dt="mod">Mods</button>
+          <button type="button" data-dt="resourcepack">Texturas</button>
+          <button type="button" data-dt="shader">Shaders</button>
+        </div>
         <div class="mp-filters" id="mp-filters">
           <div class="seg" id="mp-f-loader" role="group" aria-label="Loader">
             <button type="button" class="active" data-fl="">Todos</button>
@@ -503,6 +509,17 @@
             <button id="mc-create" type="submit" class="primary">Crear</button>
           </div>
         </form>
+      </dialog>
+
+      <!-- Elegir instancia donde instalar contenido suelto -->
+      <dialog id="mp-pick-modal" class="event-modal" aria-label="Instalar en una instancia">
+        <div class="event-modal-body">
+          <h3 id="mp-pick-title">Instalar en…</h3>
+          <p id="mp-pick-info" class="muted"></p>
+          <div id="mp-pick-list" class="mods-list"></div>
+          <p id="mp-pick-status" class="muted" role="status"></p>
+          <div class="mp-actions"><button id="mp-pick-close" type="button">Cerrar</button></div>
+        </div>
       </dialog>
 
       <!-- Añadir contenido a un modpack -->

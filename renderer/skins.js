@@ -186,6 +186,7 @@
   try { if (localStorage.getItem('px.capesOpen') === '1') setCapesOpen(true); } catch {}
 
   async function renderCapes(p, seq) {
+    if (!p || !Array.isArray(p.capes)) p = { ...(p || {}), capes: [] };
     const box = g('capes');
     g('capes-current').textContent = p.activeCape ? `Capa: ${p.activeCape.alias}` : `Capas (${p.capes.length})`;
     g('capes-toggle').hidden = p.capes.length === 0;
