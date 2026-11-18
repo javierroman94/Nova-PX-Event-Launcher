@@ -3888,27 +3888,59 @@ $('ad-team-toggle').addEventListener('click', () => {
 function paintNews() {
   const box = $('ad-news');
   box.replaceChildren();
+  const cnt = $('ad-news-count'); if (cnt) cnt.textContent = `${adm.news.length} ${adm.news.length === 1 ? 'noticia' : 'noticias'}`;
   adm.news.forEach((n, idx) => {
-    const row = el('div', 'mod-card');
-    const f = rowInputs(n, [['title', 'Título', 100], ['date', 'AAAA-MM-DD', 10], ['text', 'Texto', 600]]);
-    const del = el('button', '', 'Quitar');
-    del.type = 'button';
-    del.addEventListener('click', () => { adm.news.splice(idx, 1); paintNews(); });
-    row.append(f.title, f.date, f.text, del);
-    const more = el('details', 'team-links');
-    more.append(el('summary', '', `Imagen y enlaces (${(n.links || []).length}${n.image ? ' · con imagen' : ''})`));
-    const imgRow = el('div', 'links-row');
-    const pick = el('button', '', n.image ? 'Cambiar imagen' : 'Subir imagen'); pick.type = 'button';
+    const row = el('div', 'mod-card news-edit');
+    // imagen
+    const media = el('div', 'ne-media');
+    const showImg = () => {
+      media.replaceChildren();
+      const u = n.image && imageUrl(n.image);
+      if (u) { const im = el('img'); im.alt = ''; im.src = u; media.append(im); } else media.append(el('span', 'ne-ph', '🖼\nSin imagen'));
+    };
+    showImg();
+    const pick = el('button', 'ne-pick', n.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
     pick.addEventListener('click', async () => {
-      try { const r = await window.api.adminPickImage(n.title || 'noticia'); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
+      try { const r = await window.api.adminPickImage(n.title || 'noticia'); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
     });
-    const clr = el('button', '', 'Quitar imagen'); clr.type = 'button';
-    clr.addEventListener('click', () => { delete n.image; pick.textContent = 'Subir imagen'; });
-    imgRow.append(pick, clr);
-    more.append(imgRow, linksEditor(n));
-    row.append(more);
+    const clr = el('button', 'ne-clr ghost', 'Quitar'); clr.type = 'button';
+    clr.addEventListener('click', () => { delete n.image; pick.textContent = '+ Imagen'; showImg(); prev(); });
+    const left = el('div', 'ne-left'); left.append(media, el('div', 'ne-btns'));
+    left.lastChild.append(pick, clr);
+    // campos
+    const fields = el('div', 'ne-fields');
+    const top = el('div', 'ne-top');
+    const badge = el('span', 'ne-badge', idx === 0 ? 'Más reciente' : `#${idx + 1}`);
+    const date = el('input'); date.type = 'date'; date.value = /^\d{4}-\d{2}-\d{2}$/.test(n.date || '') ? n.date : '';
+    date.addEventListener('input', () => { n.date = date.value; prev(); });
+    const del = el('button', 'ne-del ghost', '🗑 Quitar'); del.type = 'button';
+    del.addEventListener('click', async () => { if (!await askConfirm(`¿Quitar la noticia "${n.title || 'sin título'}"?`)) return; adm.news.splice(idx, 1); paintNews(); });
+    top.append(badge, date, del);
+    const title = el('input', 'ne-title'); title.type = 'text'; title.maxLength = 100; title.placeholder = 'Título de la noticia'; title.value = n.title || '';
+    title.addEventListener('input', () => { n.title = title.value; prev(); });
+    const text = el('textarea', 'ne-text'); text.rows = 3; text.maxLength = 600; text.placeholder = 'Cuenta qué pasó. Se ve en Inicio y, si activaste el aviso, se envía a Discord.'; text.value = n.text || '';
+    const count = el('small', 'ne-count muted', `${(n.text || '').length}/600`);
+    text.addEventListener('input', () => { n.text = text.value; count.textContent = `${text.value.length}/600`; prev(); });
+    const textWrap = el('div', 'ne-textwrap'); textWrap.append(text, count);
+    // vista previa
+    const pv = el('div', 'ne-preview');
+    const prev = () => {
+      pv.replaceChildren(el('span', 'ne-pv-label', 'Así se ve en Inicio'));
+      const card = el('article', 'news-item news-card');
+      const u = n.image && imageUrl(n.image);
+      if (u) { const im = el('img', 'news-img'); im.alt = ''; im.src = u; card.append(im); }
+      card.append(el('h3', '', n.title || 'Título de la noticia'), el('time', '', n.date || ''), el('p', '', n.text || 'El texto aparecerá aquí.'));
+      pv.append(card);
+    };
+    prev();
+    const more = el('details', 'ne-links');
+    more.open = (n.links || []).length > 0;
+    more.append(el('summary', '', `🔗 Enlaces (${(n.links || []).length})`), linksEditor(n));
+    fields.append(top, title, textWrap, more);
+    row.append(left, fields, pv);
     box.append(row);
   });
+  if (!adm.news.length) box.append(el('p', 'muted ne-empty', 'Todavía no hay noticias. Pulsa «+ Noticia» para crear la primera.'));
   if (window.makeSortable) window.makeSortable(box, adm.news, paintNews);
 }
 $('ad-team-add').addEventListener('click', () => { const n = { nick: '', role: '' }; adm.team.push(n); tmOpen.add(n); tmSel = n; paintTeam(); });

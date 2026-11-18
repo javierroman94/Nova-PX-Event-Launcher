@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.78
+- Admin → Noticias rediseñado: tarjeta por noticia con imagen en miniatura, título grande, selector de fecha, texto con contador, enlaces a la vista y vista previa en vivo de cómo se ve en Inicio.
+
 ## 1.0.77
 - Aviso de actualización rediseñado: tarjeta con icono, barra de progreso con porcentaje y, al terminar, aviso verde con botón para reiniciar e instalar.
 
