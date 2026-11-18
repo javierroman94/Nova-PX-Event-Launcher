@@ -535,6 +535,12 @@
   window.NovaTheme = {
     // Aplica sin guardar (tema por defecto del administrador y vista previa del panel).
     preview(patch) { apply(patch); },
+    // Muestra u oculta los temas secretos; si se pierde el permiso y estaba puesto, vuelve al tema Oscuro.
+    secret(id, on, revert) {
+      const b = g('theme-secret-' + id);
+      if (b) b.hidden = !on;
+      if (!on && revert && state.theme === id) { apply({ theme: 'dark' }); persist(); }
+    },
     async init(settings) {
       bindControls();
       apply(settings);

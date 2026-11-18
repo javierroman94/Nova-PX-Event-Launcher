@@ -2589,6 +2589,7 @@ window.api.onAuthChanged && window.api.onAuthChanged((info) => setSession(info))
 
 function setSession(info) {
   currentUser = info;
+  syncSecretThemes(info);
   paintAccounts();
   renderAccountRows();
   if (window.NovaSkins) window.NovaSkins.setUser(info);
@@ -3251,11 +3252,25 @@ $('wz-offline').addEventListener('click', async () => {
 })();
 
 
+/* Tema secreto de LaosOneView: lo ve su cuenta premium (se comprueba el UUID, no el nick) y los administradores. */
+const LAOS_UUID = '91578310ebad4567a6f4750bc0b947c7';
+function syncSecretThemes(info = currentUser) {
+  try {
+    const isLaos = !!info && info.mode === 'premium' && String(info.uuid || '').replace(/-/g, '').toLowerCase() === LAOS_UUID;
+    if (window.NovaTheme && window.NovaTheme.secret) window.NovaTheme.secret('laos', isLaos || isAdmin, !(isLaos || isAdmin) && !!info);
+    if (isLaos && !localStorage.getItem('px.secret.laos')) {
+      localStorage.setItem('px.secret.laos', '1');
+      toast('✦ Tema secreto desbloqueado: Laos Edición. Está en Ajustes → Apariencia.', 'success');
+    }
+  } catch {}
+}
+
 /* ---------- modo administrador ---------- */
 let isAdmin = false;
 let adminProgress = null;
 function setAdminUi(on, repo, err, eligible) {
   isAdmin = on;
+  syncSecretThemes();
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
   $('adm-login-box').hidden = on;

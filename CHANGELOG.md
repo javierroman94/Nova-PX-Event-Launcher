@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.83
+- Tema secreto «Laos ✦ Edición secreta» (azul noche con rojo): solo aparece en Ajustes → Apariencia para la cuenta premium de LaosOneView (se comprueba su UUID, no el nick) y para los administradores.
+
 ## 1.0.82
 - Varias cuentas: guarda cuentas de Microsoft y nicks sin conexión a la vez y cambia entre ellas con un clic en Cuenta → «Tus cuentas». Cada cuenta conserva su skin, amigos y tiempo de juego. «Cerrar sesión» quita solo la cuenta activa.
 - Cada modpack puede recordar con qué cuenta se juega (Ajustes del modpack → Cuenta): al pulsar Jugar el launcher cambia solo. Esa elección no se exporta.

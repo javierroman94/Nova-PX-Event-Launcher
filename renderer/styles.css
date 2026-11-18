@@ -1791,6 +1791,15 @@ button.danger:hover { background: color-mix(in srgb, #ff5a5a 18%, transparent); 
 .tc-end i { background: #b86bff; }
 .tc-end b { background: #35245a; }
 
+/* Tema secreto de LaosOneView: azul noche con rojo, como la bandera de Laos. Solo se desbloquea con su cuenta premium. */
+:root[data-theme="laos"] { --bg: #060b22; --surface-solid: #0c1536; --raised-solid: #121e48; --line: #25356e; --text: #f3f5ff; --text-2: #c9d1f5; --muted: #8e9bd0; --log-bg: #050918; color-scheme: dark; }
+:root[data-theme="laos"] body { background: radial-gradient(45vmax 40vmax at 85% 10%, rgba(232,51,74,.20), transparent 60%), radial-gradient(40vmax 35vmax at 5% 95%, rgba(40,84,200,.28), transparent 60%), var(--bg); background-attachment: fixed; }
+:root[data-theme="laos"] .brand-mark, :root[data-theme="laos"] .btn.primary { box-shadow: 0 0 22px rgba(232,51,74,.35); }
+.tc-laos { background: #060b22; }
+.tc-laos i { background: #e8334a; }
+.tc-laos b { background: #25356e; }
+.theme-secret:not([hidden]) { box-shadow: 0 0 0 1px rgba(232,51,74,.5), 0 0 18px rgba(232,51,74,.25); }
+
 /* El bloque grande de Inicio es siempre oscuro: en los temas claros su botón secundario debe leerse. */
 :root[data-theme="light"] .lp-event:not(.live),
 :root[data-theme="sakura"] .lp-event:not(.live) { color: #fff; border-color: rgba(255,255,255,.45); }
