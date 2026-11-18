@@ -46,7 +46,7 @@ const KEYS_FILE = path.join(app.getPath('userData'), 'unlock.json');
 const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
-const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher'];
+const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher', 'ads'];
 const ICON = path.join(__dirname, 'build', 'icon.png');
 
 let mainWindow = null;
@@ -1309,7 +1309,7 @@ ipcMain.handle('admin:logout', () => {
 ipcMain.handle('admin:load', async () => {
   const r = await requireAdmin();
   const get = async (n) => ((await r.getJson(`data/${n}.json`)) || {}).data;
-  return { launcher: remote.sanitize(await get('launcher')), recommended: remote.sanitizeRecommended(await get('recommended')), manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], events: (await get('events')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
+  return { launcher: remote.sanitize(await get('launcher')), recommended: remote.sanitizeRecommended(await get('recommended')), manifest: (await get('manifest')) || {}, team: (await get('team')) || [], news: (await get('news')) || [], ads: adminLib.sanitizeAds(await get('ads')), events: (await get('events')) || [], admins: (await get('admins')) || [], owners: config.adminOwners || [] };
 });
 // Apariencia, ajustes, avisos y control remoto: todo en data/launcher.json.
 ipcMain.handle('admin:saveLauncher', async (_e, raw) => {
@@ -1329,7 +1329,7 @@ ipcMain.handle('admin:saveRecommended', async (_e, list) => {
   return clean;
 });
 // Historial y "deshacer": versiones anteriores de lo que se publicó (solo archivos seguros de restaurar).
-const RESTORABLE = ['launcher', 'news', 'events', 'team', 'recommended'];
+const RESTORABLE = ['launcher', 'news', 'events', 'team', 'recommended', 'ads'];
 const restorable = (name) => {
   if (!RESTORABLE.includes(name)) throw new Error('Ese archivo no se puede restaurar desde aquí.');
   return `data/${name}.json`;
@@ -1342,7 +1342,7 @@ ipcMain.handle('admin:restore', async (_e, name, sha) => {
   const r = await requireAdmin();
   const file = restorable(name);
   const old = await r.jsonAt(file, sha);
-  const clean = { launcher: remote.sanitize, recommended: remote.sanitizeRecommended, news: adminLib.sanitizeNews, events: adminLib.sanitizeEvents, team: adminLib.sanitizeTeam }[name](old);
+  const clean = { launcher: remote.sanitize, recommended: remote.sanitizeRecommended, news: adminLib.sanitizeNews, events: adminLib.sanitizeEvents, team: adminLib.sanitizeTeam, ads: adminLib.sanitizeAds }[name](old);
   await r.putJson(file, clean, `Restaurado ${name} a la versión ${String(sha).slice(0, 7)} (desde el launcher)`);
   remember(name === 'recommended' ? 'recommended' : name, clean);
   if (name === 'launcher') { remoteCfg = clean; send('remote:changed', remoteCfg); }
@@ -1429,6 +1429,34 @@ ipcMain.handle('social:xShare', async (_e, p = {}) => {
   return true;
 });
 
+ipcMain.handle('admin:saveAds', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeAds(list);
+  await r.putJson('data/ads.json', clean, 'Publicidad actualizada (desde el launcher)');
+  remember('ads', clean);
+  return clean;
+});
+// Vistas y clics de cada anuncio: solo un contador anónimo (id del anuncio), sin nick ni id de instalación.
+const adSeen = new Set();
+ipcMain.handle('ads:track', async (_e, id, kind) => {
+  const adId = cleanStr(id, 40);
+  if (!USAGE_URL || !/^[a-z0-9-]{1,40}$/.test(adId) || !['v', 'c'].includes(kind)) return false;
+  if (!readSettings().shareUsage || !remoteCfg.features.usageCounter) return false;
+  if (kind === 'v') { if (adSeen.has(adId)) return true; adSeen.add(adId); }
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 5000);
+    await fetch(`${USAGE_URL}/ads/track`, { method: 'POST', body: JSON.stringify({ id: adId, k: kind }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+    clearTimeout(t);
+    return true;
+  } catch { return false; }
+});
+ipcMain.handle('admin:adsStats', async () => {
+  const r = await usersCall('GET', '/ads/stats');
+  const out = {};
+  for (const [id, v] of Object.entries(r.ads || {})) out[String(id).slice(0, 40)] = { v: Number(v.v) || 0, c: Number(v.c) || 0 };
+  return out;
+});
 ipcMain.handle('admin:saveNews', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeNews(list);

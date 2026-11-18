@@ -550,6 +550,97 @@ async function refreshPlaytime() {
   } catch {}
 }
 
+/* ---------- PUBLICIDAD ---------- */
+const adToday = () => new Date().toISOString().slice(0, 10);
+const adActive = (a, where) => a.enabled !== false && (a.where === 'both' || a.where === where) && (!a.from || a.from <= adToday()) && (!a.to || a.to >= adToday()) && (a.image || a.text);
+const adRot = {};
+function paintAdSlot(slot, list, where) {
+  const box = $(`ad-slot-${where}`);
+  if (!box) return;
+  const ads = list.filter((a) => adActive(a, where));
+  clearInterval(adRot[where]);
+  if (!ads.length) { box.hidden = true; box.replaceChildren(); return; }
+  let i = Math.floor(Math.random() * ads.length);
+  const show = () => {
+    const a = ads[i % ads.length];
+    box.replaceChildren();
+    const card = el(a.url ? 'button' : 'div', 'ad-card-banner'); if (a.url) card.type = 'button';
+    const u = a.image && imageUrl(a.image);
+    if (u) { const im = el('img', 'adb-img'); im.alt = a.name; im.src = u; card.append(im); }
+    const body = el('div', 'adb-body');
+    body.append(el('span', 'adb-tag', 'Publicidad'), el('strong', '', a.name));
+    if (a.text) body.append(el('span', 'muted', a.text));
+    card.append(body);
+    if (a.url) { card.append(el('span', 'adb-go', 'Visitar ↗')); card.addEventListener('click', () => { window.api.adsTrack(a.id, 'c').catch(() => {}); window.api.openLink(a.url).catch(() => {}); }); }
+    box.append(card);
+    box.hidden = false;
+    window.api.adsTrack(a.id, 'v').catch(() => {});
+    i++;
+  };
+  show();
+  if (ads.length > 1) adRot[where] = setInterval(show, 25000);
+}
+async function renderAds() {
+  try {
+    const list = await window.api.getData('ads');
+    const arr = Array.isArray(list) ? list : [];
+    paintAdSlot(null, arr, 'home');
+    paintAdSlot(null, arr, 'event');
+  } catch { /* sin anuncios */ }
+}
+
+const AD_WHERE_LABELS = { both: 'Inicio y Evento', home: 'Solo Inicio', event: 'Solo Evento' };
+function paintAds() {
+  const box = $('ad-ads');
+  if (!box) return;
+  box.replaceChildren();
+  const list = adm.ads || (adm.ads = []);
+  const cnt = $('ad-ads-count'); if (cnt) cnt.textContent = `${list.length} ${list.length === 1 ? 'anuncio' : 'anuncios'}`;
+  list.forEach((a, idx) => {
+    const row = el('div', 'mod-card news-edit ad-edit');
+    const media = el('div', 'ne-media');
+    const showImg = () => { media.replaceChildren(); const u = a.image && imageUrl(a.image); if (u) { const im = el('img'); im.alt = ''; im.src = u; media.append(im); } else media.append(el('span', 'ne-ph', '🖼\nSin imagen')); };
+    showImg();
+    const pick = el('button', 'ne-pick', a.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
+    pick.addEventListener('click', async () => { try { const r = await window.api.adminPickImage(a.name || 'anuncio'); if (r) { a.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); } } catch (e) { $('ad-ads-status').textContent = cleanError(e); } });
+    const left = el('div', 'ne-left'); left.append(media, pick);
+    const f = el('div', 'ne-fields');
+    const inp = (ph, key, max, type) => { const i = el('input'); i.type = type || 'text'; i.placeholder = ph; i.maxLength = max || 120; i.value = a[key] || ''; i.addEventListener('input', () => { a[key] = i.value; }); return i; };
+    const where = el('select'); Object.entries(AD_WHERE_LABELS).forEach(([k, v]) => { const o = el('option', '', v); o.value = k; where.append(o); }); where.value = a.where || 'both'; where.addEventListener('change', () => { a.where = where.value; });
+    const dates = el('div', 'ad-dates'); dates.append(el('label', 'muted', 'Desde'), inp('', 'from', 10, 'date'), el('label', 'muted', 'Hasta'), inp('', 'to', 10, 'date'));
+    const on = el('label', 'ad-on'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = a.enabled !== false; cb.addEventListener('change', () => { a.enabled = cb.checked; }); on.append(cb, document.createTextNode(' Activo'));
+    const stats = el('span', 'ad-chip ad-stat-chip', 'Sin datos'); stats.dataset.adId = a.id || '';
+    const del = el('button', 'ghost danger', 'Quitar'); del.type = 'button';
+    del.addEventListener('click', async () => { if (!await askConfirm(`¿Quitar el anuncio "${a.name || 'sin nombre'}"?`)) return; list.splice(idx, 1); paintAds(); });
+    const foot = el('div', 'ad-foot'); foot.append(on, where, stats, del);
+    f.append(inp('Anunciante (ej. Holi Hosting)', 'name', 60), inp('Enlace https://…', 'url', 300), inp('Texto corto (opcional)', 'text', 120), dates, foot);
+    row.append(left, f);
+    box.append(row);
+  });
+  if (!list.length) box.append(el('p', 'muted ne-empty', 'Todavía no hay anuncios. Pulsa «+ Anuncio» cuando tengas un anunciante.'));
+  if (adm.adStats) fillAdStats();
+}
+window.paintAds = paintAds;
+function fillAdStats() {
+  document.querySelectorAll('.ad-stat-chip').forEach((c) => {
+    const s = adm.adStats[c.dataset.adId];
+    c.textContent = s ? `${s.v} vistas · ${s.c} clics · ${s.v ? Math.round((s.c / s.v) * 1000) / 10 : 0}%` : 'Sin datos aún (guarda y espera)';
+  });
+}
+$('ad-ads-add').addEventListener('click', () => { (adm.ads || (adm.ads = [])).unshift({ id: '', name: '', where: 'both', from: '', to: '', enabled: true }); paintAds(); });
+$('ad-ads-stats').addEventListener('click', async () => {
+  const st = $('ad-ads-status');
+  try { adm.adStats = await window.api.adminAdsStats(); fillAdStats(); st.textContent = 'Números actualizados.'; } catch (e) { st.textContent = cleanError(e); }
+});
+$('ad-ads-save').addEventListener('click', async () => {
+  const st = $('ad-ads-status'); st.textContent = 'Guardando…';
+  try {
+    adm.ads = await window.api.adminSaveAds(adm.ads || []);
+    paintAds(); st.textContent = 'Publicidad guardada. Los jugadores la ven en unos minutos.';
+    if (window.refreshContent) window.refreshContent();
+  } catch (e) { st.textContent = cleanError(e); }
+});
+
 async function renderNews() {
   const box = $('news-list');
   if (!box.children.length) box.replaceChildren(el('div', 'skeleton'), el('div', 'skeleton'));
@@ -3055,6 +3146,7 @@ $('wz-offline').addEventListener('click', async () => {
 
   renderHero();
   renderNews();
+  renderAds();
   renderEvents();
   renderTeam();
   refreshServer();
@@ -3080,7 +3172,7 @@ $('wz-offline').addEventListener('click', async () => {
   setInterval(refreshServer, 60000);
   // El contenido publicado (equipo, noticias, eventos, evento) se actualiza solo mientras el launcher está abierto.
   let lastContent = Date.now();
-  window.refreshContent = async () => { lastContent = Date.now(); await Promise.all([renderHero(), renderNews(), renderEvents(), renderTeam()]); };
+  window.refreshContent = async () => { lastContent = Date.now(); await Promise.all([renderHero(), renderNews(), renderAds(), renderEvents(), renderTeam()]); };
   setInterval(() => { if (!document.hidden) window.refreshContent(); }, 3 * 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastContent > 60 * 1000) window.refreshContent(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
@@ -3237,6 +3329,8 @@ async function loadAdmin() {
     $('ad-new').checked = false;
     adm.team = d.team;
     adm.news = d.news;
+    adm.ads = d.ads || [];
+    paintAds();
     adm.newsSaved = (d.news || []).map((n) => ({ title: n.title, date: n.date }));
     adm.admins = d.admins;
     adm.events = d.events;

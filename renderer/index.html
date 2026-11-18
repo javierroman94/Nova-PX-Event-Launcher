@@ -124,6 +124,8 @@
 
       <div id="crash" class="crash" role="alert" hidden></div>
 
+      <aside id="ad-slot-home" class="ad-slot" aria-label="Publicidad" hidden></aside>
+
       <section id="launchpad" class="launchpad" aria-label="Launchpad">
         <div class="lp-top"><h2 id="lp-welcome">Bienvenido de nuevo</h2><span id="lp-online" class="lp-online" hidden></span></div>
         <div id="lp-hero" class="lp-hero">
@@ -235,6 +237,8 @@
       </div>
 
       <p id="community-stat" class="community-stat" hidden></p>
+
+      <aside id="ad-slot-event" class="ad-slot" aria-label="Publicidad" hidden></aside>
 
       <section class="sponsors" id="sponsors" aria-label="Hosting, patrocinadores y créditos">
         <div id="sponsors-list" class="sponsors-wrap"></div>
@@ -617,6 +621,7 @@
           <button type="button" data-ad-tab="control">Control</button>
           <button type="button" data-ad-tab="status">Estado</button>
           <button type="button" data-ad-tab="perms">Permisos</button>
+          <button type="button" data-ad-tab="ads">Publicidad</button>
         </div>
       </div>
 
@@ -864,6 +869,16 @@
           <div id="ad-events" class="ae-grid"></div>
           <div class="mp-actions"><button id="ad-event-add" type="button" class="primary">+ Evento nuevo</button><button type="button" class="ghost" data-history="events">Historial</button></div>
           <p id="ad-events-status" class="muted" role="status"></p>
+        </article>
+      </div>
+
+      <div id="ad-tab-ads" hidden>
+        <article class="ad-card">
+          <header><div><h3>Publicidad</h3><p class="muted">Banners de anunciantes que pagan por salir. Se muestran siempre con la etiqueta «Publicidad». Solo salen los activos y dentro de sus fechas. <b id="ad-ads-count"></b></p></div><button type="button" class="ghost" data-history="ads">Historial</button></header>
+          <div id="ad-ads" class="mods-list"></div>
+          <div class="mp-actions"><button id="ad-ads-add" type="button">+ Anuncio</button><button id="ad-ads-stats" type="button" class="ghost">Actualizar vistas y clics</button><button id="ad-ads-save" type="button" class="primary">Guardar publicidad</button></div>
+          <p id="ad-ads-status" class="muted" role="status"></p>
+          <p class="muted ad-fineprint">Las vistas y clics son un contador anónimo por anuncio (no guarda quién lo vio). Necesitas la «Clave del contador» en Usuarios para ver los números. Esto no es publicidad oficial de Minecraft ni de Mojang.</p>
         </article>
       </div>
 

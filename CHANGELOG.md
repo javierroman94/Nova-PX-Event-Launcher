@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.80
+- Nueva zona de Publicidad: banners de anunciantes en Inicio y Evento, siempre con la etiqueta «Publicidad». Admin → Publicidad: anunciante, imagen, enlace, texto, fechas, dónde sale y activar/desactivar; se rota entre los anuncios activos.
+- Vistas y clics por anuncio (contador anónimo, respeta la opción de compartir uso) visibles en el panel con el porcentaje de clics.
+
 ## 1.0.79
 - Importación directa desde otros launchers: el launcher busca solo tus instancias de Prism, PolyMC, MultiMC, ATLauncher, CurseForge App y Modrinth App en sus carpetas habituales, las lista con versión, loader y número de mods, y copia las que marques (las originales no se tocan). Las de NeoForge/Quilt salen avisadas como no soportadas.
 - "Nuevo perfil" rediseñado al estilo Modrinth: buscador con foco, divisor "o" y una columna de opciones con icono (Asistente, Instalar modpack, Importar archivo, Importar desde otros launchers, Importar una carpeta).

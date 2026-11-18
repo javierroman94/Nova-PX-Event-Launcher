@@ -239,3 +239,19 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(k.sponsors[1].kind, 'sponsor');
   console.log('ok patrocinadores');
 }
+
+{
+  const ads = a.sanitizeAds([
+    { id: 'Holi Hosting!', name: 'Holi', image: 'images/h.png', url: 'https://holihosting.example', text: 'Hosting', where: 'home', from: '2026-11-01', to: '2026-12-01' },
+    { name: '' }, { name: 'Malo', url: 'javascript:alert(1)', image: 'http://x/y.png', where: 'raro', from: 'ayer' }, { name: 'Dup', id: 'holihosting' }
+  ]);
+  assert.strictEqual(ads.length, 3);
+  assert.strictEqual(ads[0].id, 'holihosting');
+  assert.strictEqual(ads[0].where, 'home');
+  assert.strictEqual(ads[1].url, undefined);
+  assert.strictEqual(ads[1].image, undefined);
+  assert.strictEqual(ads[1].where, 'both');
+  assert.strictEqual(ads[1].from, '');
+  assert.notStrictEqual(ads[2].id, ads[0].id);
+  console.log('ok publicidad');
+}

@@ -209,6 +209,23 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/ping') return handlePing(request, env);
     if (request.method === 'POST' && url.pathname.startsWith('/presence/') && OPS.has(url.pathname.slice(10))) return presence(request, env, url.pathname.slice(10));
+    if (request.method === 'POST' && url.pathname === '/ads/track') {
+      let b = null;
+      try { b = await request.json(); } catch { return json({ error: 'bad_json' }, 400); }
+      if (!b || !/^[a-z0-9-]{1,40}$/.test(String(b.id || '')) || !['v', 'c'].includes(b.k)) return json({ error: 'bad_request' }, 400);
+      const key = `ad:${b.id}`;
+      const cur = (await env.USERS.get(key, 'json')) || { v: 0, c: 0 };
+      cur[b.k] = (Number(cur[b.k]) || 0) + 1;
+      await env.USERS.put(key, JSON.stringify(cur));
+      return json({ ok: true });
+    }
+    if (request.method === 'GET' && url.pathname === '/ads/stats') {
+      if (!isAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+      const ads = {};
+      const page = await env.USERS.list({ prefix: 'ad:', limit: 200 });
+      for (const k of page.keys) ads[k.name.slice(3)] = (await env.USERS.get(k.name, 'json')) || { v: 0, c: 0 };
+      return json({ ads });
+    }
     if (request.method === 'GET' && url.pathname === '/stats') {
       const { total, day, week } = await stats(env);
       return json({ total, day, week });
