@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.72
+- Paneles de administración rediseñados: pestañas con iconos, tarjetas con encabezado e icono, campos y botones más cuidados, barras de acciones fijas.
+- Homenaje: sin líneas, tarjeta más limpia; ahora sirve también para quien tuvo que dejar el proyecto (💛 Siempre parte de Nova).
+
 ## 1.0.71
 - Actualizar mods: ahora es un cuadro con una fila por mod (icono, nombre, versión vieja → nueva) y casillas para elegir cuáles actualizar, con «Marcar todos» y «Quitar todos». Antes era un texto largo con nombres de archivo.
 

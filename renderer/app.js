@@ -2074,7 +2074,7 @@ function profileCard(m, preview) {
   if (avatarSrc) banner.style.setProperty('--pf-img', `url("${avatarSrc.replace(/"/g, '%22')}")`);
   else banner.classList.add('no-img');
   const badges = el('div', 'pf-badges');
-  if (m.tribute) badges.append(el('span', 'pf-badge pf-b-tribute', '🕊 Homenaje'));
+  if (m.tribute) badges.append(el('span', 'pf-badge pf-b-tribute', '💛 Siempre parte de Nova'));
   else if (m.featured) badges.append(el('span', 'pf-badge pf-b-featured', '★ Destacado'));
   banner.append(badges);
   const ring = el('div', 'pf-ring');
@@ -2231,7 +2231,7 @@ function teamCard(m, index, featured) {
 
   const info = el('div', 'member-info');
   if (m.tribute) {
-    info.append(el('div', 'tribute-label', '🕊 Homenaje'), el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
+    info.append(el('div', 'tribute-label', '💛 Siempre parte de Nova'), el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
     if (m.years) info.append(el('div', 'tribute-years', m.years));
     if (m.tributeText) info.append(el('p', 'tribute-text', m.tributeText));
   } else info.append(el('div', 'nick', m.nick), el('div', 'role', m.role || ''));
@@ -3657,7 +3657,7 @@ function paintTeam() {
   st.replaceChildren(
     el('span', 'tm-stat', `${adm.team.length} personas`),
     el('span', 'tm-stat', `★ ${adm.team.filter((m) => m.featured && !m.tribute).length} destacados`),
-    el('span', 'tm-stat', `🕊 ${adm.team.filter((m) => m.tribute).length} homenaje`)
+    el('span', 'tm-stat', `💛 ${adm.team.filter((m) => m.tribute).length} homenaje`)
   );
 
   adm.team.forEach((m, idx) => {
@@ -3684,7 +3684,7 @@ function paintTeam() {
     const chips = el('div', 'tm2-chips');
     const paintChips = () => {
       chips.replaceChildren();
-      if (m.tribute) chips.append(el('span', 'tm2-chip tr', '🕊 Homenaje'));
+      if (m.tribute) chips.append(el('span', 'tm2-chip tr', '💛 Siempre parte de Nova'));
       else if (m.featured) chips.append(el('span', 'tm2-chip ft', '★ Destacado'));
       if (m.avatar) chips.append(el('span', 'tm2-chip', 'Foto'));
       if (m.skin) chips.append(el('span', 'tm2-chip', 'Skin'));
@@ -3770,16 +3770,16 @@ function paintTeam() {
     };
     tags.append(
       tag('★', 'Destacado', 'Tarjeta grande arriba del Equipo', 'featured', () => { paintTeam(); }),
-      tag('🕊', 'Homenaje', 'Tarjeta especial para recordar a alguien', 'tribute', () => { paintTeam(); })
+      tag('💛', 'Homenaje', 'Para quien falleció o tuvo que dejar el proyecto', 'tribute', () => { paintTeam(); })
     );
     s6.append(tags);
     bodyEl.append(s1, s2, s3, s4, s5, s6);
 
     if (m.tribute) {
-      const s7 = sec('Homenaje', 'Se muestra con una tarjeta especial');
-      const yrs = el('input'); yrs.type = 'text'; yrs.maxLength = 30; yrs.placeholder = 'Años (ej. 1994 – 2024)'; yrs.value = m.years || '';
+      const s7 = sec('Homenaje', 'Para alguien que falleció o tuvo que dejar el proyecto: se muestra con una tarjeta especial de recuerdo');
+      const yrs = el('input'); yrs.type = 'text'; yrs.maxLength = 30; yrs.placeholder = 'Años (ej. 1994 – 2024, o 2022 – 2024 en el proyecto)'; yrs.value = m.years || '';
       yrs.addEventListener('input', () => { m.years = yrs.value; refreshPreview(m); });
-      const txt = el('textarea'); txt.rows = 2; txt.maxLength = 300; txt.placeholder = 'Mensaje de homenaje'; txt.value = m.tributeText || '';
+      const txt = el('textarea'); txt.rows = 2; txt.maxLength = 300; txt.placeholder = 'Mensaje de agradecimiento o recuerdo'; txt.value = m.tributeText || '';
       txt.addEventListener('input', () => { m.tributeText = txt.value; refreshPreview(m); });
       const g7 = el('div', 'tm2-grid one'); g7.append(field('Años', yrs), field('Mensaje', txt));
       s7.append(g7);
@@ -4395,3 +4395,23 @@ async function autoDiscord(kind, payload) {
   if (keep(kind === 'news' ? 'soc-auto-news' : 'soc-auto-event') !== '1') return;
   try { await window.api.socialPost(payload); toast('Aviso enviado a Discord'); } catch (e) { toast(`No se pudo avisar en Discord: ${cleanError(e)}`, 'error'); }
 }
+
+// Paneles de administración: iconos en pestañas y encabezados de tarjeta (solo decoración).
+(function decorateAdmin() {
+  const tabIcons = { event: '🎮', team: '👥', events: '🏆', news: '📰', users: '📊', look: '🎨', config: '⚙️', reco: '⭐', control: '🛰️', status: '🩺', perms: '🔑' };
+  document.querySelectorAll('#ad-tabs [data-ad-tab]').forEach((b) => {
+    const ic = tabIcons[b.dataset.adTab];
+    if (ic && !b.querySelector('.ad-tab-ico')) b.prepend(el('span', 'ad-tab-ico', ic));
+  });
+  const cardIcons = [
+    [/Equipo/, '👥'], [/Historial de eventos/, '🏆'], [/Noticias/, '📰'], [/Conectar el contador/, '🔌'], [/^Usuarios/, '📊'],
+    [/apariencia/i, '🎨'], [/Ajustes del launcher/, '⚙️'], [/Discord y X/, '💬'], [/Anuncio global/, '📣'], [/Mantenimiento/, '🛠️'],
+    [/recomendados/i, '⭐'], [/Últimos cambios/, '🕘'], [/Quién ve/, '🔑'], [/publique sin/, '🤝']
+  ];
+  document.querySelectorAll('#page-admin .ad-card > header').forEach((h) => {
+    if (h.querySelector('.ad-step, .ad-ico')) return;
+    const t = (h.querySelector('h3') || {}).textContent || '';
+    const hit = cardIcons.find(([re]) => re.test(t));
+    h.prepend(el('span', 'ad-ico', hit ? hit[1] : '•'));
+  });
+})();
