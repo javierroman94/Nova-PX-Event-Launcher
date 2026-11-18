@@ -11,10 +11,6 @@
     "type": "fabric",
     "version": "0.19.5"
   },
-  "server": {
-    "host": "play.tuservidor.com",
-    "port": 25565
-  },
   "mods": [],
   "links": [
     {

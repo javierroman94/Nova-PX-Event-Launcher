@@ -290,7 +290,7 @@ async function renderHero() {
     if (m.protected && eventActive) chips.append(el('span', 'chip', 'Protegido'));
     $('stat-ver').textContent = eventActive ? m.minecraftVersion : '–';
     $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
-    startCountdown(m.event && m.event.startsAt);
+    startCountdown(m.event && m.event.startsAt, evState);
     lastEventLinks = m.links;
     paintSponsors(m.sponsors);
     paintCommunity();
@@ -420,10 +420,16 @@ async function renderContinue() {
 
 /* ---------- cuenta atrás y enlaces ---------- */
 let countdownTimer = 0;
-function startCountdown(iso) {
+function startCountdown(iso, state) {
   clearInterval(countdownTimer);
   const box = $('stat-next');
   const label = $('stat-next-label');
+  // Un evento finalizado no cuenta hacia atrás aunque conserve la fecha.
+  if (state === 'ended') {
+    box.textContent = 'Finalizado';
+    label.textContent = 'Estado del evento';
+    return;
+  }
   const target = iso ? Date.parse(iso) : NaN;
   if (!Number.isFinite(target) || target <= Date.now()) {
     box.textContent = Number.isFinite(target) ? '¡Ya empezó!' : 'Por anunciar';
@@ -847,7 +853,8 @@ async function renderLibrary() {
   $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
     ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}`
-    : 'Aún no tienes modpacks. Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.';
+    : '';
+  if (!list.length) host.append(libraryEmptyState(mp.installed.length === 0));
   const groups = new Map();
   list.forEach((p) => {
     const key = libView.group === 'loader' ? LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla' : libView.group === 'mc' ? `Minecraft ${p.mcVersion}` : '';
@@ -860,6 +867,29 @@ async function renderLibrary() {
     items.forEach((p) => grid.append(packCard(p)));
     host.append(grid);
   });
+}
+// Estado vacío de la biblioteca: con acciones directas en vez de una línea de texto suelta.
+function libraryEmptyState(firstTime) {
+  const box = el('div', 'empty-state');
+  if (firstTime) {
+    box.append(
+      el('div', 'empty-ico', '📦'),
+      el('strong', 'empty-title', 'Tu biblioteca está vacía'),
+      el('p', 'muted', 'Crea tu propia instancia, impórtala de otro launcher o explora Modrinth.')
+    );
+    const row = el('div', 'empty-actions');
+    const create = el('button', 'primary', '+ Nuevo perfil');
+    create.type = 'button';
+    create.addEventListener('click', () => $('mp-new-profile').click());
+    const explore = el('button', '', 'Explorar modpacks');
+    explore.type = 'button';
+    explore.addEventListener('click', () => $('mp-go-discover').click());
+    row.append(create, explore);
+    box.append(row);
+  } else {
+    box.append(el('div', 'empty-ico', '🔍'), el('strong', 'empty-title', 'Ningún modpack coincide'), el('p', 'muted', 'Prueba con otro nombre o cambia el filtro.'));
+  }
+  return box;
 }
 $('mp-lib-sort').addEventListener('change', (e) => { libView.sort = e.target.value; renderLibrary(); });
 $('mp-lib-group').addEventListener('change', (e) => { libView.group = e.target.value; renderLibrary(); });
@@ -2642,7 +2672,7 @@ async function loadAdmin() {
     adm.manifest = m;
     const ev = m.event || {};
     $('ad-live-name').textContent = ev.name || 'Sin evento';
-    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.server && m.server.host ? ' · ' + m.server.host : ''}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
+    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
     $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
     $('ad-state-quick').querySelectorAll('button').forEach((x) => x.classList.toggle('active', x.dataset.st === $('ad-state').value));
     adm.evImage = ev.image || '';
@@ -2654,8 +2684,6 @@ async function loadAdmin() {
     $('ad-tag').value = ev.tagline || '';
     $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
     $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
-    $('ad-host').value = (m.server && m.server.host) || '';
-    $('ad-port').value = (m.server && m.server.port) || 25565;
     $('ad-new').checked = false;
     adm.team = d.team;
     adm.news = d.news;
@@ -2719,7 +2747,6 @@ function paintChecklist() {
   const hasPack = !!$('ad-pack').value;
   const items = [
     [!!$('ad-name').value.trim(), 'Nombre del evento'],
-    [!!$('ad-host').value.trim(), 'Servidor del evento', true],
     [!hasPack || !!(sm && sm.mods), hasPack ? (sm ? `Modpack: ${sm.mods} mods activos de Minecraft ${sm.mcVersion}` : 'Modpack') : 'Sin modpack: solo se publican los datos', !hasPack],
     [!hasPack || $('ad-pass').value.length >= 10, 'Contraseña de al menos 10 caracteres', !hasPack]
   ];
@@ -2732,7 +2759,7 @@ function paintChecklist() {
   $('ad-publish').disabled = !ready;
   $('ad-pass').closest('.field').hidden = !hasPack;
 }
-['ad-name', 'ad-host', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
+['ad-name', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
 $('ad-pack').addEventListener('change', showAdminPack);
 $('ad-pack-edit').addEventListener('click', async () => {
   const p = (await window.api.modpackInstalled()).find((x) => x.id === $('ad-pack').value);
@@ -2785,8 +2812,7 @@ $('ad-publish').addEventListener('click', async () => {
     const r = await window.api.adminPublishEvent({
       id: id || undefined, password: $('ad-pass').value,
       form: {
-        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked,
-        server: { host: $('ad-host').value, port: Number($('ad-port').value) || 25565 }
+        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked
       }
     });
     $('ad-status').textContent = r.mods
@@ -3233,7 +3259,9 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   prof.append(pav, ptx);
   const search = document.createElement('input');
   search.type = 'search'; search.className = 'set-search'; search.placeholder = 'Buscar ajustes'; search.setAttribute('aria-label', 'Buscar ajustes');
-  nav.append(prof, search);
+  const noHits = el('p', 'set-empty muted', 'Ningún ajuste coincide.');
+  noHits.hidden = true;
+  nav.append(prof, search, noHits);
   const body = el('div', 'set-body');
   const items = [];
   const show = (name) => {
@@ -3269,6 +3297,7 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
       while (n && n.classList.contains('set-item')) { if (!n.dataset.hide && !n.hidden) any = true; n = n.nextElementSibling; }
       g.dataset.hide = any ? '' : '1';
     });
+    noHits.hidden = !q || !!first;
     if (q && first) show(first);
   });
   root.append(nav, body);

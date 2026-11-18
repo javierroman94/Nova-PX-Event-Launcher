@@ -48,6 +48,8 @@ assert.deepStrictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.20.1', forge: '47
 assert.strictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.21.1', neoforge: '21.1.1' })).unsupported, 'NeoForge');
 assert.throws(() => mp.parseMrpackIndex({ formatVersion: 2 }), /formato/);
 assert.throws(() => mp.parseMrpackIndex(idx({ minecraft: '1.21' }, [{ path: '../evil.jar', downloads: ['https://cdn.modrinth.com/x'] }])), /ruta/);
+assert.throws(() => mp.parseMrpackIndex(idx({ minecraft: '../../evil' })), /versión de Minecraft/);
+assert.throws(() => mp.parseMrpackIndex(idx({ minecraft: '1.21.1', 'fabric-loader': '0.16/../x' })), /loader/);
 assert.deepStrictEqual(mp.parseCurseManifest({ manifestType: 'minecraftModpack', minecraft: { version: '1.20.1', modLoaders: [{ id: 'forge-47.2.0', primary: true }] }, files: [] }).loader, { type: 'forge', version: '47.2.0' });
 console.log('  ok  modpacks: loaders de Modrinth y CurseForge, rutas peligrosas rechazadas');
 

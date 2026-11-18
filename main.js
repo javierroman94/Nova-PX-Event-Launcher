@@ -161,7 +161,7 @@ function cleanSettings(s) {
     theme: s.design !== 2 ? 'nova' : ['light', 'oled', 'nova'].includes(s.theme) ? s.theme : 'dark',
     accent: s.design !== 2 && String(s.accent).toLowerCase() === '#f2b84b' ? '#35d6ff' : /^#[0-9a-f]{6}$/i.test(String(s.accent)) ? String(s.accent).toLowerCase() : d.accent,
     lang: s.lang === 'auto' || langLib.CODE_RE.test(String(s.lang || '')) ? String(s.lang || 'auto') : 'auto',
-    season: ['auto', 'off', 'navidad', 'halloween', 'anio'].includes(s.season) ? s.season : 'auto',
+    season: ['auto', 'off', 'navidad', 'halloween', 'anio', 'sanvalentin', 'carnaval', 'madres', 'ecuador'].includes(s.season) ? s.season : 'auto',
     bgDim: num(s.bgDim, 0, 90, d.bgDim),
     bgBlur: num(s.bgBlur, 0, 24, d.bgBlur),
     effects: s.effects !== false,
@@ -268,7 +268,20 @@ function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
 }
 
-function pushLog(source, line) {
+// IPs que no deben verse en la consola del launcher (la del servidor del evento).
+const hiddenHosts = new Set();
+function hideHost(host) {
+  const h = String(host || '').trim();
+  if (h.length >= 3) hiddenHosts.add(h);
+}
+function redact(text) {
+  let out = String(text);
+  for (const h of hiddenHosts) out = out.split(h).join('•••');
+  return out;
+}
+
+function pushLog(source, raw) {
+  const line = redact(raw);
   logBuffer.push(`[${source}] ${line}`);
   if (logBuffer.length > 1500) logBuffer.shift();
   send('game:log', { source, line });
@@ -352,6 +365,8 @@ async function installMods(manifest, password, gameDir) {
 /* ---------- loader (Fabric) ---------- */
 
 async function ensureFabric(mcVersion, loaderVersion) {
+  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
+  if (loaderVersion && !loaders.isSafeVersion(loaderVersion)) throw new Error(`La versión de Fabric "${loaderVersion}" no es válida.`);
   if (!loaderVersion) {
     const list = await fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${mcVersion}`);
     if (!list.length) throw new Error(`Fabric no soporta Minecraft ${mcVersion}`);
@@ -505,6 +520,14 @@ function createWindow() {
     }
   });
   mainWindow.setMenuBarVisibility(false);
+  // La ventana solo muestra la interfaz del launcher: los enlaces https se abren en el navegador y nada más.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith('file://')) e.preventDefault();
+  });
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   mainWindow.webContents.on('did-finish-load', () => {
     if (pendingImportFile) {
@@ -803,10 +826,26 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
       progress(`Descargando el modpack… ${total ? Math.round((got / total) * 100) + '%' : Math.round(got / 1048576) + ' MB'}`, got, total)
     );
     // Al actualizar una versión se cambian los mods; los mundos y ajustes se conservan.
-    if (previous) fs.rmSync(path.join(root, 'mods'), { recursive: true, force: true });
+    // Los mods anteriores se apartan y vuelven a su sitio si la instalación nueva falla a medias.
+    const modsDir = path.join(root, 'mods');
+    const modsBackup = path.join(root, 'mods.anterior');
+    if (previous && fs.existsSync(modsDir)) {
+      fs.rmSync(modsBackup, { recursive: true, force: true });
+      fs.renameSync(modsDir, modsBackup);
+    }
     const onFile = (done, total) => progress(`Descargando mods (${done} de ${total})…`, done, total);
     const download = (u) => downloadBuffer(u);
-    const r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
+    let r;
+    try {
+      r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
+    } catch (err) {
+      if (fs.existsSync(modsBackup)) {
+        fs.rmSync(modsDir, { recursive: true, force: true });
+        fs.renameSync(modsBackup, modsDir);
+      }
+      throw err;
+    }
+    fs.rmSync(modsBackup, { recursive: true, force: true });
 
     const entry = {
       id, provider: name, projectId: cleanStr(p.id, 40), versionId: v.id, version: cleanStr(v.number || v.name, 80),
@@ -1648,6 +1687,8 @@ async function checkEventNotifications() {
     if (!readSettings().notifyEvents || !Notification.isSupported()) return;
     const manifest = await loadData('manifest');
     const ev = manifest.event || {};
+    // Un evento finalizado no avisa aunque su fecha siga puesta.
+    if (ev.status === 'ended') return;
     const at = Date.parse(ev.startsAt || '');
     if (!at) return;
     const left = at - Date.now();
@@ -1762,18 +1803,14 @@ ipcMain.handle('modpacks:serverStatus', async (_e, id) => {
 ipcMain.handle('server:status', async () => {
   try {
     const manifest = await loadData('manifest');
-    let { host, port } = manifest.server || {};
-    if (!host) {
-      // Sin IP en el manifest: se toma la del servers.dat del modpack del evento.
-      const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
-      if (found) ({ host, port } = found);
-    }
-    if (!host) return { configured: false };
-    const target = port && Number(port) !== 25565 ? `${host}:${port}` : host;
+    // La IP sale del servers.dat del modpack del evento y nunca se devuelve a la interfaz.
+    const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
+    if (!found) return { configured: false };
+    hideHost(found.host);
+    const target = found.port && Number(found.port) !== 25565 ? `${found.host}:${found.port}` : found.host;
     const data = await fetchJson(`https://api.mcsrvstat.us/3/${encodeURIComponent(target)}`);
     return {
       configured: true,
-      host: target,
       online: !!data.online,
       players: data.players ? { online: data.players.online, max: data.players.max } : null,
       version: data.version || null
@@ -1830,7 +1867,7 @@ function clearAccount() {
 
 async function premiumSessionFrom(xbox, startedAtMs) {
   const mc = await xbox.getMinecraft();
-  session = { mode: 'premium', name: mc.profile.name, uuid: mc.profile.id, auth: mc.mclc() };
+  session = { mode: 'premium', name: mc.profile.name, uuid: mc.profile.id, auth: mc.mclc(), mc };
   sessionStartedAt = sess.startedAt(startedAtMs);
   pingUsage();
   lastProfile = null;
@@ -1911,6 +1948,25 @@ ipcMain.handle('auth:logout', () => {
 
 /* ---------- IPC: skins y capas (solo premium) ---------- */
 
+// El token de Minecraft dura unas 24 horas. Si el launcher lleva abierto más tiempo, se renueva antes
+// de usarlo (si no, Minecraft entraría con un token vencido y los servidores premium lo rechazarían).
+async function freshPremium() {
+  if (!session || session.mode !== 'premium' || !session.mc) return;
+  let valid = true;
+  try { valid = session.mc.validate(); } catch { valid = false; }
+  if (valid) return;
+  try {
+    await session.mc.refresh(true);
+    session.auth = session.mc.mclc();
+    try {
+      const refresh = session.mc.parent && session.mc.parent.save && session.mc.parent.save();
+      if (refresh) saveAccount({ mode: 'premium', refresh, at: sessionStartedAt });
+    } catch {}
+  } catch {
+    throw new Error('Tu sesión de Microsoft venció. Cierra sesión y vuelve a entrar con tu cuenta.');
+  }
+}
+
 function premiumToken() {
   if (!session || session.mode !== 'premium') {
     throw new Error('OFFLINE: Cambiar la skin y la capa solo funciona con una cuenta premium.');
@@ -1919,6 +1975,7 @@ function premiumToken() {
 }
 
 ipcMain.handle('skins:profile', async () => {
+  await freshPremium();
   lastProfile = await skinsApi.getProfile(premiumToken());
   return lastProfile;
 });
@@ -2234,6 +2291,7 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
   if (!session) throw new Error('Primero inicia sesión.');
   if (launching) throw new Error('El juego ya se está iniciando.');
+  await freshPremium();
   await refreshRemote();
   const blocked = remote.blockReason(remoteCfg, app.getVersion(), { admin: await adminEligible() });
   if (blocked) throw new Error(blocked);
@@ -2314,8 +2372,11 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       ...(customArgs.length ? { customArgs } : {}),
       ...(javaPath ? { javaPath } : {})
     };
-    if (st.joinServer && manifest.server && manifest.server.host) {
-      launchOpts.server = { host: manifest.server.host, port: String(manifest.server.port || 25565) };
+    // Entrar directo al servidor del evento: la IP sale del servers.dat del modpack (nunca del manifest público).
+    const eventServer = !pack ? serversLib.findPackServer(eventDir) : null;
+    if (eventServer) hideHost(eventServer.host);
+    if (st.joinServer && eventServer) {
+      launchOpts.server = { host: eventServer.host, port: String(eventServer.port || 25565) };
     }
 
     const launcher = new Client();

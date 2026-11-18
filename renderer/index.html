@@ -12,7 +12,9 @@
 <body>
   <div id="app-bg" aria-hidden="true"></div>
   <canvas id="fx" aria-hidden="true"></canvas>
-  <div class="season-lights" aria-hidden="true"><i></i><i></i></div>
+  <div class="season-ground" aria-hidden="true"></div>
+  <div class="season-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="season-corner" aria-hidden="true"><i></i></div>
 
   <div id="splash" class="splash" role="status" aria-label="Cargando Nova PX - Event Launcher">
     <div class="splash-content">
@@ -588,10 +590,7 @@
               <div><label for="ad-start">Empieza</label><input id="ad-start" type="datetime-local" /></div>
             </div>
             <div class="field"><label for="ad-tag">Frase</label><input id="ad-tag" type="text" maxlength="300" /></div>
-            <div class="field inline">
-              <div><label for="ad-host">Servidor (IP o dominio)</label><input id="ad-host" type="text" maxlength="253" placeholder="play.tuservidor.com" /></div>
-              <div><label for="ad-port">Puerto</label><input id="ad-port" type="number" min="1" max="65535" /></div>
-            </div>
+            <p class="muted">La IP del servidor va dentro del modpack (servers.dat) y no se muestra a los jugadores.</p>
             <label class="check"><input id="ad-new" type="checkbox" /> Es un evento nuevo (los jugadores empiezan en una carpeta limpia)</label>
             <label class="check"><input id="ad-lock" type="checkbox" checked /> 🔒 Bloquear el modpack: los jugadores no pueden añadir ni cambiar mods, texturas ni shaders del evento</label>
           </article>
