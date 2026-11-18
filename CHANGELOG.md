@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.68
+- Amigos con solicitudes: envías una solicitud por nick y la otra persona la acepta o rechaza; solo entonces ven el estado del otro.
+- Estado en línea arreglado: ahora se guarda en el servidor (antes se perdía al reiniciarse y salía "Desconectado"); también muestra "Activo hace…". El latido es cada minuto y también al iniciar sesión.
+- Chat entre amigos: botón 💬 con aviso de mensajes nuevos y ventana de conversación.
+- Cada instalación usa un token secreto para que nadie pueda hacerse pasar por tu nick. Los amigos guardados antes se convierten en solicitudes automáticamente.
+- Cabezas de jugadores en 3D (ganadores del historial, administración y amigos) y "Comisionado por" muestra la cabeza 3D de su nick a la derecha (campo nuevo en el editor de eventos).
+
 ## 1.0.67
 - Historial rediseñado: las imágenes ahora rellenan la tarjeta (fondo difuminado, sin barras negras), evento destacado, estadísticas, filtro por año y tarjetas con hover.
 - Administración › Eventos: tarjetas con portada, ganadores y avisos, búsqueda y botón de evento nuevo.

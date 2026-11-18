@@ -596,6 +596,7 @@ function paintEventExtras(ev) {
     const txt = el('span', 'com-text');
     txt.append(el('small', 'muted', 'Comisionado por'), el('b', '', ev.commissioner.name));
     com.append(left, txt);
+    if (ev.commissioner.nick) com.append(head3d({ nick: ev.commissioner.nick }, 46));
     com.disabled = !ev.commissioner.url;
     if (ev.commissioner.url) com.onclick = () => window.api.openLink(ev.commissioner.url).catch(() => {});
   }
@@ -619,7 +620,7 @@ function paintWinners(ev) {
   list.forEach((nick) => {
     const known = extra.find((p) => p.nick.toLowerCase() === nick.toLowerCase());
     const card = el('div', 'winner-head');
-    card.append(personFace({ nick, ...(known && known.skin ? { skin: known.skin, slim: known.slim } : {}), forceCanvas: true }), el('div', 'nick', nick));
+    card.append(head3d({ nick, ...(known && known.skin ? { skin: known.skin, slim: known.slim } : {}) }, 52), el('div', 'nick', nick));
     row.append(card);
   });
   box.append(row);
@@ -1964,6 +1965,35 @@ function personFace(p) {
   return c;
 }
 
+// Cabeza 3D (cubo CSS con las 6 caras de la skin + capa exterior). p = { nick, skin?, slim? }.
+function head3d(p, size) {
+  const wrap = el('span', 'head3d');
+  wrap.style.setProperty('--s', (size || 44) + 'px');
+  wrap.title = p.nick || '';
+  const cube = el('span', 'h3d-cube');
+  const faces = { front: [8, 8], back: [24, 8], right: [0, 8], left: [16, 8], top: [8, 0], bottom: [16, 0] };
+  const cs = {};
+  Object.keys(faces).forEach((k) => {
+    const c = el('canvas', 'h3d-face h3d-' + k); c.width = 16; c.height = 16;
+    cs[k] = c; cube.append(c);
+  });
+  wrap.append(cube);
+  const paint = (im) => {
+    Object.entries(faces).forEach(([k, [sx, sy]]) => {
+      const x = cs[k].getContext('2d');
+      x.imageSmoothingEnabled = false;
+      x.clearRect(0, 0, 16, 16);
+      x.drawImage(im, sx, sy, 8, 8, 0, 0, 16, 16);
+      x.drawImage(im, sx + 32, sy, 8, 8, 0, 0, 16, 16);
+    });
+  };
+  const nick = String(p.nick || '').trim();
+  textureFor({ ...p, nick: nick || 'Steve' })
+    .then((r) => (r && r.dataUrl ? loadImageUrl(r.dataUrl).then(paint) : loadImageUrl('images/logo.png').then(paint)))
+    .catch(() => loadImageUrl('images/logo.png').then(paint).catch(() => {}));
+  return wrap;
+}
+
 function teamCard(m, index, featured) {
   const card = el('div', m.tribute ? 'member tribute' : featured ? 'member featured' : 'member');
   card.dataset.tilt = '';
@@ -3180,7 +3210,7 @@ function paintAdminEvents() {
     const w = wOf(ev);
     if (w.length) {
       const row = el('div', 'ae-winners');
-      w.slice(0, 5).forEach((n) => { const a = el('img'); a.alt = n; a.title = n; a.src = skinBust(n); row.append(a); });
+      w.slice(0, 5).forEach((n) => row.append(head3d({ nick: n }, 28)));
       row.append(el('span', 'muted', w.length === 1 ? w[0] : `${w.length} ganadores`));
       body.append(row);
     }
@@ -3199,9 +3229,7 @@ function paintAdeWinners() {
   box.replaceChildren();
   ade.draft.winners.forEach((n, i) => {
     const chip = el('div', 'ade-winner');
-    const img = el('img');
-    img.alt = '';
-    img.src = skinBust(n);
+    const img = head3d({ nick: n }, 30);
     const x = el('button', '', '×');
     x.type = 'button';
     x.setAttribute('aria-label', `Quitar a ${n}`);
@@ -3277,6 +3305,7 @@ function openAdminEvent(idx) {
   $('ade-posts').replaceChildren(linksEditor(ade.posts));
   $('ade-com-name').value = (base.commissioner && base.commissioner.name) || '';
   $('ade-com-url').value = (base.commissioner && base.commissioner.url) || '';
+  $('ade-com-nick').value = (base.commissioner && base.commissioner.nick) || '';
   $('ade-bg-state').textContent = ade.draft.background ? 'Con fondo' : '';
   $('ade-title').textContent = idx >= 0 ? 'Editar evento' : 'Evento nuevo';
   $('ade-name').value = ade.draft.name;
@@ -3341,7 +3370,7 @@ $('ade-save').addEventListener('click', () => {
   delete ev.winner;
   ev.posts = ade.posts.links;
   const comName = $('ade-com-name').value.trim();
-  if (comName) ev.commissioner = { name: comName, url: $('ade-com-url').value.trim() }; else delete ev.commissioner;
+  if (comName) ev.commissioner = { name: comName, url: $('ade-com-url').value.trim(), nick: $('ade-com-nick').value.trim() }; else delete ev.commissioner;
   const list = [...adm.events];
   if (ade.index >= 0) list[ade.index] = ev; else list.unshift(ev);
   saveAdminEvents(list, true);
@@ -3899,40 +3928,154 @@ $('mp-go-discover').addEventListener('click', async () => {
 })();
 
 
-/* --- Amigos y estado en línea --- */
+/* --- Amigos: solicitudes, estado en línea y chat --- */
+const lastUnread = new Map();
+let friendsFirst = true;
+const agoMs = (ms) => {
+  const m = Math.max(1, Math.round(ms / 60000));
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.round(m / 60);
+  return h < 48 ? `hace ${h} h` : `hace ${Math.round(h / 24)} d`;
+};
+const friendHead = (nick) => head3d({ nick }, 26);
+
 async function renderFriends() {
   const list = $('friends-list');
+  const req = $('friends-req');
   try {
     const r = await window.api.friendsList();
     if (!r.enabled) { $('friends-card').hidden = true; return; }
+    $('friends-card').hidden = false;
     list.replaceChildren();
+    req.replaceChildren();
+    $('friends-form').hidden = !r.loggedIn;
+    if (!r.loggedIn) { $('friends-count').textContent = ''; $('friends-note').textContent = 'Inicia sesión para añadir amigos, ver cuándo están en línea y chatear.'; req.hidden = true; return; }
     const online = r.friends.filter((f) => f.online).length;
-    $('friends-count').textContent = `(${online} en línea)`;
-    $('friends-note').textContent = r.friends.length ? (r.reachable ? '' : 'No se pudo consultar el estado ahora.') : 'Añade el nick de un amigo para ver cuándo está en línea.';
+    $('friends-count').textContent = r.friends.length ? `(${online} en línea)` : '';
+    const notes = [];
+    if (!r.reachable) notes.push(r.error || 'No se pudo consultar el estado ahora.');
+    else if (!r.sharing) notes.push('Tienes desactivado «compartir uso»: tus amigos te verán desconectado. Actívalo en Ajustes.');
+    else if (!r.friends.length && !r.incoming.length && !r.outgoing.length) notes.push('Envía una solicitud con el nick de un amigo. Cuando la acepte, verás si está en línea y podrán chatear.');
+    $('friends-note').textContent = notes.join(' ');
+
+    // solicitudes recibidas y enviadas
+    req.hidden = !(r.incoming.length || r.outgoing.length);
+    if (!req.hidden) {
+      r.incoming.forEach((n) => {
+        const row = el('div', 'friend-req');
+        const ok = el('button', 'primary', 'Aceptar'); ok.type = 'button';
+        const no = el('button', 'ghost', 'Rechazar'); no.type = 'button';
+        ok.addEventListener('click', async () => { try { await window.api.friendsAccept(n); } catch (e) { toast(cleanError(e), 'error'); } renderFriends(); });
+        no.addEventListener('click', async () => { try { await window.api.friendsRemove(n); } catch (e) { toast(cleanError(e), 'error'); } renderFriends(); });
+        row.append(friendHead(n), el('span', 'friend-name pii', n), el('span', 'muted friend-st', 'quiere ser tu amigo'), ok, no);
+        req.append(row);
+      });
+      r.outgoing.forEach((n) => {
+        const row = el('div', 'friend-req out');
+        const no = el('button', 'ghost', 'Cancelar'); no.type = 'button';
+        no.addEventListener('click', async () => { try { await window.api.friendsRemove(n); } catch {} renderFriends(); });
+        row.append(friendHead(n), el('span', 'friend-name pii', n), el('span', 'muted friend-st', 'solicitud enviada'), no);
+        req.append(row);
+      });
+    }
+
     r.friends.forEach((f) => {
       const li = el('li', 'friend');
       const dot = el('span', 'live-dot');
       dot.classList.toggle('off', !f.online);
       const name = el('span', 'friend-name pii', f.nick);
-      const st = el('span', 'muted friend-st', f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado');
+      const stTxt = f.playing ? 'Jugando' : f.online ? 'En línea' : f.seen ? `Activo ${agoMs(Date.now() - f.seen)}` : 'Desconectado';
+      const st = el('span', 'muted friend-st', stTxt);
+      const chat = el('button', 'ghost friend-chat', '💬');
+      chat.type = 'button';
+      chat.title = `Chatear con ${f.nick}`;
+      if (f.unread) chat.append(el('span', 'friend-badge', String(Math.min(f.unread, 9))));
+      chat.addEventListener('click', () => openChat(f));
       const rm = el('button', 'ghost friend-rm', '✕');
       rm.type = 'button';
       rm.setAttribute('aria-label', `Quitar a ${f.nick}`);
-      rm.addEventListener('click', async () => { await window.api.friendsRemove(f.nick); renderFriends(); });
-      li.append(dot, name, st, rm);
+      rm.addEventListener('click', async () => {
+        if (!(await askConfirm(`¿Quitar a ${f.nick} de tus amigos? También se borrará la conversación.`, 'Quitar', 'Cancelar'))) return;
+        try { await window.api.friendsRemove(f.nick); } catch (e) { toast(cleanError(e), 'error'); }
+        renderFriends();
+      });
+      li.append(dot, friendHead(f.nick), el('span', 'friend-info', ''), chat, rm);
+      const info = li.querySelector('.friend-info');
+      info.append(name, st);
       list.append(li);
+      const prev = lastUnread.get(f.nick) || 0;
+      if (!friendsFirst && f.unread > prev && !(chatWith && chatWith.toLowerCase() === f.nick.toLowerCase())) toast(`💬 ${f.nick} te escribió`, 'info');
+      lastUnread.set(f.nick, f.unread);
     });
+    friendsFirst = false;
   } catch { $('friends-note').textContent = 'No se pudo cargar la lista de amigos.'; }
 }
 $('friends-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const n = $('friends-input').value.trim();
   if (!n) return;
-  try { await window.api.friendsAdd(n); $('friends-input').value = ''; await renderFriends(); }
-  catch (err) { $('friends-note').textContent = cleanError(err); }
+  try {
+    const st = await window.api.friendsAdd(n);
+    $('friends-input').value = '';
+    toast(st === 'accepted' ? `¡Ahora eres amigo de ${n}!` : `Solicitud enviada a ${n}`, 'success');
+    await renderFriends();
+  } catch (err) { $('friends-note').textContent = cleanError(err); }
+});
+
+// Ventana de chat con un amigo (consulta al Worker cada pocos segundos mientras está abierta).
+let chatWith = null;
+let chatSince = 0;
+let chatTimer = null;
+function chatBubble(m, me) {
+  const mine = m.f.toLowerCase() === String(me).toLowerCase();
+  const b = el('div', mine ? 'chat-msg mine' : 'chat-msg');
+  b.append(el('span', 'chat-text', m.t), el('small', 'chat-time muted', new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })));
+  return b;
+}
+async function chatPoll() {
+  if (!chatWith) return;
+  try {
+    const r = await window.api.chatPoll(chatWith, chatSince);
+    if (!chatWith) return;
+    const log = $('chat-log');
+    const atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+    if (r.messages && r.messages.length) log.querySelector('.chat-empty')?.remove();
+    (r.messages || []).forEach((m) => { log.append(chatBubble(m, r.me)); chatSince = Math.max(chatSince, m.id); });
+    if (r.messages && r.messages.length && atEnd) log.scrollTop = log.scrollHeight;
+    $('chat-status').textContent = r.playing ? 'Jugando' : r.online ? 'En línea' : 'Desconectado';
+  } catch (e) { $('chat-status').textContent = cleanError(e); }
+}
+function openChat(f) {
+  chatWith = f.nick;
+  chatSince = 0;
+  $('chat-name').textContent = f.nick;
+  $('chat-status').textContent = f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado';
+  $('chat-face').replaceChildren(head3d({ nick: f.nick }, 40));
+  const log = $('chat-log');
+  log.replaceChildren(el('p', 'muted chat-empty', 'Aquí empieza la conversación. Los mensajes se guardan unos días en el servidor del launcher.'));
+  $('chat-input').value = '';
+  if (!$('chat-modal').open) $('chat-modal').showModal();
+  clearInterval(chatTimer);
+  chatPoll().then(() => { log.scrollTop = log.scrollHeight; });
+  chatTimer = setInterval(chatPoll, 4000);
+  setTimeout(() => $('chat-input').focus(), 50);
+}
+$('chat-close').addEventListener('click', () => $('chat-modal').close());
+$('chat-modal').addEventListener('close', () => { clearInterval(chatTimer); chatWith = null; renderFriends(); });
+$('chat-modal').addEventListener('click', (e) => { if (e.target === $('chat-modal')) $('chat-modal').close(); });
+$('chat-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = $('chat-input').value.trim();
+  if (!text || !chatWith) return;
+  $('chat-input').value = '';
+  try {
+    await window.api.chatSend(chatWith, text);
+    await chatPoll();
+    $('chat-log').scrollTop = $('chat-log').scrollHeight;
+  } catch (err) { toast(cleanError(err), 'error'); $('chat-input').value = text; }
 });
 renderFriends();
-setInterval(() => { if (!document.hidden) renderFriends(); }, 60 * 1000);
+setInterval(() => { if (!document.hidden) renderFriends(); }, 45 * 1000);
 
 
 /* --- Explorar mods, texturas y shaders (como la app de Modrinth) --- */

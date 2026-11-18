@@ -154,7 +154,8 @@
         <aside aria-label="Tu jugador">
           <section class="friends-card" id="friends-card" aria-label="Amigos">
             <div class="friends-head"><strong id="friends-title">Amigos</strong><span id="friends-count" class="muted"></span></div>
-            <form id="friends-form" class="friends-form"><input id="friends-input" class="events-search pii" type="text" maxlength="16" placeholder="Añadir amigo (su nick)" autocomplete="off" aria-label="Nick del amigo" /><button type="submit" class="primary">+</button></form>
+            <form id="friends-form" class="friends-form"><input id="friends-input" class="events-search pii" type="text" maxlength="16" placeholder="Enviar solicitud (su nick)" autocomplete="off" aria-label="Nick del amigo" /><button type="submit" class="primary" title="Enviar solicitud de amistad">+</button></form>
+            <div id="friends-req" class="friends-req" hidden></div>
             <ul id="friends-list" class="friends-list"></ul>
             <p id="friends-note" class="muted" role="status"></p>
           </section>
@@ -896,6 +897,7 @@
             <div><label for="ade-com-name">Nombre</label><input id="ade-com-name" type="text" maxlength="60" placeholder="LaosOneView" /></div>
             <div><label for="ade-com-url">Enlace a su canal</label><input id="ade-com-url" type="url" maxlength="300" placeholder="https://youtube.com/@…" /></div>
           </div>
+          <div class="field"><label for="ade-com-nick">Nick de Minecraft <span class="muted">(su cabeza 3D aparece a la derecha)</span></label><input id="ade-com-nick" type="text" maxlength="16" placeholder="LaosOneView" /></div>
         </section>
 
         <section class="ade-card">
@@ -1222,6 +1224,11 @@
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
   <!-- Asistente de primer uso -->
+    <dialog id="chat-modal" class="chat-dialog" aria-label="Chat con un amigo">
+    <div class="chat-head"><span id="chat-face" class="chat-face"></span><div class="chat-who"><b id="chat-name" class="pii"></b><small id="chat-status" class="muted"></small></div><button type="button" id="chat-close" class="ghost chat-x" aria-label="Cerrar">✕</button></div>
+    <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
+    <form id="chat-form" class="chat-form"><input id="chat-input" type="text" maxlength="300" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje" /><button type="submit" class="primary">Enviar</button></form>
+  </dialog>
   <dialog id="member-modal" class="event-modal member-dialog" aria-label="Perfil">
     <div id="mm-card"></div>
     <div class="mm-actions"><button id="mm-copy" type="button" class="ghost">Copiar nick</button><button id="mm-close" type="button">Cerrar</button></div>

@@ -1103,41 +1103,86 @@ ipcMain.handle('community:stats', async () => {
 /* ---------- amigos y estado en línea ---------- */
 
 const FRIENDS_FILE = path.join(app.getPath('userData'), 'friends.json');
-async function presencePost(pth, body, ms = 5000) {
-  if (!USAGE_URL) return null;
+// Token secreto de esta instalación: el Worker lo usa para que nadie más pueda hablar como tu nick.
+const PRESENCE_TOKEN_FILE = path.join(app.getPath('userData'), 'presence.token');
+let presenceToken = null;
+function getPresenceToken() {
+  if (presenceToken) return presenceToken;
+  try { presenceToken = fs.readFileSync(PRESENCE_TOKEN_FILE, 'utf8').trim(); } catch {}
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(presenceToken || '')) {
+    presenceToken = require('crypto').randomBytes(24).toString('base64url');
+    try { fs.writeFileSync(PRESENCE_TOKEN_FILE, presenceToken, { mode: 0o600 }); } catch {}
+  }
+  return presenceToken;
+}
+const NICK_OK = /^[A-Za-z0-9_]{3,16}$/;
+// Llama al Worker como el jugador con sesión. Devuelve { ok, data } o { ok:false, error }.
+async function presenceCall(op, body = {}, ms = 6000) {
+  if (!USAGE_URL) return { ok: false, error: 'disabled' };
+  if (!session || !NICK_OK.test(session.name || '')) return { ok: false, error: 'no_session' };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(`${USAGE_URL}/presence/${pth}`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
-    return r.ok ? await r.json() : null;
-  } catch { return null; } finally { clearTimeout(timer); }
+    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token: getPresenceToken() }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+    let data = {};
+    try { data = await r.json(); } catch {}
+    return r.ok ? { ok: true, data } : { ok: false, error: data.error || 'http_' + r.status };
+  } catch { return { ok: false, error: 'network' }; } finally { clearTimeout(timer); }
 }
+const FRIEND_ERRORS = {
+  disabled: 'La función de amigos no está activa en este launcher.',
+  no_session: 'Inicia sesión para usar amigos.',
+  network: 'No se pudo conectar. Revisa tu internet e inténtalo de nuevo.',
+  auth: 'Ese nick ya lo usa otra instalación del launcher.',
+  bad_nick: 'El nick debe tener de 3 a 16 caracteres (letras, números o guion bajo) y no ser el tuyo.',
+  already: 'Ya son amigos.',
+  full: 'Llegaste al máximo de amigos.',
+  busy: 'Esa persona tiene demasiadas solicitudes pendientes.',
+  no_request: 'Esa solicitud ya no existe.',
+  not_friends: 'Solo puedes chatear con tus amigos.',
+  empty: 'Escribe un mensaje.'
+};
+const friendFail = (r) => { throw new Error(FRIEND_ERRORS[r.error] || 'No se pudo completar la acción.'); };
+
 // Latido: dice que sigues conectado (solo con sesión y con "compartir uso" activado).
 function presenceBeat() {
-  if (!session || !/^[A-Za-z0-9_]{3,16}$/.test(session.name || '') || !readSettings().shareUsage) return;
-  presencePost('beat', { nick: session.name, playing: launching });
+  if (!readSettings().shareUsage) return;
+  presenceCall('sync', { playing: launching });
 }
-setInterval(presenceBeat, 90 * 1000).unref();
+setInterval(presenceBeat, 60 * 1000).unref();
 setTimeout(presenceBeat, 8000).unref();
-app.on('before-quit', () => { if (session) presencePost('leave', { nick: session.name }, 1500); });
+app.on('before-quit', () => { if (session) presenceCall('leave', {}, 1500); });
 
 ipcMain.handle('friends:list', async () => {
-  const list = friendsLib.load(FRIENDS_FILE);
-  let status = null;
-  if (list.length) {
-    const r = await presencePost('query', { nicks: list });
-    status = r && r.status;
+  const base = { enabled: !!USAGE_URL, loggedIn: !!session, sharing: readSettings().shareUsage !== false, reachable: true, friends: [], incoming: [], outgoing: [] };
+  if (!base.enabled || !session) return base;
+  // Amigos guardados solo en tu equipo por versiones anteriores: se les envía la solicitud una vez.
+  const legacy = friendsLib.load(FRIENDS_FILE);
+  if (legacy.length) {
+    for (const n of legacy) await presenceCall('request', { to: n });
+    friendsLib.save(FRIENDS_FILE, []);
   }
-  return { enabled: !!USAGE_URL, friends: friendsLib.merge(list, status), reachable: !!status || !list.length };
+  const r = await presenceCall('sync', { playing: launching });
+  if (!r.ok) return { ...base, reachable: false, error: FRIEND_ERRORS[r.error] || '' };
+  const d = r.data;
+  return { ...base, friends: d.friends || [], incoming: d.incoming || [], outgoing: d.outgoing || [], now: d.now };
 });
-ipcMain.handle('friends:add', (_e, nick) => {
-  const list = friendsLib.add(friendsLib.load(FRIENDS_FILE), nick, session ? session.name : '');
-  friendsLib.save(FRIENDS_FILE, list);
-  return true;
+ipcMain.handle('friends:add', async (_e, nick) => {
+  const n = String(nick || '').trim();
+  if (!NICK_OK.test(n)) throw new Error(FRIEND_ERRORS.bad_nick);
+  const r = await presenceCall('request', { to: n });
+  return r.ok ? r.data.status : friendFail(r);
 });
-ipcMain.handle('friends:remove', (_e, nick) => {
-  friendsLib.save(FRIENDS_FILE, friendsLib.remove(friendsLib.load(FRIENDS_FILE), String(nick)));
-  return true;
+for (const [ch, op] of [['friends:accept', 'accept'], ['friends:remove', 'remove']]) {
+  ipcMain.handle(ch, async (_e, nick) => { const r = await presenceCall(op, { to: String(nick || '') }); return r.ok ? true : friendFail(r); });
+}
+ipcMain.handle('chat:send', async (_e, to, text) => {
+  const r = await presenceCall('send', { to: String(to || ''), text: String(text || '') });
+  return r.ok ? true : friendFail(r);
+});
+ipcMain.handle('chat:poll', async (_e, who, since) => {
+  const r = await presenceCall('poll', { with: String(who || ''), since: Number(since) || 0 }, 5000);
+  return r.ok ? { ...r.data, me: session.name } : friendFail(r);
 });
 
 /* ---------- modo administrador (token de GitHub) ---------- */
@@ -1929,6 +1974,7 @@ function clearAccount() {
 async function premiumSessionFrom(xbox, startedAtMs) {
   const mc = await xbox.getMinecraft();
   session = { mode: 'premium', name: mc.profile.name, uuid: mc.profile.id, auth: mc.mclc(), mc };
+  setTimeout(presenceBeat, 1500);
   sessionStartedAt = sess.startedAt(startedAtMs);
   pingUsage();
   lastProfile = null;
@@ -1986,6 +2032,7 @@ ipcMain.handle('auth:offline', (_e, nick) => {
     throw new Error('El nick debe tener de 3 a 16 caracteres: letras, números o guion bajo.');
   }
   session = makeOfflineSession(name);
+  setTimeout(presenceBeat, 1500);
   pingUsage();
   lastProfile = null;
   saveAccount({ mode: 'offline', name });

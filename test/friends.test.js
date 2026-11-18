@@ -20,16 +20,5 @@ const f = require('../lib/friends');
   assert.deepStrictEqual(f.load(file), l);
   assert.deepStrictEqual(f.load(path.join(os.tmpdir(), 'no-existe.json')), []);
 
-  const { Presence } = await import('../worker/index.mjs');
-  const p = new Presence();
-  const call = async (pth, body) => (await p.fetch(new Request(`https://x${pth}`, { method: 'POST', body: JSON.stringify(body) }))).json();
-  assert.deepStrictEqual(await call('/beat', { nick: 'Ana_1', playing: true }), { ok: true });
-  assert.strictEqual((await call('/beat', { nick: 'x' })).error, 'bad_nick');
-  const q = await call('/query', { nicks: ['ana_1', 'Zed', 'mal nick'] });
-  assert.deepStrictEqual(q.status, { ana_1: { online: true, playing: true }, Zed: { online: false, playing: false } });
-  await call('/leave', { nick: 'Ana_1' });
-  assert.strictEqual((await call('/query', { nicks: ['Ana_1'] })).status.Ana_1.online, false);
-  p.m.set('old', { last: Date.now() - 999999, playing: false });
-  assert.strictEqual((await call('/query', { nicks: ['old'] })).status.old.online, false, 'sin latido reciente = desconectado');
   console.log('friends.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -72,55 +72,143 @@ async function stats(env) {
   return out;
 }
 
-// ---- Amigos y estado en línea (Durable Object en memoria: no gasta escrituras de KV) ----
+// ---- Amigos, estado en línea y chat (Durable Object con almacenamiento propio: no gasta escrituras de KV) ----
+// Cada instalación manda un token secreto; el primero que reclama un nick lo conserva (el token se guarda hasheado).
 const ONLINE_MS = 150 * 1000;
-const MAX_NICKS = 50;
+const NICKRE = /^[A-Za-z0-9_]{3,16}$/;
+const TOKRE = /^[A-Za-z0-9_-]{16,64}$/;
+const MAX_FRIENDS = 50;
+const MAX_MSGS = 80;
+const OPS = new Set(['sync', 'leave', 'request', 'accept', 'remove', 'send', 'poll']);
+
+async function sha256(text) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+const low = (n) => String(n).toLowerCase();
+const pairKey = (a, b) => 'c:' + [low(a), low(b)].sort().join('|');
+const has = (list, n) => list.some((x) => low(x) === low(n));
+const without = (list, n) => list.filter((x) => low(x) !== low(n));
+
 export class Presence {
-  constructor() { this.m = new Map(); }
-  prune(now) { if (this.m.size > 5000) for (const [k, v] of this.m) if (now - v.last > ONLINE_MS) this.m.delete(k); }
+  constructor(state) { this.st = state.storage; this.cache = new Map(); }
+  async user(nick) {
+    const k = low(nick);
+    if (!this.cache.has(k)) {
+      if (this.cache.size > 3000) this.cache.clear();
+      this.cache.set(k, (await this.st.get('u:' + k)) || { n: nick, f: [], i: [], o: [], seen: 0, playing: false, r: {} });
+    }
+    return this.cache.get(k);
+  }
+  async save(u) { this.cache.set(low(u.n), u); await this.st.put('u:' + low(u.n), u); }
+  async auth(b) {
+    const nick = String(b.nick || '');
+    const tok = String(b.token || '');
+    if (!NICKRE.test(nick) || !TOKRE.test(tok)) return null;
+    const u = await this.user(nick);
+    const h = await sha256(tok);
+    if (!u.h) { u.h = h; u.n = nick; await this.save(u); return u; }
+    return u.h === h ? u : null;
+  }
+  online(u, now) { return !!u && now - (u.seen || 0) <= ONLINE_MS; }
+
   async fetch(request) {
-    const url = new URL(request.url);
+    const op = new URL(request.url).pathname.slice(1);
     const now = Date.now();
     let b = {};
     try { b = JSON.parse(await request.text()); } catch { return json({ error: 'bad_json' }, 400); }
-    if (url.pathname === '/beat') {
-      const nick = String(b.nick || '');
-      if (!/^[A-Za-z0-9_]{3,16}$/.test(nick)) return json({ error: 'bad_nick' }, 400);
-      this.m.set(nick.toLowerCase(), { last: now, playing: !!b.playing });
-      this.prune(now);
-      return json({ ok: true });
-    }
-    if (url.pathname === '/leave') {
-      const nick = String(b.nick || '').toLowerCase();
-      this.m.delete(nick);
-      return json({ ok: true });
-    }
-    if (url.pathname === '/query') {
-      const nicks = (Array.isArray(b.nicks) ? b.nicks : []).map(String).filter((n) => /^[A-Za-z0-9_]{3,16}$/.test(n)).slice(0, MAX_NICKS);
-      const out = {};
-      for (const n of nicks) {
-        const v = this.m.get(n.toLowerCase());
-        out[n] = v && now - v.last <= ONLINE_MS ? { online: true, playing: v.playing } : { online: false, playing: false };
+    if (!OPS.has(op)) return json({ error: 'not_found' }, 404);
+    const me = await this.auth(b);
+    if (!me) return json({ error: 'auth' }, 401);
+
+    if (op === 'leave') { me.seen = 0; await this.save(me); return json({ ok: true }); }
+
+    if (op === 'sync') {
+      if (now - (me.seen || 0) > 30000 || me.playing !== !!b.playing) { me.seen = now; me.playing = !!b.playing; await this.save(me); }
+      const friends = [];
+      const keys = me.f.map((n) => pairKey(me.n, n));
+      const chats = keys.length ? await this.st.get(keys) : new Map();
+      for (const n of me.f) {
+        const o = await this.user(n);
+        const msgs = chats.get(pairKey(me.n, n)) || [];
+        const unread = msgs.filter((m) => low(m.f) === low(n) && m.id > ((me.r || {})[low(n)] || 0)).length;
+        friends.push({ nick: o.n, online: this.online(o, now), playing: this.online(o, now) && !!o.playing, seen: o.seen || 0, unread });
       }
-      return json({ status: out });
+      friends.sort((x, y) => (y.online - x.online) || x.nick.localeCompare(y.nick));
+      return json({ friends, incoming: me.i, outgoing: me.o, now });
+    }
+
+    const to = String(b.to || b.with || '');
+    if (!NICKRE.test(to) || low(to) === low(me.n)) return json({ error: 'bad_nick' }, 400);
+
+    if (op === 'request') {
+      if (has(me.f, to)) return json({ error: 'already' }, 409);
+      if (me.f.length >= MAX_FRIENDS) return json({ error: 'full' }, 409);
+      const o = await this.user(to);
+      if (has(me.i, to)) return this.accept(me, o);
+      if (!has(me.o, to)) {
+        if (o.i.length >= MAX_FRIENDS) return json({ error: 'busy' }, 409);
+        me.o.push(o.n); o.i.push(me.n);
+        await this.save(me); await this.save(o);
+      }
+      return json({ ok: true, status: 'pending' });
+    }
+    if (op === 'accept') {
+      if (!has(me.i, to)) return json({ error: 'no_request' }, 404);
+      return this.accept(me, await this.user(to));
+    }
+    if (op === 'remove') {
+      const o = await this.user(to);
+      for (const [x, y] of [[me, o], [o, me]]) { x.f = without(x.f, y.n); x.i = without(x.i, y.n); x.o = without(x.o, y.n); await this.save(x); }
+      await this.st.delete(pairKey(me.n, o.n));
+      return json({ ok: true });
+    }
+
+    // chat: solo entre amigos
+    if (!has(me.f, to)) return json({ error: 'not_friends' }, 403);
+    const key = pairKey(me.n, to);
+    const msgs = (await this.st.get(key)) || [];
+    if (op === 'send') {
+      const text = String(b.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 300);
+      if (!text) return json({ error: 'empty' }, 400);
+      const id = (msgs.length ? msgs[msgs.length - 1].id : 0) + 1;
+      msgs.push({ id, f: me.n, t: text, ts: now });
+      while (msgs.length > MAX_MSGS) msgs.shift();
+      await this.st.put(key, msgs);
+      return json({ ok: true, id });
+    }
+    if (op === 'poll') {
+      const since = Number(b.since) || 0;
+      const last = msgs.length ? msgs[msgs.length - 1].id : 0;
+      if ((me.r || {})[low(to)] !== last) { me.r = { ...(me.r || {}), [low(to)]: last }; await this.save(me); }
+      const o = await this.user(to);
+      return json({ messages: msgs.filter((m) => m.id > since), online: this.online(o, now), playing: this.online(o, now) && !!o.playing });
     }
     return json({ error: 'not_found' }, 404);
   }
+  async accept(me, o) {
+    me.i = without(me.i, o.n); me.o = without(me.o, o.n);
+    o.i = without(o.i, me.n); o.o = without(o.o, me.n);
+    if (!has(me.f, o.n)) me.f.push(o.n);
+    if (!has(o.f, me.n)) o.f.push(me.n);
+    await this.save(me); await this.save(o);
+    return json({ ok: true, status: 'accepted' });
+  }
 }
 
-async function presence(request, env, path) {
+async function presence(request, env, op) {
   if (!env.PRESENCE) return json({ error: 'no_presence' }, 503);
   const text = await request.text();
   if (text.length > 2048) return json({ error: 'too_big' }, 413);
   const stub = env.PRESENCE.get(env.PRESENCE.idFromName('global'));
-  return stub.fetch(new Request(`https://presence${path}`, { method: 'POST', body: text }));
+  return stub.fetch(new Request(`https://presence/${op}`, { method: 'POST', body: text }));
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/ping') return handlePing(request, env);
-    if (request.method === 'POST' && ['/presence/beat', '/presence/leave', '/presence/query'].includes(url.pathname)) return presence(request, env, url.pathname.slice(9));
+    if (request.method === 'POST' && url.pathname.startsWith('/presence/') && OPS.has(url.pathname.slice(10))) return presence(request, env, url.pathname.slice(10));
     if (request.method === 'GET' && url.pathname === '/stats') {
       const { total, day, week } = await stats(env);
       return json({ total, day, week });
