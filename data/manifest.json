@@ -1,10 +1,10 @@
 {
   "event": {
-    "active": true,
+    "active": false,
     "name": "PROXIMAMENTE",
     "tagline": "Estamos preparando el siguiente evento. Pronto verás aquí todos los detalles.",
     "startsAt": "",
-    "status": "active",
+    "status": "soon",
     "image": "images/banner-keo-optimized-mwlfgqsd.jpg",
     "logo": ""
   },
