@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.60
+- Los perfiles **Nova** ahora instalan también **Nova Client** (mod propio, repo javierroman94/Nova-Client): menú en el juego con Shift derecho y módulos FPS, CPS, coordenadas, teclas, armadura y zoom (tecla C). Por ahora solo para Minecraft 1.21.1.
+
 ## 1.0.59
 - Pantalla de carga animada: órbitas, halo giratorio, partículas, barra con flujo de color y mensajes de estado.
 - Crear instancia: nuevo perfil **Nova** (Fabric + Sodium, Lithium, FerriteCore, ModernFix, Entity Culling, ScalableLux, Iris… basado en packs optimizados como Keo Optimized), opción **OptiFine** (perfil Forge + .jar oficial que añade el jugador) y casilla para ver también snapshots.

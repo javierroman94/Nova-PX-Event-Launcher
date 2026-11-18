@@ -1236,6 +1236,7 @@ $('mp-create-form').addEventListener('submit', async (e) => {
     const entry = await window.api.modpackCreate({ name: $('mc-name').value, icon: $('mc-emoji').value, mcVersion: $('mc-version').value, loader: $('mc-loader').value });
     $('mp-create-modal').close();
     toast(`Instancia "${entry.title}" creada${entry.novaSkipped && entry.novaSkipped.length ? ` (sin ${entry.novaSkipped.length} mod(s) que no existen para esa versión)` : ''}`);
+    if (entry.preset === 'nova') toast(entry.novaClient ? 'Nova Client instalado: en el juego pulsa Shift derecho para abrir su menú.' : `Nova Client todavía no tiene versión para Minecraft ${entry.mcVersion} (por ahora solo 1.21.1).`);
     if (entry.preset === 'optifine') toast('Ahora descarga OptiFine en optifine.net y añade el .jar en Mods.');
     await loadInstalled();
     openDetail(entry);

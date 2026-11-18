@@ -943,6 +943,10 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
         { onStatus: progress }
       );
       entry.novaSkipped = r.skipped;
+      progress('Instalando Nova Client…');
+      try {
+        entry.novaClient = await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion });
+      } catch { entry.novaClient = null; }
     } finally {
       progress('Listo');
     }
