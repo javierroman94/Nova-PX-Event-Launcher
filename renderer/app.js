@@ -1026,6 +1026,7 @@ async function renderLibrary() {
   if (!libShowHidden) list = list.filter((p) => !libHidden.has(p.id));
   list = [...list.filter((p) => libPins.has(p.id)), ...list.filter((p) => !libPins.has(p.id))];
   host.replaceChildren();
+  paintLibStats();
   $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
     ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}${hiddenCount ? ` · ${hiddenCount} oculto${hiddenCount === 1 ? '' : 's'}${libShowHidden ? ' (visibles)' : ''}` : ''}`
@@ -1042,6 +1043,20 @@ async function renderLibrary() {
     const grid = el('div', 'events-grid mp-grid');
     items.forEach((p) => { const c = packCard(p); c.classList.toggle('pinned', libPins.has(p.id)); c.classList.toggle('is-hidden', libHidden.has(p.id)); grid.append(c); });
     host.append(grid);
+  });
+}
+function paintLibStats() {
+  const box = $('mp-lib-stats');
+  const all = mp.installed.filter((p) => !p.protected && p.provider !== 'event');
+  if (!all.length) { box.hidden = true; return; }
+  box.hidden = false; box.replaceChildren();
+  const last = [...all].filter((p) => p.lastPlayedAt).sort((a, b) => String(b.lastPlayedAt).localeCompare(String(a.lastPlayedAt)))[0];
+  const loaders = {};
+  all.forEach((p) => { const n = LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'; loaders[n] = (loaders[n] || 0) + 1; });
+  const top = Object.entries(loaders).sort((a, b) => b[1] - a[1])[0];
+  const mine = all.filter((p) => p.provider === 'custom').length;
+  [['📦', String(all.length), all.length === 1 ? 'modpack' : 'modpacks'], ['🛠', String(mine), 'creados por ti'], ['🧩', top ? top[0] : '–', 'loader más usado'], ['🕘', last ? last.title : 'Aún nada', 'último que jugaste']].forEach(([i, v, l]) => {
+    const t = el('div', 'lib-stat'); const b = el('div'); b.append(el('strong', '', v), el('span', 'muted', l)); t.append(el('span', 'lib-stat-ico', i), b); box.append(t);
   });
 }
 // Estado vacío de la biblioteca: con acciones directas en vez de una línea de texto suelta.
@@ -1761,6 +1776,7 @@ async function doImport(arg) {
     importing = false;
   }
 }
+$('mp-import-launchers').addEventListener('click', () => openLauncherImport());
 $('mp-import-file').addEventListener('click', () => doImport({ kind: 'file' }));
 $('mp-import-folder').addEventListener('click', () => doImport({ kind: 'folder' }));
 
@@ -4203,7 +4219,76 @@ $('np-modal').addEventListener('click', (e) => { if (e.target === $('np-modal'))
 $('np-wizard').addEventListener('click', () => { $('np-modal').close(); $('mp-go-create').click(); });
 $('np-install').addEventListener('click', () => { $('np-modal').close(); $('mp-go-discover').click(); });
 $('np-file').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'file' }); });
-$('np-other').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'folder' }); });
+$('np-folder').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'folder' }); });
+$('np-other').addEventListener('click', () => { $('np-modal').close(); openLauncherImport(); });
+
+/* --- importar desde otros launchers (detección automática) --- */
+const LM_ICONS = { 'Prism Launcher': '🔷', PolyMC: '🔷', MultiMC: '🟫', ATLauncher: '🟦', 'CurseForge App': '🔶', 'Modrinth App': '🟩', GDLauncher: '🟪' };
+const lmSel = new Set();
+function lmCount() {
+  const total = document.querySelectorAll('#lm-list .lm-item:not(.off)').length;
+  $('lm-count').textContent = `${lmSel.size} de ${total} marcadas`;
+  $('lm-go').disabled = !lmSel.size;
+  $('lm-go').textContent = lmSel.size ? `Importar ${lmSel.size} ${lmSel.size === 1 ? 'instancia' : 'instancias'}` : 'Importar seleccionadas';
+  $('lm-all').checked = total > 0 && lmSel.size === total;
+}
+async function openLauncherImport() {
+  lmSel.clear();
+  const list = $('lm-list');
+  list.replaceChildren(el('p', 'muted lm-empty', 'Buscando instancias…'));
+  $('lm-modal').showModal();
+  lmCount();
+  let found = [];
+  try { found = await window.api.launchersScan(); } catch (e) { toast(cleanError(e), 'error'); }
+  list.replaceChildren();
+  if (!found.length) {
+    const box = el('div', 'lm-empty');
+    box.append(el('strong', '', 'No encontré instancias en las carpetas habituales'), el('p', 'muted', 'Si las guardas en otro sitio, usa «Elegir carpeta a mano» y selecciona la carpeta de la instancia.'));
+    list.append(box); lmCount(); return;
+  }
+  const groups = new Map();
+  found.forEach((x) => { if (!groups.has(x.launcher)) groups.set(x.launcher, []); groups.get(x.launcher).push(x); });
+  groups.forEach((items, name) => {
+    const g = el('section', 'lm-group');
+    const h = el('h4', '', ''); h.append(el('span', 'lm-gico', LM_ICONS[name] || '📁'), document.createTextNode(` ${name} `), el('small', 'muted', `${items.length}`));
+    g.append(h);
+    items.forEach((x) => {
+      const row = el('label', `lm-item${x.unsupported ? ' off' : ''}`);
+      const cb = el('input'); cb.type = 'checkbox'; cb.disabled = !!x.unsupported;
+      cb.addEventListener('change', () => { cb.checked ? lmSel.add(x.dir) : lmSel.delete(x.dir); lmCount(); });
+      const body = el('div', 'lm-body');
+      body.append(el('strong', '', x.name));
+      const chips = el('div', 'ad-chips');
+      chips.append(chip(`Minecraft ${x.mcVersion}`), chip(x.loader && x.loader.type !== 'vanilla' ? x.loader.type[0].toUpperCase() + x.loader.type.slice(1) : 'Vanilla'));
+      if (x.mods) chips.append(chip(`${x.mods} mods`, 'ok'));
+      if (x.unsupported) chips.append(chip(`${x.unsupported}: aún no soportado`, 'warn'));
+      body.append(chips);
+      row.append(cb, body);
+      g.append(row);
+    });
+    list.append(g);
+  });
+  lmCount();
+}
+$('lm-close').addEventListener('click', () => $('lm-modal').close());
+$('lm-modal').addEventListener('click', (e) => { if (e.target === $('lm-modal')) $('lm-modal').close(); });
+$('lm-manual').addEventListener('click', () => { $('lm-modal').close(); doImport({ kind: 'folder' }); });
+$('lm-all').addEventListener('change', (e) => {
+  document.querySelectorAll('#lm-list .lm-item:not(.off) input').forEach((cb) => { cb.checked = e.target.checked; cb.dispatchEvent(new Event('change')); });
+});
+$('lm-go').addEventListener('click', async () => {
+  if (importing || !lmSel.size) return;
+  importing = true;
+  const dirs = [...lmSel];
+  $('lm-modal').close();
+  try {
+    busyShow('Importando instancias', { text: 'Copiando archivos…' });
+    const r = await window.api.launchersImport(dirs);
+    if (r.ok.length) toast(`${r.ok.length} ${r.ok.length === 1 ? 'instancia importada' : 'instancias importadas'}`);
+    r.failed.forEach((f) => toast(`${f.name}: ${f.error}`, 'error'));
+    await loadInstalled();
+  } catch (e) { toast(cleanError(e), 'error'); renderLibrary(); } finally { busyHide(); importing = false; }
+});
 $('np-search-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const q = $('np-search').value.trim();

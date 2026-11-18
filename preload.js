@@ -127,6 +127,8 @@ contextBridge.exposeInMainWorld('api', {
   instanceUpdatesCheck: (id) => ipcRenderer.invoke('instance:updatesCheck', id),
   instanceUpdatesApply: (id) => ipcRenderer.invoke('instance:updatesApply', id),
   modpackImport: (p) => ipcRenderer.invoke('modpacks:import', p),
+  launchersScan: () => ipcRenderer.invoke('launchers:scan'),
+  launchersImport: (dirs) => ipcRenderer.invoke('launchers:import', dirs),
   modpackExport: (p) => ipcRenderer.invoke('modpacks:export', p),
   pathForFile: (f) => webUtils.getPathForFile(f),
   onImportOpen: (cb) => ipcRenderer.on('import:open', (_e, d) => cb(d)),

@@ -288,15 +288,17 @@
       <!-- Biblioteca -->
       <div id="mp-view-library">
         <div class="events-head">
-          <h2 class="mp-heading">Biblioteca</h2>
+          <div class="lib-title"><h2 class="mp-heading">Biblioteca</h2><p class="muted">Tus perfiles de Minecraft, cada uno con su carpeta separada.</p></div>
           <div class="mp-actions">
-            <button id="mp-import-file" type="button">Importar archivo</button>
-            <button id="mp-import-folder" type="button">Importar carpeta</button>
+            <button id="mp-import-file" type="button" hidden>Importar archivo</button>
+            <button id="mp-import-folder" type="button" hidden>Importar carpeta</button>
+            <button id="mp-import-launchers" type="button">🔎 Importar de otro launcher</button>
             <button id="mp-go-create" type="button" hidden>+ Crear instancia</button>
             <button id="mp-new-profile" type="button" class="primary">+ Nuevo perfil</button>
             <button id="mp-go-discover" type="button">Explorar modpacks</button>
           </div>
         </div>
+        <div id="mp-lib-stats" class="lib-stats" hidden></div>
         <div class="mp-toolbar">
           <input id="mp-lib-search" class="events-search" type="search" placeholder="Buscar en mi biblioteca…" aria-label="Buscar en mi biblioteca" autocomplete="off" />
           <select id="mp-lib-sort" aria-label="Ordenar por"><option value="recent">Último juego</option><option value="name">Nombre</option><option value="mc">Versión de Minecraft</option></select>
@@ -496,15 +498,27 @@
       <dialog id="np-modal" class="event-modal np-modal" aria-label="Nuevo perfil">
         <div class="event-modal-body">
           <div class="np-top"><h3>Nuevo perfil</h3><button id="np-close" type="button" class="ghost" aria-label="Cerrar">✕</button></div>
-          <p class="muted">Crea un perfil nuevo o importa uno que ya tengas.</p>
-          <label for="np-search">¿Ya sabes qué quieres jugar?</label>
-          <form id="np-search-form"><input id="np-search" class="events-search np-search" type="search" placeholder="Busca mods, modpacks y más…" autocomplete="off" /></form>
+          <label for="np-search" class="np-q">¿Ya sabes qué quieres jugar?</label>
+          <form id="np-search-form"><span class="np-search-ico" aria-hidden="true">⌕</span><input id="np-search" class="events-search np-search" type="search" placeholder="Busca mods, modpacks y más…" autocomplete="off" /></form>
+          <div class="np-or"><span>o elige cómo empezar</span></div>
           <div class="np-grid">
-            <button type="button" class="np-card" id="np-wizard"><b>Asistente</b><span>Crea tu propio perfil desde cero en pocos clics.</span></button>
-            <button type="button" class="np-card" id="np-install"><b>Instalar modpack</b><span>Explora modpacks de la comunidad (Modrinth) e instala uno.</span></button>
-            <button type="button" class="np-card" id="np-file"><b>Importar archivo</b><span>Elige un archivo y yo me encargo del resto.</span><small>Admite .novapx, .mrpack y .zip</small></button>
-            <button type="button" class="np-card" id="np-other"><b>Desde otros launchers</b><span>Pasa tus perfiles de Prism, MultiMC, ATLauncher o Modrinth.</span><small>Selecciona la carpeta de la instancia</small></button>
+            <button type="button" class="np-card" id="np-wizard"><span class="np-ico">🧩</span><span class="np-txt"><b>Asistente</b><span>Crea tu propio perfil desde cero: eliges loader y versión de Minecraft.</span></span></button>
+            <button type="button" class="np-card" id="np-install"><span class="np-ico">🧭</span><span class="np-txt"><b>Instalar modpack</b><span>Explora los modpacks de la comunidad (Modrinth) e instala uno con su última versión.</span></span></button>
+            <button type="button" class="np-card" id="np-file"><span class="np-ico">📦</span><span class="np-txt"><b>Importar archivo</b><span>Instala un modpack desde tu equipo. Admite .novapx, .mrpack y .zip.</span></span></button>
+            <button type="button" class="np-card np-hot" id="np-other"><span class="np-ico">🔎</span><span class="np-txt"><b>Importar desde otros launchers <i class="np-new">Nuevo</i></b><span>Busca solo tus instancias de Prism, MultiMC, ATLauncher, CurseForge y Modrinth App.</span></span></button>
+            <button type="button" class="np-card" id="np-folder"><span class="np-ico">📁</span><span class="np-txt"><b>Importar una carpeta</b><span>Elige tú la carpeta de una instancia, esté donde esté.</span></span></button>
           </div>
+        </div>
+      </dialog>
+
+      <!-- Importar desde otros launchers -->
+      <dialog id="lm-modal" class="event-modal lm-modal" aria-label="Importar desde otros launchers">
+        <div class="event-modal-body">
+          <div class="np-top"><h3>Importar desde otros launchers</h3><button id="lm-close" type="button" class="ghost" aria-label="Cerrar">✕</button></div>
+          <p class="muted">Encontré estas instancias en tu equipo. Marca las que quieras copiar a Nova PX; las originales no se tocan.</p>
+          <div class="lm-bar"><label class="lm-all"><input id="lm-all" type="checkbox" /> Marcar todas</label><span id="lm-count" class="muted"></span></div>
+          <div id="lm-list" class="lm-list"></div>
+          <div class="lm-actions"><button id="lm-manual" type="button" class="ghost">Elegir carpeta a mano…</button><button id="lm-go" type="button" class="primary" disabled>Importar seleccionadas</button></div>
         </div>
       </dialog>
 

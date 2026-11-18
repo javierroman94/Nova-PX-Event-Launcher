@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.79
+- Importación directa desde otros launchers: el launcher busca solo tus instancias de Prism, PolyMC, MultiMC, ATLauncher, CurseForge App y Modrinth App en sus carpetas habituales, las lista con versión, loader y número de mods, y copia las que marques (las originales no se tocan). Las de NeoForge/Quilt salen avisadas como no soportadas.
+- "Nuevo perfil" rediseñado al estilo Modrinth: buscador con foco, divisor "o" y una columna de opciones con icono (Asistente, Instalar modpack, Importar archivo, Importar desde otros launchers, Importar una carpeta).
+- Biblioteca rediseñada: encabezado con descripción, tarjetas de resumen (modpacks, creados por ti, loader más usado, último jugado), barra de filtros en panel y tarjetas más grandes.
+
 ## 1.0.78
 - Admin → Noticias rediseñado: tarjeta por noticia con imagen en miniatura, título grande, selector de fecha, texto con contador, enlaces a la vista y vista previa en vivo de cómo se ve en Inicio.
 

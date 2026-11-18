@@ -1610,6 +1610,37 @@ ipcMain.handle('modpacks:import', async (_e, p = {}) => {
   }
 });
 
+// Instancias de otros launchers detectadas en sus carpetas habituales (solo lectura).
+let lastLauncherScan = [];
+ipcMain.handle('launchers:scan', async () => {
+  lastLauncherScan = require('./lib/launchers').scan();
+  return lastLauncherScan.map((x) => ({ launcher: x.launcher, name: x.name, dir: x.dir, mcVersion: x.mcVersion, loader: x.loader, unsupported: x.unsupported, mods: x.mods }));
+});
+// Importa varias de una vez. Solo acepta carpetas que salieron del escaneo anterior.
+ipcMain.handle('launchers:import', async (_e, dirs) => {
+  if (installingPack) throw new Error('Ya se está instalando un modpack.');
+  if (launching) throw new Error('Cierra Minecraft antes de importar.');
+  const allowed = new Set(lastLauncherScan.map((x) => x.dir));
+  const want = (Array.isArray(dirs) ? dirs : []).filter((d) => typeof d === 'string' && allowed.has(d)).slice(0, 40);
+  if (!want.length) throw new Error('No hay nada seleccionado.');
+  installingPack = true;
+  const ok = [], failed = [];
+  try {
+    for (const d of want) {
+      try {
+        const entry = await importFromPath(d);
+        writeModpacks([...readModpacks(), entry]);
+        ok.push(entry.title);
+      } catch (err) { failed.push({ name: path.basename(d), error: String(err && err.message || err) }); }
+    }
+    send('modpack:progress', { text: 'Listo' });
+    send('modpacks:changed', {});
+    return { ok, failed };
+  } finally {
+    installingPack = false;
+  }
+});
+
 ipcMain.handle('modpacks:export', async (_e, p = {}) => {
   const { entry, root } = packRoot(p.id);
   if (launching) throw new Error('Cierra Minecraft antes de exportar.');
