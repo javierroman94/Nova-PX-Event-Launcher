@@ -494,32 +494,42 @@
       </dialog>
 
       <!-- Crear instancia propia -->
-      <dialog id="mp-create-modal" class="event-modal" aria-label="Crear instancia">
+      <dialog id="mp-create-modal" class="event-modal mcw" aria-label="Crear instancia">
         <form id="mp-create-form" class="event-modal-body">
-          <h3>Crear instancia</h3>
+          <div class="mcw-head">
+            <div id="mcw-icon" class="mcw-icon" aria-hidden="true">🌲</div>
+            <div class="mcw-head-text">
+              <h3>Crear instancia</h3>
+              <p id="mcw-preview" class="muted">Tu propio perfil de Minecraft, con su carpeta separada.</p>
+            </div>
+          </div>
           <div class="field inline">
-            <div><label for="mc-name">Nombre</label><input id="mc-name" type="text" maxlength="60" required placeholder="Mi survival" autocomplete="off" /></div>
+            <div><label for="mc-name">Nombre</label><input id="mc-name" type="text" maxlength="60" placeholder="Mi survival" autocomplete="off" /></div>
             <div><label for="mc-emoji">Icono (emoji)</label><input id="mc-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
           </div>
-          <div class="field inline">
-            <div><label for="mc-version">Versión de Minecraft</label><select id="mc-version"></select></div>
-            <div><label for="mc-loader">Loader</label>
-              <select id="mc-loader">
-                <option value="nova">⚡ Nova (optimizado)</option>
-                <option value="fabric">Fabric</option>
-                <option value="forge">Forge</option>
-                <option value="optifine">OptiFine (vía Forge)</option>
-                <option value="vanilla">Vanilla</option>
-              </select></div>
+          <div id="mcw-emojis" class="mcw-emojis" role="group" aria-label="Iconos rápidos"></div>
+
+          <label class="mcw-label">1 · Tipo de perfil</label>
+          <div id="mcw-loaders" class="mcw-loaders" role="radiogroup" aria-label="Tipo de perfil"></div>
+          <select id="mc-loader" hidden>
+            <option value="nova">Nova</option><option value="fabric">Fabric</option><option value="forge">Forge</option><option value="optifine">OptiFine</option><option value="vanilla">Vanilla</option>
+          </select>
+
+          <label class="mcw-label" for="mcw-search">2 · Versión de Minecraft</label>
+          <div class="mcw-vhead">
+            <input id="mcw-search" class="events-search" type="search" placeholder="Buscar versión (ej. 1.20)" autocomplete="off" />
+            <label class="check mcw-snap"><input id="mc-snap" type="checkbox" /> Incluir snapshots</label>
           </div>
-          <label class="check"><input id="mc-snap" type="checkbox" /> Mostrar también snapshots (versiones de prueba)</label>
-          <small id="mc-loader-hint" class="muted"></small>
           <div id="mc-popular" class="ver-grid" role="group" aria-label="Versiones populares"></div>
-          <small class="muted">Se crea una carpeta vacía y propia. Después añades mods, shaders y texturas desde la instancia.</small>
+          <div id="mcw-list" class="mcw-list" role="listbox" aria-label="Todas las versiones"></div>
+          <select id="mc-version" hidden></select>
+
+          <div id="mcw-summary" class="mcw-summary" aria-live="polite"></div>
+          <small id="mc-loader-hint" class="muted" hidden></small>
           <p id="mc-status" class="muted" role="status"></p>
           <div class="mp-actions">
             <button id="mc-cancel" type="button">Cancelar</button>
-            <button id="mc-create" type="submit" class="primary">Crear</button>
+            <button id="mc-create" type="submit" class="primary">Crear instancia</button>
           </div>
         </form>
       </dialog>

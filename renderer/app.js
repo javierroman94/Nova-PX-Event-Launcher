@@ -1190,17 +1190,96 @@ async function loadMcVersions(...selects) {
   });
 }
 
+/* --- asistente "Crear instancia" --- */
+const LOADER_INFO = {
+  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris y Nova Client. Máximo rendimiento.' },
+  fabric: { icon: '🧵', name: 'Fabric', tag: '', desc: 'Ligero y rápido. Mods modernos (desde 1.14).' },
+  forge: { icon: '🔨', name: 'Forge', tag: '', desc: 'El clásico: el más compatible con modpacks antiguos.' },
+  optifine: { icon: '🔭', name: 'OptiFine', tag: 'Con tu .jar', desc: 'Forge + OptiFine oficial (lo descargas tú de optifine.net).' },
+  vanilla: { icon: '🧱', name: 'Vanilla', tag: '', desc: 'Minecraft puro, sin mods.' }
+};
+const QUICK_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎', '🐉', '🎮', '🌙'];
+// Versión como lista de números para comparar ("1.20.1" → [1,20,1]); los snapshots (24w14a) no se comparan.
+const verParts = (v) => { const m = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(String(v || '')); return m ? [+m[1], +m[2], +(m[3] || 0)] : null; };
+const verAtLeast = (v, min) => { const a = verParts(v); if (!a) return true; for (let i = 0; i < 3; i++) { if (a[i] !== (min[i] || 0)) return a[i] > (min[i] || 0); } return true; };
+const javaFor = (v) => { const a = verParts(v); if (!a) return null; if (a[0] >= 26) return 25; if (verAtLeast(v, [1, 20, 5])) return 21; if (verAtLeast(v, [1, 18, 0])) return 17; if (verAtLeast(v, [1, 17, 0])) return 16; return 8; };
+const loaderOk = (loader, v) => (loader === 'fabric' || loader === 'nova') ? verAtLeast(v, [1, 14, 0]) : true;
+
+function paintWizard() {
+  const ver = $('mc-version').value;
+  let loader = $('mc-loader').value;
+  if (!loaderOk(loader, ver)) { loader = 'forge'; $('mc-loader').value = loader; }
+  // tarjetas de tipo de perfil
+  const box = $('mcw-loaders');
+  box.replaceChildren();
+  Object.entries(LOADER_INFO).forEach(([id, info]) => {
+    const ok = loaderOk(id, ver);
+    const c = el('button', 'mcw-loader');
+    c.type = 'button'; c.disabled = !ok;
+    c.setAttribute('role', 'radio'); c.setAttribute('aria-checked', String(loader === id));
+    c.classList.toggle('active', loader === id);
+    const top = el('div', 'mcw-loader-top');
+    top.append(el('span', 'mcw-loader-ico', info.icon), el('b', '', info.name));
+    if (info.tag) top.append(el('span', 'mcw-tag', info.tag));
+    c.append(top, el('small', '', ok ? info.desc : `No disponible en Minecraft ${ver} (necesita 1.14 o más).`));
+    c.addEventListener('click', () => { $('mc-loader').value = id; paintWizard(); });
+    box.append(c);
+  });
+  // versiones populares + lista completa filtrada
+  paintPopularVersions();
+  const q = $('mcw-search').value.trim().toLowerCase();
+  const list = $('mcw-list');
+  list.replaceChildren();
+  const shown = (mcList || []).filter((v) => !q || v.toLowerCase().includes(q));
+  shown.slice(0, 400).forEach((v) => {
+    const b = el('button', 'ver-chip', v);
+    b.type = 'button'; b.setAttribute('role', 'option');
+    b.classList.toggle('active', ver === v);
+    b.addEventListener('click', () => { $('mc-version').value = v; paintWizard(); });
+    list.append(b);
+  });
+  if (!shown.length) list.append(el('p', 'muted', q ? `Ninguna versión coincide con "${q}".` : 'No se pudo cargar la lista de versiones.'));
+  const act = list.querySelector('.active'); if (act && !q) act.scrollIntoView({ block: 'nearest' });
+  // resumen
+  const info = LOADER_INFO[loader];
+  const java = javaFor(ver);
+  const sum = $('mcw-summary');
+  sum.replaceChildren();
+  const row = el('div', 'mcw-sum-row');
+  row.append(el('span', 'chip', `Minecraft ${ver}`), el('span', 'chip', `${info.icon} ${info.name}`));
+  if (java) row.append(el('span', 'chip', `Java ${java}`));
+  sum.append(row);
+  const notes = [];
+  if (loader === 'nova') notes.push(NOVA_CLIENT_MC.includes(ver) ? 'Incluye Nova Client (menú con Shift derecho).' : `Nova Client todavía no existe para ${ver}; se instalan solo los mods de rendimiento.`);
+  if (loader === 'optifine') notes.push('Después de crear la instancia, añade el .jar de OptiFine en Mods.');
+  if (java) notes.push(`El launcher instala Java ${java} solo si hace falta.`);
+  sum.append(el('small', 'muted', notes.join(' ')));
+  // cabecera
+  $('mcw-icon').textContent = $('mc-emoji').value.trim() || info.icon;
+  $('mcw-preview').textContent = `${$('mc-name').value.trim() || 'Mi instancia'} · Minecraft ${ver} · ${info.name}`;
+  $('mc-create').disabled = !(mcList || []).length;
+}
+const NOVA_CLIENT_MC = ['1.21.1']; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
+
 $('mp-go-create').addEventListener('click', async () => {
   $('mc-name').value = '';
   $('mc-emoji').value = '';
+  $('mcw-search').value = '';
+  $('mc-loader').value = 'nova';
   $('mc-status').textContent = 'Cargando versiones de Minecraft…';
-  paintLoaderHint();
   $('mc-create').disabled = true;
+  const eb = $('mcw-emojis');
+  eb.replaceChildren();
+  QUICK_EMOJIS.forEach((e) => {
+    const b = el('button', 'mcw-emoji', e); b.type = 'button';
+    b.addEventListener('click', () => { $('mc-emoji').value = e; paintWizard(); });
+    eb.append(b);
+  });
   $('mp-create-modal').showModal();
   await loadMcVersions($('mc-version'));
-  paintPopularVersions();
+  if (mcList.length) $('mc-version').value = mcList.includes('1.21.1') ? '1.21.1' : mcList[0]; // 1.21.1: ya tiene Nova Client
+  paintWizard();
   $('mc-status').textContent = mcList.length ? '' : 'No se pudo cargar la lista de versiones.';
-  $('mc-create').disabled = !mcList.length;
   $('mc-name').focus();
 });
 /* versiones populares en cuadrícula */
@@ -1213,27 +1292,24 @@ function paintPopularVersions() {
     const b = el('button', 'ver-chip', v);
     b.type = 'button';
     b.classList.toggle('active', $('mc-version').value === v);
-    b.addEventListener('click', () => { $('mc-version').value = v; paintPopularVersions(); });
+    b.addEventListener('click', () => { $('mc-version').value = v; paintWizard(); });
     box.append(b);
   });
 }
-$('mc-version').addEventListener('change', paintPopularVersions);
-$('mc-snap').addEventListener('change', async () => { await loadMcVersions($('mc-version')); paintPopularVersions(); });
-const LOADER_HINTS = {
-  nova: 'Instala solo los mods de rendimiento que usan los packs optimizados (Sodium, Lithium, FerriteCore, ModernFix, Entity Culling, Iris…). Los que no existan para esa versión se saltan.',
-  optifine: 'OptiFine no se puede descargar desde aquí (su licencia lo impide). Se crea un perfil Forge: baja el .jar oficial de optifine.net y añádelo en Mods > Añadir archivo.',
-  fabric: '', forge: '', vanilla: ''
-};
-function paintLoaderHint() { $('mc-loader-hint').textContent = LOADER_HINTS[$('mc-loader').value] || ''; }
-$('mc-loader').addEventListener('change', paintLoaderHint);
+$('mc-snap').addEventListener('change', async () => { const keep = $('mc-version').value; await loadMcVersions($('mc-version')); if (mcList.includes(keep)) $('mc-version').value = keep; paintWizard(); });
+$('mcw-search').addEventListener('input', paintWizard);
+$('mc-name').addEventListener('input', paintWizard);
+$('mc-emoji').addEventListener('input', paintWizard);
 
 $('mc-cancel').addEventListener('click', () => $('mp-create-modal').close());
 $('mp-create-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('mc-create').disabled = true;
   try {
-    $('mc-status').textContent = $('mc-loader').value === 'nova' ? 'Instalando mods de rendimiento… puede tardar un poco.' : '';
-    const entry = await window.api.modpackCreate({ name: $('mc-name').value, icon: $('mc-emoji').value, mcVersion: $('mc-version').value, loader: $('mc-loader').value });
+    const loader = $('mc-loader').value;
+    const name = $('mc-name').value.trim() || `${LOADER_INFO[loader].name} ${$('mc-version').value}`;
+    $('mc-status').textContent = loader === 'nova' ? 'Instalando mods de rendimiento… puede tardar un poco.' : 'Creando…';
+    const entry = await window.api.modpackCreate({ name, icon: $('mc-emoji').value, mcVersion: $('mc-version').value, loader });
     $('mp-create-modal').close();
     toast(`Instancia "${entry.title}" creada${entry.novaSkipped && entry.novaSkipped.length ? ` (sin ${entry.novaSkipped.length} mod(s) que no existen para esa versión)` : ''}`);
     if (entry.preset === 'nova') toast(entry.novaClient ? 'Nova Client instalado: en el juego pulsa Shift derecho para abrir su menú.' : `Nova Client todavía no tiene versión para Minecraft ${entry.mcVersion} (por ahora solo 1.21.1).`);
