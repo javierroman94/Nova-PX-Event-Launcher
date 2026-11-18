@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.73
+- Pantalla de inicio rediseñada: portada con brillo y fondo de color, icono del modpack grande con efecto, botón Jugar con destello, secciones con acento, tarjetas de "Continuar" en dos columnas y noticias/amigos más cuidados.
+
 ## 1.0.72
 - Paneles de administración rediseñados: pestañas con iconos, tarjetas con encabezado e icono, campos y botones más cuidados, barras de acciones fijas.
 - Homenaje: sin líneas, tarjeta más limpia; ahora sirve también para quien tuvo que dejar el proyecto (💛 Siempre parte de Nova).
