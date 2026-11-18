@@ -64,6 +64,16 @@
         "description": "Modpack de Nova PX Event Launcher",
         "role": "Editor"
       }
-    ]
+    ],
+    "appx": {
+      "applicationId": "NovaPXEventLauncher",
+      "displayName": "Nova PX Event Launcher",
+      "backgroundColor": "#0e1220",
+      "languages": [
+        "es-ES",
+        "en-US"
+      ],
+      "showNameOnTiles": false
+    }
   }
 }

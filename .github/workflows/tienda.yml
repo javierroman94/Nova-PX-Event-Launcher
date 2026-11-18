@@ -1,0 +1,37 @@
+# Genera el paquete MSIX para Microsoft Store (Partner Center).
+# Se ejecuta a mano: Actions → "Paquete para Microsoft Store" → Run workflow.
+# Los tres datos de identidad salen de Partner Center → tu app → Gestión de productos → Identidad del producto.
+name: Paquete para Microsoft Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      identity_name:
+        description: 'Package/Identity/Name (ej. 12345Nombre.NovaPXEventLauncher)'
+        required: true
+      publisher:
+        description: 'Package/Identity/Publisher (ej. CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX)'
+        required: true
+      publisher_display_name:
+        description: 'Package/Properties/PublisherDisplayName'
+        required: true
+
+jobs:
+  msix:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Compilar MSIX
+        run: >
+          npx electron-builder --win appx --publish never
+          -c.appx.identityName="${{ inputs.identity_name }}"
+          -c.appx.publisher="${{ inputs.publisher }}"
+          -c.appx.publisherDisplayName="${{ inputs.publisher_display_name }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-px-msix
+          path: dist/*.appx

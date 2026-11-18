@@ -601,13 +601,20 @@ function setUpdate(s) {
   send('update:state', s);
 }
 
+// En la versión de Microsoft Store (MSIX) las actualizaciones las gestiona la propia Store.
+const FROM_STORE = !!process.windowsStore;
+
 function checkForUpdates() {
-  if (!app.isPackaged) return Promise.resolve();
+  if (!app.isPackaged || FROM_STORE) return Promise.resolve();
   return autoUpdater.checkForUpdates().catch(() => {});
 }
 
 // Solo funciona en la versión instalada (npm run dist), que consulta los Releases de GitHub.
 function setupUpdater() {
+  if (FROM_STORE) {
+    setUpdate({ state: 'none' });
+    return;
+  }
   if (!app.isPackaged) {
     setUpdate({ state: 'dev' });
     return;
