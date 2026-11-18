@@ -243,8 +243,10 @@
         <h2 class="page-title">Eventos anteriores</h2>
         <input id="events-search" class="events-search" type="search" placeholder="Buscar evento…" aria-label="Buscar evento" autocomplete="off" />
       </div>
-      <p id="events-count" class="muted"></p>
-      <div id="events-list" class="events-grid"></div>
+      <div id="events-stats" class="ev-stats"></div>
+      <div id="events-hero"></div>
+      <div class="ev-filters"><div id="events-years" class="ev-years" role="group" aria-label="Filtrar por año"></div><p id="events-count" class="muted"></p></div>
+      <div id="events-list" class="events-grid ev-grid"></div>
 
 
       <dialog id="event-modal" class="event-modal" aria-label="Detalle del evento">
@@ -828,7 +830,11 @@
       <div id="ad-tab-events" hidden>
         <article class="ad-card">
           <header><div><h3>Historial de eventos</h3><p class="muted">Lo que aparece en la pestaña Historial. Puedes editar, añadir o quitar eventos, cambiar su imagen y registrar a los ganadores (se muestran con su skin 3D).</p></div></header>
-          <div id="ad-events" class="mods-list"></div>
+          <div class="tm-toolbar">
+            <input id="ad-events-search" class="events-search" type="search" placeholder="Buscar evento…" aria-label="Buscar evento" autocomplete="off" />
+            <div id="ad-events-stats" class="tm-stats"></div>
+          </div>
+          <div id="ad-events" class="ae-grid"></div>
           <div class="mp-actions"><button id="ad-event-add" type="button" class="primary">+ Evento nuevo</button><button type="button" class="ghost" data-history="events">Historial</button></div>
           <p id="ad-events-status" class="muted" role="status"></p>
         </article>

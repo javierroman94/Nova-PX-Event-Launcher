@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.67
+- Historial rediseñado: las imágenes ahora rellenan la tarjeta (fondo difuminado, sin barras negras), evento destacado, estadísticas, filtro por año y tarjetas con hover.
+- Administración › Eventos: tarjetas con portada, ganadores y avisos, búsqueda y botón de evento nuevo.
+
 ## 1.0.66
 - **Perfil del Equipo rediseñado**: al pulsar a alguien se abre una tarjeta con banner (con su foto difuminada), foto con aro de color, nombre, @nick, rol, presentación en cita, enlaces como botones con su icono y botón «Copiar nick». Los destacados llevan aro dorado y los homenajes un diseño propio.
 - **Equipo en Administración rediseñado**: cada persona es una tarjeta plegable con su foto, rol y etiquetas; al abrirla se edita por secciones (datos, presentación con contador, foto con vista previa, skin, enlaces, etiquetas). A la derecha, una vista previa en vivo de cómo se verá su perfil. Buscador, contadores, botones ↑↓ y arrastrar para ordenar (el arrastre no funcionaba antes).

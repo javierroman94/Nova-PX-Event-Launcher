@@ -681,36 +681,93 @@ async function renderEvents() {
       modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
       modal.addEventListener('close', () => { winViewers.forEach((v) => v.destroy()); winViewers = []; });
     }
-    const cards = events.map((ev) => {
-      const card = el('button', 'event-card');
-      card.type = 'button';
-      card.dataset.tilt = '';
+    const yearOf = (ev) => (/^\d{4}/.test(ev.date || '') ? ev.date.slice(0, 4) : '');
+    // Imagen que rellena su marco: la imagen entera encima y, detrás, la misma desenfocada (sin barras negras).
+    const media = (ev, cls) => {
+      const m = el('div', `ev-media ${cls || ''}`);
       const src = imageUrl(ev.image);
       if (src) {
-        const img = el('img', 'event-card-img');
-        img.alt = '';
-        img.loading = 'lazy';
-        img.src = src;
-        card.append(img);
+        m.style.setProperty('--ev-img', `url("${src.replace(/"/g, '%22')}")`);
+        const img = el('img', 'ev-img'); img.alt = ''; img.loading = 'lazy'; img.src = src;
+        m.append(img);
+      } else {
+        m.classList.add('no-img');
+        m.append(el('span', 'ev-initial', (ev.name || '?').trim().slice(0, 2).toUpperCase()));
       }
-      const body = el('div', 'event-card-body');
+      return m;
+    };
+    const mkCard = (ev) => {
+      const card = el('button', 'ev-card');
+      card.type = 'button';
+      card.dataset.tilt = '';
+      const m = media(ev);
+      const y = yearOf(ev);
+      if (y) m.append(el('span', 'ev-year', y));
+      const w = winnersOf(ev);
+      if (w.length) m.append(el('span', 'ev-trophy', w.length === 1 ? `🏆 ${w[0]}` : `🏆 ${w.length}`));
+      const body = el('div', 'ev-body');
       body.append(el('h3', '', ev.name));
-      if (ev.date) body.append(el('span', 'muted', ev.date));
-      body.append(facts(ev));
-      card.append(body);
+      const meta = el('div', 'ev-meta');
+      if (ev.date) meta.append(el('span', 'ev-date', ev.date));
+      if (ev.participants) meta.append(el('span', 'ev-part', `👥 ${ev.participants}`));
+      body.append(meta, el('span', 'ev-more', 'Ver detalles →'));
+      card.append(m, body);
       card.addEventListener('click', () => open(ev));
-      return { ev, card };
-    });
+      return card;
+    };
+    const cards = events.map((ev) => ({ ev, card: mkCard(ev) }));
     list.append(...cards.map((c) => c.card));
+
+    // Resumen y evento más reciente
+    const stats = $('events-stats');
+    const totalPart = events.reduce((n, e) => n + (Number(e.participants) || 0), 0);
+    const champs = new Set(events.flatMap((e) => winnersOf(e).map((n) => String(n).toLowerCase())));
+    stats.replaceChildren();
+    if (events.length) {
+      [[events.length, 'eventos'], [totalPart, 'participaciones'], [champs.size, 'ganadores']].forEach(([n, l]) => {
+        const t = el('div', 'ev-stat'); t.append(el('b', '', String(n)), el('span', 'muted', l)); stats.append(t);
+      });
+    }
+    const heroBox = $('events-hero');
+    heroBox.replaceChildren();
+    const latest = events[0];
+    if (latest) {
+      const h = el('button', 'ev-hero'); h.type = 'button';
+      const m = media(latest, 'ev-hero-media');
+      const txt = el('div', 'ev-hero-txt');
+      txt.append(el('span', 'ev-hero-kicker', 'Último evento'), el('h3', '', latest.name));
+      const meta = el('div', 'ev-meta'); if (latest.date) meta.append(el('span', 'ev-date', latest.date)); if (latest.participants) meta.append(el('span', 'ev-part', `👥 ${latest.participants} participantes`)); const hw = winnersOf(latest); if (hw.length) meta.append(el('span', 'ev-part', `🏆 ${hw.slice(0, 3).join(', ')}`));
+      txt.append(meta);
+      if (latest.description) txt.append(el('p', 'ev-hero-desc', latest.description.length > 170 ? latest.description.slice(0, 167) + '…' : latest.description));
+      txt.append(el('span', 'ev-hero-cta', 'Ver detalles →'));
+      h.append(m, txt);
+      h.addEventListener('click', () => open(latest));
+      heroBox.append(h);
+    }
+
+    // Filtros: por año y por nombre
+    const years = [...new Set(events.map(yearOf).filter(Boolean))].sort().reverse();
+    let year = 'all';
+    const yBox = $('events-years');
+    yBox.replaceChildren();
+    const chips = [];
+    ['all', ...years].forEach((y) => {
+      const c = el('button', 'ev-year-chip', y === 'all' ? 'Todos' : y); c.type = 'button';
+      c.addEventListener('click', () => { year = y; chips.forEach((x) => x.b.classList.toggle('active', x.y === y)); filter(); });
+      chips.push({ y, b: c }); yBox.append(c);
+    });
+    chips[0].b.classList.add('active');
     const count = $('events-count');
     const filter = () => {
       const q = $('events-search').value.trim().toLowerCase();
       let n = 0;
       cards.forEach(({ ev, card }) => {
-        const show = !q || ev.name.toLowerCase().includes(q);
+        const show = (!q || ev.name.toLowerCase().includes(q)) && (year === 'all' || yearOf(ev) === year);
         card.hidden = !show;
         if (show) n++;
       });
+      heroBox.hidden = !!q || year !== 'all';
+      if (!heroBox.hidden && cards[0]) { cards[0].card.hidden = true; n--; }
       count.textContent = events.length ? `${n} de ${events.length} eventos` : '';
     };
     $('events-search').oninput = filter;
@@ -3085,25 +3142,58 @@ $('ad-users-key-save').addEventListener('click', async () => {
 
 /* --- editor del historial de eventos --- */
 const ade = { index: -1, draft: null, preview: '' };
+let aeQuery = '';
 function paintAdminEvents() {
   const box = $('ad-events');
   box.replaceChildren();
-  (adm.events || []).forEach((ev, idx) => {
-    const row = el('div', 'mod-card');
+  const list = (adm.events || []).map((ev, i) => ({ ev, i })).sort((a, b) => ((a.ev.date || '') === (b.ev.date || '') ? 0 : (a.ev.date || '') < (b.ev.date || '') ? 1 : -1));
+  const q = aeQuery.trim().toLowerCase();
+  const wOf = (ev) => (ev.winners || (ev.winner ? [ev.winner] : [])).filter(Boolean);
+  $('ad-events-stats').replaceChildren(
+    el('span', 'tm-stat', `${list.length} eventos`),
+    el('span', 'tm-stat', `👥 ${list.reduce((n, x) => n + (Number(x.ev.participants) || 0), 0)} participaciones`),
+    el('span', 'tm-stat', `🖼 ${list.filter((x) => x.ev.image).length} con imagen`)
+  );
+  // Primera tarjeta: crear uno nuevo
+  const add = el('button', 'ae-card ae-new'); add.type = 'button';
+  add.append(el('span', 'ae-plus', '+'), el('b', '', 'Evento nuevo'), el('small', 'muted', 'Nombre, imagen, ganadores…'));
+  add.addEventListener('click', () => $('ad-event-add').click());
+  box.append(add);
+  list.forEach(({ ev, i }) => {
+    if (q && !(ev.name || '').toLowerCase().includes(q)) return;
+    const card = el('div', 'ae-card');
     const src = imageUrl(ev.image);
-    if (src) { const img = el('img', 'mod-icon'); img.alt = ''; img.src = src; row.append(img); } else row.append(el('div', 'mod-icon mod-icon-empty', '🏆'));
-    const body = el('div', 'mod-body');
-    const w = ev.winners || (ev.winner ? [ev.winner] : []);
-    body.append(el('strong', '', ev.name), el('span', 'muted', `${ev.date || 'Sin fecha'}${w.length ? ' · 🏆 ' + w.join(', ') : ''}`));
-    const edit = el('button', '', 'Editar');
-    edit.type = 'button';
-    edit.addEventListener('click', () => openAdminEvent(idx));
-    row.append(body, edit);
-    box.append(row);
+    const m = el('div', 'ev-media ae-media');
+    if (src) {
+      m.style.setProperty('--ev-img', `url("${src.replace(/"/g, '%22')}")`);
+      const img = el('img', 'ev-img'); img.alt = ''; img.loading = 'lazy'; img.src = src; m.append(img);
+    } else { m.classList.add('no-img'); m.append(el('span', 'ev-initial', (ev.name || '?').trim().slice(0, 2).toUpperCase())); }
+    const y = /^\d{4}/.test(ev.date || '') ? ev.date.slice(0, 4) : '';
+    if (y) m.append(el('span', 'ev-year', y));
+    const flags = el('div', 'ae-flags');
+    if (ev.background) flags.append(el('span', 'tm2-chip', 'Fondo'));
+    if (ev.commissioner && ev.commissioner.name) flags.append(el('span', 'tm2-chip', 'Comisionado'));
+    if (!src) flags.append(el('span', 'tm2-chip warn', 'Sin imagen'));
+    const body = el('div', 'ae-body');
+    body.append(el('strong', '', ev.name || 'Sin título'));
+    body.append(el('span', 'muted', `${ev.date || 'Sin fecha'}${ev.participants ? ' · 👥 ' + ev.participants : ''}`));
+    const w = wOf(ev);
+    if (w.length) {
+      const row = el('div', 'ae-winners');
+      w.slice(0, 5).forEach((n) => { const a = el('img'); a.alt = n; a.title = n; a.src = skinBust(n); row.append(a); });
+      row.append(el('span', 'muted', w.length === 1 ? w[0] : `${w.length} ganadores`));
+      body.append(row);
+    }
+    body.append(flags);
+    const edit = el('button', 'primary', 'Editar'); edit.type = 'button';
+    edit.addEventListener('click', () => openAdminEvent(i));
+    card.addEventListener('dblclick', () => openAdminEvent(i));
+    card.append(m, body, edit);
+    box.append(card);
   });
   if (!(adm.events || []).length) box.append(el('p', 'muted', 'Todavía no hay eventos en el historial.'));
-  if (window.makeSortable) window.makeSortable(box, adm.events, paintAdminEvents, () => saveAdminEvents(adm.events));
 }
+$('ad-events-search').addEventListener('input', (e) => { aeQuery = e.target.value; paintAdminEvents(); });
 function paintAdeWinners() {
   const box = $('ade-winners');
   box.replaceChildren();
