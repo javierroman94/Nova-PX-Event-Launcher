@@ -1,9 +1,10 @@
 {
   "event": {
-    "active": true,
+    "active": false,
     "name": "keo Optimized",
     "tagline": "Estamos preparando el siguiente evento. Pronto verás aquí todos los detalles.",
-    "startsAt": "2026-11-18T01:39:00.000Z"
+    "startsAt": "2026-11-18T01:39:00.000Z",
+    "status": "ended"
   },
   "minecraftVersion": "26.3",
   "loader": {
