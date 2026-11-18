@@ -106,6 +106,44 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(gh.downloadBase('evento x'), 'https://github.com/o/r/releases/download/evento%20x');
   const bad = new GithubRepo({ owner: 'o', repo: 'r', token: 'T', fetchImpl: async () => ({ status: 401, ok: false, json: async () => ({ message: 'Bad credentials' }) }) });
   await assert.rejects(bad.check(), (e) => e instanceof GithubError && /token/.test(e.message));
+  // La rama temporal se borra aunque GitHub falle al primer intento, y también si la creación se corta por red.
+  const flaky = (opts) => {
+    const log = [];
+    let deletes = 0;
+    const gh2 = new GithubRepo({ owner: 'o', repo: 'r', token: 'T', retryDelayMs: 0, fetchImpl: async (url, o) => {
+      const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
+      log.push(`${o.method || 'GET'} ${url}`);
+      if (url.endsWith('/repos/o/r')) return json(200, { full_name: 'o/r', permissions: { push: true } });
+      if (url.includes('/git/ref/heads/main')) return json(200, { object: { sha: 'H1' } });
+      if (url.endsWith('/git/refs') && o.method === 'POST') { if (opts.createFails) throw new Error('ECONNRESET'); return json(201, {}); }
+      if (url.includes('/git/refs/heads/novapx-check') && o.method === 'DELETE') { deletes++; return deletes <= opts.deleteFailures ? json(502, { message: 'Bad Gateway' }) : json(204, {}); }
+      return json(500, { message: 'inesperado ' + url });
+    } });
+    return { gh2, log, deletes: () => deletes };
+  };
+  const f1 = flaky({ deleteFailures: 2 });
+  assert.strictEqual((await f1.gh2.check()).canPush, true);
+  assert.strictEqual(f1.deletes(), 3, 'reintenta el borrado hasta que funciona');
+  const f2 = flaky({ deleteFailures: 99 });
+  assert.strictEqual((await f2.gh2.check()).canPush, true, 'un borrado fallido no bloquea el modo admin');
+  assert.strictEqual(f2.deletes(), 3);
+  const f3 = flaky({ createFails: true, deleteFailures: 0 });
+  await assert.rejects(f3.gh2.check(), /ECONNRESET/);
+  assert.strictEqual(f3.deletes(), 1, 'si la creación se corta, intenta borrar por si la rama sí se creó');
+  // Rama ya inexistente (422): cuenta como borrada, sin reintentos.
+  const gone = new GithubRepo({ owner: 'o', repo: 'r', token: 'T', retryDelayMs: 0, fetchImpl: async () => ({ status: 422, ok: false, json: async () => ({ message: 'Reference does not exist' }) }) });
+  assert.strictEqual(await gone.deleteBranch('novapx-check-1'), true);
+  // El token de solo lectura no crea la rama, así que no se intenta borrar nada.
+  const roCalls = [];
+  const ro2 = new GithubRepo({ owner: 'o', repo: 'r', token: 'RO', retryDelayMs: 0, fetchImpl: async (url, o) => {
+    const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
+    roCalls.push(o.method || 'GET');
+    if (url.endsWith('/repos/o/r')) return json(200, { full_name: 'o/r', permissions: { push: true } });
+    if (url.includes('/git/ref/heads/')) return json(200, { object: { sha: 'H1' } });
+    return json(403, { message: 'Resource not accessible by personal access token' });
+  } });
+  assert.strictEqual((await ro2.check()).canPush, false);
+  assert.ok(!roCalls.includes('DELETE'));
   assert.throws(() => new GithubRepo({ owner: '../x', repo: 'r', token: 't' }), /Repositorio/);
   console.log('admin.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });

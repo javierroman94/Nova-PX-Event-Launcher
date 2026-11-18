@@ -8,5 +8,8 @@
     { "binding": "USERS", "id": "7a6ae0b0b55f45099bf81d1de39797f9" }
   ],
   "durable_objects": { "bindings": [{ "name": "PRESENCE", "class_name": "Presence" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Presence"] }]
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Presence"] }],
+  // Las ramas que no son main se publican como Preview con `wrangler preview`, que exige este bloque.
+  // Vacío a propósito: los Previews no tocan el KV de producción (el contador de usuarios real).
+  "previews": {}
 }
