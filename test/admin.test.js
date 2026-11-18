@@ -231,5 +231,11 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(m.sponsors[0].url, 'https://holihosting.example');
   assert.strictEqual(m.sponsors[1].url, undefined);
   assert.strictEqual(m.sponsors[1].logo, undefined);
+  assert.strictEqual(m.sponsors[0].kind, 'host');
+  assert.strictEqual(m.sponsors[1].kind, 'credit');
+  const k = a.mergeManifest({ event: { name: 'X' } }, { sponsors: [{ kind: 'sponsor', name: 'Cliente' }, { role: 'Patrocina', name: 'Otro' }] });
+  assert.strictEqual(k.sponsors[0].kind, 'sponsor');
+  assert.strictEqual(k.sponsors[0].role, 'Evento patrocinado por');
+  assert.strictEqual(k.sponsors[1].kind, 'sponsor');
   console.log('ok patrocinadores');
 }

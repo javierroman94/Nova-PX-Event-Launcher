@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.75
+- Evento: el hosting, los patrocinadores y los créditos ahora son tres grupos separados. El hosting oficial (por ejemplo Holi Hosting) sale con una tarjeta grande y destacada con botón "Visitar"; los patrocinadores del evento con su logo; los créditos como etiquetas pequeñas.
+- Admin → Evento: editor nuevo por grupos con logo en miniatura, rol, enlace y mensaje/promo; el modpack, los datos y la publicación quedan en 4 pasos.
+- Compatible con los datos anteriores (se clasifican por su rol).
+
 ## 1.0.74
 - Permisos rediseñado: tarjetas de personas con cabeza 3D y rol, estadísticas, vista previa del nick al escribir, pasos de invitación en línea de tiempo y confirmación al quitar permiso.
 - Paneles de administración: interruptores en lugar de casillas y listas de noticias/recomendados con más espacio.

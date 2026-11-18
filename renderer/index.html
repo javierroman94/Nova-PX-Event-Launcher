@@ -229,9 +229,8 @@
 
       <p id="community-stat" class="community-stat" hidden></p>
 
-      <section class="sponsors" id="sponsors" aria-label="Patrocinadores y créditos">
-        <h3 class="sponsors-title">Patrocinadores y créditos</h3>
-        <div id="sponsors-list" class="sponsors-list"></div>
+      <section class="sponsors" id="sponsors" aria-label="Hosting, patrocinadores y créditos">
+        <div id="sponsors-list" class="sponsors-wrap"></div>
       </section>
 
       <div class="event-links">
@@ -630,10 +629,6 @@
                 <div class="btn-row"><button id="ad-banner-pick" type="button">Banner…</button><button id="ad-logo-pick" type="button">Logo…</button><button id="ad-art-clear" type="button">Quitar</button></div>
                 <small id="ad-art-state" class="muted"></small></div>
             </div>
-            <div class="field">
-              <label>Patrocinadores y créditos <small class="muted">(se ven en Evento: "Servidor hospedado por…", "Evento creado por…")</small></label>
-              <div id="ad-sponsors"></div>
-            </div>
             <div class="field inline">
               <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
               <div><label for="ad-start">Empieza</label><input id="ad-start" type="datetime-local" /></div>
@@ -645,8 +640,13 @@
           </article>
         </div>
 
+        <article class="ad-card ad-brands">
+          <header><span class="ad-step">3</span><div><h3>Hosting, patrocinadores y créditos</h3><p class="muted">Quién aparece en la pestaña Evento. Cada grupo se muestra distinto: el hosting con tarjeta destacada, los patrocinadores del evento y, aparte, los créditos del equipo.</p></div></header>
+          <div id="ad-sponsors" class="brand-groups"></div>
+        </article>
+
         <article class="ad-card ad-publish">
-          <header><span class="ad-step">3</span><div><h3>Publicar</h3><p class="muted">Se cifran los mods, se suben a GitHub y los jugadores lo reciben al abrir el launcher.</p></div></header>
+          <header><span class="ad-step">4</span><div><h3>Publicar</h3><p class="muted">Se cifran los mods, se suben a GitHub y los jugadores lo reciben al abrir el launcher.</p></div></header>
           <ul id="ad-check" class="ad-check"></ul>
           <div class="field">
             <label for="ad-pass">Contraseña de instalación</label>

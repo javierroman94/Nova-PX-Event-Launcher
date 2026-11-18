@@ -222,28 +222,60 @@ let eventActive = true;
 let eventState = 'active';
 let eventInfo = { name: 'Evento', tagline: '', logo: '' };
 
-// Patrocinadores y créditos del evento (Evento). Sin datos muestra una tarjeta de invitación.
+// Hosting, patrocinadores y créditos del evento (Evento).
+const SP_ROLE = { host: 'Servidor hospedado por', sponsor: 'Evento patrocinado por', credit: 'Evento creado por' };
+function spKind(x) {
+  if (['host', 'sponsor', 'credit'].includes(x && x.kind)) return x.kind;
+  const r = String((x && x.role) || '').toLowerCase();
+  return /hospedad|hosting|servidor/.test(r) ? 'host' : /patrocin|presenta/.test(r) ? 'sponsor' : 'credit';
+}
 function paintSponsors(list) {
   const box = $('sponsors-list');
   box.replaceChildren();
   const items = Array.isArray(list) ? list : [];
-  if (!items.length) {
-    const c = el('div', 'sponsor sponsor-empty');
-    c.append(el('span', 'sponsor-role', 'Tu marca aquí'), el('strong', '', 'Espacio para patrocinadores'), el('span', 'muted', 'Habla con el equipo de Nova PX para aparecer en los eventos.'));
-    box.append(c);
-    return;
-  }
-  for (const x of items) {
-    const c = el(x.url ? 'button' : 'div', 'sponsor');
-    if (x.url) { c.type = 'button'; c.addEventListener('click', () => window.api.openLink(x.url).catch(() => {})); }
+  const open = (url) => window.api.openLink(url).catch(() => {});
+  const make = (x, cls, label) => {
+    const c = el(x.url ? 'button' : 'div', cls);
+    if (x.url) { c.type = 'button'; c.addEventListener('click', () => open(x.url)); }
     const logo = imageUrl(x.logo);
     if (logo) { const im = el('img', 'sponsor-logo'); im.alt = ''; im.src = logo; c.append(im); }
+    else c.append(el('span', 'sponsor-logo sponsor-initial', (x.name || '?').trim().charAt(0).toUpperCase()));
     const t = el('div', 'sponsor-text');
-    if (x.role) t.append(el('span', 'sponsor-role', x.role));
-    t.append(el('strong', '', x.name));
-    if (x.text) t.append(el('span', 'muted', x.text));
+    t.append(el('span', 'sponsor-role', x.role || label), el('strong', '', x.name));
+    if (x.text) t.append(el('span', 'sponsor-desc', x.text));
     c.append(t);
-    box.append(c);
+    if (x.url) c.append(el('span', 'sponsor-go', 'Visitar →'));
+    return c;
+  };
+  const hosts = items.filter((x) => spKind(x) === 'host');
+  const sponsors = items.filter((x) => spKind(x) === 'sponsor');
+  const credits = items.filter((x) => spKind(x) === 'credit');
+  if (hosts.length) {
+    const g = el('div', 'sp-group');
+    g.append(el('h3', 'sponsors-title', 'Hosting oficial'));
+    const row = el('div', 'sp-hosts');
+    hosts.forEach((x) => row.append(make(x, 'sponsor sponsor-host', SP_ROLE.host)));
+    g.append(row); box.append(g);
+  }
+  if (sponsors.length) {
+    const g = el('div', 'sp-group');
+    g.append(el('h3', 'sponsors-title', 'Patrocinadores del evento'));
+    const row = el('div', 'sponsors-list');
+    sponsors.forEach((x) => row.append(make(x, 'sponsor sponsor-paid', SP_ROLE.sponsor)));
+    g.append(row); box.append(g);
+  }
+  if (credits.length) {
+    const g = el('div', 'sp-group');
+    g.append(el('h3', 'sponsors-title', 'Créditos'));
+    const row = el('div', 'sp-credits');
+    credits.forEach((x) => row.append(make(x, 'sponsor sponsor-credit', SP_ROLE.credit)));
+    g.append(row); box.append(g);
+  }
+  if (!sponsors.length) {
+    const g = el('div', 'sp-group');
+    const c = el('div', 'sponsor sponsor-empty');
+    c.append(el('span', 'sponsor-role', 'Tu marca aquí'), el('strong', '', 'Patrocina un evento de Nova PX'), el('span', 'muted', 'Haz que miles de jugadores conozcan tu marca. Habla con el equipo de Nova PX.'));
+    g.append(c); box.append(g);
   }
 }
 
@@ -3087,40 +3119,55 @@ function chip(text, cls) { return el('span', `ad-chip${cls ? ' ' + cls : ''}`, t
 function sponsorsEditor() {
   const box = $('ad-sponsors');
   const list = adm.sponsors;
-  const roles = ['Servidor hospedado por', 'Evento creado por', 'Patrocina', 'Colabora'];
+  list.forEach((x) => { x.kind = spKind(x); });
+  const groups = [
+    { kind: 'host', icon: '🖥️', title: 'Hosting oficial', hint: 'Quien pone el servidor del evento (por ejemplo, Holi Hosting). Se muestra con una tarjeta grande y destacada, con enlace para contratar.', add: '+ Añadir hosting', roles: ['Servidor hospedado por'], ph: 'Holi Hosting', textPh: 'Frase corta o promo (ej. "Servidores de calidad: usa el código NOVA")', max: 2 },
+    { kind: 'sponsor', icon: '💎', title: 'Patrocinadores del evento', hint: 'Marcas o personas que pagan para que se haga el evento. Aparecen con su logo y enlace.', add: '+ Añadir patrocinador', roles: ['Evento patrocinado por', 'Presentado por', 'Con el apoyo de'], ph: 'Nombre de la marca', textPh: 'Mensaje corto (opcional)', max: 8 },
+    { kind: 'credit', icon: '🤝', title: 'Créditos', hint: 'Personas o equipos que hicieron el evento. Se muestran pequeños, al final.', add: '+ Añadir crédito', roles: ['Evento creado por', 'Diseño', 'Mapa', 'Colabora'], ph: 'Nombre', textPh: 'Texto corto (opcional)', max: 8 }
+  ];
   const paint = () => {
     box.replaceChildren();
-    list.forEach((x, i) => {
-      const row = el('div', 'person-row');
-      const head = el('div', 'person-head');
-      const r = el('input'); r.type = 'text'; r.maxLength = 60; r.placeholder = 'Rol (Servidor hospedado por…)'; r.value = x.role || ''; r.setAttribute('list', 'ad-sponsor-roles');
-      r.addEventListener('input', () => { x.role = r.value; });
-      const n = el('input'); n.type = 'text'; n.maxLength = 60; n.placeholder = 'Nombre (HoliHosting…)'; n.value = x.name || '';
-      n.addEventListener('input', () => { x.name = n.value; });
-      const u = el('input'); u.type = 'url'; u.maxLength = 300; u.placeholder = 'https://… (opcional)'; u.value = x.url || '';
-      u.addEventListener('input', () => { x.url = u.value; });
-      const t = el('input'); t.type = 'text'; t.maxLength = 160; t.placeholder = 'Texto corto (opcional)'; t.value = x.text || '';
-      t.addEventListener('input', () => { x.text = t.value; });
-      const lg = el('button', '', x.logo ? 'Cambiar logo' : 'Logo…'); lg.type = 'button';
-      lg.addEventListener('click', async () => {
-        try { const a = await window.api.adminPickImage(`sponsor-${x.name || 'logo'}`); if (a) { x.logo = a.path; lg.textContent = 'Cambiar logo'; } } catch (e) { toast(cleanError(e), 'error'); }
+    groups.forEach((g) => {
+      const mine = list.filter((x) => x.kind === g.kind);
+      const sec = el('section', `brand-group bg-${g.kind}`);
+      const head = el('div', 'brand-head');
+      head.append(el('span', 'ad-ico', g.icon));
+      const hd = el('div'); hd.append(el('strong', '', g.title), el('p', 'muted', g.hint)); head.append(hd);
+      const cnt = el('span', 'brand-count', String(mine.length)); head.append(cnt);
+      sec.append(head);
+      mine.forEach((x) => {
+        const row = el('div', 'brand-row');
+        const lg = el('button', 'brand-logo'); lg.type = 'button'; lg.title = 'Elegir logo';
+        const showLogo = () => { lg.replaceChildren(); const u = x.logo && imageUrl(x.logo); if (u) { const im = el('img'); im.alt = ''; im.src = u; lg.append(im); } else lg.append(el('span', '', '＋ Logo')); };
+        showLogo();
+        lg.addEventListener('click', async () => {
+          try { const a = await window.api.adminPickImage(`sponsor-${x.name || 'logo'}`); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
+        });
+        const fields = el('div', 'brand-fields');
+        const r = el('input'); r.type = 'text'; r.maxLength = 60; r.value = x.role || g.roles[0]; r.setAttribute('list', `ad-roles-${g.kind}`); r.placeholder = 'Rol';
+        r.addEventListener('input', () => { x.role = r.value; });
+        const n = el('input', 'brand-name'); n.type = 'text'; n.maxLength = 60; n.placeholder = g.ph; n.value = x.name || '';
+        n.addEventListener('input', () => { x.name = n.value; });
+        const u = el('input'); u.type = 'url'; u.maxLength = 300; u.placeholder = 'https://… (enlace, opcional)'; u.value = x.url || '';
+        u.addEventListener('input', () => { x.url = u.value; });
+        const t = el('input'); t.type = 'text'; t.maxLength = 160; t.placeholder = g.textPh; t.value = x.text || '';
+        t.addEventListener('input', () => { x.text = t.value; });
+        const l1 = el('div', 'brand-line'); l1.append(r, n);
+        const l2 = el('div', 'brand-line'); l2.append(u, t);
+        fields.append(l1, l2);
+        const q = el('button', 'ghost brand-del', '✕'); q.type = 'button'; q.title = 'Quitar';
+        q.addEventListener('click', () => { list.splice(list.indexOf(x), 1); paint(); });
+        row.append(lg, fields, q);
+        sec.append(row);
       });
-      const q = el('button', '', 'Quitar'); q.type = 'button';
-      q.addEventListener('click', () => { list.splice(i, 1); paint(); });
-      head.append(r, n, u, t, lg, q);
-      row.append(head);
-      box.append(row);
+      const dl = el('datalist'); dl.id = `ad-roles-${g.kind}`; g.roles.forEach((v) => { const o = el('option'); o.value = v; dl.append(o); }); sec.append(dl);
+      if (mine.length < g.max && list.length < 16) {
+        const add = el('button', 'brand-add', g.add); add.type = 'button';
+        add.addEventListener('click', () => { list.push({ kind: g.kind, role: g.roles[0], name: '', url: '', text: '' }); paint(); });
+        sec.append(add);
+      }
+      box.append(sec);
     });
-    if (list.length < 8) {
-      const add = el('button', '', '+ Patrocinador o crédito'); add.type = 'button';
-      add.addEventListener('click', () => { list.push({ role: roles[Math.min(list.length, roles.length - 1)], name: '', url: '', text: '' }); paint(); });
-      box.append(add);
-    }
-    if (!$('ad-sponsor-roles')) {
-      const dl = el('datalist'); dl.id = 'ad-sponsor-roles';
-      roles.forEach((v) => { const o = el('option'); o.value = v; dl.append(o); });
-      box.append(dl);
-    }
   };
   paint();
 }
