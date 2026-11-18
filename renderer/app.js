@@ -1690,6 +1690,8 @@ async function renderPackSettings() {
   $('ps-w').value = s.width || '';
   $('ps-h').value = s.height || '';
   $('ps-full').checked = !!s.fullscreen;
+  $('ps-account').value = '';
+  paintPackAccounts();
   $('ps-status').textContent = '';
   $('ps-version-box').hidden = !own;
   $('ps-change-version').hidden = p.provider !== 'modrinth';
@@ -1709,7 +1711,7 @@ $('ps-save').addEventListener('click', async () => {
   const num = (id) => ($(id).value ? Number($(id).value) : undefined);
   const changes = {
     title: $('ps-title').value, emoji: $('ps-emoji').value, notes: $('ps-notes').value,
-    settings: { ramGb: num('ps-ram'), jvmArgs: $('ps-args').value, javaPath: $('ps-java').value, width: num('ps-w'), height: num('ps-h'), ...($('ps-full').checked ? { fullscreen: true } : {}) }
+    settings: { account: $('ps-account').value, ramGb: num('ps-ram'), jvmArgs: $('ps-args').value, javaPath: $('ps-java').value, width: num('ps-w'), height: num('ps-h'), ...($('ps-full').checked ? { fullscreen: true } : {}) }
   };
   if (p.provider === 'custom') { changes.mcVersion = $('ps-mc').value; changes.loader = $('ps-loader').value; }
   try {
@@ -2536,8 +2538,58 @@ async function paintLocalHead(imgEl) {
 }
 window.addEventListener('nova-skin-changed', () => { if (currentUser && currentUser.mode !== 'premium') paintLocalHead($('chip-avatar')); });
 
+/* ---------- varias cuentas ---------- */
+let savedAccounts = [];
+async function paintAccounts() {
+  try { savedAccounts = await window.api.accountsList(); } catch { savedAccounts = []; }
+  if (!Array.isArray(savedAccounts)) savedAccounts = [];
+  const box = $('acc-list');
+  if (!box) return;
+  box.replaceChildren();
+  $('acc-saved').hidden = !savedAccounts.length;
+  savedAccounts.forEach((a) => {
+    const row = el('div', `acc-row${a.active ? ' on' : ''}`);
+    const av = el('img'); av.alt = ''; av.src = skinHead(a.name);
+    const txt = el('div', 'acc-txt'); const nm = el('strong', 'pii', a.name); txt.append(nm, el('span', '', a.mode === 'premium' ? 'Premium (Microsoft)' : 'Sin conexión (nick local)'));
+    row.append(av, txt);
+    if (a.active) row.append(el('span', 'ad-chip', 'Activa'));
+    else {
+      const use = el('button', 'primary', 'Usar'); use.type = 'button';
+      use.addEventListener('click', async () => {
+        use.disabled = true;
+        try { setSession(await window.api.accountSwitch(a.id)); toast(`Ahora juegas como ${a.name}`, 'success'); }
+        catch (e) { toast(cleanError(e), 'error'); use.disabled = false; }
+      });
+      row.append(use);
+    }
+    const rm = el('button', 'ghost', 'Quitar'); rm.type = 'button';
+    rm.addEventListener('click', async () => {
+      if (!await askConfirm(`¿Quitar la cuenta ${a.name} de este launcher? Tendrás que iniciar sesión otra vez para volver a usarla.`)) return;
+      try {
+        const left = await window.api.accountForget(a.id);
+        if (a.active) setSession(null); else paintAccounts();
+        savedAccounts = left;
+      } catch (e) { toast(cleanError(e), 'error'); }
+    });
+    row.append(rm);
+    box.append(row);
+  });
+  paintPackAccounts();
+}
+function paintPackAccounts() {
+  const sel = $('ps-account');
+  if (!sel) return;
+  const cur = sel.value || (mp.pack && mp.pack.settings && mp.pack.settings.account) || '';
+  sel.replaceChildren();
+  const none = el('option', '', 'La que esté activa'); none.value = ''; sel.append(none);
+  savedAccounts.forEach((a) => { const o = el('option', '', `${a.name} (${a.mode === 'premium' ? 'premium' : 'sin conexión'})`); o.value = a.id; sel.append(o); });
+  sel.value = savedAccounts.some((a) => a.id === cur) ? cur : '';
+}
+window.api.onAuthChanged && window.api.onAuthChanged((info) => setSession(info));
+
 function setSession(info) {
   currentUser = info;
+  paintAccounts();
   renderAccountRows();
   if (window.NovaSkins) window.NovaSkins.setUser(info);
   loggedIn = !!info;
@@ -2600,6 +2652,7 @@ $('login-ms').addEventListener('click', async () => {
   }
 });
 
+$('logout-btn').textContent = 'Cerrar sesión y quitar esta cuenta';
 $('logout-btn').addEventListener('click', async () => {
   await window.api.logout();
   setSession(null);
@@ -3271,7 +3324,7 @@ function sponsorsEditor() {
       sec.append(head);
       mine.forEach((x) => {
         const row = el('div', 'brand-row');
-        const lg = el('button', 'brand-logo'); lg.type = 'button'; lg.title = 'Elegir logo';
+        const lg = el('button', 'brand-logo-pick'); lg.type = 'button'; lg.title = 'Elegir logo';
         const showLogo = () => { lg.replaceChildren(); const u = x.logo && imageUrl(x.logo); if (u) { const im = el('img'); im.alt = ''; im.src = u; lg.append(im); } else lg.append(el('span', '', '＋ Logo')); };
         showLogo();
         lg.addEventListener('click', async () => {

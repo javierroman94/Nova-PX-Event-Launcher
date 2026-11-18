@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.82
+- Varias cuentas: guarda cuentas de Microsoft y nicks sin conexión a la vez y cambia entre ellas con un clic en Cuenta → «Tus cuentas». Cada cuenta conserva su skin, amigos y tiempo de juego. «Cerrar sesión» quita solo la cuenta activa.
+- Cada modpack puede recordar con qué cuenta se juega (Ajustes del modpack → Cuenta): al pulsar Jugar el launcher cambia solo. Esa elección no se exporta.
+- Arreglo: el logo de la barra lateral se veía raro (recuadro punteado y fondo oscuro) por un estilo del editor de patrocinadores que lo pisaba.
+- Ventana pequeña: la barra lateral ya no se corta (se compacta según la altura) y el botón de cuenta se ve también en modo compacto.
+
 ## 1.0.81
 - Actualizaciones en un clic también para shaders y texturas (antes solo mods). La lista muestra el tipo de cada elemento.
 - Al abrir el contenido de un modpack, el launcher busca solo las versiones nuevas y las cuenta en el botón «Buscar actualizaciones (N)».

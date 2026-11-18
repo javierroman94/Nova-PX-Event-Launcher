@@ -446,6 +446,11 @@
               <div class="field"><label for="ps-notes">Notas</label><textarea id="ps-notes" rows="3" maxlength="4000" placeholder="Para qué es este modpack, qué mods hay que probar…"></textarea></div>
             </fieldset>
             <fieldset>
+              <legend>Cuenta</legend>
+              <div class="field"><label for="ps-account">Jugar con esta cuenta</label><select id="ps-account"><option value="">La que esté activa</option></select></div>
+              <small class="muted">Al pulsar Jugar, el launcher cambia solo a esa cuenta. Se guarda solo en este modpack (no se exporta).</small>
+            </fieldset>
+            <fieldset>
               <legend>Rendimiento (solo este modpack)</legend>
               <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes.</small>
               <div class="field inline">
@@ -1210,6 +1215,10 @@
     <!-- CUENTA -->
     <section class="page" id="page-account">
       <h2 class="page-title">Cuenta</h2>
+      <section class="card acc-saved" id="acc-saved" hidden>
+        <header class="acc-head"><h3>Tus cuentas</h3><small class="muted">Cambia con un clic. Cada cuenta conserva su skin, amigos y tiempo de juego.</small></header>
+        <div id="acc-list" class="acc-list"></div>
+      </section>
       <div class="login-split">
         <div class="login-art" aria-hidden="true">
           <img src="images/logo.png" alt="" width="96" height="96" />
@@ -1222,9 +1231,9 @@
             <li><b>Tus propios modpacks</b><span>Crea, importa y exporta perfiles con Modrinth.</span></li>
             <li><b>Skins en 3D</b><span>Guarda tus skins y capas, también sin cuenta premium.</span></li>
           </ul>
-          <button id="login-ms" class="primary login-big">Iniciar sesión con Microsoft</button>
+          <button id="login-ms" class="primary login-big">Añadir cuenta de Microsoft</button>
           <div class="card" id="card-offline">
-            <h3>Continuar sin premium</h3>
+            <h3>Añadir cuenta sin premium</h3>
             <p>Elige un nick de 3 a 16 caracteres (letras, números o guion bajo). Usa siempre el mismo para conservar tu progreso.</p>
             <input id="offline-nick" class="pii" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
             <button id="login-offline">Entrar con este nick</button>

@@ -2347,9 +2347,9 @@ button.sponsor:hover { transform: translateY(-2px); border-color: color-mix(in s
 .brand-head p { margin: 2px 0 0; font-size: 12.5px; line-height: 1.4; }
 .brand-count { margin-left: auto; min-width: 26px; height: 26px; display: grid; place-items: center; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--surface); border: 1px solid var(--line); }
 .brand-row { display: flex; align-items: stretch; gap: 12px; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
-.brand-logo { flex: none; width: 76px; min-height: 76px; padding: 4px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 5%, transparent); display: grid; place-items: center; cursor: pointer; font-size: 12px; color: var(--muted); overflow: hidden; }
-.brand-logo:hover { border-style: solid; color: var(--text); }
-.brand-logo img { width: 100%; height: 100%; object-fit: contain; }
+.brand-logo-pick { flex: none; width: 76px; min-height: 76px; padding: 4px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 5%, transparent); display: grid; place-items: center; cursor: pointer; font-size: 12px; color: var(--muted); overflow: hidden; }
+.brand-logo-pick:hover { border-style: solid; color: var(--text); }
+.brand-logo-pick img { width: 100%; height: 100%; object-fit: contain; }
 .brand-fields { flex: 1; min-width: 0; display: grid; gap: 8px; align-content: center; }
 .brand-line { display: flex; gap: 8px; }
 .brand-line input { flex: 1 1 0; min-width: 0; }
@@ -2481,3 +2481,35 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .ad-fineprint { font-size: 12px; margin-top: 8px; }
 
 #mp-check-updates.has-upd { border-color: var(--accent, #f7b733); color: var(--accent, #f7b733); }
+
+/* ---------- Ventana pequeña (v1.0.81) ---------- */
+.sidebar { min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.sidebar::-webkit-scrollbar { display: none; }
+.tabs { min-height: max-content; }
+@media (max-height: 820px) {
+  .sidebar { gap: 12px; padding-top: 14px; padding-bottom: 12px; }
+  .tab-btn { padding: 8px 14px; }
+  .nav-group { margin-top: 8px; margin-bottom: 2px; }
+  .sidebar-foot { gap: 6px; }
+  .side-version { display: none; }
+}
+@media (max-height: 700px) {
+  .nav-group { display: none; }
+  .tab-btn { padding: 7px 12px; }
+  .brand-sub { display: none; }
+  .tab-ind { left: 0; }
+}
+@media (max-width: 1040px) { .account-chip:has(#chip-avatar[hidden])::before { content: "👤"; font-size: 17px; line-height: 20px; } }
+:root.rail .account-chip:has(#chip-avatar[hidden])::before { content: "👤"; font-size: 17px; line-height: 20px; }
+
+/* ---------- Cuentas guardadas ---------- */
+.acc-saved { margin-bottom: 16px; display: grid; gap: 12px; }
+.acc-head { display: grid; gap: 2px; }
+.acc-head h3 { margin: 0; }
+.acc-list { display: grid; gap: 8px; }
+.acc-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--raised); }
+.acc-row.on { border-color: var(--accent); background: var(--accent-soft); }
+.acc-row img { width: 36px; height: 36px; border-radius: 9px; flex: none; }
+.acc-txt { display: grid; flex: 1; min-width: 0; line-height: 1.25; }
+.acc-txt span { font-size: 12px; color: var(--muted); }
+.acc-row button { margin-top: 0; }

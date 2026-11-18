@@ -93,6 +93,11 @@ try {
     assert.strictEqual(seen.loaders, undefined);
     assert.strictEqual(r2[0].type, 'shader');
     assert.strictEqual(r[0].type, 'mod');
+    // la cuenta del modpack solo se guarda al pedirlo y solo con formato válido
+    assert.strictEqual(packs.sanitizeSettings({ account: 'off:Ana_1' }).account, undefined);
+    assert.strictEqual(packs.sanitizeSettings({ account: 'off:Ana_1' }, true).account, 'off:Ana_1');
+    assert.strictEqual(packs.sanitizeSettings({ account: '../x' }, true).account, undefined);
+    assert.strictEqual(packs.sanitizeSettings({ account: 'a'.repeat(32) }, true).account, 'a'.repeat(32));
     console.log('packs.test OK');
     fs.rmSync(tmp, { recursive: true, force: true });
   })().catch((e2) => { console.error(e2); process.exit(1); });

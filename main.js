@@ -44,6 +44,7 @@ const RUNTIME_DIR = path.join(GAME_DIR, 'runtime');
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 const KEYS_FILE = path.join(app.getPath('userData'), 'unlock.json');
 const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
+const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
 const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher', 'ads'];
@@ -968,7 +969,7 @@ ipcMain.handle('modpacks:update', (_e, p = {}) => {
   if (c.removeIcon === true) { entry.icon = ''; entry.iconTried = true; }
   if (c.emoji !== undefined) entry.emoji = packs.buildCustomEntry({ name: 'x', icon: c.emoji, mcVersion: '1.0' }).emoji;
   if (c.notes !== undefined) entry.notes = packs.cleanNotes(c.notes);
-  if (c.settings !== undefined) entry.settings = packs.sanitizeSettings(c.settings);
+  if (c.settings !== undefined) entry.settings = packs.sanitizeSettings(c.settings, true);
   if ((c.mcVersion !== undefined || c.loader !== undefined) && entry.provider === 'custom') {
     if (launching) throw new Error('Cierra Minecraft antes de cambiar la versión.');
     const t = packs.buildCustomEntry({ name: 'x', mcVersion: cleanStr(c.mcVersion ?? entry.mcVersion, 20), loader: cleanStr(c.loader ?? entry.loader.type, 10) });
@@ -2030,25 +2031,62 @@ function makeOfflineSession(name) {
 
 /* ---------- sesión guardada (para no iniciar sesión cada vez) ---------- */
 
-// Cuenta no premium: se guarda solo el nick. Premium: se guarda el token de renovación de Microsoft,
-// cifrado con el almacén del sistema (nunca en texto plano). Si el sistema no tiene almacén seguro, no se guarda.
-function saveAccount(data) {
+// Varias cuentas: accounts.json guarda la lista y cuál está activa. Cuenta no premium: solo el nick.
+// Premium: el token de renovación de Microsoft, cifrado con el almacén del sistema (nunca en texto plano).
+// Si el sistema no tiene almacén seguro, las premium no se guardan.
+const MAX_ACCOUNTS = 12;
+const accountId = (a) => (a.mode === 'offline' ? `off:${String(a.name).toLowerCase()}` : String(a.uuid || '').replace(/-/g, ''));
+function readAccounts() {
   try {
-    let out = null;
-    if (data.mode === 'offline') out = { mode: 'offline', name: data.name };
-    else if (data.mode === 'premium' && data.refresh && safeStorage.isEncryptionAvailable()) {
-      out = { mode: 'premium', at: sess.startedAt(data.at), refresh: safeStorage.encryptString(String(data.refresh)).toString('base64') };
+    const d = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8'));
+    if (d && Array.isArray(d.list)) {
+      const list = d.list.filter((a) => a && a.id && ['offline', 'premium'].includes(a.mode) && /^[A-Za-z0-9_]{3,16}$/.test(String(a.name))).slice(0, MAX_ACCOUNTS);
+      return { active: String(d.active || ''), list };
     }
-    if (!out) return clearAccount();
-    fs.mkdirSync(path.dirname(ACCOUNT_FILE), { recursive: true });
-    fs.writeFileSync(ACCOUNT_FILE, JSON.stringify(out));
+  } catch {}
+  return { active: '', list: [] };
+}
+function writeAccounts(data) {
+  try {
+    fs.mkdirSync(path.dirname(ACCOUNTS_FILE), { recursive: true });
+    fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(data));
   } catch {}
 }
-
-function clearAccount() {
+// Guarda (o actualiza) la cuenta de la sesión actual y la marca como activa. `data`: { refresh, at } si es premium.
+function saveAccount(data) {
   try {
-    fs.unlinkSync(ACCOUNT_FILE);
+    if (!session) return;
+    const db = readAccounts();
+    const id = accountId(session);
+    if (!id) return;
+    let entry;
+    if (session.mode === 'offline') entry = { id, mode: 'offline', name: session.name };
+    else if (data && data.refresh && safeStorage.isEncryptionAvailable()) {
+      entry = { id, mode: 'premium', name: session.name, uuid: String(session.uuid || ''), at: sess.startedAt(data.at), refresh: safeStorage.encryptString(String(data.refresh)).toString('base64') };
+    } else return;
+    const i = db.list.findIndex((x) => x.id === id);
+    if (i >= 0) db.list[i] = entry;
+    else if (db.list.length < MAX_ACCOUNTS) db.list.push(entry);
+    else throw new Error('Ya tienes 12 cuentas guardadas. Quita alguna para añadir otra.');
+    db.list = db.list.filter((x) => x.id !== 'legacy');
+    db.active = id;
+    writeAccounts(db);
+    try { fs.unlinkSync(ACCOUNT_FILE); } catch {} // el archivo de una sola cuenta (versiones anteriores)
+  } catch (e) {
+    if (/12 cuentas/.test(String(e && e.message))) throw e;
+  }
+}
+
+// Quita una cuenta guardada (o, sin id, la activa).
+function clearAccount(id) {
+  try {
+    const db = readAccounts();
+    const target = id || db.active;
+    db.list = db.list.filter((x) => x.id !== target);
+    if (db.active === target) db.active = '';
+    writeAccounts(db);
   } catch {}
+  try { fs.unlinkSync(ACCOUNT_FILE); } catch {}
 }
 
 async function premiumSessionFrom(xbox, startedAtMs) {
@@ -2065,28 +2103,46 @@ async function premiumSessionFrom(xbox, startedAtMs) {
   if (refresh) saveAccount({ mode: 'premium', refresh, at: startedAtMs });
 }
 
-async function restoreSession() {
-  let saved;
-  try {
-    saved = JSON.parse(fs.readFileSync(ACCOUNT_FILE, 'utf8'));
-  } catch {
-    return;
+// Activa una cuenta guardada (nick sin conexión, o premium renovando su token). Devuelve false si no se pudo.
+async function activateAccount(saved) {
+  if (saved.mode === 'offline' && /^[A-Za-z0-9_]{3,16}$/.test(String(saved.name))) {
+    session = makeOfflineSession(saved.name);
+    sessionStartedAt = 0;
+    setTimeout(presenceBeat, 1500);
+    pingUsage();
+    lastProfile = null;
+    saveAccount();
+    return true;
   }
-  try {
-    if (saved.mode === 'offline' && /^[A-Za-z0-9_]{3,16}$/.test(String(saved.name))) {
-      session = makeOfflineSession(saved.name);
-      pingUsage();
-    } else if (saved.mode === 'premium' && saved.refresh && safeStorage.isEncryptionAvailable()) {
-      if (sess.premiumExpired(saved.at)) {
-        // Han pasado 30 días: se pide iniciar sesión otra vez con Microsoft (la cuenta no premium nunca caduca).
-        clearAccount();
-        sessionExpiredNotice = true;
-        return;
-      }
-      const token = safeStorage.decryptString(Buffer.from(saved.refresh, 'base64'));
-      const xbox = await new Auth('select_account').refresh(token);
-      await premiumSessionFrom(xbox, sess.startedAt(saved.at));
+  if (saved.mode === 'premium' && saved.refresh && safeStorage.isEncryptionAvailable()) {
+    if (sess.premiumExpired(saved.at)) {
+      // Han pasado 30 días: se pide iniciar sesión otra vez con Microsoft (la cuenta no premium nunca caduca).
+      clearAccount(saved.id);
+      sessionExpiredNotice = true;
+      return false;
     }
+    const token = safeStorage.decryptString(Buffer.from(saved.refresh, 'base64'));
+    const xbox = await new Auth('select_account').refresh(token);
+    await premiumSessionFrom(xbox, sess.startedAt(saved.at));
+    return true;
+  }
+  return false;
+}
+
+async function restoreSession() {
+  let db = readAccounts();
+  if (!db.list.length) {
+    // Versiones anteriores guardaban una sola cuenta en account.json.
+    try {
+      const old = JSON.parse(fs.readFileSync(ACCOUNT_FILE, 'utf8'));
+      if (old.mode === 'offline') db = { active: `off:${String(old.name).toLowerCase()}`, list: [{ id: `off:${String(old.name).toLowerCase()}`, mode: 'offline', name: String(old.name) }] };
+      else if (old.mode === 'premium' && old.refresh) db = { active: 'legacy', list: [{ id: 'legacy', mode: 'premium', name: 'Cuenta', uuid: '', at: old.at, refresh: old.refresh }] };
+    } catch { return; }
+  }
+  const saved = db.list.find((x) => x.id === db.active);
+  if (!saved) return;
+  try {
+    await activateAccount(saved);
   } catch {
     // Sin internet o sesión caducada: se pide iniciar sesión de nuevo (el archivo se conserva si solo falló la red).
     session = null;
@@ -2112,10 +2168,11 @@ ipcMain.handle('auth:offline', (_e, nick) => {
     throw new Error('El nick debe tener de 3 a 16 caracteres: letras, números o guion bajo.');
   }
   session = makeOfflineSession(name);
+  sessionStartedAt = 0;
   setTimeout(presenceBeat, 1500);
   pingUsage();
   lastProfile = null;
-  saveAccount({ mode: 'offline', name });
+  saveAccount();
   return { mode: 'offline', name, uuid: session.uuid };
 });
 
@@ -2125,6 +2182,36 @@ ipcMain.handle('auth:microsoft', async () => {
   const xbox = await authManager.launch('electron');
   await premiumSessionFrom(xbox);
   return sessionPublic();
+});
+
+// Lista de cuentas guardadas (sin tokens) para el selector.
+const accountsPublic = () => {
+  const db = readAccounts();
+  return db.list.map((a) => ({ id: a.id, mode: a.mode, name: a.name, active: a.id === db.active && !!session }));
+};
+ipcMain.handle('auth:accounts', () => accountsPublic());
+ipcMain.handle('auth:switch', async (_e, id) => {
+  if (launching) throw new Error('Cierra Minecraft antes de cambiar de cuenta.');
+  const saved = readAccounts().list.find((x) => x.id === String(id));
+  if (!saved) throw new Error('Esa cuenta ya no está guardada.');
+  if (saved.mode === 'offline' && !remoteCfg.features.nonPremium) throw new Error('El inicio de sesión no premium está desactivado por el administrador.');
+  if (session && accountId(session) === saved.id) return sessionPublic();
+  const prev = session;
+  const prevStarted = sessionStartedAt;
+  try {
+    if (!(await activateAccount(saved))) throw new Error('Esa cuenta venció. Inicia sesión con Microsoft otra vez.');
+  } catch (e) {
+    session = prev; sessionStartedAt = prevStarted;
+    throw new Error(String((e && e.message) || e).startsWith('Esa cuenta') ? e.message : 'No se pudo cambiar de cuenta. Revisa tu conexión o inicia sesión otra vez.');
+  }
+  pendingSkin = null;
+  return sessionPublic();
+});
+ipcMain.handle('auth:forget', (_e, id) => {
+  const target = String(id || '');
+  clearAccount(target);
+  if (session && accountId(session) === target) { session = null; lastProfile = null; pendingSkin = null; }
+  return accountsPublic();
 });
 
 ipcMain.handle('auth:logout', () => {
@@ -2477,6 +2564,21 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
 /* ---------- IPC: jugar ---------- */
 
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
+  // Si este modpack recuerda una cuenta, se cambia a ella antes de jugar.
+  if (opts.modpackId && !launching) {
+    const pk = readModpacks().find((x) => x.id === String(opts.modpackId));
+    const want = pk && pk.settings && pk.settings.account;
+    const saved = want && readAccounts().list.find((x) => x.id === want);
+    if (saved && !(session && accountId(session) === saved.id)) {
+      try {
+        if (!(await activateAccount(saved))) throw new Error('vencida');
+        pendingSkin = null;
+        send('auth:changed', sessionPublic());
+      } catch {
+        throw new Error(`No se pudo entrar con la cuenta ${saved.name} de este modpack. Inicia sesión con ella otra vez o cambia la cuenta en los ajustes del modpack.`);
+      }
+    }
+  }
   if (!session) throw new Error('Primero inicia sesión.');
   if (launching) throw new Error('El juego ya se está iniciando.');
   await freshPremium();

@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld('api', {
   loginOffline: (nick) => ipcRenderer.invoke('auth:offline', nick),
   loginMicrosoft: () => ipcRenderer.invoke('auth:microsoft'),
   logout: () => ipcRenderer.invoke('auth:logout'),
+  accountsList: () => ipcRenderer.invoke('auth:accounts'),
+  accountSwitch: (id) => ipcRenderer.invoke('auth:switch', id),
+  accountForget: (id) => ipcRenderer.invoke('auth:forget', id),
 
   // tema
 
@@ -41,6 +44,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // configuración remota y panel administrador ampliado
   remoteGet: () => ipcRenderer.invoke('remote:get'),
+  onAuthChanged: (cb) => ipcRenderer.on('auth:changed', (_e, i) => cb(i)),
   onRemoteChanged: (cb) => ipcRenderer.on('remote:changed', (_e, c) => cb(c)),
   adminInvite: (user) => ipcRenderer.invoke('admin:invite', user),
   adminSaveLauncher: (c) => ipcRenderer.invoke('admin:saveLauncher', c),
