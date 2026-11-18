@@ -138,3 +138,9 @@ CHANGELOG.md              Historial de versiones
 Hecho por el equipo de **Nova PX** · [Historial de cambios](CHANGELOG.md) · [Cómo colaborar](CONTRIBUTING.md) · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
 
 <sub>Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</sub>
+
+## Licencia
+
+El código de este launcher es de código abierto bajo la licencia [MIT](LICENSE). El nombre «Nova PX», su logo y las imágenes de los eventos son de sus autores y no están incluidos en esa licencia. Minecraft es una marca de Mojang AB; este proyecto no está afiliado a Mojang ni a Microsoft.
+
+Política de firma de código: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
