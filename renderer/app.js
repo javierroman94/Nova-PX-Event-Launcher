@@ -897,6 +897,58 @@ function fillServerPill(node, id) {
   }).catch(() => {});
 }
 
+/* --- clic derecho: acciones rápidas y preferencias de la biblioteca (fijados y ocultos, solo en este equipo) --- */
+const ctx = (node, build) => { if (window.NovaCtx) window.NovaCtx.attach(node, build); };
+const prefSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch { return new Set(); } };
+const prefSave = (k, set) => { try { localStorage.setItem(k, JSON.stringify([...set])); } catch {} };
+const libPins = prefSet('novapx-lib-pins');
+const libHidden = prefSet('novapx-lib-hidden');
+let libShowHidden = false;
+const copyText = async (t, ok) => { try { await navigator.clipboard.writeText(t); toast(ok || 'Copiado'); } catch { toast('No se pudo copiar', 'error'); } };
+
+async function duplicatePack(p) {
+  const withWorlds = await askConfirm('¿Copiar también los mundos?\n\nCon mundos: copia todo. Solo mods: copia los mods y ajustes.', 'Con mundos', 'Solo mods');
+  try {
+    const copy = await window.api.modpackDuplicate({ id: p.id, withWorlds });
+    toast(`Copia creada: ${copy.title}`, 'success');
+    await loadInstalled();
+    if (mp.view === 'library') renderLibrary();
+  } catch (e) { toast(cleanError(e), 'error'); }
+}
+async function exportPack(p) {
+  try {
+    const r = await window.api.modpackExport({ id: p.id, bundleAll: false, includeSettings: true });
+    if (r) toast(`Exportado: ${r.linked} mods por enlace, ${r.bundled} dentro del archivo`, 'success');
+  } catch (e) { toast(cleanError(e), 'error'); }
+}
+async function deletePack(p) {
+  if (!p || !await askConfirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
+  try {
+    await window.api.modpackRemove(p.id);
+    libPins.delete(p.id); libHidden.delete(p.id); prefSave('novapx-lib-pins', libPins); prefSave('novapx-lib-hidden', libHidden);
+    toast('Modpack eliminado');
+    if (mp.pack && mp.pack.id === p.id) mp.pack = null;
+    showView('library');
+    renderLibrary();
+  } catch (e) { toast(cleanError(e), 'error'); }
+}
+function packMenu(p, detail) {
+  const pinned = libPins.has(p.id);
+  return [
+    { title: p.title },
+    { icon: '▶', label: 'Jugar', onClick: () => playPack(p.id) },
+    detail ? null : { icon: '📂', label: 'Abrir detalles', onClick: () => openDetail(p) },
+    { icon: '🗂', label: 'Abrir carpeta', onClick: () => window.api.modpackFolder(p.id).catch((e) => toast(cleanError(e), 'error')) },
+    'sep',
+    { icon: '⧉', label: 'Duplicar…', onClick: () => duplicatePack(p) },
+    { icon: '⬆', label: 'Exportar .novapx', onClick: () => exportPack(p) },
+    detail ? null : { icon: pinned ? '📌' : '📍', label: pinned ? 'Quitar de fijados' : 'Fijar arriba', onClick: () => { if (pinned) libPins.delete(p.id); else libPins.add(p.id); prefSave('novapx-lib-pins', libPins); renderLibrary(); } },
+    detail ? null : { icon: '🙈', label: 'Ocultar de la biblioteca', onClick: () => { libHidden.add(p.id); prefSave('novapx-lib-hidden', libHidden); toast(`"${p.title}" oculto. Clic derecho en el fondo para mostrar los ocultos.`); renderLibrary(); } },
+    'sep',
+    { icon: '🗑', label: 'Eliminar…', danger: true, onClick: () => deletePack(p) }
+  ];
+}
+
 function packCard(p) {
   const card = el('div', 'event-card mp-card');
   card.tabIndex = 0;
@@ -917,6 +969,7 @@ function packCard(p) {
   fillServerPill(srv, p.id);
   card.append(media, body);
   const open = () => openDetail(p);
+  ctx(card, () => packMenu(p, false));
   card.addEventListener('click', open);
   card.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === card) open(); });
   return card;
@@ -935,10 +988,13 @@ async function renderLibrary() {
     mc: (a, b) => String(b.mcVersion).localeCompare(String(a.mcVersion), undefined, { numeric: true }) || byName(a, b)
   };
   list = list.sort(sorters[libView.sort]);
+  const hiddenCount = list.filter((p) => libHidden.has(p.id)).length;
+  if (!libShowHidden) list = list.filter((p) => !libHidden.has(p.id));
+  list = [...list.filter((p) => libPins.has(p.id)), ...list.filter((p) => !libPins.has(p.id))];
   host.replaceChildren();
   $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
-    ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}`
+    ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}${hiddenCount ? ` · ${hiddenCount} oculto${hiddenCount === 1 ? '' : 's'}${libShowHidden ? ' (visibles)' : ''}` : ''}`
     : '';
   if (!list.length) host.append(libraryEmptyState(mp.installed.length === 0));
   const groups = new Map();
@@ -950,7 +1006,7 @@ async function renderLibrary() {
   groups.forEach((items, key) => {
     if (key) host.append(el('h3', 'mp-group', `${key} · ${items.length}`));
     const grid = el('div', 'events-grid mp-grid');
-    items.forEach((p) => grid.append(packCard(p)));
+    items.forEach((p) => { const c = packCard(p); c.classList.toggle('pinned', libPins.has(p.id)); c.classList.toggle('is-hidden', libHidden.has(p.id)); grid.append(c); });
     host.append(grid);
   });
 }
@@ -977,6 +1033,17 @@ function libraryEmptyState(firstTime) {
   }
   return box;
 }
+ctx($('mp-library'), () => [
+  { title: 'Biblioteca' },
+  { icon: '＋', label: 'Nuevo perfil', onClick: () => $('mp-new-profile').click() },
+  { icon: '⬇', label: 'Importar archivo…', onClick: () => $('mp-import-file').click() },
+  { icon: '📁', label: 'Importar carpeta…', onClick: () => $('mp-import-folder').click() },
+  { icon: '🔎', label: 'Explorar modpacks', onClick: () => $('mp-go-discover').click() },
+  'sep',
+  { icon: libShowHidden ? '🙈' : '👁', label: libShowHidden ? 'Ocultar de nuevo los ocultos' : `Mostrar ocultos${libHidden.size ? ` (${libHidden.size})` : ''}`, disabled: !libHidden.size && !libShowHidden, onClick: () => { libShowHidden = !libShowHidden; renderLibrary(); } },
+  libHidden.size ? { icon: '↩', label: 'Volver a mostrar todos', onClick: () => { libHidden.clear(); prefSave('novapx-lib-hidden', libHidden); renderLibrary(); } } : null,
+  { icon: '↻', label: 'Actualizar lista', onClick: () => renderLibrary() }
+]);
 $('mp-lib-sort').addEventListener('change', (e) => { libView.sort = e.target.value; renderLibrary(); });
 $('mp-lib-group').addEventListener('change', (e) => { libView.group = e.target.value; renderLibrary(); });
 document.querySelectorAll('[data-lf]').forEach((b) => b.addEventListener('click', () => {
@@ -1034,6 +1101,34 @@ function openDetailHeader(p) {
   if (p.icon) icon.src = p.icon;
   $('mp-detail-title').textContent = `${!p.icon && p.emoji ? p.emoji + ' ' : ''}${p.title}`;
   $('mp-detail-meta').textContent = packMeta(p);
+  const head = $('mp-view-detail').querySelector('.mp-detail-head');
+  if (p.icon) head.style.setProperty('--mp-img', `url("${String(p.icon).replace(/"/g, '%22')}")`); else head.style.removeProperty('--mp-img');
+  head.classList.toggle('has-img', !!p.icon);
+  paintPackChips(p);
+}
+const SRC_NAMES = { modrinth: 'Modrinth', custom: 'Perfil propio', copy: 'Copia', curseforge: 'CurseForge' };
+function paintPackChips(p) {
+  let box = $('mp-detail-chips');
+  if (!box) {
+    box = el('div', 'mp-chips'); box.id = 'mp-detail-chips';
+    $('mp-detail-meta').after(box);
+  }
+  box.replaceChildren();
+  const add = (cls, text) => box.append(el('span', `mp-chip ${cls || ''}`, text));
+  add('mc', `Minecraft ${p.mcVersion}`);
+  add('loader', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla');
+  if (p.provider) add('', SRC_NAMES[p.provider] || p.provider);
+  if (p.lastPlayedAt) add('', `Jugado ${ago(p.lastPlayedAt)}`); else add('', 'Sin jugar');
+  if (mp.items && mp.pack === p && mp.items.length) {
+    const c = (t) => mp.items.filter((i) => i.type === t).length;
+    const total = mp.items.reduce((n, i) => n + (i.size || 0), 0);
+    add('ok', `🧩 ${c('mod')} mods`);
+    if (c('shader')) add('ok', `✨ ${c('shader')} shaders`);
+    if (c('resourcepack')) add('ok', `🎨 ${c('resourcepack')} texturas`);
+    const off = mp.items.filter((i) => !i.enabled).length;
+    if (off) add('warn', `⏸ ${off} desactivados`);
+    add('', fmtSize(total));
+  }
 }
 
 function openDetail(p) {
@@ -1048,19 +1143,8 @@ function openDetail(p) {
 
 $('mp-detail-play').addEventListener('click', () => mp.pack && playPack(mp.pack.id));
 $('mp-detail-folder').addEventListener('click', () => mp.pack && window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')));
-$('mp-detail-delete').addEventListener('click', async () => {
-  const p = mp.pack;
-  if (!p || !await askConfirm(`¿Eliminar "${p.title}"? Se borrarán sus mods, mundos y ajustes.`)) return;
-  try {
-    await window.api.modpackRemove(p.id);
-    toast('Modpack eliminado');
-    mp.pack = null;
-    showView('library');
-    renderLibrary();
-  } catch (e) {
-    toast(cleanError(e), 'error');
-  }
-});
+$('mp-detail-delete').addEventListener('click', () => deletePack(mp.pack));
+ctx($('mp-view-detail').querySelector('.mp-detail-head'), () => (mp.pack ? packMenu(mp.pack, true) : null));
 
 const fmtSize = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
@@ -1074,6 +1158,7 @@ async function renderContent() {
     const r = await window.api.instanceContent(p.id);
     if (mp.pack !== p) return;
     mp.items = r.items;
+    paintPackChips(p);
     paintContent(r.offline);
   } catch (err) {
     list.replaceChildren();
@@ -1098,7 +1183,10 @@ function paintContent(offline) {
     const row = el('div', `mod-card${it.enabled ? '' : ' mod-off'}`);
     row.append(iconEl(it.icon, it.name));
     const body = el('div', 'mod-body');
-    body.append(el('strong', '', it.name), el('span', 'muted', `${TYPE_NAMES[it.type]}${it.version ? ' · ' + it.version : ''} · ${it.file.replace(/\.disabled$/i, '')} · ${fmtSize(it.size)}`));
+    const top = el('div', 'mod-top');
+    top.append(el('strong', '', it.name), el('span', `type-chip t-${it.type}`, TYPE_NAMES[it.type]));
+    if (!it.enabled) top.append(el('span', 'type-chip t-off', 'Desactivado'));
+    body.append(top, el('span', 'muted', `${it.version ? it.version + ' · ' : ''}${it.file.replace(/\.disabled$/i, '')} · ${fmtSize(it.size)}`));
     row.append(body);
     const sw = el('input', 'switch');
     sw.type = 'checkbox';
@@ -1127,9 +1215,37 @@ function paintContent(offline) {
       }
     });
     row.append(sw, del);
+    ctx(row, () => [
+      { title: it.name },
+      { icon: it.enabled ? '⏸' : '▶', label: it.enabled ? 'Desactivar' : 'Activar', onClick: () => sw.click() },
+      { icon: '📋', label: 'Copiar nombre', onClick: () => copyText(it.name, 'Nombre copiado') },
+      { icon: '📋', label: 'Copiar nombre del archivo', onClick: () => copyText(it.file.replace(/\.disabled$/i, ''), 'Archivo copiado') },
+      'sep',
+      { icon: '🗑', label: 'Quitar del modpack…', danger: true, onClick: () => del.click() }
+    ]);
     list.append(row);
   });
 }
+async function bulkToggle(enable) {
+  const targets = mp.items.filter((it) => (mp.filter === 'all' || it.type === mp.filter) && it.enabled !== enable);
+  if (!targets.length) { toast(enable ? 'Todo está activado ya' : 'Todo está desactivado ya'); return; }
+  if (!await askConfirm(`¿${enable ? 'Activar' : 'Desactivar'} ${targets.length} elemento${targets.length === 1 ? '' : 's'}${mp.filter === 'all' ? '' : ' de este tipo'}?`)) return;
+  let n = 0;
+  for (const it of targets) {
+    try { await window.api.instanceToggle({ id: mp.pack.id, type: it.type, file: it.file }); n++; } catch {}
+  }
+  toast(`${n} ${enable ? 'activado' : 'desactivado'}${n === 1 ? '' : 's'}`, 'success');
+  renderContent();
+}
+ctx($('mp-tab-content'), () => [
+  { title: 'Contenido' },
+  { icon: '🔎', label: 'Explorar contenido', onClick: () => $('mp-add-explore').click() },
+  { icon: '＋', label: 'Cargar archivos…', onClick: () => $('mp-add-local').click() },
+  { icon: '⟳', label: 'Buscar actualizaciones', onClick: () => $('mp-check-updates').click() },
+  'sep',
+  { icon: '▶', label: 'Activar todo', hint: mp.filter === 'all' ? '' : 'este tipo', onClick: () => bulkToggle(true) },
+  { icon: '⏸', label: 'Desactivar todo', hint: mp.filter === 'all' ? '' : 'este tipo', onClick: () => bulkToggle(false) }
+]);
 
 $('mp-content-search').addEventListener('input', () => paintContent(false));
 // El menú de tipo junto a "Cargar archivos" también filtra la lista, para que no parezca un filtro roto.
@@ -1185,6 +1301,12 @@ async function renderWorlds() {
         bk.textContent = 'Respaldar';
       });
       row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), body, bk);
+      ctx(row, () => [
+        { title: w.name },
+        { icon: '💾', label: 'Respaldar este mundo', onClick: () => bk.click() },
+        { icon: '📋', label: 'Copiar nombre', onClick: () => copyText(w.name, 'Nombre copiado') },
+        { icon: '🗂', label: 'Abrir carpeta del modpack', onClick: () => window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')) }
+      ]);
       list.append(row);
     });
     renderBackups();
@@ -3218,11 +3340,20 @@ function paintAdminEvents() {
     const edit = el('button', 'primary', 'Editar'); edit.type = 'button';
     edit.addEventListener('click', () => openAdminEvent(i));
     card.addEventListener('dblclick', () => openAdminEvent(i));
+    ctx(card, () => [
+      { title: ev.name || 'Evento' },
+      { icon: '✎', label: 'Editar', onClick: () => openAdminEvent(i) },
+      { icon: '⧉', label: 'Duplicar', onClick: () => { const copy = JSON.parse(JSON.stringify(ev)); copy.name = `${ev.name} (copia)`.slice(0, 80); const list = [...adm.events]; list.splice(i + 1, 0, copy); saveAdminEvents(list, false); } },
+      { icon: '📋', label: 'Copiar título', onClick: () => copyText(ev.name || '', 'Título copiado') },
+      'sep',
+      { icon: '🗑', label: 'Eliminar…', danger: true, onClick: async () => { if (await askConfirm(`¿Eliminar "${ev.name}" del historial?`)) saveAdminEvents(adm.events.filter((_, k) => k !== i), false); } }
+    ]);
     card.append(m, body, edit);
     box.append(card);
   });
   if (!(adm.events || []).length) box.append(el('p', 'muted', 'Todavía no hay eventos en el historial.'));
 }
+ctx($('ad-events'), () => [{ title: 'Historial' }, { icon: '＋', label: 'Evento nuevo', onClick: () => $('ad-event-add').click() }]);
 $('ad-events-search').addEventListener('input', (e) => { aeQuery = e.target.value; paintAdminEvents(); });
 function paintAdeWinners() {
   const box = $('ade-winners');

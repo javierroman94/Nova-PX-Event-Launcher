@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.69
+- Clic derecho en todo el launcher: biblioteca de modpacks (jugar, abrir, carpeta, duplicar, exportar, fijar arriba, ocultar, eliminar; en el fondo: nuevo perfil, importar, mostrar ocultos), mods/shaders/texturas (activar o desactivar, copiar nombre, quitar; en el fondo: cargar, explorar, activar o desactivar todo), mundos, skins guardadas y eventos del administrador (editar, duplicar, eliminar).
+- Detalle del modpack rediseñado: cabecera con banner difuminado de su icono, fichas (versión, loader, origen, último juego, cuántos mods/shaders/texturas y peso), pestañas subrayadas, etiquetas de tipo y de desactivado, y ajustes en tarjetas con barra de acciones fija.
+- Skins: la fila de capas ya no se sale de la tarjeta al ocultarla.
+
 ## 1.0.68
 - Amigos con solicitudes: envías una solicitud por nick y la otra persona la acepta o rechaza; solo entonces ven el estado del otro.
 - Estado en línea arreglado: ahora se guarda en el servidor (antes se perdía al reiniciarse y salía "Desconectado"); también muestra "Activo hace…". El latido es cada minuto y también al iniciar sesión.

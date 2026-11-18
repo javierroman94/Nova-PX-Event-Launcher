@@ -411,6 +411,13 @@
       const actions = document.createElement('div'); actions.className = 'saved-actions';
       actions.append(use, edit);
       card.append(stageBox, name, meta, actions, del);
+      if (window.NovaCtx) window.NovaCtx.attach(card, () => [
+        { title: s.name },
+        { icon: '✔', label: 'Usar esta skin', onClick: () => use.click() },
+        { icon: '✎', label: 'Editar nombre', onClick: () => edit.click() },
+        'sep',
+        { icon: '🗑', label: 'Quitar de mi lista', danger: true, onClick: () => del.click() }
+      ]);
       box.append(card);
     });
   }
