@@ -247,6 +247,9 @@ async function paintCommunity() {
     if (!st || !st.total) { box.hidden = true; return; }
     box.replaceChildren(el('span', 'live-dot'), document.createTextNode(` ${st.day.toLocaleString()} jugadores activos hoy · ${st.total.toLocaleString()} en la comunidad Nova PX`));
     box.hidden = false;
+    const lo = $('lp-online');
+    lo.replaceChildren(el('span', 'live-dot'), document.createTextNode(` ${st.day.toLocaleString()} en línea hoy`));
+    lo.hidden = false;
   } catch { box.hidden = true; }
 }
 
@@ -263,7 +266,7 @@ async function renderHero() {
     $('soon-art').hidden = eventActive || !!(m.event && (m.event.logo || m.event.image));
     setPlaying(playing);
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
-    eventInfo = { name: (m.event && m.event.name) || 'Evento', logo: imageUrl(m.event && m.event.logo), mc: m.minecraftVersion, loader: String((m.loader && m.loader.type) || 'vanilla') };
+    eventInfo = { name: (m.event && m.event.name) || 'Evento', image: imageUrl(m.event && m.event.image), logo: imageUrl(m.event && m.event.logo), mc: m.minecraftVersion, loader: String((m.loader && m.loader.type) || 'vanilla') };
     renderContinue();
     $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
     // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
@@ -336,6 +339,27 @@ function renderRecent(packs) {
   });
 }
 
+/* --- Launchpad (pantalla principal tipo Lunar) --- */
+let lpPackId = null;
+function renderLaunchpad(packs) {
+  const w = $('lp-welcome');
+  w.replaceChildren(document.createTextNode('Bienvenido de nuevo, '), el('span', 'pii', ($('player-name').textContent || '').replace('Sin sesión', 'jugador')));
+  const last = packs.slice().sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))[0];
+  lpPackId = last ? last.id : null;
+  $('lp-play').disabled = !last;
+  $('lp-play-sub').textContent = last ? `${last.title} · ${last.mcVersion} · ${LOADER_NAMES[last.loader && last.loader.type] || 'Vanilla'}` : 'Instala o crea un modpack para jugar';
+  const img = $('lp-img');
+  const art = eventInfo.image || eventInfo.logo;
+  img.hidden = !art;
+  if (art) { img.src = art; $('lp-hero').style.setProperty('--lp-bg', `url(${JSON.stringify(art)})`); }
+  const chips = $('lp-chips');
+  chips.replaceChildren();
+  if (last) chips.append(el('span', 'chip', `Minecraft ${last.mcVersion}`));
+  chips.append(el('span', 'chip', eventActive ? 'Evento activo' : 'Sin evento activo'));
+}
+$('lp-play').addEventListener('click', () => { if (lpPackId) playPack(lpPackId); });
+$('lp-event').addEventListener('click', () => goTo('event'));
+
 async function renderContinue() {
   const box = $('continue-list');
   if (!box) return;
@@ -358,6 +382,7 @@ async function renderContinue() {
   box.append(ev);
 
   renderRecent(packs);
+  renderLaunchpad(packs);
   packs
     .slice()
     .sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))
@@ -467,7 +492,7 @@ async function renderNews() {
     box.replaceChildren();
     if (!news.length) box.append(el('p', 'muted', 'Todavía no hay novedades.'));
     news.forEach((n) => {
-      const item = el('article', 'news-item');
+      const item = el('article', 'news-item news-card');
       const time = el('time', '', n.date);
       const src = imageUrl(n.image);
       if (src) { const im = el('img', 'news-img'); im.alt = ''; im.loading = 'lazy'; im.src = src; item.append(im); }

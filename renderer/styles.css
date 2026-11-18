@@ -1521,3 +1521,23 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .ver-chip.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .settings-search { width: min(420px, 100%); margin: 0 0 14px; }
 @media (max-width: 640px) { .np-grid { grid-template-columns: 1fr; } }
+
+/* Launchpad (Inicio) */
+.launchpad { margin-bottom: 26px; }
+.lp-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.lp-top h2 { margin: 0; font-size: 22px; }
+.lp-online { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text); }
+.lp-hero { position: relative; overflow: hidden; min-height: 300px; border-radius: 20px; border: 1px solid var(--line); display: grid; place-items: center; background: #0b0e18; isolation: isolate; }
+.lp-hero::before { content: ""; position: absolute; inset: -30px; z-index: -2; background: var(--lp-bg, none) center / cover no-repeat; filter: blur(30px) saturate(1.2) brightness(.5); }
+.lp-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,.55)); }
+.lp-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: -1; opacity: .9; }
+.lp-center { display: grid; gap: 14px; justify-items: center; padding: 28px; text-align: center; }
+.lp-play { display: grid; gap: 4px; min-width: 300px; padding: 16px 34px; border: 0; border-radius: 14px; cursor: pointer; color: #fff; font: inherit; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #000)); box-shadow: 0 14px 40px -10px var(--accent); transition: transform .2s, box-shadow .2s; }
+.lp-play b { font-size: 24px; letter-spacing: .06em; }
+.lp-play small { opacity: .9; }
+.lp-play:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); }
+.lp-play:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.lp-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.lp-event { position: absolute; right: 16px; bottom: 14px; }
+.home-grid #news-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.news-card .news-img { max-height: 180px; }

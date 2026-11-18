@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.54
+- **Inicio rediseñado (Launchpad)**: saludo con tu nombre, contador de jugadores en línea, portada grande con el banner del evento entero y botón JUGAR para tu último modpack.
+- Las novedades ahora se muestran como tarjetas con imagen.
+
 ## 1.0.53
 - **Imágenes de eventos completas**: el banner de Inicio, las noticias y las imágenes de eventos ya no se recortan (se ven enteras, con fondo difuminado).
 - **Nuevo perfil**: asistente con cuatro opciones (Asistente, Instalar modpack, Importar archivo, Desde otros launchers) y buscador, inspirado en Lunar.
