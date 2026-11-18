@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.76
+- Permisos: las instrucciones para colaboradores ahora indican un token **classic** con permiso `public_repo` (GitHub no muestra repositorios ajenos al crear tokens fine-grained). El launcher acepta ambos tipos.
+
 ## 1.0.75
 - Evento: el hosting, los patrocinadores y los créditos ahora son tres grupos separados. El hosting oficial (por ejemplo Holi Hosting) sale con una tarjeta grande y destacada con botón "Visitar"; los patrocinadores del evento con su logo; los créditos como etiquetas pequeñas.
 - Admin → Evento: editor nuevo por grupos con logo en miniatura, rol, enlace y mensaje/promo; el modpack, los datos y la publicación quedan en 4 pasos.

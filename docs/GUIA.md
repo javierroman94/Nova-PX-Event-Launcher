@@ -212,6 +212,8 @@ La **Biblioteca** no es solo para modpacks descargados: la comunidad puede crear
 
 Solo tú (o quien tenga un token tuyo) puede publicar. **No hay un "modo admin" escondido en el launcher**: la llave es un token de GitHub con permiso de escritura en el repositorio. Sin él nadie puede cambiar nada, aunque modifique el programa.
 
+**Colaboradores (repositorio de otra persona):** GitHub no deja crear tokens *fine-grained* para repositorios ajenos, así que deben usar un token **classic** (Settings → Developer settings → Tokens (classic)) con el permiso `public_repo`.
+
 **Activarlo:** GitHub → Settings → Developer settings → *Fine-grained personal access tokens* → token **solo para este repositorio** con **Contents: Read and write** y caducidad razonable. En el launcher: **Ajustes → Modo administrador** → pegar y *Activar* (se guarda cifrado en tu PC). Aparece la pestaña **Admin**.
 
 **Flujo para un evento**

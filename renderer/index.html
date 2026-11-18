@@ -820,7 +820,7 @@
             <ol class="perm-steps">
               <li><span class="perm-n">1</span><div><b>Invítala</b> al repositorio con su usuario de GitHub (abajo).</div></li>
               <li><span class="perm-n">2</span><div><b>Acepta</b> la invitación (le llega a su correo y a GitHub).</div></li>
-              <li><span class="perm-n">3</span><div><b>Crea su token</b> en GitHub → Settings → Developer settings → Fine-grained tokens: solo este repositorio, permiso <i>Contents: Read and write</i>.</div></li>
+              <li><span class="perm-n">3</span><div><b>Crea su token</b> en GitHub → Settings → Developer settings → <b>Tokens (classic)</b> → Generate new token (classic), con el permiso <code>public_repo</code>. <small class="muted">(Los tokens “fine-grained” no sirven aquí: GitHub no los deja usar en repositorios de otra persona.)</small></div></li>
               <li><span class="perm-n">4</span><div><b>Lo pega</b> en su launcher: Ajustes → Modo administrador.</div></li>
               <li><span class="perm-n">5</span><div><b>Tú le das permiso</b> con su nick premium (“Dar permiso”).</div></li>
             </ol>
@@ -1032,8 +1032,8 @@
           <p id="adm-state" class="muted">Desactivado.</p>
           <div id="adm-login-box">
             <label for="adm-token">Token de GitHub</label>
-            <input id="adm-token" type="password" placeholder="github_pat_…" autocomplete="off" />
-            <small class="muted">Crea un token en GitHub → Settings → Developer settings → Fine-grained tokens, solo para este repositorio con permiso <b>Contents: Read and write</b>. Se guarda cifrado en este equipo. Sin el token nadie puede publicar nada, aunque abra el launcher.</small>
+            <input id="adm-token" type="password" placeholder="ghp_… o github_pat_…" autocomplete="off" />
+            <small class="muted">Si el repositorio es tuyo: Settings → Developer settings → Fine-grained tokens, solo este repositorio con <b>Contents: Read and write</b>. Si eres colaborador de otra persona: usa <b>Tokens (classic)</b> con el permiso <code>public_repo</code> (los fine-grained no aparecen para repositorios ajenos). Se guarda cifrado en este equipo. Sin el token nadie puede publicar nada, aunque abra el launcher.</small>
             <div class="mp-actions"><button id="adm-login" type="button" class="primary">Activar</button></div>
           </div>
           <div id="adm-logout-box" hidden><div class="mp-actions"><button id="adm-logout" type="button">Desactivar y olvidar el token</button></div></div>

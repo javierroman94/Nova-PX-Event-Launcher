@@ -1260,7 +1260,7 @@ ipcMain.handle('admin:login', async (_e, token) => {
   if (!/^[A-Za-z0-9_]{20,300}$/.test(t)) throw new Error('Ese token no tiene el formato de un token de GitHub.');
   const r = new GithubRepo({ ...repoFromConfig(), token: t });
   const c = await r.check();
-  if (!c.canPush) throw new Error('Ese token puede ver el repositorio pero no escribir en él. Crea uno con permiso "Contents: Read and write".');
+  if (!c.canPush) throw new Error('Ese token puede ver el repositorio pero no escribir en él. Si es un token fine-grained, dale "Contents: Read and write"; si eres colaborador del repositorio de otra persona, usa un token classic con el permiso public_repo.');
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar el token de forma cifrada, así que no se activa el modo administrador.');
   fs.writeFileSync(ADMIN_FILE, safeStorage.encryptString(t));
   adminToken = t;
