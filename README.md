@@ -2,79 +2,104 @@
 
 <img src="docs/img/banner.png" alt="Nova PX Event Launcher" width="100%" />
 
-<br />
+# Nova PX Event Launcher
+
+**El launcher de Minecraft para los eventos de la comunidad Nova PX.**<br />
+Instálalo una vez y juega: eventos, modpacks, skins y amigos en un solo lugar.
 
 [![Última versión](https://img.shields.io/github/v/release/javierroman94/Nova-PX-Event-Launcher?style=for-the-badge&color=f2b84b&labelColor=0e1220&label=versi%C3%B3n)](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)
 [![Descargas](https://img.shields.io/github/downloads/javierroman94/Nova-PX-Event-Launcher/total?style=for-the-badge&color=9d6bff&labelColor=0e1220&label=descargas)](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases)
 [![Compilación](https://img.shields.io/github/actions/workflow/status/javierroman94/Nova-PX-Event-Launcher/release.yml?style=for-the-badge&labelColor=0e1220&label=build)](https://github.com/javierroman94/Nova-PX-Event-Launcher/actions)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-5fd38d?style=for-the-badge&labelColor=0e1220)](LICENSE)
 ![Electron](https://img.shields.io/badge/Electron-33-4cc9f0?style=for-the-badge&labelColor=0e1220&logo=electron&logoColor=white)
-![Minecraft Java](https://img.shields.io/badge/Minecraft-Java-5fd38d?style=for-the-badge&labelColor=0e1220)
 
-**[⬇️ Descargar la última versión](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** · [📖 Guía completa](docs/GUIA.md) · [💬 Discord](https://discord.gg/VAfuFEQtjv)
+### [⬇️ Descargar para Windows y Linux](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)
+
+[📖 Guía completa](docs/GUIA.md) · [💬 Discord](https://discord.gg/VAfuFEQtjv) · [𝕏 @NovaPX_](https://x.com/NovaPX_) · [🧾 Historial de cambios](CHANGELOG.md)
+
+<br />
+
+<img src="docs/img/home.png" alt="Pantalla de inicio del launcher" width="92%" />
+<br /><sub>Capturas con datos de ejemplo.</sub>
 
 </div>
 
 ---
 
-## ✨ Qué es
+## ✨ Por qué Nova PX Launcher
 
-El launcher oficial de **Nova PX** para jugar sus eventos de Minecraft. El jugador lo instala **una sola vez**: después, las noticias, los eventos, el equipo y los mods se actualizan solos desde este repositorio, y el propio programa se actualiza cuando publicamos una versión nueva.
+El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el equipo y los mods se actualizan solos desde este repositorio, y el propio programa se actualiza cuando publicamos una versión nueva. Sin instalar Java, sin descargar mods a mano.
 
-<div align="center">
-<img src="docs/img/home.png" alt="Pantalla de inicio del launcher" width="92%" />
-<br /><sub>Capturas con datos de ejemplo.</sub>
-</div>
+<table>
+<tr>
+<td width="33%" valign="top">
 
-## 🚀 Características
+### 🎮 Jugar
+- Sesión con **Microsoft o nick local**, y **varias cuentas** a un clic
+- Loader y versión del evento sin tocar nada (**Vanilla, Fabric, Forge**)
+- **Java automático** si falta
+- Una carpeta por evento, sin choques entre mods
+- **Estado del servidor** y jugadores en línea
 
-| | |
-|---|---|
-| 🔐 **Premium y no premium** | Inicio de sesión con Microsoft o con un nick local. La sesión se recuerda al cerrar el launcher. |
-| 🧩 **Vanilla, Fabric y Forge** | Instala el loader y la versión de Minecraft del evento sin que el jugador toque nada. |
-| 🛡️ **Mods protegidos** | Los mods viajan cifrados (AES-256-GCM). Se pide una contraseña solo en la primera instalación. |
-| ☕ **Java automático** | Si el equipo no tiene el Java correcto, el launcher lo descarga e instala. |
-| 🎮 **Una carpeta por evento** | Cada evento vive en su propia instancia: los mods de uno no chocan con los de otro. |
-| 🧍 **Skins en 3D** | Visor 3D con animaciones, cambio de skin y de capa para cuentas premium. |
-| 🎨 **Temas y efectos** | Tema oscuro/claro, color principal, fondo propio y efectos que se pueden apagar. |
-| 💬 **Discord Rich Presence** | Muestra en Discord a qué evento estás jugando y cuánto tiempo llevas. |
-| 🔄 **Actualizaciones automáticas** | El contenido se lee de GitHub al abrir; el programa se actualiza solo con cada versión. |
-| 📦 **Biblioteca de modpacks** | Instala modpacks de Modrinth, cada uno en su propia carpeta, y gestiona su contenido: activa, quita o añade mods, shaders y texturas. |
-| 🛠️ **Tus propios modpacks** | Crea instancias, ajusta RAM/Java por modpack, duplica, respalda mundos y actualiza mods. |
-| 🔁 **Importar y exportar** | Importa de Prism/MultiMC, CurseForge App, Modrinth y exporta un `.novapx` propio para compartir. |
-| 📊 **Estadísticas de uso (opcional)** | Contador gratis en Cloudflare para el administrador. Cada jugador puede apagarlo; no guarda IP. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
-| 🌌 **Nova Neón** | Tema futurista animado: vidrio, auroras, rejilla en movimiento, borde de luz y red de partículas. Se puede cambiar por Oscuro, Claro u OLED. |
-| 🎄 **Temporadas** | Decoración automática por fecha (Halloween, Navidad con nieve y luces, Año Nuevo con confeti) o elegida en Ajustes. |
-| 🌐 **Idiomas** | Paquetes de idioma (inglés incluido). La comunidad puede añadir más copiando un `.json`. |
-| 🧭 **Asistente de primer uso** | Al abrirlo por primera vez te guía: cuenta, RAM recomendada según tu equipo y listo. |
-| 📡 **Estado del servidor** | Cada modpack muestra si su servidor está activo y cuántos jugadores hay, leyendo su `servers.dat`. La IP no se muestra. |
-| 🛰️ **Modo administrador** | Solo para el dueño y los jugadores autorizados: crea el modpack en el launcher y publícalo como evento con un botón (mods cifrados + manifest), edita equipo, noticias y eventos. |
-| 🧰 **Lista de mods** | Pestaña con nombre, icono y versión de cada mod instalado (datos de [Modrinth](https://modrinth.com)). |
-| 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y botón de **Reparar instalación**. |
-| 🔔 **Avisos de evento** | Notificación de escritorio una hora antes de que empiece un evento. |
-| 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |
+</td>
+<td width="33%" valign="top">
+
+### 📦 Modpacks
+- Biblioteca con **Modrinth**, filtros y grupos
+- **Importa desde Prism, MultiMC, ATLauncher, CurseForge y Modrinth App** con un clic
+- Mods, shaders y texturas: activa, quita y **actualiza** (con aviso)
+- RAM, Java y cuenta **por modpack**; respaldo de mundos
+- Exporta un `.novapx` para compartir
+
+</td>
+<td width="33%" valign="top">
+
+### 🌐 Comunidad
+- **Skins en 3D**, cambio de skin y capa
+- **Amigos y chat**, estado en línea
+- Equipo, historial de eventos y noticias
+- **Discord Rich Presence**
+- Avisos de escritorio antes de cada evento
+
+</td>
+</tr>
+</table>
 
 ## 🖼️ Capturas
 
 <table>
 <tr>
+<td width="50%"><img src="docs/img/library.png" alt="Biblioteca de modpacks" /><br /><sub><b>Biblioteca</b> · resumen, filtros y tarjetas grandes</sub></td>
+<td width="50%"><img src="docs/img/nuevo-perfil.png" alt="Nuevo perfil" /><br /><sub><b>Nuevo perfil</b> · crea, instala o importa desde otros launchers</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/cuentas.png" alt="Varias cuentas" /><br /><sub><b>Cuentas</b> · cambia entre Microsoft y sin conexión</sub></td>
+<td width="50%"><img src="docs/img/publicidad.png" alt="Panel de publicidad" /><br /><sub><b>Admin</b> · patrocinadores, publicidad y estadísticas</sub></td>
+</tr>
+<tr>
 <td width="50%"><img src="docs/img/events.png" alt="Historial de eventos" /><br /><sub><b>Eventos</b> · historial con búsqueda y ficha</sub></td>
-<td width="50%"><img src="docs/img/team.png" alt="Equipo en 3D" /><br /><sub><b>Equipo</b> · skins en 3D con animaciones</sub></td>
-</tr>
-<tr>
-<td width="50%"><img src="docs/img/skins.png" alt="Skins y capas" /><br /><sub><b>Skins y capas</b> · vista previa antes de aplicar</sub></td>
-<td width="50%"><img src="docs/img/console.png" alt="Consola" /><br /><sub><b>Consola</b> · registro con filtros por nivel</sub></td>
-</tr>
-<tr>
-<td width="50%"><img src="docs/img/library.png" alt="Biblioteca de modpacks" /><br /><sub><b>Biblioteca</b> · tus modpacks instalados</sub></td>
 <td width="50%"><img src="docs/img/instance.png" alt="Contenido de un modpack" /><br /><sub><b>Modpack</b> · mods, shaders y texturas</sub></td>
 </tr>
 </table>
 
+## 🔧 Más funciones
+
+| | |
+|---|---|
+| 🛡️ **Mods protegidos** | Los mods del evento viajan cifrados (AES-256-GCM); la contraseña se pide solo en la primera instalación. |
+| 🎨 **Temas y temporadas** | Oscuro, claro, OLED y **Nova Neón** (animado). Decoración automática de Halloween, Navidad y Año Nuevo. |
+| 🌍 **Idiomas** | Paquetes de idioma (inglés incluido); la comunidad puede añadir más con un `.json`. |
+| 🧭 **Asistente de primer uso** | Te guía: cuenta, RAM recomendada según tu equipo y listo. |
+| 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y **Reparar instalación**. |
+| 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |
+| 📊 **Estadísticas opcionales** | Contador anónimo gratis en Cloudflare, sin IP; cada jugador puede apagarlo. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
+| 🛰️ **Modo administrador** | Crea el modpack, pruébalo y publícalo como evento con un botón; edita equipo, noticias, eventos, patrocinadores y publicidad. |
+
 ## 📥 Instalación (jugadores)
 
-1. Entra a **[Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** y descarga el instalador para tu sistema (`.exe` en Windows, `.AppImage` en Linux).
-2. Ábrelo e instala. Windows puede mostrar un aviso de "editor desconocido" porque el instalador aún no está firmado: pulsa **Más información → Ejecutar de todas formas**.
-3. Inicia sesión y pulsa **Jugar**. No necesitas instalar Java ni descargar mods a mano.
+1. Entra a **[Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** y descarga el instalador (`.exe` en Windows, `.AppImage` en Linux).
+2. Ábrelo e instala. Windows puede avisar de «editor desconocido» porque el instalador aún no está firmado: pulsa **Más información → Ejecutar de todas formas**.
+3. Inicia sesión y pulsa **Jugar**.
 
 ## 🛠️ Para el equipo (desarrollo)
 
@@ -90,11 +115,12 @@ El contenido se edita **sin tocar el programa**, en la carpeta [`data/`](data):
 
 | Archivo | Qué controla |
 |---|---|
-| `manifest.json` | Evento actual, versión de Minecraft, loader, servidor y mods |
+| `manifest.json` | Evento actual, versión de Minecraft, loader, servidor, mods y patrocinadores |
 | `events.json` | Historial de eventos (nombre, fecha, imagen, descripción) |
 | `team.json` | Miembros del equipo y sus cargos |
 | `news.json` | Noticias de la pantalla de inicio |
-| `launcher.json` | Marca, tema, avisos, mantenimiento y funciones (se edita desde el panel administrador) |
+| `ads.json` | Publicidad (anunciante, imagen, enlace, fechas) |
+| `launcher.json` | Marca, tema, avisos y funciones (se edita desde el panel administrador) |
 
 Para publicar una versión nueva del programa:
 
@@ -103,21 +129,23 @@ git tag v1.0.33
 git push origin v1.0.33
 ```
 
-GitHub Actions compila el instalador y lo publica en **Releases**; los launchers instalados lo descargan solos. Todo el detalle (mods cifrados, Forge, servidor, instancias, Discord) está en la **[Guía completa](docs/GUIA.md)**.
+GitHub Actions compila el instalador y lo publica en **Releases**; los launchers instalados lo descargan solos. Detalles (mods cifrados, Forge, servidor, instancias, Discord) en la **[Guía completa](docs/GUIA.md)**.
 
-## 🛰️ Modo administrador
+### 🛰️ Modo administrador
 
-Las funciones de administración no aparecen para los jugadores normales. Se activan en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado (solo este repositorio, permiso *Contents: lectura y escritura*) y una cuenta premium autorizada. El flujo es: crear el modpack en el launcher → probarlo → **publicarlo como evento**. Detalles y recomendaciones de seguridad en la [Guía](docs/GUIA.md); sobre el inicio de sesión con Microsoft y el registro de una app propia, ver [`docs/MICROSOFT.md`](docs/MICROSOFT.md); el contador de usuarios opcional está en [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md).
+No aparece para los jugadores normales. Se activa en **Ajustes → Modo administrador** con un token de GitHub de acceso limitado y una cuenta premium autorizada. Los colaboradores de otra cuenta usan un token *classic* con permiso `public_repo` (los fine-grained no pueden apuntar a repositorios de otra persona). Más detalle en la [Guía](docs/GUIA.md); Microsoft en [`docs/MICROSOFT.md`](docs/MICROSOFT.md).
 
 ## ❓ Preguntas frecuentes
 
-**¿Windows dice «editor desconocido»?** El instalador aún no está firmado digitalmente. Pulsa *Más información → Ejecutar de todas formas*.
+**¿Windows dice «editor desconocido»?** El instalador aún no está firmado. Pulsa *Más información → Ejecutar de todas formas*.
 
 **¿Necesito instalar Java?** No, el launcher descarga el que cada versión necesita.
 
-**¿Puedo usar mis modpacks de otros launchers?** Sí: *Importar archivo* acepta `.mrpack`, `.novapx` y zips de Prism/MultiMC; *Importar carpeta* acepta instancias de Prism y de la app de CurseForge.
+**¿Puedo usar mis modpacks de otros launchers?** Sí: *Nuevo perfil → Importar desde otros launchers* busca tus instancias de Prism, MultiMC, ATLauncher, CurseForge App y Modrinth App y las copia (las originales no se tocan). También acepta `.mrpack`, `.novapx` y zips.
 
-**¿Qué datos se envían?** Solo un contador anónimo opcional (sin IP ni nick) que puedes apagar en Ajustes.
+**¿Puedo tener varias cuentas?** Sí, de Microsoft y sin conexión, y cada modpack puede recordar con cuál se juega.
+
+**¿Qué datos se envían?** Solo un contador anónimo opcional que puedes apagar en Ajustes. Ver [PRIVACY.md](PRIVACY.md).
 
 ## 🧱 Estructura
 
@@ -125,25 +153,22 @@ Las funciones de administración no aparecen para los jugadores normales. Se act
 main.js · preload.js      Proceso principal de Electron
 renderer/                 Interfaz (HTML, CSS, JS, visor 3D en WebGL)
 lib/                      Loaders, cifrado, Java, skins, Discord, instancias, importadores, admin, GitHub
-worker/                   Contador de usuarios opcional (Cloudflare Worker)
+worker/                   Contador y amigos (Cloudflare Worker)
 data/                     Contenido editable (se lee desde GitHub)
 tools/                    Utilidades (generar mods cifrados)
 test/                     Pruebas automáticas
-docs/                     Guía, guía de Cloudflare y capturas
-CHANGELOG.md              Historial de versiones
+docs/                     Guía, Cloudflare, Microsoft y capturas
 ```
 
-## 👥 Equipo
+## 👥 Equipo y comunidad
 
-Hecho por el equipo de **Nova PX** · [Historial de cambios](CHANGELOG.md) · [Cómo colaborar](CONTRIBUTING.md) · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
+Hecho por el equipo de **Nova PX** · [Cómo colaborar](CONTRIBUTING.md) · [Discord](https://discord.gg/VAfuFEQtjv) · [X](https://x.com/NovaPX_)
+
+## 📄 Licencia
+
+El código es de código abierto bajo la licencia [MIT](LICENSE). El nombre «Nova PX», su logo y las imágenes de los eventos son de sus autores y no están incluidos en esa licencia. Política de firma: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · Privacidad: [PRIVACY.md](PRIVACY.md).
 
 <sub>Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</sub>
-
-## Licencia
-
-El código de este launcher es de código abierto bajo la licencia [MIT](LICENSE). El nombre «Nova PX», su logo y las imágenes de los eventos son de sus autores y no están incluidos en esa licencia. Minecraft es una marca de Mojang AB; este proyecto no está afiliado a Mojang ni a Microsoft.
-
-Política de firma de código: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md). Política de privacidad: [PRIVACY.md](PRIVACY.md).
 
 ## Code signing
 
