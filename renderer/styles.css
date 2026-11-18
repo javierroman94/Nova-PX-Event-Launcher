@@ -1519,7 +1519,6 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .ver-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
 .ver-chip { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
 .ver-chip.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.settings-search { width: min(420px, 100%); margin: 0 0 14px; }
 @media (max-width: 640px) { .np-grid { grid-template-columns: 1fr; } }
 
 /* Launchpad (Inicio) */

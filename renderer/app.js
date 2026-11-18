@@ -290,7 +290,7 @@ async function renderHero() {
     if (m.protected && eventActive) chips.append(el('span', 'chip', 'Protegido'));
     $('stat-ver').textContent = eventActive ? m.minecraftVersion : '–';
     $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
-    startCountdown(m.event && m.event.startsAt);
+    startCountdown(m.event && m.event.startsAt, evState);
     lastEventLinks = m.links;
     paintSponsors(m.sponsors);
     paintCommunity();
@@ -420,10 +420,16 @@ async function renderContinue() {
 
 /* ---------- cuenta atrás y enlaces ---------- */
 let countdownTimer = 0;
-function startCountdown(iso) {
+function startCountdown(iso, state) {
   clearInterval(countdownTimer);
   const box = $('stat-next');
   const label = $('stat-next-label');
+  // Un evento finalizado no cuenta hacia atrás aunque conserve la fecha.
+  if (state === 'ended') {
+    box.textContent = 'Finalizado';
+    label.textContent = 'Estado del evento';
+    return;
+  }
   const target = iso ? Date.parse(iso) : NaN;
   if (!Number.isFinite(target) || target <= Date.now()) {
     box.textContent = Number.isFinite(target) ? '¡Ya empezó!' : 'Por anunciar';
@@ -3301,14 +3307,3 @@ $('np-search-form').addEventListener('submit', (e) => {
   searchPacks(true);
 });
 
-/* --- buscador de ajustes --- */
-$('settings-search').addEventListener('input', () => {
-  const q = $('settings-search').value.trim().toLowerCase();
-  let shown = 0;
-  document.querySelectorAll('#page-settings .settings > fieldset').forEach((fs) => {
-    const hit = !q || fs.textContent.toLowerCase().includes(q);
-    fs.hidden = !hit;
-    if (hit) shown += 1;
-  });
-  $('settings-empty').hidden = shown > 0;
-});
