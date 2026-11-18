@@ -353,14 +353,34 @@ function renderLaunchpad(packs) {
   lpPackId = last ? last.id : null;
   $('lp-play').disabled = !last;
   $('lp-play-sub').textContent = last ? `${last.title} · ${last.mcVersion} · ${LOADER_NAMES[last.loader && last.loader.type] || 'Vanilla'}` : 'Instala o crea un modpack para jugar';
+  // El arte es el del modpack reciente; el del evento solo se usa si todavía no hay ningún modpack.
   const img = $('lp-img');
-  const art = eventInfo.image || eventInfo.logo;
-  img.hidden = !art;
-  if (art) { img.src = art; $('lp-hero').style.setProperty('--lp-bg', `url(${JSON.stringify(art)})`); }
+  const artBox = $('lp-pack-art');
+  artBox.replaceChildren();
+  const hero = $('lp-hero');
+  hero.classList.toggle('has-pack', !!last);
+  const evArt = eventInfo.image || eventInfo.logo;
+  if (last) {
+    $('lp-kicker').textContent = last.lastPlayedAt ? `Última partida · ${ago(last.lastPlayedAt)}` : 'Listo para jugar';
+    $('lp-pack-title').textContent = last.title;
+    if (last.icon) { const ic = el('img'); ic.alt = ''; ic.src = last.icon; artBox.append(ic); hero.style.setProperty('--lp-bg', `url(${JSON.stringify(last.icon)})`); }
+    else { artBox.textContent = last.emoji || last.title.slice(0, 1).toUpperCase(); hero.style.removeProperty('--lp-bg'); }
+    img.hidden = true;
+  } else {
+    $('lp-kicker').textContent = 'Bienvenido';
+    $('lp-pack-title').textContent = 'Crea o instala tu primer modpack';
+    artBox.textContent = '🎮';
+    img.hidden = !evArt;
+    if (evArt) { img.src = evArt; hero.style.setProperty('--lp-bg', `url(${JSON.stringify(evArt)})`); }
+  }
   const chips = $('lp-chips');
   chips.replaceChildren();
-  if (last) chips.append(el('span', 'chip', `Minecraft ${last.mcVersion}`));
-  chips.append(el('span', 'chip', eventActive ? 'Evento activo' : 'Sin evento activo'));
+  if (last) {
+    chips.append(el('span', 'chip', `Minecraft ${last.mcVersion}`), el('span', 'chip', LOADER_NAMES[last.loader && last.loader.type] || 'Vanilla'));
+    if (last.preset === 'nova') chips.append(el('span', 'chip', '⚡ Nova'));
+  }
+  $('lp-event').textContent = eventActive ? 'Evento activo →' : 'Próximo evento →';
+  $('lp-event').classList.toggle('live', !!eventActive);
 }
 $('lp-play').addEventListener('click', () => { if (lpPackId) playPack(lpPackId); });
 $('lp-event').addEventListener('click', () => goTo('event'));
@@ -384,7 +404,7 @@ async function renderContinue() {
   const evGo = el('span', 'cont-when', eventActive ? 'Ver evento →' : 'Ver detalles →');
   ev.append(evIcon, evBody, evGo);
   ev.addEventListener('click', () => goTo('event'));
-  box.append(ev);
+  if (eventActive) box.append(ev); // con evento activo va arriba; si no, después de tus modpacks
 
   renderRecent(packs);
   renderLaunchpad(packs);
@@ -412,6 +432,7 @@ async function renderContinue() {
       card.append(body, when, play, more);
       box.append(card);
     });
+  if (!eventActive) box.append(ev);
   if (!packs.length) {
     const hint = el('div', 'continue-card empty');
     hint.append(el('span', 'muted', 'Aún no tienes modpacks. Instala uno en la pestaña Modpacks y aparecerá aquí.'));
@@ -3231,8 +3252,12 @@ function paintTeam() {
   const box = $('ad-team');
   box.replaceChildren();
   adm.team.forEach((m, idx) => {
-    const row = el('div', 'mod-card');
-    const f = rowInputs(m, [['nick', 'Nick de Minecraft', 16], ['role', 'Rol', 80]]);
+    const row = el('div', 'tm-card');
+    const f = rowInputs(m, [['nick', 'Nick de Minecraft', 16], ['role', 'Rol (ej. Lead Systems Architect)', 80]]);
+    const bust = el('img', 'tm-av'); bust.alt = '';
+    const paintBust = () => { bust.src = /^[A-Za-z0-9_]{1,16}$/.test(m.nick || '') ? skinBust(m.nick) : 'images/logo.png'; };
+    paintBust();
+    f.nick.addEventListener('change', paintBust);
     const star = el('input');
     star.type = 'checkbox'; star.checked = !!m.featured; star.title = 'Destacado';
     star.setAttribute('aria-label', 'Destacado');
@@ -3250,9 +3275,13 @@ function paintTeam() {
     const starLab = el('label', 'tribute-toggle');
     starLab.append(star, el('span', 'muted', 'Destacado'));
     trLab.append(el('span', 'muted', 'Homenaje'));
-    row.append(f.nick, f.role, starLab, trLab, del);
+    del.className = 'danger';
+    const fields = el('div', 'tm-fields'); fields.append(f.nick, f.role);
+    const toggles = el('div', 'tm-toggles'); toggles.append(starLab, trLab);
+    const mainCol = el('div', 'tm-main'); mainCol.append(fields, toggles);
+    row.append(bust, mainCol, del);
     const lk = el('details', 'team-links');
-    lk.append(el('summary', '', `Perfil y enlaces (${(m.links || []).length})`));
+    lk.append(el('summary', '', `Perfil, skin y enlaces (${(m.links || []).length})`));
     const pf = rowInputs(m, [['name', 'Nombre real', 40], ['bio', 'Presentación corta', 300]]);
     const av = el('div', 'links-row');
     const avPick = el('button', '', m.avatar ? 'Cambiar foto' : 'Subir foto'); avPick.type = 'button';

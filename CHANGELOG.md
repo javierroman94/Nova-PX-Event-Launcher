@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.63
+- **Inicio**: el bloque grande ahora es de tu modpack reciente (su imagen, nombre, última partida y JUGAR). El evento ya no tapa tu modpack: en «Continuar» va después de tus modpacks, salvo que esté activo.
+- **Skins**: la fila de capas ya no se sale de la pantalla por la derecha.
+- **Admin**: «Editar evento» ordenado en tarjetas (datos, resultado, comisionado, enlaces, personas) con botones siempre visibles; los miembros del equipo ahora son tarjetas con avatar, roles y opciones tipo etiqueta.
+
 ## 1.0.62
 - **Crear instancia rediseñado como asistente**: tarjetas por tipo de perfil (Nova, Fabric, Forge, OptiFine, Vanilla) con descripción, buscador y lista de todas las versiones, iconos rápidos, vista previa en la cabecera y resumen con la versión de Java. Los tipos que no funcionan en esa versión (Fabric/Nova antes de 1.14) se bloquean solos. Si no escribes nombre, se pone uno automático.
 

@@ -120,9 +120,14 @@
         <div class="lp-top"><h2 id="lp-welcome">Bienvenido de nuevo</h2><span id="lp-online" class="lp-online" hidden></span></div>
         <div id="lp-hero" class="lp-hero">
           <img id="lp-img" class="lp-img" alt="" hidden />
-          <div class="lp-center">
-            <button id="lp-play" type="button" class="lp-play"><b>▶ JUGAR</b><small id="lp-play-sub">Elige un modpack</small></button>
-            <div class="lp-chips" id="lp-chips"></div>
+          <div class="lp-main">
+            <div id="lp-pack-art" class="lp-pack-art" aria-hidden="true"></div>
+            <div class="lp-info">
+              <span id="lp-kicker" class="lp-kicker">Continuar jugando</span>
+              <h2 id="lp-pack-title" class="lp-pack-title">Elige un modpack</h2>
+              <div class="lp-chips" id="lp-chips"></div>
+              <button id="lp-play" type="button" class="lp-play"><b>▶ JUGAR</b><small id="lp-play-sub">Elige un modpack</small></button>
+            </div>
           </div>
           <button id="lp-event" type="button" class="lp-event ghost">Ver evento →</button>
         </div>
@@ -841,40 +846,62 @@
       </div>
     </dialog>
 
-    <dialog id="ad-event-modal" class="event-modal mp-wide" aria-label="Editar evento">
+    <dialog id="ad-event-modal" class="event-modal mp-wide ade-modal" aria-label="Editar evento">
       <div class="event-modal-body">
-        <h3 id="ade-title">Evento</h3>
-        <div class="ade-img-row">
+        <div class="ade-head">
           <div id="ade-img" class="ade-img" role="img" aria-label="Imagen del evento"></div>
-          <div class="mp-actions"><button id="ade-pick" type="button">Cambiar imagen</button><button id="ade-clear" type="button">Quitar</button></div>
+          <div class="ade-head-main">
+            <span class="ade-kicker">Historial de eventos</span>
+            <h3 id="ade-title">Evento</h3>
+            <div class="mp-actions"><button id="ade-pick" type="button">Cambiar imagen</button><button id="ade-clear" type="button">Quitar</button></div>
+          </div>
         </div>
-        <div class="field inline">
-          <div><label for="ade-name">Título</label><input id="ade-name" type="text" maxlength="80" /></div>
-          <div><label for="ade-date">Fecha</label><input id="ade-date" type="date" /></div>
-        </div>
-        <div class="field"><label for="ade-desc">Información</label><textarea id="ade-desc" rows="4" maxlength="800" placeholder="De qué trató, reglas, premios…"></textarea></div>
-        <div class="field inline">
-          <div><label for="ade-part">Participantes</label><input id="ade-part" type="number" min="0" max="9999" /></div>
-          <div><label for="ade-win">Ganador(es)</label>
-            <div class="input-row"><input id="ade-win" type="text" maxlength="16" placeholder="Nick de Minecraft" /><button id="ade-win-add" type="button">Añadir</button></div></div>
-        </div>
-        <div id="ade-winners" class="ade-winners"></div>
-        <h4 class="ade-sub">Comisionado por <span class="muted">(opcional)</span></h4>
-        <div class="field inline">
-          <div><label for="ade-com-name">Nombre</label><input id="ade-com-name" type="text" maxlength="60" placeholder="LaosOneView" /></div>
-          <div><label for="ade-com-url">Enlace a su canal</label><input id="ade-com-url" type="url" maxlength="300" placeholder="https://youtube.com/@…" /></div>
-        </div>
-        <h4 class="ade-sub">Tráiler, tweet o póster <span class="muted">(botones del evento)</span></h4>
-        <div id="ade-posts"></div>
-        <h4 class="ade-sub">Fondo de la publicación <span class="muted">(opcional)</span></h4>
-        <div class="mp-actions"><button id="ade-bg-pick" type="button">Elegir fondo…</button><button id="ade-bg-clear" type="button">Quitar fondo</button><span id="ade-bg-state" class="muted"></span></div>
-        <h4 class="ade-sub">Participantes con nombre <span class="muted">(opcional)</span></h4>
-        <div id="ade-roster" class="people-editor"></div>
-        <h4 class="ade-sub">Colaboraron con Nova PX <span class="muted">(opcional)</span></h4>
-        <div id="ade-collabs" class="people-editor"></div>
+
+        <section class="ade-card">
+          <h4 class="ade-sub">Datos del evento</h4>
+          <div class="field inline">
+            <div><label for="ade-name">Título</label><input id="ade-name" type="text" maxlength="80" /></div>
+            <div><label for="ade-date">Fecha</label><input id="ade-date" type="date" /></div>
+          </div>
+          <div class="field"><label for="ade-desc">Información</label><textarea id="ade-desc" rows="4" maxlength="800" placeholder="De qué trató, reglas, premios…"></textarea></div>
+        </section>
+
+        <section class="ade-card">
+          <h4 class="ade-sub">Resultado</h4>
+          <div class="field inline">
+            <div><label for="ade-part">Participantes</label><input id="ade-part" type="number" min="0" max="9999" placeholder="0" /></div>
+            <div><label for="ade-win">Ganador(es)</label>
+              <div class="input-row"><input id="ade-win" type="text" maxlength="16" placeholder="Nick de Minecraft" /><button id="ade-win-add" type="button">Añadir</button></div></div>
+          </div>
+          <div id="ade-winners" class="ade-winners"></div>
+        </section>
+
+        <section class="ade-card">
+          <h4 class="ade-sub">Comisionado por <span class="muted">(opcional)</span></h4>
+          <div class="field inline">
+            <div><label for="ade-com-name">Nombre</label><input id="ade-com-name" type="text" maxlength="60" placeholder="LaosOneView" /></div>
+            <div><label for="ade-com-url">Enlace a su canal</label><input id="ade-com-url" type="url" maxlength="300" placeholder="https://youtube.com/@…" /></div>
+          </div>
+        </section>
+
+        <section class="ade-card">
+          <h4 class="ade-sub">Tráiler, tweet o póster <span class="muted">(botones del evento)</span></h4>
+          <div id="ade-posts"></div>
+          <h4 class="ade-sub ade-sub2">Fondo de la publicación <span class="muted">(opcional)</span></h4>
+          <div class="mp-actions"><button id="ade-bg-pick" type="button">Elegir fondo…</button><button id="ade-bg-clear" type="button">Quitar fondo</button><span id="ade-bg-state" class="muted"></span></div>
+        </section>
+
+        <section class="ade-card">
+          <h4 class="ade-sub">Participantes con nombre <span class="muted">(opcional)</span></h4>
+          <div id="ade-roster" class="people-editor"></div>
+          <h4 class="ade-sub ade-sub2">Colaboraron con Nova PX <span class="muted">(opcional)</span></h4>
+          <div id="ade-collabs" class="people-editor"></div>
+        </section>
+
         <p id="ade-status" class="muted" role="status"></p>
-        <div class="mp-actions">
-          <button id="ade-delete" type="button">Eliminar evento</button>
+        <div class="mp-actions ade-actions">
+          <button id="ade-delete" type="button" class="danger">Eliminar evento</button>
+          <span class="ade-spacer"></span>
           <button id="ade-cancel" type="button">Cancelar</button>
           <button id="ade-save" type="button" class="primary">Guardar y publicar</button>
         </div>
