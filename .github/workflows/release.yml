@@ -1,27 +1,65 @@
 # Compila los instaladores y los publica en "Releases" cada vez que subes una versión nueva.
 # Los launchers instalados detectan ese Release y se actualizan solos.
 #
-# Cómo publicar una versión (desde tu computadora):
-#   npm version patch
-#   git push --follow-tags
+# Cómo publicar una versión:
+#   - Desde tu computadora: npm version patch  y  git push --follow-tags
+#   - O sin computadora: sube un cambio de "version" en package.json a main
+#     y el workflow crea solo la etiqueta vX.Y.Z (si no existe) y publica.
 name: Publicar versión
 
 on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
+    paths:
+      - package.json
 
 permissions:
   contents: write
 
 jobs:
+  # Si el cambio llegó a main con una versión nueva en package.json, crea la etiqueta.
+  # Si llegó una etiqueta, la usa tal cual. Si la versión ya estaba publicada, no hace nada.
+  etiquetar:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: t
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          v="v$(node -p "require('./package.json').version")"
+          if git rev-parse -q --verify "refs/tags/$v" >/dev/null; then
+            echo "La versión $v ya tiene etiqueta; no se publica nada."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "$v"
+            git push origin "$v"
+            echo "tag=$v" >> "$GITHUB_OUTPUT"
+          fi
+
   # Antes de compilar nada: la etiqueta tiene que coincidir con package.json y
   # apuntar a un commit nuevo (no al de la versión anterior).
   verificar:
+    needs: etiquetar
+    if: needs.etiquetar.outputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.etiquetar.outputs.tag }}
           fetch-depth: 0 # historial y etiquetas completas para comparar con versiones anteriores
 
       - uses: actions/setup-node@v4
@@ -29,10 +67,11 @@ jobs:
           node-version: 20
 
       - name: Verificar la etiqueta
-        run: node tools/verificar-etiqueta.js "$GITHUB_REF_NAME"
+        run: node tools/verificar-etiqueta.js "${{ needs.etiquetar.outputs.tag }}"
 
   release:
-    needs: verificar
+    needs: [etiquetar, verificar]
+    if: needs.etiquetar.outputs.tag != ''
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +79,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.etiquetar.outputs.tag }}
 
       - uses: actions/setup-node@v4
         with:
