@@ -256,6 +256,20 @@ En 1.0.49 el manifiesto del evento admite `event.status` (`soon`, `active`, `end
 - **Anuncios (1.0.46)**: las noticias (`data/news.json`) aceptan `image` y `links`; el anuncio global acepta `image` y `urlLabel`.
 - **Botones laterales del mouse**: atrás y adelante. Los diálogos tienen ✕ y las confirmaciones usan la estética del launcher.
 
+## 4m. Novedades 1.0.50 a 1.0.63
+
+- **Inicio tipo Lunar**: bloque grande con tu modpack reciente (imagen, nombre, última partida y **JUGAR**), «Continuar», comunidad, amigos y novedades. El evento va aparte y solo sube arriba si está activo.
+- **Barra lateral compacta** (botón ⇤ abajo), **inicio de sesión** en dos columnas y **amigos con estado en línea** (Worker de Cloudflare, ver `docs/CLOUDFLARE.md`).
+- **Modpacks → Explorar** como Modrinth: filtros de loader, versión y orden; pestañas para mods, resource packs y shaders con «Instalar en…».
+- **Discord y X** (Admin → Control): avisos automáticos por webhook de Discord (se guarda cifrado) y botón para compartir en X.
+- **Crear instancia (1.0.62)**: asistente con tarjetas **Nova**, Fabric, Forge, **OptiFine** y Vanilla, buscador de versiones (con snapshots opcionales) y resumen con la versión de Java. Fabric y Nova se bloquean antes de Minecraft 1.14.
+  - **Nova** = Fabric + Sodium, Lithium, FerriteCore, ModernFix, Entity Culling, ScalableLux, Immersive Optimization, BadOptimizations, Saturn, Reese's Sodium Options e Iris (basado en packs optimizados como Keo Optimized) + **Nova Client**. Lo que no exista para esa versión se salta.
+  - **OptiFine** crea un perfil Forge; el `.jar` oficial lo descargas tú de optifine.net y lo añades en Mods (su licencia no permite repartirlo).
+- **Nova Client** (repo `javierroman94/Nova-Client`): mod de Fabric con menú en el juego (**Shift derecho**) y módulos FPS, CPS, coordenadas, teclas, armadura y zoom (**C**). Se compila en GitHub Actions; al subir un tag `vX.Y.Z` se publica el `.jar` y el launcher lo baja solo en los perfiles Nova. Por ahora solo Minecraft 1.21.1; para otra versión se cambian las versiones en `gradle.properties`.
+- **Intro animada** más viva (órbitas, partículas, mensajes de estado).
+- **Temporadas con fechas de Ecuador (1.0.61)**: San Valentín 7–14 feb, Carnaval (se calcula cada año), Día de la Madre (semana del 2.º domingo de mayo), 10 de Agosto 1–10 ago, Halloween 15 oct–2 nov, Navidad 1–26 dic, Año Nuevo 27 dic–6 ene. Fuera de esas fechas no hay decoración (`renderer/seasons.js`).
+- **Admin (1.0.63)**: «Editar evento» en tarjetas y miembros del equipo con avatar. **Patrocinadores y créditos**: Admin → Evento → «+ Patrocinador o crédito» (se ven en la pestaña Evento).
+
 ## 5. Límites de esta primera versión
 
 - No instala Java automáticamente: el jugador debe tenerlo instalado (o poner la ruta en `javaPath`).
