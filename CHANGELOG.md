@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.101
+- **Cambios del administrador, casi al instante**: cuando publicas algo (evento, modpack, noticia, ajustes), los demás launchers lo reciben en unos 20 segundos en lugar de hasta 10 minutos. El launcher consulta un aviso diminuto del Worker cada 20 s y, si cambió, recarga los datos. Además el reloj normal de ajustes remotos baja de 10 a 3 minutos. Para que el aviso salga, el administrador debe tener guardada la clave del contador (Admin → Usuarios); sin ella todo sigue funcionando con el reloj normal.
+
 ## 1.0.100
 - **Skin secreta «Sombra» para PX** (solo con el modo administrador activo): un encapuchado oscuro con ojos rojos brillantes, una X roja en el pecho, mangas rayadas, un resplandor rojo bajo los pies y brasas que suben. Se elige en «Cuidar a PX» y también aparece en la ventana flotante sobre Minecraft. Los demás usuarios no la ven.
 

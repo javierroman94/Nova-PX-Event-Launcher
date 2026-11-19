@@ -32,3 +32,7 @@ El archivo `wrangler.jsonc` de la raíz ya enlaza el Worker `nova-px-event-launc
 ## Amigos y estado en línea
 
 El Worker incluye un Durable Object (`Presence`) que guarda en memoria quién está en línea (latido cada 90 s, se considera desconectado a los 150 s). Rutas: `POST /presence/beat`, `/presence/leave` y `/presence/query`. No guarda nada en disco ni gasta escrituras de KV. Al desplegar con `wrangler`, la migración `v1` (en `wrangler.jsonc`) crea la clase.
+
+
+## Aviso de contenido nuevo (versión 1.0.101 o posterior)
+El Worker tiene dos rutas más: `GET /rev` (la consultan los launchers cada 20 s) y `POST /rev/bump` (la llama el launcher del administrador al publicar, con su clave del contador). **Si actualizas el launcher, vuelve a pegar el contenido de `worker/index.mjs` en tu Worker y pulsa Deploy**; sin eso, los launchers siguen funcionando con el reloj normal (3 minutos).

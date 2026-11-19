@@ -3263,6 +3263,8 @@ $('wz-offline').addEventListener('click', async () => {
   let lastContent = Date.now();
   window.refreshContent = async () => { lastContent = Date.now(); await Promise.all([renderHero(), renderNews(), renderAds(), renderEvents(), renderTeam()]); };
   setInterval(() => { if (!document.hidden) window.refreshContent(); }, 3 * 60 * 1000);
+  // Un administrador acaba de publicar: se recarga al instante (sin esperar al reloj de 3 minutos).
+  if (window.api.onContentChanged) window.api.onContentChanged(() => { window.refreshContent(); toast('Se actualizó el contenido del evento.', 'info'); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastContent > 60 * 1000) window.refreshContent(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshServer(); });
   window.__novaReady = true;

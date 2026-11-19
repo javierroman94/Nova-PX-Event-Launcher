@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('api', {
   // configuración remota y panel administrador ampliado
   remoteGet: () => ipcRenderer.invoke('remote:get'),
   onAuthChanged: (cb) => ipcRenderer.on('auth:changed', (_e, i) => cb(i)),
+  onContentChanged: (cb) => ipcRenderer.on('content:changed', (_e, d) => cb(d)),
   onRemoteChanged: (cb) => ipcRenderer.on('remote:changed', (_e, c) => cb(c)),
   adminInvite: (user) => ipcRenderer.invoke('admin:invite', user),
   adminSaveLauncher: (c) => ipcRenderer.invoke('admin:saveLauncher', c),

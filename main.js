@@ -222,6 +222,7 @@ ipcMain.handle('streamer:get', async () => { await checkStreamer(); return strea
 const justPublished = new Map();
 function remember(name, data) {
   dataMemo.delete(name);
+  bumpRev();
   justPublished.set(name, { data, until: Date.now() + 5 * 60 * 1000 });
   try {
     fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
@@ -229,6 +230,31 @@ function remember(name, data) {
   } catch {}
 }
 const dataMemo = new Map();
+/* ---------- aviso de contenido nuevo (rápido, sin esperar al reloj de cada launcher) ---------- */
+const revLib = require('./lib/rev');
+let lastRev = null;
+// El administrador avisa al Worker cuando publica (necesita la clave del contador; sin ella, los demás se enteran por el reloj normal).
+async function bumpRev() {
+  try {
+    const key = readUsersKey();
+    if (!USAGE_URL || !key) return;
+    await fetch(`${USAGE_URL}/rev/bump`, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(5000) });
+  } catch {}
+}
+async function checkRev() {
+  try {
+    if (!USAGE_URL || !mainWindow || mainWindow.isDestroyed()) return;
+    const r = await fetch(`${USAGE_URL}/rev`, { signal: AbortSignal.timeout(4000), cache: 'no-store' });
+    if (!r.ok) return;
+    const next = (await r.json()).rev;
+    if (!revLib.valid(next)) return;
+    const was = lastRev; lastRev = next;
+    if (!revLib.changed(was, next)) return;
+    dataMemo.clear();
+    await refreshRemote();
+    send('content:changed', { at: Date.now() });
+  } catch {}
+}
 async function loadData(name) {
   const mine = justPublished.get(name);
   if (mine && mine.until > Date.now()) return mine.data;
@@ -704,7 +730,9 @@ app.whenReady().then(() => {
   checkStreamer();
   setInterval(checkStreamer, 15 * 1000).unref();
   refreshRemote();
-  setInterval(refreshRemote, 10 * 60 * 1000).unref();
+  setInterval(refreshRemote, 3 * 60 * 1000).unref();
+  setTimeout(checkRev, 4000).unref();
+  setInterval(checkRev, 20 * 1000).unref();
   setTimeout(pingUsage, 3000);
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();

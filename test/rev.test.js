@@ -1,0 +1,11 @@
+'use strict';
+const assert = require('assert');
+const R = require('../lib/rev.js');
+assert.ok(!R.changed(null, 'abc123'), 'la primera lectura no es cambio');
+assert.ok(!R.changed('abc123', 'abc123'));
+assert.ok(R.changed('abc123', 'abc124'));
+assert.ok(!R.changed('abc123', '<script>'), 'respuesta rara se ignora');
+assert.ok(!R.changed('abc123', undefined));
+assert.ok(R.valid(R.makeRev()) && R.makeRev(1, () => 0).length >= 5);
+assert.notStrictEqual(R.makeRev(1000, () => 0.1), R.makeRev(2000, () => 0.1));
+console.log('rev.test OK');
