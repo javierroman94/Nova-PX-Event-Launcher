@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.95
+- **Minijuego «Atrapar estrellas»** con PX (en Cuidar a PX): 20 segundos moviendo el cursor para atrapar estrellas y esquivar rocas. Da cariño y puntos, cansa un poco a PX y guarda tu récord.
+
 ## 1.0.94
 - **PX cobra vida**: ahora tiene hambre, energía y cariño que bajan con el tiempo. Desde Ajustes → Apariencia → «Cuidar a PX» (o con doble clic sobre PX) le das de comer, juegas, lo acaricias o lo dejas dormir, y le pones nombre. Gana puntos y sube de nivel, lleva una racha de días seguidos y gana puntos extra cuando juegas Minecraft. Si se descuida, te lo hace saber (poco y sin molestar).
 

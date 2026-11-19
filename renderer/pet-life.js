@@ -8,12 +8,12 @@
   const clamp = (v, a = 0, b = 100) => Math.min(b, Math.max(a, Number.isFinite(+v) ? +v : a));
   // Puntos por hora que se pierden. Con el launcher cerrado se pierde menos (tope de 12 h) para que nadie vuelva a una mascota "perdida".
   const DECAY = { hunger: 5, energy: 3, love: 2.5 };
-  const CD = { feed: 20 * 60000, play: 8 * 60000, pet: 60000, sleep: 30 * 60000 };
+  const CD = { feed: 20 * 60000, play: 8 * 60000, pet: 60000, sleep: 30 * 60000, game: 0 };
   const LEVELS = [0, 30, 80, 160, 280, 450, 700, 1000, 1400, 1900];
 
   const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0 }; }
+  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0 }; }
 
   function sanitize(raw, now) {
     const s = fresh(now);
@@ -25,6 +25,7 @@
     s.day = /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : '';
     s.last = Number.isFinite(+raw.last) && +raw.last > 0 ? Math.min(+raw.last, now) : now;
     s.played = Math.max(0, Math.floor(+raw.played || 0));
+    s.best = Math.max(0, Math.min(40, Math.floor(+raw.best || 0)));
     if (raw.cd && typeof raw.cd === 'object') for (const k of Object.keys(CD)) s.cd[k] = Math.min(+raw.cd[k] || 0, now + CD[k]);
     return s;
   }
@@ -80,13 +81,21 @@
     return { state: { ...s, day: today, streak, xp: s.xp + 5 + Math.min(10, streak), love: clamp(s.love + 5) }, fresh: true };
   }
 
+  // Resultado de un minijuego: puntos de 0 a 40. Da cariño y xp con tope, y cansa un poco. Guarda el récord.
+  function minigame(s0, score, now) {
+    const s = tick(s0, now);
+    const pts = Math.max(0, Math.min(40, Math.floor(+score || 0)));
+    const n = { ...s, love: clamp(s.love + Math.min(15, pts / 2)), energy: clamp(s.energy - 8), hunger: clamp(s.hunger - 4), xp: s.xp + Math.min(12, Math.ceil(pts / 3)), played: s.played + 1, best: Math.max(s.best || 0, pts) };
+    return { state: n, record: pts > (s.best || 0), levelUp: level(n.xp) > level(s.xp) };
+  }
+
   // Tiempo jugando a Minecraft: la mascota "acompaña" y gana puntos (tope por sesión).
   function gameTime(s, minutes) {
     const m = Math.max(0, Math.min(180, Math.floor(+minutes || 0)));
     return { ...s, xp: s.xp + Math.floor(m / 10) * 3, energy: clamp(s.energy - m / 20), hunger: clamp(s.hunger - m / 15) };
   }
 
-  return { sanitize, fresh, tick, act, visit, gameTime, level, progress, mood, dayKey, CD, LEVELS };
+  return { sanitize, fresh, tick, act, visit, minigame, gameTime, level, progress, mood, dayKey, CD, LEVELS };
 }));
 
 (function () {
@@ -152,12 +161,54 @@
       });
       btns.append(b);
     });
+    const gb = el('button', '', '⭐ Atrapar estrellas'); gb.type = 'button';
+    gb.addEventListener('click', () => {
+      if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
+      playStars((score) => {
+        const r = L.minigame(st, score, Date.now()); st = r.state; store(st);
+        M.say(r.levelUp ? pick('level') : r.record ? `¡Récord nuevo: ${score} estrellas! 🏆` : `${score} estrellas, ¡qué divertido! ⭐`, 5000);
+        note.textContent = `Atrapaste ${score}. Tu récord: ${st.best}.`; refresh();
+      });
+    });
+    btns.append(gb);
     const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; btns.append(close);
     nameIn.addEventListener('change', () => { st = { ...st, name: L.sanitize({ name: nameIn.value }, Date.now()).name }; nameIn.value = st.name; store(st); refresh(); });
     const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
     close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
     body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, note); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
+  }
+  /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
+  function playStars(onDone) {
+    const W = 360, H = 260, DUR = 20000;
+    const d = document.createElement('dialog'); d.className = 'event-modal pl-modal';
+    const b = el('div', 'event-modal-body'); const hud = el('p', 'pl-mood', '⭐ 0 · 20 s');
+    const cv = el('canvas', 'crop-canvas'); cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.style.cursor = 'none';
+    const x0 = el('button', 'ghost', 'Salir'); x0.type = 'button';
+    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a PX y atrapa las estrellas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
+    const x = cv.getContext('2d'); let px = W / 2, score = 0, over = false, last = 0; const t0 = performance.now(); const things = []; let spawn = 0;
+    const move = (e) => { const r = cv.getBoundingClientRect(); px = Math.min(W - 22, Math.max(22, (e.clientX - r.left) * (W / r.width))); };
+    cv.addEventListener('pointermove', move); cv.addEventListener('pointerdown', move);
+    const end = (report) => { if (over) return; over = true; try { d.close(); } catch {} d.remove(); if (report) onDone(Math.min(40, score)); };
+    x0.addEventListener('click', () => end(false)); d.addEventListener('cancel', (e) => { e.preventDefault(); end(false); });
+    function frame(now) {
+      if (over) return;
+      const dt = Math.min(50, now - (last || now)); last = now; const left = DUR - (now - t0);
+      if (left <= 0) { end(true); return; }
+      spawn -= dt; if (spawn <= 0) { spawn = 380 + Math.random() * 300; things.push({ x: 16 + Math.random() * (W - 32), y: -12, bad: Math.random() < 0.22, v: 0.09 + Math.random() * 0.07 + (1 - left / DUR) * 0.06 }); }
+      x.fillStyle = '#0c1226'; x.fillRect(0, 0, W, H);
+      x.font = '22px serif'; x.textAlign = 'center';
+      for (let i = things.length - 1; i >= 0; i--) {
+        const t = things[i]; t.y += t.v * dt;
+        x.fillText(t.bad ? '🪨' : '⭐', t.x, t.y);
+        if (t.y > H - 34 && t.y < H - 6 && Math.abs(t.x - px) < 26) { score = Math.max(0, score + (t.bad ? -2 : 1)); things.splice(i, 1); }
+        else if (t.y > H + 14) things.splice(i, 1);
+      }
+      x.font = '34px serif'; x.fillText('🐼', px, H - 8);
+      hud.textContent = `⭐ ${score} · ${Math.ceil(left / 1000)} s`;
+      requestAnimationFrame(frame);
+    }
+    d.showModal(); requestAnimationFrame(frame);
   }
   window.NovaPetLife.open = open;
 

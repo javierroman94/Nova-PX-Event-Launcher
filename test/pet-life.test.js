@@ -43,4 +43,9 @@ assert.ok(bad.last <= T && bad.cd.feed <= T + L.CD.feed);
 assert.strictEqual(L.sanitize(null, T).name, 'PX');
 // Tiempo de juego.
 const g = L.gameTime(s, 120); assert.ok(g.xp >= 30 && g.energy < s.energy);
+// Minijuego: puntos limitados, récord y cansancio.
+let mg = L.minigame(s, 999, T); assert.strictEqual(mg.state.best, 40); assert.ok(mg.record);
+assert.ok(mg.state.love <= 100 && mg.state.xp <= s.xp + 12 && mg.state.energy < s.energy);
+assert.ok(!L.minigame(mg.state, 10, T).record);
+assert.strictEqual(L.minigame(s, 'x', T).state.best, 0);
 console.log('pet-life.test OK');
