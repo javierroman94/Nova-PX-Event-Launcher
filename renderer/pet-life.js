@@ -14,7 +14,7 @@
 
   const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '' }; }
+  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '', skin: '' }; }
 
   function sanitize(raw, now) {
     const s = fresh(now);
@@ -26,6 +26,7 @@
     s.day = /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : '';
     s.last = Number.isFinite(+raw.last) && +raw.last > 0 ? Math.min(+raw.last, now) : now;
     s.played = Math.max(0, Math.floor(+raw.played || 0));
+    s.skin = raw.skin === 'shadow' ? 'shadow' : '';
     s.acc = ACC_IDS.includes(raw.acc) ? raw.acc : '';
     s.best = Math.max(0, Math.min(40, Math.floor(+raw.best || 0)));
     if (raw.cd && typeof raw.cd === 'object') for (const k of Object.keys(CD)) s.cd[k] = Math.min(+raw.cd[k] || 0, now + CD[k]);
@@ -120,7 +121,8 @@
   const store = (s) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
   let st = L.tick(load(), Date.now());
   const v0 = L.visit(st, Date.now()); st = v0.state; if (st.acc && !L.canWear(st, st.acc)) st = { ...st, acc: '' }; store(st);
-  const applyAcc = () => { const c = window.NovaFun && window.NovaFun.petCtl; if (c) c.acc = st.acc || ''; };
+  let adminOn = false;
+  const applyAcc = () => { const c = window.NovaFun && window.NovaFun.petCtl; if (c) { c.acc = st.acc || ''; c.skin = adminOn ? st.skin || '' : ''; } };
   applyAcc(); setTimeout(applyAcc, 1500);
 
   const LINES = {
@@ -187,6 +189,7 @@
       });
     });
     btns.append(gb);
+    let extra = null;
     const wardrobe = el('div', 'pl-ward');
     const paintWard = () => {
       wardrobe.replaceChildren(el('small', 'muted', 'Accesorios'));
@@ -200,11 +203,16 @@
       L.ACCESSORIES.forEach((a) => mk(a.id, a.emoji, a.name, !a.ok(st), a.need));
     };
     paintWard();
+    if (adminOn) {
+      const sk = el('label', 'check'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = st.skin === 'shadow';
+      cb.addEventListener('change', () => { st = { ...st, skin: cb.checked ? 'shadow' : '' }; store(st); applyAcc(); });
+      sk.append(cb, document.createTextNode(' Skin secreta «Sombra» (solo administradores)')); extra = sk;
+    }
     const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; btns.append(close);
     nameIn.addEventListener('change', () => { st = { ...st, name: L.sanitize({ name: nameIn.value }, Date.now()).name }; nameIn.value = st.name; store(st); refresh(); });
     const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
     close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
-    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, wardrobe, note); dlg.append(body); document.body.append(dlg);
+    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, wardrobe, ...(extra ? [extra] : []), note); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
   }
   /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
@@ -239,6 +247,9 @@
     }
     d.showModal(); requestAnimationFrame(frame);
   }
+  // La skin «Sombra» es secreta: solo aparece con el modo administrador activo.
+  const prevAllowed = M.setAiAllowed;
+  M.setAiAllowed = (v) => { adminOn = !!v; applyAcc(); if (prevAllowed) prevAllowed(v); };
   window.NovaPetLife.open = open;
 
   /* ---------- se integra con la mascota ---------- */
@@ -293,7 +304,7 @@
   const OV = 'px.pet.overlay';
   const ovOn = () => { try { return localStorage.getItem(OV) === '1'; } catch { return false; } };
   let inGame = false;
-  const ovPayload = (text) => ({ text: text || '', acc: st.acc || '', name: st.name });
+  const ovPayload = (text) => ({ text: text || '', acc: st.acc || '', name: st.name, skin: adminOn ? st.skin || '' : '' });
   const ovShow = (text) => { if (ovOn() && inGame && window.api && window.api.overlayShow) window.api.overlayShow(ovPayload(text)).catch(() => {}); };
   const ovHide = () => { if (window.api && window.api.overlayHide) window.api.overlayHide().catch(() => {}); };
   // Todo lo que PX dice en el launcher se copia a la ventana flotante mientras juegas.

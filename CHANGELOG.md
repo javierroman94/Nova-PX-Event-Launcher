@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.100
+- **Skin secreta «Sombra» para PX** (solo con el modo administrador activo): un encapuchado oscuro con ojos rojos brillantes, una X roja en el pecho, mangas rayadas, un resplandor rojo bajo los pies y brasas que suben. Se elige en «Cuidar a PX» y también aparece en la ventana flotante sobre Minecraft. Los demás usuarios no la ven.
+
 ## 1.0.99
 - **PX te acompaña mientras juegas** (opcional, apagado por defecto, en Ajustes → Apariencia): una ventanita transparente con PX y su accesorio flota en la esquina inferior derecha sobre Minecraft y muestra lo que dice (incluidas sus reacciones a tu partida). Los clics pasan al juego, no roba el foco, solo aparece mientras Minecraft está abierto y se cierra con él. Funciona con el juego en ventana o ventana sin bordes (no con pantalla completa exclusiva).
 

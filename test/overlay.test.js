@@ -6,7 +6,9 @@ assert.deepStrictEqual(b, { x: 1920 - 260 - 12, y: 1040 - 190 - 12, width: 260, 
 const b2 = O.bounds({ x: 1920, y: 0, width: 1280, height: 720 });
 assert.ok(b2.x >= 1920 && b2.x + b2.width <= 3200, 'segundo monitor');
 assert.ok(O.bounds(null).x > 0);
-assert.deepStrictEqual(O.sanitize({ text: 'hola', acc: 'hack', name: 'PX', extra: 1 }), { text: 'hola', acc: '', name: 'PX' });
+assert.deepStrictEqual(O.sanitize({ text: 'hola', acc: 'hack', name: 'PX', extra: 1 }), { text: 'hola', acc: '', name: 'PX', skin: '' });
 assert.strictEqual(O.sanitize({ text: 'x'.repeat(999) }).text.length, 200);
-assert.deepStrictEqual(O.sanitize(null), { text: '', acc: '', name: '' });
+assert.deepStrictEqual(O.sanitize(null), { text: '', acc: '', name: '', skin: '' });
+assert.strictEqual(O.sanitize({ skin: 'shadow' }).skin, 'shadow');
+assert.strictEqual(O.sanitize({ skin: 'otro' }).skin, '');
 console.log('overlay.test OK');

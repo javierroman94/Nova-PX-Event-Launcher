@@ -135,10 +135,12 @@
   });
 
   /* ---------- criaturas pixeladas (diseños propios) ---------- */
-  const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0' };
+  const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0', N: '#23232d', S: '#3b3b48', V: '#07070b', E: '#ff3b3b', X: '#e8334a', Z: '#8f1d2c' };
   const SPRITES = {
     // Mascota de NovaPX (panda rosa de bloques, diseño de @DekerModMaker). Va siempre en el elenco.
     px: { scale: 4, rows: ['MM.......MM', 'MQM.....MQM', '.MMMMMMMMM.', '.MWWWWWWWM.', '.MQQWWWQQM.', '.MWKWWWKWM.', '.MWWWMWWWM.', '.MWWWWWWWM.', '..MQQQQQM..', 'HM.MWWWWM.MH', 'MM.MWWWWM.MM', 'MQ.MWWWWM.QM', '...MWWWWM...'], legs: ['..MWMQMWM..', '..MWM.MWM..'] },
+    // Skin secreta de PX: «Sombra» (encapuchado oscuro con ojos rojos). Solo se activa en modo administrador.
+    shadow: { scale: 4, rows: ['..NNNNNNN..', '.NSSNNNSSN.', '.NNNNNNNNN.', 'NNVVVVVVVNN', 'NVVEEVEEVVN', 'NVVEEVEEVVN', 'NVVVVVVVVVN', '.NNVVVVVNN.', '.NNNNNNNNN.', 'XXNNXNXNNXX', 'NSNNNXNNNSN', 'XXNNXNXNNXX', 'NSNZNNNZNSN'], feet: 'X' },
     bunny: { rows: ['..WW...WW..', '..WP...PW..', '..WP...PW..', '..WWWWWWW..', '.WWWWWWWWW.', '.WWKWWWKWW.', '.WWWWPWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'W' },
     chick: { rows: ['...YYYYY...', '..YYYYYYY..', '..YKYYYKY..', '..YYYOYYY..', '..YYYOYYY..', '.YYYYYYYYY.', '.YYYYYYYYY.', '..YYYYYYY..'], feet: 'O' },
     fox: { rows: ['.R.......R.', '.RR.....RR.', '.RRRRRRRRR.', '.RRRRRRRRR.', '.RKRRRRRKR.', '.RRRRKRRRR.', '..RWWWWWR..', '...WWWWW...', '..RRRRRRR..'], feet: 'D' },
@@ -165,6 +167,7 @@
 
   const spriteCache = new Map();
   function sheet(name, frame, acc) {
+    if (name === 'px' && petCtl.skin === 'shadow') name = 'shadow';
     const key = name + '|' + frame + '|' + (name === 'bot' ? acc : '');
     if (spriteCache.has(key)) return spriteCache.get(key);
     const def = SPRITES[name];
@@ -209,7 +212,7 @@
   }
 
   // Control externo del panda PX (lo usa mascot.js): dormir, saltar, alegrarse.
-  const petCtl = { acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; } };
+  const petCtl = { skin: '', acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; } };
   function getPet() {
     const c = crits.find((k) => k.name === 'px');
     if (!c || !opt.critters || root.classList.contains('no-fx')) return null;
@@ -296,6 +299,15 @@
     } else {
       y = h - 4 - sh + c.y;
       if (c.moving && !c.vy) y -= Math.abs(Math.sin(c.ph)) * 2;
+      ctx.globalAlpha = 1;
+    }
+    if (c.name === 'px' && petCtl.skin === 'shadow') {
+      const t = performance.now() / 1000, cx = Math.round(x) + sprite.width / 2, fy = Math.round(y) + sprite.height;
+      const g = ctx.createRadialGradient(cx, fy, 2, cx, fy, 40);
+      g.addColorStop(0, 'rgba(255,40,60,' + (0.45 + 0.15 * Math.sin(t * 3)).toFixed(2) + ')'); g.addColorStop(1, 'rgba(255,40,60,0)');
+      ctx.fillStyle = g; ctx.fillRect(cx - 44, fy - 44, 88, 60);
+      ctx.fillStyle = '#ff4a5a';
+      for (let i = 0; i < 5; i++) { const ph = (t * 0.6 + i * 0.37) % 1; ctx.globalAlpha = 1 - ph; ctx.fillRect(Math.round(cx + Math.sin(t + i * 2) * 20 + (i - 2) * 6), Math.round(fy - 8 - ph * 54), 2, 2); }
       ctx.globalAlpha = 1;
     }
     ctx.save();
