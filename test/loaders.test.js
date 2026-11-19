@@ -66,7 +66,28 @@ test('Enlace y nombre del archivo de Forge', () => {
 });
 
 test('Loaders soportados', () => {
-  assert.deepStrictEqual(L.SUPPORTED_LOADERS, ['vanilla', 'fabric', 'forge']);
+  assert.deepStrictEqual(L.SUPPORTED_LOADERS, ['vanilla', 'fabric', 'forge', 'neoforge']);
 });
 
 console.log(`\n${count} pruebas correctas.`);
+
+// ---- NeoForge ----
+{
+  const assert = require('assert');
+  const L = require('../lib/loaders');
+  assert.strictEqual(L.neoforgeMcPrefix('1.21.1'), '21.1.');
+  assert.strictEqual(L.neoforgeMcPrefix('1.21'), '21.0.');
+  assert.strictEqual(L.neoforgeMcPrefix('1.20.2'), '20.2.');
+  assert.strictEqual(L.neoforgeMcPrefix('1.20.1'), null, '1.20.1 usaba otro esquema');
+  assert.strictEqual(L.neoforgeMcPrefix('24w14a'), null);
+  const vs = ['20.2.86', '21.0.167', '21.1.9', '21.1.172', '21.1.73', '21.1.200-beta', '21.10.3', '21.11.0-beta'];
+  assert.strictEqual(L.pickNeoForgeVersion(vs, '1.21.1'), '21.1.172');
+  assert.strictEqual(L.pickNeoForgeVersion(['21.11.0-beta'], '1.21.11'), '21.11.0-beta', 'sin estable, la beta más nueva');
+  assert.strictEqual(L.pickNeoForgeVersion(vs, '1.21.11'), '21.11.0-beta');
+  assert.strictEqual(L.pickNeoForgeVersion(vs, '1.19.2'), null);
+  assert.strictEqual(L.pickNeoForgeVersion(vs, '1.21.1', '21.1.77'), '21.1.77');
+  assert.strictEqual(L.pickNeoForgeVersion(vs, '1.21.1', '../x'), null);
+  assert.strictEqual(L.neoforgeUrl('21.1.172'), 'https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.172/neoforge-21.1.172-installer.jar');
+  assert.ok(L.SUPPORTED_LOADERS.includes('neoforge'));
+  console.log('  ok  NeoForge: versión según Minecraft, estable antes que beta y rutas seguras');
+}

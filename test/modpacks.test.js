@@ -45,7 +45,8 @@ console.log('  ok  modpacks: rutas seguras, hosts permitidos e ids de instancia'
 const idx = (deps, files = []) => ({ formatVersion: 1, game: 'minecraft', name: 'P', dependencies: deps, files });
 assert.deepStrictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.21.1', 'fabric-loader': '0.16.9' })).loader, { type: 'fabric', version: '0.16.9' });
 assert.deepStrictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.20.1', forge: '47.2.0' })).loader, { type: 'forge', version: '47.2.0' });
-assert.strictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.21.1', neoforge: '21.1.1' })).unsupported, 'NeoForge');
+assert.deepStrictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.21.1', neoforge: '21.1.1' })).loader, { type: 'neoforge', version: '21.1.1' });
+assert.strictEqual(mp.parseMrpackIndex(idx({ minecraft: '1.21.1', 'quilt-loader': '0.26.0' })).unsupported, 'Quilt');
 assert.throws(() => mp.parseMrpackIndex({ formatVersion: 2 }), /formato/);
 assert.throws(() => mp.parseMrpackIndex(idx({ minecraft: '1.21' }, [{ path: '../evil.jar', downloads: ['https://cdn.modrinth.com/x'] }])), /ruta/);
 assert.throws(() => mp.parseMrpackIndex(idx({ minecraft: '../../evil' })), /versión de Minecraft/);

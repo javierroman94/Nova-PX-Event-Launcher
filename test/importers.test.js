@@ -28,7 +28,7 @@ const sha1 = (b) => crypto.createHash('sha1').update(b).digest('hex');
     const p = im.installPrism({ buffer: buf, root: r1 });
     assert.deepStrictEqual([p.name, p.mcVersion, p.loader.type, p.loader.version, p.files], ['Mi Pack', '1.20.1', 'forge', '47.2.0', 2]);
     assert.ok(fs.existsSync(path.join(r1, 'mods', 'a.jar')) && !fs.existsSync(path.join(r1, 'logs')));
-    assert.throws(() => im.parseMmcPack({ components: [{ uid: 'net.minecraft', version: '1.21.1' }, { uid: 'net.neoforged', version: '1' }] }) && im.installPrism({ buffer: (() => { const f = path.join(tmp, 'nf.zip'); writeZip(f, [{ name: 'mmc-pack.json', data: JSON.stringify({ components: [{ uid: 'net.minecraft', version: '1.21.1' }, { uid: 'net.neoforged', version: '1' }] }) }]); return fs.readFileSync(f); })(), root: path.join(tmp, 'nf') }), /NeoForge/);
+    assert.throws(() => im.parseMmcPack({ components: [{ uid: 'net.minecraft', version: '1.21.1' }, { uid: 'org.quiltmc.quilt-loader', version: '1' }] }) && im.installPrism({ buffer: (() => { const f = path.join(tmp, 'nf.zip'); writeZip(f, [{ name: 'mmc-pack.json', data: JSON.stringify({ components: [{ uid: 'net.minecraft', version: '1.21.1' }, { uid: 'org.quiltmc.quilt-loader', version: '1' }] }) }]); return fs.readFileSync(f); })(), root: path.join(tmp, 'nf') }), /Quilt/);
 
     // carpetas
     const fol = path.join(tmp, 'cf');

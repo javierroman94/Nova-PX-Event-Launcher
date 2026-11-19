@@ -14,7 +14,7 @@ try {
   w(path.join(p1, 'mmc-pack.json'), JSON.stringify({ components: [{ uid: 'net.minecraft', version: '1.21.1' }, { uid: 'net.fabricmc.fabric-loader', version: '0.16.0' }] }));
   w(path.join(p1, 'instance.cfg'), 'name=Mi Pack Bonito\n');
   w(path.join(p1, '.minecraft', 'mods', 'a.jar'), 'x');
-  // NeoForge (no soportado)
+  // NeoForge
   const p2 = path.join(appdata, 'PrismLauncher', 'instances', 'Neo');
   w(path.join(p2, 'mmc-pack.json'), JSON.stringify({ components: [{ uid: 'net.minecraft', version: '1.21.1' }, { uid: 'net.neoforged', version: '21' }] }));
   // ATLauncher
@@ -34,7 +34,7 @@ try {
   assert.strictEqual(by('Mi Pack Bonito').launcher, 'Prism Launcher');
   assert.strictEqual(by('Mi Pack Bonito').loader.type, 'fabric');
   assert.strictEqual(by('Mi Pack Bonito').mods, 1);
-  assert.strictEqual(by('Neo').unsupported, 'NeoForge');
+  assert.deepStrictEqual([by('Neo').loader.type, by('Neo').unsupported], ['neoforge', '']);
   assert.strictEqual(by('Mi AT').loader.type, 'forge');
   assert.strictEqual(by('Mr1').mcVersion, '1.21.4');
   assert.ok(roots({ platform: 'linux', env: {}, home }).some((x) => x.dir.includes('.local')));

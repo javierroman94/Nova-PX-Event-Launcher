@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.84
+- **NeoForge** (Minecraft 1.20.2 en adelante): el launcher descarga el instalador oficial, elige la versión adecuada y juega modpacks de NeoForge. Antes salían como «no soportados». Función nueva: pruébala y avisa si algún modpack da problemas.
+- **Modpacks de CurseForge**: ya se pueden importar los `.zip` descargados de la web de CurseForge (Importar archivo o arrastrándolos). Los mods cuyo autor bloquea las descargas externas se avisan y se omiten. La clave de CurseForge vive en un servidor intermedio, nunca dentro del launcher.
+- **Catálogo FTB (Feed The Beast)**: en Explorar modpacks hay un selector Modrinth / FTB para buscar e instalar modpacks de FTB.
+- Los modpacks, instancias de Prism/MultiMC/ATLauncher/Modrinth App y `.mrpack` de NeoForge ya se importan (Quilt sigue sin soporte).
+
 ## 1.0.83
 - Tema secreto «Laos ✦ Edición secreta» (azul noche con rojo): solo aparece en Ajustes → Apariencia para la cuenta premium de LaosOneView (se comprueba su UUID, no el nick) y para los administradores.
 - Estela del cursor distinta para cada tema y temporada (copos en Navidad, brasas en Halloween, corazones en San Valentín, pétalos, confeti, chispas, píxeles…) y ráfaga al hacer clic.

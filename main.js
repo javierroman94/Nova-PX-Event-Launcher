@@ -19,6 +19,7 @@ const { classifyNetworkError } = require('./lib/errors');
 const { repairInstance } = require('./lib/repair');
 const modrinth = require('./lib/modrinth');
 const modpacks = require('./lib/modpacks');
+const ftbLib = require('./lib/ftb');
 const providers = require('./lib/providers');
 const content = require('./lib/content');
 const packs = require('./lib/packs');
@@ -443,6 +444,47 @@ async function ensureForge(mcVersion, wantedVersion) {
   return dest;
 }
 
+/* ---------- loader (NeoForge) ---------- */
+
+// Igual que Forge: se descarga el instalador oficial y minecraft-launcher-core lo ejecuta al iniciar.
+async function ensureNeoForge(mcVersion, wantedVersion) {
+  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
+  if (!loaders.neoforgeMcPrefix(mcVersion) && !wantedVersion) throw new Error(`NeoForge solo está disponible desde Minecraft 1.20.2 (este modpack usa ${mcVersion}).`);
+  const dir = path.join(GAME_DIR, 'installers');
+  fs.mkdirSync(dir, { recursive: true });
+
+  let version = null;
+  try {
+    let versions = [];
+    if (!wantedVersion) {
+      const xml = await (await fetchWithTimeout('https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml')).text();
+      versions = [...xml.matchAll(/<version>([^<]+)<\/version>/g)].map((m) => m[1]);
+    }
+    version = loaders.pickNeoForgeVersion(versions, mcVersion, wantedVersion);
+  } catch (err) {
+    const cached = fs.readdirSync(dir).filter((f) => /^neoforge-.*-installer\.jar$/.test(f)).sort().pop();
+    if (cached && !wantedVersion) return path.join(dir, cached);
+    throw new Error(`No se pudo consultar las versiones de NeoForge: ${err.message}`);
+  }
+  if (!version) throw new Error(wantedVersion ? `La versión de NeoForge "${wantedVersion}" no es válida.` : `NeoForge no tiene una versión publicada para Minecraft ${mcVersion}.`);
+
+  const url = loaders.neoforgeUrl(version);
+  const dest = path.join(dir, loaders.neoforgeFileName(version));
+  if (fs.existsSync(dest)) return dest;
+  send('game:status', { text: `Descargando NeoForge ${version}…` });
+  fs.writeFileSync(dest, await downloadBuffer(url));
+  try {
+    const expected = (await (await fetchWithTimeout(`${url}.sha1`)).text()).trim().split(/\s+/)[0].toLowerCase();
+    if (/^[0-9a-f]{40}$/.test(expected) && sha1OfFile(dest).toLowerCase() !== expected) {
+      fs.unlinkSync(dest);
+      throw new Error('El instalador de NeoForge descargado está dañado (no coincide su sha1). Inténtalo de nuevo.');
+    }
+  } catch (err) {
+    if (!fs.existsSync(dest)) throw err;
+  }
+  return dest;
+}
+
 /* ---------- Java ---------- */
 
 function readJavaVersionOutput(javaBin) {
@@ -774,8 +816,12 @@ function readModpacks() {
 function writeModpacks(list) {
   fs.writeFileSync(MODPACKS_FILE, JSON.stringify(list, null, 2));
 }
+// Intermediario con la clave de CurseForge guardada como secreto (la clave no va en el launcher).
+const CURSE_PROXY = 'https://nova-px-curseforge.javier-1994yoop.workers.dev/v1';
 function providerFor(name) {
   if (name === 'modrinth') return providers.modrinth(apiRequest);
+  if (name === 'curseforge') return providers.curseforge(apiRequest, '', CURSE_PROXY);
+  if (name === 'ftb') return ftbLib.ftb(apiRequest);
   throw new Error('Proveedor desconocido.');
 }
 const cleanStr = (v, max = 200) => String(v == null ? '' : v).slice(0, max);
@@ -803,7 +849,7 @@ async function downloadWithProgress(url, onProgress) {
   }
 }
 
-ipcMain.handle('modpacks:providers', () => ({ modrinth: true }));
+ipcMain.handle('modpacks:providers', () => ({ modrinth: true, ftb: true }));
 ipcMain.handle('modpacks:search', async (_e, p = {}) =>
   providerFor(cleanStr(p.provider, 20)).search({ query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)), loader: cleanStr(p.loader, 12), mc: cleanStr(p.mc, 24), sort: cleanStr(p.sort, 12) })
 );
@@ -822,9 +868,10 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     const versions = await prov.versions(cleanStr(p.id, 40));
     const v = versions.find((x) => x.id === cleanStr(p.versionId, 40));
     if (!v) throw new Error('Esa versión del modpack ya no está disponible.');
-    if (!v.supported) throw new Error('Este modpack usa un loader que el launcher todavía no soporta (solo Fabric, Forge o Vanilla).');
-    if (!v.downloadUrl) throw new Error('El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de Modrinth.');
-    if (!modpacks.allowedUrl(v.downloadUrl, modpacks.MODRINTH_HOSTS)) {
+    if (!v.supported) throw new Error('Este modpack usa un loader que el launcher todavía no soporta (solo Fabric, Forge, NeoForge o Vanilla).');
+    const isFtb = name === 'ftb';
+    if (!isFtb && !v.downloadUrl) throw new Error('El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de Modrinth.');
+    if (!isFtb && !modpacks.allowedUrl(v.downloadUrl, modpacks.MODRINTH_HOSTS)) {
       throw new Error('La dirección de descarga del modpack no es de un sitio permitido.');
     }
 
@@ -832,7 +879,8 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     const previous = list.find((x) => x.provider === name && x.projectId === cleanStr(p.id, 40));
     const id = previous ? previous.id : modpacks.instanceIdFor(cleanStr(p.title, 80) || 'modpack', list.map((x) => x.id));
     const root = instanceDir(GAME_DIR, { event: { id } });
-    const buffer = await downloadWithProgress(v.downloadUrl, (got, total) =>
+    const ftbManifest = isFtb ? await prov.manifest(cleanStr(p.id, 40), v.id) : null;
+    const buffer = isFtb ? null : await downloadWithProgress(v.downloadUrl, (got, total) =>
       progress(`Descargando el modpack… ${total ? Math.round((got / total) * 100) + '%' : Math.round(got / 1048576) + ' MB'}`, got, total)
     );
     // Al actualizar una versión se cambian los mods; los mundos y ajustes se conservan.
@@ -847,7 +895,9 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     const download = (u) => downloadBuffer(u);
     let r;
     try {
-      r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
+      r = isFtb
+        ? await ftbLib.installFtb({ manifest: ftbManifest, root, download, onProgress: onFile })
+        : await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
     } catch (err) {
       if (fs.existsSync(modsBackup)) {
         fs.rmSync(modsDir, { recursive: true, force: true });
@@ -1608,7 +1658,7 @@ async function importFromPath(src) {
   if (st.size > 1.5 * 1024 ** 3) throw new Error('Ese archivo es demasiado grande para importarlo.');
   const buffer = fs.readFileSync(src);
   const kind = importers.detectZip(readZip(buffer));
-  if (!kind) throw new Error('No reconozco ese archivo. Acepto .novapx, .mrpack (Modrinth) e instancias exportadas de Prism/MultiMC (.zip).');
+  if (!kind) throw new Error('No reconozco ese archivo. Acepto .novapx, .mrpack (Modrinth), .zip de CurseForge e instancias exportadas de Prism/MultiMC (.zip).');
   const download = (u) => downloadBuffer(u);
   const tmpId = idFor(path.basename(src, path.extname(src)));
   const root = instanceDir(GAME_DIR, { event: { id: tmpId } });
@@ -1619,7 +1669,10 @@ async function importFromPath(src) {
       r = await importers.installNovapx({ buffer, root, download, onProgress: onFile });
       extra = { emoji: r.emoji && packs.buildCustomEntry({ name: 'x', icon: r.emoji, mcVersion: '1.0' }).emoji, notes: r.notes, settings: r.settings };
     } else if (kind === 'mrpack') r = await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
-    else if (kind === 'curse') throw new Error('Los modpacks .zip de CurseForge no se pueden importar. Busca el mismo modpack en Modrinth, o impórtalo desde la carpeta de su instancia en el CurseForge App.');
+    else if (kind === 'curse') {
+      const cf = providerFor('curseforge');
+      r = await modpacks.installCurse({ buffer, root, resolveFiles: (f) => cf.resolveFiles(f), download, onProgress: onFile });
+    }
     else r = importers.installPrism({ buffer, root });
     const entry = packEntryFrom(tmpId, r.name, r, extra);
     if (!entry.icon && !entry.emoji) { entry.icon = await lookupModrinthIcon(entry.title); entry.iconTried = true; }
@@ -1795,7 +1848,7 @@ function searchTarget(p) {
   const { entry, root } = packRoot(p.id);
   const type = typeOf(p.type);
   if (type === 'mod' && (!entry.loader || entry.loader.type === 'vanilla')) {
-    throw new Error('Este modpack es Vanilla (sin Fabric ni Forge), así que no admite mods.');
+    throw new Error('Este modpack es Vanilla (sin Fabric, Forge ni NeoForge), así que no admite mods.');
   }
   return { entry, root, type, loader: entry.loader && entry.loader.type };
 }
@@ -2649,6 +2702,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     } else if (loaderType === 'forge') {
       send('game:status', { text: 'Preparando Forge…' });
       forgeInstaller = await ensureForge(manifest.minecraftVersion, manifest.loader.version);
+    } else if (loaderType === 'neoforge') {
+      send('game:status', { text: 'Preparando NeoForge…' });
+      forgeInstaller = await ensureNeoForge(manifest.minecraftVersion, manifest.loader.version);
     }
 
     const customArgs = st.jvmArgs.split(/\s+/).filter(Boolean);

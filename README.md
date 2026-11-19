@@ -46,7 +46,8 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 
 ### 📦 Modpacks
 - Biblioteca con **Modrinth**, filtros y grupos
-- **Importa desde Prism, MultiMC, ATLauncher, CurseForge y Modrinth App** con un clic
+- **Importa desde Prism, MultiMC, ATLauncher, CurseForge y Modrinth App** con un clic, y modpacks `.zip` de CurseForge, `.mrpack` de Modrinth y el catálogo de FTB
+- **Forge y NeoForge** (1.20.2 en adelante) además de Fabric y Vanilla
 - Mods, shaders y texturas: activa, quita y **actualiza** (con aviso)
 - RAM, Java y cuenta **por modpack**; respaldo de mundos
 - Exporta un `.novapx` para compartir

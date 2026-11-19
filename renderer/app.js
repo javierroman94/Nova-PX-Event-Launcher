@@ -1246,7 +1246,7 @@ function openDetailHeader(p) {
   head.classList.toggle('has-img', !!p.icon);
   paintPackChips(p);
 }
-const SRC_NAMES = { modrinth: 'Modrinth', custom: 'Perfil propio', copy: 'Copia', curseforge: 'CurseForge' };
+const SRC_NAMES = { modrinth: 'Modrinth', custom: 'Perfil propio', copy: 'Copia', curseforge: 'CurseForge', ftb: 'FTB' };
 function paintPackChips(p) {
   let box = $('mp-detail-chips');
   if (!box) {
@@ -4654,12 +4654,22 @@ renderFriends();
 setInterval(() => { if (!document.hidden) renderFriends(); }, 45 * 1000);
 
 
+/* --- Catálogo de modpacks (Modrinth o FTB) --- */
+$('mp-provider').addEventListener('change', () => {
+  mp.provider = $('mp-provider').value;
+  const ftb = mp.provider === 'ftb';
+  $('mp-filters').hidden = ftb; // FTB no filtra por loader ni versión desde la búsqueda
+  if (ftb) { mp.fLoader = ''; mp.fMc = ''; mp.fSort = ''; }
+  searchPacks(true);
+});
+
 /* --- Explorar mods, texturas y shaders (como la app de Modrinth) --- */
 const D_NAMES = { mod: 'mods', resourcepack: 'texturas', shader: 'shaders' };
 document.querySelectorAll('#mp-d-types button').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('#mp-d-types button').forEach((x) => x.classList.toggle('active', x === b));
   mp.dType = b.dataset.dt;
   const isPack = mp.dType === 'modpack';
+  $('mp-provider').hidden = !isPack;
   $('mp-f-loader').hidden = !(isPack || mp.dType === 'mod');
   $('mp-search').placeholder = isPack ? 'Buscar modpacks…' : `Buscar ${D_NAMES[mp.dType]}…`;
   if (!isPack) $('mp-reco').hidden = true;

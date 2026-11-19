@@ -18,8 +18,8 @@ const { modrinth, curseforge } = require('../lib/providers');
   assert.strictEqual(s.items[0].icon, '', 'iconos http se descartan');
   assert.strictEqual(s.items[0].url, 'https://modrinth.com/modpack/s');
   const v = await m.versions('P');
-  assert.deepStrictEqual(v.map((x) => [x.id, x.supported]), [['v1', true], ['v2', false]]);
-  console.log('  ok  Modrinth: búsqueda y versiones (NeoForge se marca como no soportado)');
+  assert.deepStrictEqual(v.map((x) => [x.id, x.supported]), [['v1', true], ['v2', true]]);
+  console.log('  ok  Modrinth: búsqueda y versiones (NeoForge cuenta como soportado)');
 
   const calls = [];
   const c = curseforge(async (url, o = {}) => {
