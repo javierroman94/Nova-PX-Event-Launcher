@@ -743,7 +743,7 @@ function paintWinners(ev) {
   list.forEach((nick) => {
     const known = extra.find((p) => p.nick.toLowerCase() === nick.toLowerCase());
     const card = el('div', 'winner-head');
-    card.append(head3d({ nick, ...(known && known.skin ? { skin: known.skin, slim: known.slim } : {}) }, 52), el('div', 'nick', nick));
+    card.append(head3d({ nick, ...(known && known.skin ? { skin: known.skin, slim: known.slim } : {}) }, 44), el('div', 'nick', nick));
     row.append(card);
   });
   box.append(row);
@@ -771,7 +771,7 @@ function paintPeople(ev) {
       const row = el('div', 'people-row compact' + (sub ? ' grouped' : ''));
       items.forEach((p) => {
         const c = el('div', 'person');
-        c.append(head3d({ nick: p.nick, ...(p.skin ? { skin: p.skin, slim: p.slim } : {}) }, 52), el('div', 'nick', p.nick));
+        c.append(head3d({ nick: p.nick, ...(p.skin ? { skin: p.skin, slim: p.slim } : {}) }, 44), el('div', 'nick', p.nick));
         if (p.role && !sub) c.append(el('div', 'role', p.role));
         if (p.links && p.links.length) c.append(linkChips(p.links));
         row.append(c);
@@ -3775,7 +3775,10 @@ function openAdminEvent(idx) {
   ade.index = idx;
   const base = idx >= 0 ? adm.events[idx] : { name: '', date: new Date().toISOString().slice(0, 10), image: '', description: '' };
   ade.draft = { ...base, winners: [...(base.winners || (base.winner ? [base.winner] : []))], roster: (base.roster || []).map((p) => ({ ...p, links: [...(p.links || [])].map((l) => ({ ...l })) })), collabs: (base.collabs || []).map((p) => ({ ...p, links: [...(p.links || [])].map((l) => ({ ...l })) })) };
-  peopleEditor($('ade-roster'), ade.draft.roster, false, '+ Participante');
+  // Alta de participantes en pausa (sin lista oficial de eventos pasados). Los ya guardados se conservan; se reactiva con localStorage px.admin.roster = 1.
+  const rosterOn = (() => { try { return localStorage.getItem('px.admin.roster') === '1'; } catch { return false; } })();
+  $('ade-roster-title').hidden = $('ade-roster').hidden = !rosterOn;
+  if (rosterOn) peopleEditor($('ade-roster'), ade.draft.roster, false, '+ Participante');
   peopleEditor($('ade-collabs'), ade.draft.collabs, true, '+ Colaborador');
   ade.preview = '';
   ade.posts = { links: (base.posts || []).map((l) => ({ ...l })) };

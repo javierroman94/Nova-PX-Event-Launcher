@@ -25,9 +25,9 @@
       b.className = 'ctx-item' + (it.danger ? ' danger' : '');
       b.setAttribute('role', 'menuitem');
       b.disabled = !!it.disabled;
-      const ic = document.createElement('span'); ic.className = 'ctx-ico'; ic.textContent = it.icon || '';
+      // Solo texto: los emojis de Windows desentonan, así que el menú no pinta iconos.
       const lb = document.createElement('span'); lb.className = 'ctx-label'; lb.textContent = it.label;
-      b.append(ic, lb);
+      b.append(lb);
       if (it.hint) { const h = document.createElement('span'); h.className = 'ctx-hint'; h.textContent = it.hint; b.append(h); }
       b.addEventListener('click', (e) => { e.stopPropagation(); close(); try { const r = it.onClick && it.onClick(); if (r && r.catch) r.catch(() => {}); } catch {} });
       menu.append(b);

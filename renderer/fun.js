@@ -11,7 +11,7 @@
     set(k, v) { try { localStorage.setItem(k, v ? '1' : '0'); } catch {} }
   };
   const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const opt = { trail: store.get('px.fun.trail', !calm), critters: store.get('px.fun.critters', !calm) };
+  const opt = { trail: store.get('px.fun.trail', !calm), critters: store.get('px.fun.critters', false) };
 
   const canvas = document.createElement('canvas');
   canvas.id = 'fx-fun';
@@ -137,7 +137,7 @@
   /* ---------- criaturas pixeladas (diseños propios) ---------- */
   const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0' };
   const SPRITES = {
-    // Mascota de Proyecto PX (panda rosa de bloques, diseño de @DekerModMaker). Va siempre en el elenco.
+    // Mascota de NovaPX (panda rosa de bloques, diseño de @DekerModMaker). Va siempre en el elenco.
     px: { scale: 4, rows: ['MM.......MM', 'MQM.....MQM', '.MMMMMMMMM.', '.MWWWWWWWM.', '.MQQWWWQQM.', '.MWKWWWKWM.', '.MWWWMWWWM.', '.MWWWWWWWM.', '..MQQQQQM..', 'HM.MWWWWM.MH', 'MM.MWWWWM.MM', 'MQ.MWWWWM.QM', '...MWWWWM...'], legs: ['..MWMQMWM..', '..MWM.MWM..'] },
     bunny: { rows: ['..WW...WW..', '..WP...PW..', '..WP...PW..', '..WWWWWWW..', '.WWWWWWWWW.', '.WWKWWWKWW.', '.WWWWPWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'W' },
     chick: { rows: ['...YYYYY...', '..YYYYYYY..', '..YKYYYKY..', '..YYYOYYY..', '..YYYOYYY..', '.YYYYYYYYY.', '.YYYYYYYYY.', '..YYYYYYY..'], feet: 'O' },

@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.89
+- **Clic derecho**: el menú ahora es solo texto, sin emojis de Windows, para que se vea más serio y uniforme.
+- **Criaturas pixeladas**: vienen **apagadas por defecto**; quien las quiera las activa en Ajustes → Apariencia.
+- **Cabezas 3D**: un poco más pequeñas en Participantes y Ganadores para que las esquinas ya no se salgan del cuadro ni tapen el texto.
+- **Administración**: el alta de participantes con nombre queda en pausa (los ya guardados se siguen mostrando).
+- Se quitan las menciones a «Proyecto PX»: somos NovaPX.
+
 ## 1.0.88
 - **Eventos**: los participantes con grupo (como las 4 naciones de RubroCraft Nations) ahora se muestran **separados por grupo**, cada uno con su título, en vez de todos pegados.
 - **PX con IA**: ya está publicada y funcionando con Workers AI de Cloudflare (sin clave de pago, con tope diario). Es una IA más sencilla que Claude: sirve para charlar y chistes; si algún día se pone una clave de Anthropic, el mismo servidor pasa a usar Claude solo.
