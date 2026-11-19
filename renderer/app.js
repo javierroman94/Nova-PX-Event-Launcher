@@ -2912,6 +2912,34 @@ $('log-copy').addEventListener('click', async () => {
   setTimeout(() => (btn.textContent = 'Copiar'), 1500);
 });
 
+// Reporte corto para pegar en el canal de comentarios (Discord/Trello): versión, sistema, cuenta, qué se jugó y el final del registro.
+$('log-report').addEventListener('click', async () => {
+  const btn = $('log-report');
+  let ver = '?';
+  try { ver = (await window.api.getConfig()).version || '?'; } catch {}
+  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '?';
+  const acct = currentUser ? (currentUser.mode === 'premium' ? 'premium (Microsoft)' : 'no premium (nick local)') : 'sin sesión';
+  const target = launchTarget && launchTarget.title ? launchTarget.title : '(ninguno en curso)';
+  const tail = logLines.slice(-40).map((l) => (l.length > 260 ? `${l.slice(0, 260)}… [recortado]` : l));
+  const text = [
+    '**Reporte de Nova PX Launcher**',
+    `Versión: ${ver} · Sistema: ${plat}`,
+    `Cuenta: ${acct}`,
+    `Jugando/último: ${target}`,
+    'Qué pasó: (escríbelo aquí)',
+    '```',
+    ...tail,
+    '```'
+  ].join('\n');
+  try {
+    await navigator.clipboard.writeText(maskNick(text));
+    btn.textContent = 'Copiado ✓';
+  } catch {
+    btn.textContent = 'No se pudo copiar';
+  }
+  setTimeout(() => (btn.textContent = 'Copiar reporte'), 1800);
+});
+
 $('log-save').addEventListener('click', () => {
   if (!logLines.length) return toast('No hay registro para guardar todavía.', 'error');
   const url = URL.createObjectURL(new Blob([logLines.join('\n')], { type: 'text/plain' }));

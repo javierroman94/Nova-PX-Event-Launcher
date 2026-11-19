@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.105
+- **Copiar reporte** (pestaña Consola): copia un resumen corto listo para pegar en el canal de comentarios: versión, sistema, tipo de cuenta, qué se estaba jugando y las últimas 40 líneas del registro (ocultando tu usuario y recortando las líneas larguísimas). Nueva guía `docs/REPORTAR-ERRORES.md` con la plantilla para beta testers.
+
 ## 1.0.104
 - **La mascota se llama Pexy**: es su nombre oficial. Cambia en los textos del launcher (charla, «Cuidar a Pexy», ajustes, ventana flotante) y es el nombre que trae al nacer. Si alguien le había puesto un nombre propio, se respeta.
 
