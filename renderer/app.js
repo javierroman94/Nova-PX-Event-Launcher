@@ -2873,6 +2873,7 @@ function logRender() {
 }
 
 function logAdd(line) {
+  if (window.NovaGameEvents && window.NovaGameEvents.feed) { try { window.NovaGameEvents.feed(line); } catch {} }
   logLines.push(line);
   if (logLines.length > MAX_LOG_LINES) logLines.shift();
   if (logLines.length === 1 || logBox.querySelector('.log-empty')) return logRender();

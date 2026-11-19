@@ -1144,6 +1144,7 @@
           <label class="check"><input id="fun-sound" type="checkbox" /> Sonidos suaves al pasar el cursor (solo con el tema Nova Eclipse)</label>
           <label class="check"><input id="fun-pet" type="checkbox" /> PX, la mascota, habla y reacciona (saluda, se duerme, comenta)</label>
           <div class="mp-actions"><button id="pet-care-open" type="button">🐼 Cuidar a PX (comer, jugar, nombre, nivel)</button></div>
+          <label class="check"><input id="fun-pet-watch" type="checkbox" /> PX reacciona a lo que pasa en tu partida (muertes, avances, servidores, menciones). Solo lee el texto del registro en tu PC; no se envía nada.</label>
           <label class="check" id="fun-pet-ai-row" hidden><input id="fun-pet-ai" type="checkbox" /> PX con IA: charla, bromas, memoria y ayuda con errores (usa internet)</label>
           <small class="muted" id="fun-pet-ai-note" hidden>Al activarlo, lo que le escribas a PX (y, si se lo pides, el final de un registro de error ya sin tu usuario ni claves) se envía a un servidor de Nova PX que usa Claude, de Anthropic, para responder. No escribas datos personales. Hay un tope diario de mensajes. Lo que PX aprende de ti se guarda solo en este PC y lo borras con «Olvidar todo» en su chat.</small>
           <label class="check"><input id="intro-on" type="checkbox" /> Animación de inicio con el logo de Nova PX</label>
@@ -1295,6 +1296,7 @@
   <script src="mascot.js"></script>
   <script src="mascot-chat.js"></script>
   <script src="pet-life.js"></script>
+  <script src="game-events.js"></script>
   <script src="cropper.js"></script>
   <script src="nick-alias.js"></script>
   <script src="viewer3d.js"></script>
