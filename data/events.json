@@ -3,7 +3,266 @@
     "name": "RUBROCRAFT: NATIONS",
     "date": "2026-10-03",
     "image": "images/evento-mwk2dg5m.png",
-    "description": "RubroCraft Nations es una nueva edición de RubroCraft que se centra en ser un Survival Semi-vanilla con nuevos objetos y mecánicas customs, tiene la duración de 3 semanas donde los jugadores se dividirán en 4 equipos balanceados según la habilidad de los miembros del equipo."
+    "description": "RubroCraft Nations es una nueva edición de RubroCraft que se centra en ser un Survival Semi-vanilla con nuevos objetos y mecánicas customs, tiene la duración de 3 semanas donde los jugadores se dividirán en 4 equipos balanceados según la habilidad de los miembros del equipo.",
+    "participants": 64,
+    "roster": [
+      {
+        "nick": "EzLuiiz",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Jota412",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Ohbeny",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "CoutPo",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Roa__",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Zheckss",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "weeeirdkiiid",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "pkdodios",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "TheMarkMC",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Antonykmak",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Kalebzxc",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "ElTomasito12",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Mia_Mimi6",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Blackdead_20",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Blue_Army33",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "Mimilaz",
+        "role": "Nación Roja"
+      },
+      {
+        "nick": "PepeElTernero",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "LuccianoBN",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "Auragatilgos",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "MasterCry",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "Rickyt987",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "TheYoncrush",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "Venudojunior",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "GrassyDeHades",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "ALEJANDOWN",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "Pixelo64",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "SrPawa",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "ImBenka",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "SoyDobleN",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "Sora_live",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "polyesterr",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "LoncoTronco",
+        "role": "Nación Azul"
+      },
+      {
+        "nick": "soytambre",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "AlphonseGaming",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "Emimexx",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "YoSoyCafre",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "D_Saayko",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "Mapache_Estelar",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "ImWhipp",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "QPapperT",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "ImTeitoh",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "_Frostype_",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "Cotii",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "ThePipoShow",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "Andover03",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "xanelbr",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "Ammichy",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "Jin_zo",
+        "role": "Nación Verde"
+      },
+      {
+        "nick": "zDragonSkillz",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "ElAlfonsR5",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "Jaimsrre",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "TejKnight",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "CarmenedOwO",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "PipeR5",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "JUNNDIES",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "Madrops7",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "BonZhua",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "Sishwwy",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "ivangamer",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "H0liver",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "YioKM",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "Dendo_233",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "detro233",
+        "role": "Nación Amarilla"
+      },
+      {
+        "nick": "Roguinlo17",
+        "role": "Nación Amarilla"
+      }
+    ]
   },
   {
     "name": "EL AGUA SUBE",
@@ -43,6 +302,108 @@
     "description": "",
     "winners": [
       "XANELBR"
+    ],
+    "participants": 40,
+    "roster": [
+      {
+        "nick": "AlphonseGaming"
+      },
+      {
+        "nick": "Andover03"
+      },
+      {
+        "nick": "AntonyKmak"
+      },
+      {
+        "nick": "ATR3X_"
+      },
+      {
+        "nick": "BETITOGP"
+      },
+      {
+        "nick": "byulito"
+      },
+      {
+        "nick": "Darkkera"
+      },
+      {
+        "nick": "ChriZys"
+      },
+      {
+        "nick": "CoutPo"
+      },
+      {
+        "nick": "Sr_dant3"
+      },
+      {
+        "nick": "EzLuiiz"
+      },
+      {
+        "nick": "_Frostype_"
+      },
+      {
+        "nick": "Geevo"
+      },
+      {
+        "nick": "Jota412"
+      },
+      {
+        "nick": "Kaluux"
+      },
+      {
+        "nick": "LuccianoBN"
+      },
+      {
+        "nick": "Madrops7"
+      },
+      {
+        "nick": "Mapache_Estelar"
+      },
+      {
+        "nick": "MetePasitoTilin"
+      },
+      {
+        "nick": "xanelbr"
+      },
+      {
+        "nick": "Obamaster62_"
+      },
+      {
+        "nick": "_pkdo_"
+      },
+      {
+        "nick": "falsssssMC"
+      },
+      {
+        "nick": "ricardoyt987"
+      },
+      {
+        "nick": "Roa__"
+      },
+      {
+        "nick": "iShaww"
+      },
+      {
+        "nick": "iPool25"
+      },
+      {
+        "nick": "Strikederai"
+      },
+      {
+        "nick": "Tese0zz"
+      },
+      {
+        "nick": "UnbidSpark"
+      },
+      {
+        "nick": "Player006"
+      },
+      {
+        "nick": "Mia_Mimi6"
+      },
+      {
+        "nick": "ShiroKuma_24"
+      }
     ]
   },
   {
@@ -71,7 +432,7 @@
   },
   {
     "name": "OneBlock 1000 días",
-    "date": "2026-03-02",
+    "date": "2025-02-15",
     "image": "images/oneblock.png",
     "description": "🔴EVENTO DE COMUNIDAD 🔴\n🌟ONEBLOCK 1000 DIAS🌟\n\nEn 5 equipos de 5, van a tener cada uno un mundo de oneblock. El que tenga el mejor mundo, con las mejores construcciones, granjas y decoraciones gana.  \n\nEl evento será del 15 de febrero al 2 de marzo.  \n\nPremio de 50 USD💸",
     "winners": [
@@ -89,9 +450,10 @@
   },
   {
     "name": "OneBlock Deathmatch",
-    "date": "2026-02-01",
+    "date": "2025-02-01",
     "image": "images/oneblock-deathmatch-mwio62cc.jpg",
-    "description": "Evento organizado por Nova PX."
+    "description": "Evento organizado por Nova PX.",
+    "participants": 52
   },
   {
     "name": "RubroCraft 1.20 SMP",
@@ -103,12 +465,18 @@
     "name": "RubroCraft IV: Last Assembly",
     "date": "",
     "image": "images/rubrocraft-iv.png",
-    "description": "Evento organizado por Nova PX."
+    "description": "Evento organizado por Nova PX. La serie cerró sus puertas el 15 de diciembre de 2024."
   },
   {
     "name": "Sylpharos: Lumen Invasion by kityevil",
     "date": "2026-02-17",
     "image": "images/sylpharos-lumen-invasion-by-kityevil-mwiodua9.jpg",
     "description": "Evento organizado por Nova PX."
+  },
+  {
+    "name": "PX Play's",
+    "date": "2025-04-21",
+    "image": "",
+    "description": "Eventos y torneos de distintos juegos organizados por Nova PX, lanzados en abril de 2025."
   }
 ]

@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.86
+- **Eventos**: añadidos los participantes de RubroCraft Nations (64 jugadores, por nación) y de Cobblemon PX, el evento «PX Play's», y corregidas las fechas de OneBlock Deathmatch y OneBlock 1000 días (eran de 2025). La lista de participantes de un evento ahora admite hasta 80 nombres.
+
 ## 1.0.85
 - **PX, la mascota, ahora tiene personalidad**: te saluda por tu nick según la hora (y se acuerda de cuánto llevas sin venir), te mira cuando pasas el cursor, salta si le haces clic, se deja acariciar, se duerme si no tocas nada y se despierta al volver. Comenta cuando abres o cierras Minecraft (avisa si jugaste mucho rato o si se cerró con error y te manda a la Consola) y cuando termina de instalarse un modpack. Ya no huye del cursor.
 - Todo funciona sin internet y no envía nada: la memoria (visitas, caricias) queda solo en tu PC. Se apaga en Ajustes → Apariencia → «PX, la mascota, habla y reacciona», o con «Criaturas pixeladas».
