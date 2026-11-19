@@ -91,6 +91,9 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 | 🎨 **Temas y temporadas** | Oscuro, claro, OLED y **Nova Neón** (animado). Decoración automática por temporada (Halloween, Navidad, San Valentín, Carnaval…), estela del cursor propia de cada tema y criaturas pixeladas paseando por la pantalla. |
 | 🌍 **Idiomas** | Paquetes de idioma (inglés incluido); la comunidad puede añadir más con un `.json`. |
 | 🧭 **Asistente de primer uso** | Te guía: cuenta, RAM recomendada según tu equipo y listo. |
+| 🐼 **PX, la mascota** | El panda de Proyecto PX reacciona al lanzador (saluda, se duerme, comenta cuando abres el juego o terminas un modpack). Se puede apagar en Ajustes. |
+| 🤖 **PX AI (opcional)** | PX puede charlar, bromear y ayudarte con errores del juego. Es opt-in, con límite diario y sin datos personales; el detalle está en [`PRIVACY.md`](PRIVACY.md). |
+| ⚡ **Nova Client** | Los perfiles Nova instalan el mod propio con menú en el juego (Shift derecho) y módulos FPS, CPS, coordenadas, teclas, armadura y zoom. |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y **Reparar instalación**. |
 | 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |
 | 📊 **Estadísticas opcionales** | Contador anónimo gratis en Cloudflare, sin IP; cada jugador puede apagarlo. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
