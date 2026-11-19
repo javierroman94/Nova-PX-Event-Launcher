@@ -40,7 +40,8 @@ const bad = L.sanitize({ name: '<b>Hack</b>xxxxxxxxxxxxxxxxxxxx', hunger: 'x', e
 assert.ok(!/[<>]/.test(bad.name) && bad.name.length <= 16);
 assert.strictEqual(bad.energy, 100); assert.strictEqual(bad.love, 0); assert.strictEqual(bad.xp, 0);
 assert.ok(bad.last <= T && bad.cd.feed <= T + L.CD.feed);
-assert.strictEqual(L.sanitize(null, T).name, 'PX');
+assert.strictEqual(L.sanitize(null, T).name, 'Pexy');
+assert.strictEqual(L.sanitize({ name: 'PX' }, T).name, 'Pexy'); // nombre antiguo por defecto
 // Tiempo de juego.
 const g = L.gameTime(s, 120); assert.ok(g.xp >= 30 && g.energy < s.energy);
 // Minijuego: puntos limitados, récord y cansancio.

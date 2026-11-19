@@ -23,7 +23,7 @@
     night: ['{name}… ¿no deberías estar durmiendo? 😴 Bueno, una partidita no hace daño.', 'Qué desvelo, {name}. Yo igual estoy despierto.']
   };
   const RETURN = {
-    first: ['¡Hola! Soy PX 🐼, voy a acompañarte por aquí. Si me haces clic, te saludo.'],
+    first: ['¡Hola! Soy Pexy 🐼, voy a acompañarte por aquí. Si me haces clic, te saludo.'],
     soonAgain: ['¡Otra vez por aquí, {name}! Me alegra.'],
     afterDays: ['¡{name}! Te extrañé, han pasado {days} días.'],
     afterWeek: ['¡Por fin apareces, {name}! Llevabas {days} días sin venir.']

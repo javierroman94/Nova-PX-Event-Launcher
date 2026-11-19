@@ -9,7 +9,7 @@ assert.strictEqual(B.dayPart(21), 'evening');
 assert.strictEqual(B.dayPart(3), 'night');
 
 // primer uso: se presenta; la segunda vez ya no
-assert.ok(/PX/.test(B.greeting({}, Date.now(), { name: 'Javi' }, rng)));
+assert.ok(/Pexy/.test(B.greeting({}, Date.now(), { name: 'Javi' }, rng)));
 const m1 = B.remember({}, 'visit', null, Date.now());
 assert.strictEqual(m1.visits, 1);
 assert.ok(!/soy PX/.test(B.greeting(m1, Date.now(), { name: 'Javi' }, rng)));

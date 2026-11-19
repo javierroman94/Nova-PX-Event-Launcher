@@ -31,7 +31,7 @@
   bubble.hidden = true;
   const hit = document.createElement('div');
   hit.id = 'pet-hit';
-  hit.title = 'PX 🐼 — haz clic o pásale el cursor';
+  hit.title = 'Pexy 🐼 — haz clic o pásale el cursor';
   hit.hidden = true;
   document.body.append(bubble, hit);
 

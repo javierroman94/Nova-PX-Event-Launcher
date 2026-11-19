@@ -14,12 +14,12 @@
 
   const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '', skin: '' }; }
+  function fresh(now) { return { name: 'Pexy', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '', skin: '' }; }
 
   function sanitize(raw, now) {
     const s = fresh(now);
     if (!raw || typeof raw !== 'object') return s;
-    s.name = String(raw.name || 'PX').replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 16) || 'PX';
+    s.name = String(raw.name && raw.name !== 'PX' ? raw.name : 'Pexy').replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 16) || 'Pexy';
     ['hunger', 'energy', 'love'].forEach((k) => { s[k] = clamp(raw[k] == null ? s[k] : raw[k]); });
     s.xp = Math.max(0, Math.min(1e6, Math.floor(+raw.xp || 0)));
     s.streak = Math.max(0, Math.min(9999, Math.floor(+raw.streak || 0)));
@@ -222,7 +222,7 @@
     const b = el('div', 'event-modal-body'); const hud = el('p', 'pl-mood', '⭐ 0 · 20 s');
     const cv = el('canvas', 'crop-canvas'); cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.style.cursor = 'none';
     const x0 = el('button', 'ghost', 'Salir'); x0.type = 'button';
-    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a PX y atrapa las estrellas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
+    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a Pexy y atrapa las estrellas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
     const x = cv.getContext('2d'); let px = W / 2, score = 0, over = false, last = 0; const t0 = performance.now(); const things = []; let spawn = 0;
     const move = (e) => { const r = cv.getBoundingClientRect(); px = Math.min(W - 22, Math.max(22, (e.clientX - r.left) * (W / r.width))); };
     cv.addEventListener('pointermove', move); cv.addEventListener('pointerdown', move);
@@ -278,7 +278,7 @@
     const egg = el('button', 'pl-egg', '🥚'); egg.type = 'button'; egg.setAttribute('aria-label', 'Toca el huevo');
     const msg = el('p', 'pl-mood', 'Algo se mueve dentro del huevo… ¡tócalo!');
     const form = el('div', 'pl-name'); form.hidden = true;
-    const inp = el('input'); inp.maxLength = 16; inp.placeholder = '¿Cómo lo llamas?'; inp.value = st.name === 'PX' ? '' : st.name; inp.setAttribute('aria-label', 'Nombre de tu mascota');
+    const inp = el('input'); inp.maxLength = 16; inp.placeholder = '¿Cómo lo llamas?'; inp.value = st.name === 'Pexy' ? '' : st.name; inp.setAttribute('aria-label', 'Nombre de tu mascota');
     const ok = el('button', 'primary', 'Listo'); ok.type = 'button'; form.append(inp, ok);
     b.append(el('h3', '', '✨ Nace tu mascota'), egg, msg, form); d.append(b); document.body.append(d);
     let taps = 0; 

@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.104
+- **La mascota se llama Pexy**: es su nombre oficial. Cambia en los textos del launcher (charla, «Cuidar a Pexy», ajustes, ventana flotante) y es el nombre que trae al nacer. Si alguien le había puesto un nombre propio, se respeta.
+
 ## 1.0.103
 - **Revisión general del código**: sin errores de sintaxis ni referencias rotas; los datos publicados (eventos, equipo, noticias, anuncios, administradores, nicks) pasan una prueba nueva que comprueba formato, nicks, fechas, enlaces https e imágenes existentes.
 - **Revisión de nicks por turnos**: con más de 150 nicks se revisan primero los nuevos y luego los más antiguos, en vez de dejar fuera a los últimos. Ya no se publican cambios innecesarios (solo se avisa a todos cuando hay un cambio real).

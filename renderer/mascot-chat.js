@@ -9,7 +9,7 @@
   const put = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
   let want = get(AI, '0') === '1';
-  let allowed = false; // la IA de PX es solo para administradores
+  let allowed = false; // la IA de Pexy es solo para administradores
   let on = false;
   const refreshOn = () => { on = want && allowed; };
   let facts = [];
@@ -59,11 +59,11 @@
   panel.id = 'pet-chat';
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Chat con PX');
-  panel.innerHTML = '<div class="pc-head"><b>PX 🐼</b><small class="pc-left"></small><button type="button" class="ghost pc-x" aria-label="Cerrar">✕</button></div>' +
+  panel.setAttribute('aria-label', 'Chat con Pexy');
+  panel.innerHTML = '<div class="pc-head"><b>Pexy 🐼</b><small class="pc-left"></small><button type="button" class="ghost pc-x" aria-label="Cerrar">✕</button></div>' +
     '<div class="pc-log" role="log" aria-live="polite"></div>' +
     '<div class="pc-tools"><button type="button" class="ghost pc-help" hidden>🔧 Revisar mi último error</button><button type="button" class="ghost pc-forget">🧹 Olvidar todo</button></div>' +
-    '<form class="pc-form"><input type="text" maxlength="300" autocomplete="off" placeholder="Escríbele a PX…" aria-label="Mensaje para PX" /><button type="submit" class="primary">Enviar</button></form>';
+    '<form class="pc-form"><input type="text" maxlength="300" autocomplete="off" placeholder="Escríbele a Pexy…" aria-label="Mensaje para Pexy" /><button type="submit" class="primary">Enviar</button></form>';
   document.body.appendChild(panel);
   const logEl = panel.querySelector('.pc-log'), input = panel.querySelector('input'), leftEl = panel.querySelector('.pc-left');
   const helpBtn = panel.querySelector('.pc-help');
@@ -80,7 +80,7 @@
   function open() {
     panel.hidden = false;
     helpBtn.hidden = !lastCrash;
-    if (!logEl.children.length) line('px', facts.length ? '¡Ey, volviste! ¿De qué hablamos hoy?' : '¡Hola! Soy PX 🐼. Pregúntame lo que quieras de Minecraft o del launcher… o pídeme un chiste.');
+    if (!logEl.children.length) line('px', facts.length ? '¡Ey, volviste! ¿De qué hablamos hoy?' : '¡Hola! Soy Pexy 🐼. Pregúntame lo que quieras de Minecraft o del launcher… o pídeme un chiste.');
     paintLeft();
     setTimeout(() => input.focus(), 50);
   }
@@ -98,7 +98,7 @@
     history.push({ role: 'user', content: t });
     history = history.slice(-8);
     busy = true;
-    const wait = line('px', 'PX está pensando…');
+    const wait = line('px', 'Pexy está pensando…');
     try {
       const r = await ask(mode, history, log);
       wait.remove();
