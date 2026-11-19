@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.103
+- **Revisión general del código**: sin errores de sintaxis ni referencias rotas; los datos publicados (eventos, equipo, noticias, anuncios, administradores, nicks) pasan una prueba nueva que comprueba formato, nicks, fechas, enlaces https e imágenes existentes.
+- **Revisión de nicks por turnos**: con más de 150 nicks se revisan primero los nuevos y luego los más antiguos, en vez de dejar fuera a los últimos. Ya no se publican cambios innecesarios (solo se avisa a todos cuando hay un cambio real).
+- **Aviso de contenido nuevo** respeta «compartir uso»: con esa opción apagada lee el aviso directo del repositorio, sin contactar al Worker.
+- **Rendimiento**: la mascota deja de recalcular su posición cuando la ventana está en segundo plano. Se evita abrir dos veces el nacimiento de PX.
+- Política de privacidad actualizada (IA de PX solo para administradores, datos locales de PX, avisos de contenido).
+
 ## 1.0.102
 - **Cambios del administrador, casi al instante**: cuando publicas algo (evento, modpack, noticia, ajustes), los demás launchers lo reciben en unos 20 segundos en lugar de hasta 10 minutos. El launcher consulta un aviso diminuto del Worker cada 20 s y, si cambió, recarga los datos. Además el reloj normal de ajustes remotos baja de 10 a 3 minutos. El aviso se guarda automáticamente al publicar (sin claves extra).
 
