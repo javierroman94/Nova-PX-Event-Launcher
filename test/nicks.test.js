@@ -23,4 +23,8 @@ assert.strictEqual(w[1].status, 'open');
 const many = Array.from({ length: 200 }, (_, i) => ({ id: 'i' + i, at: '', kind: 'rename', nick: 'n', from: '', to: '', where: [], status: i % 2 ? 'ok' : 'open' }));
 assert.strictEqual(N.trimWarnings(many).length, N.MAX_WARNINGS);
 assert.strictEqual(N.trimWarnings(many)[0].status, 'open');
+// Revisión por turnos: primero los nunca revisados, luego los más antiguos.
+const order = N.scanOrder([{ nick: 'Viejo' }, { nick: 'Nuevo' }, { nick: 'Medio' }], { viejo: { uuid: 'a'.repeat(32), name: 'Viejo', at: 5 }, medio: { uuid: 'b'.repeat(32), name: 'Medio', at: 50 } });
+assert.deepStrictEqual(order.map((x) => x.nick), ['Nuevo', 'Viejo', 'Medio']);
+assert.strictEqual(N.sanitizeMap({ map: { abc: { uuid: 'a'.repeat(32), name: 'Abc', at: 123 } } }).map.abc.at, 123);
 console.log('nicks.test OK');

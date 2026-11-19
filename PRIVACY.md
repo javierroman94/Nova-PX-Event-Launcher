@@ -10,12 +10,17 @@ Nova PX Event Launcher is an open-source Minecraft launcher. This page explains 
 - An anonymous usage counter: a random installation id, launcher version and operating system. No IP address is stored.
 - The player nickname, only if you sign in, so friends and online status work.
 
+**Content updates**
+- Every ~20 seconds the launcher asks a tiny public endpoint (a Nova PX Cloudflare Worker, or GitHub directly if "share usage" is off) for a revision code, to refresh news and events quickly after an administrator publishes. No personal data is sent.
+
 **Friends and chat**
 - If you use friends or chat, your nickname, friend list and messages are stored on a Nova PX server (Cloudflare) so they can be delivered.
 
 **PX, the mascot (optional AI, off by default)**
 - Rule-based PX runs fully on your computer. What it learns (visit counts, a few short facts) stays in this app's local storage and can be wiped with "Olvidar todo" in its chat.
 - Only if you turn on "PX con IA" in Settings → Appearance: the messages you type to PX, a short summary of what PX remembers about you, and — only when you press "Revisar mi último error" — the last lines of a game error log are sent to a Nova PX server on Cloudflare, which answers using an AI model (Cloudflare Workers AI; Anthropic's Claude if the project owner enables it). Your user name, file paths, access tokens, UUIDs, e-mails and IP addresses are removed from logs before sending. Do not type personal data to PX.
+- "PX con IA" is currently available only to launcher administrators. Regular users get the rule-based PX, which sends nothing.
+- PX's care stats (hunger, level, name, accessories), its minigame record, and the optional "PX reacts to your game" feature (it reads the game's own log text on your computer to comment on deaths, advancements, servers and chat mentions) all stay on your computer. The optional floating PX window over Minecraft is drawn locally and sends nothing.
 - The server does not store conversations or logs. It only counts messages per day (by a random id and by IP, expiring in 2 days) to enforce daily limits.
 
 **Advertising**

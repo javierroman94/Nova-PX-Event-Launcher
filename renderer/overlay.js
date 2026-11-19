@@ -13,7 +13,7 @@
     crown: [[-1, 3, 'Y.Y.Y'], [0, 3, 'YYYYY'], [1, 3, 'YRYBY']]
   };
   const cv = document.getElementById('c'); const x = cv.getContext('2d'); const bubble = document.getElementById('bubble');
-  const S = 4, OX = 11, OY = 12;
+  const S = 4, OY = 12;
   function draw(acc, skin) {
     x.clearRect(0, 0, cv.width, cv.height);
     if (skin === 'shadow') { SH.forEach((r, ry) => [...r].forEach((ch, rx) => { if (ch === '.') return; x.fillStyle = SHPAL[ch] || '#fff'; x.fillRect(rx * S, OY + ry * S, S, S); })); return; }

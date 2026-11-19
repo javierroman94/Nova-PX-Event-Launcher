@@ -272,6 +272,7 @@
   const BORN = 'px.pet.born';
   const isBorn = () => { try { return localStorage.getItem(BORN) === '1'; } catch { return true; } };
   function birth() {
+    if (document.querySelector('.pl-birth')) return;
     const d = document.createElement('dialog'); d.className = 'event-modal pl-modal pl-birth';
     const b = el('div', 'event-modal-body');
     const egg = el('button', 'pl-egg', '🥚'); egg.type = 'button'; egg.setAttribute('aria-label', 'Toca el huevo');

@@ -243,8 +243,11 @@ function bumpRev() {
 }
 async function checkRev() {
   try {
-    if (!USAGE_URL || !mainWindow || mainWindow.isDestroyed()) return;
-    const r = await fetch(`${USAGE_URL}/rev`, { signal: AbortSignal.timeout(4000), cache: 'no-store' });
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    // Con «compartir uso» apagado no se contacta al Worker: se lee el mismo aviso directamente del repositorio.
+    const url = USAGE_URL && readSettings().shareUsage !== false ? `${USAGE_URL.replace(/\/$/, '')}/rev` : config.remoteBase ? `${config.remoteBase.replace(/\/$/, '')}/rev.json?t=${Date.now()}` : '';
+    if (!url) return;
+    const r = await fetch(url, { signal: AbortSignal.timeout(4000), cache: 'no-store' });
     if (!r.ok) return;
     const next = (await r.json()).rev;
     if (!revLib.valid(next)) return;
@@ -1501,7 +1504,7 @@ ipcMain.handle('admin:nickScan', async () => {
   const team = await readAdminJson(r, 'team', []);
   const nicks = nickLib.sanitizeMap(await readAdminJson(r, 'nicks', { map: {} }));
   let warnings = nickLib.sanitizeWarnings(await readAdminJson(r, 'warnings', []));
-  const list = nickLib.collect(events, team).slice(0, 120);
+  const list = nickLib.scanOrder(nickLib.collect(events, team), nicks.map).slice(0, 150);
   let changed = false; let added = 0; let failed = 0;
   const now = new Date().toISOString();
   const warn = (w) => { warnings.unshift({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, at: now, status: 'open', ...w }); added++; };
@@ -1511,25 +1514,24 @@ ipcMain.handle('admin:nickScan', async () => {
     if (known) {
       const cur = await mojangByUuid(known.uuid);
       if (!cur) { failed++; await sleep(150); continue; }
+      nicks.map[key] = { ...known, at: Date.now() }; changed = true;
       if (cur.name.toLowerCase() !== known.name.toLowerCase()) {
         warn({ kind: 'rename', nick: it.nick, from: known.name, to: cur.name, where: it.where });
-        nicks.map[key] = { ...known, name: cur.name };
-        changed = true;
+        nicks.map[key] = { ...nicks.map[key], name: cur.name };
       }
     } else {
       const f = await mojangByNick(it.nick);
       if (!f) failed++;
       else if (f.missing) {
         if (!warnings.some((w) => w.kind === 'missing' && w.nick.toLowerCase() === key && w.status === 'open')) { warn({ kind: 'missing', nick: it.nick, where: it.where }); changed = true; }
-      } else { nicks.map[key] = { uuid: f.uuid, name: f.name }; changed = true; }
+      } else { nicks.map[key] = { uuid: f.uuid, name: f.name, at: Date.now() }; changed = true; }
     }
     await sleep(180);
   }
   if (changed) {
     warnings = nickLib.trimWarnings(warnings);
     await r.putJson('data/nicks.json', nicks, 'Nicks actualizados (revisión automática desde el launcher)');
-    await r.putJson('data/warnings.json', warnings, 'Advertencias de nicks (desde el launcher)');
-    remember('nicks', nicks);
+    if (added) { await r.putJson('data/warnings.json', warnings, 'Advertencias de nicks (desde el launcher)'); remember('nicks', nicks); }
   }
   return { warnings, scanned: list.length, failed, added };
 });
