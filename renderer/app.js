@@ -3267,18 +3267,8 @@ $('wz-offline').addEventListener('click', async () => {
 })();
 
 
-/* Tema secreto de LaosOneView: lo ve su cuenta premium (se comprueba el UUID, no el nick) y los administradores. */
-const LAOS_UUID = '91578310ebad4567a6f4750bc0b947c7';
-function syncSecretThemes(info = currentUser) {
-  try {
-    const isLaos = !!info && info.mode === 'premium' && String(info.uuid || '').replace(/-/g, '').toLowerCase() === LAOS_UUID;
-    if (window.NovaTheme && window.NovaTheme.secret) window.NovaTheme.secret('laos', isLaos || isAdmin, !(isLaos || isAdmin) && !!info);
-    if (isLaos && !localStorage.getItem('px.secret.laos')) {
-      localStorage.setItem('px.secret.laos', '1');
-      toast('✦ Tema secreto desbloqueado: Laos Edición. Está en Ajustes → Apariencia.', 'success');
-    }
-  } catch {}
-}
+// Ya no hay temas secretos por persona: Nova Eclipse es un tema de NovaPX para todos.
+function syncSecretThemes() {}
 
 /* ---------- modo administrador ---------- */
 let isAdmin = false;

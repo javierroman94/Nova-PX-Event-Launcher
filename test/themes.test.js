@@ -7,7 +7,7 @@ const remote = require('../lib/remote');
 const css = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'styles.css'), 'utf8');
 const html = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'index.html'), 'utf8');
 
-assert.strictEqual(themes.EXTRA.length, 10);
+assert.strictEqual(themes.EXTRA.length, 11);
 assert.deepStrictEqual(remote.THEMES, themes.ALL);
 for (const t of themes.EXTRA) {
   assert.ok(/^#[0-9a-f]{6}$/i.test(t.accent), `${t.id}: color`);

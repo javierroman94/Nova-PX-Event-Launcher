@@ -1791,13 +1791,17 @@ button.danger:hover { background: color-mix(in srgb, #ff5a5a 18%, transparent); 
 .tc-end i { background: #b86bff; }
 .tc-end b { background: #35245a; }
 
-/* Tema secreto de LaosOneView: azul noche con rojo, como la bandera de Laos. Solo se desbloquea con su cuenta premium. */
-:root[data-theme="laos"] { --bg: #060b22; --surface-solid: #0c1536; --raised-solid: #121e48; --line: #25356e; --text: #f3f5ff; --text-2: #c9d1f5; --muted: #8e9bd0; --log-bg: #050918; color-scheme: dark; }
-:root[data-theme="laos"] body { background: radial-gradient(45vmax 40vmax at 85% 10%, rgba(232,51,74,.20), transparent 60%), radial-gradient(40vmax 35vmax at 5% 95%, rgba(40,84,200,.28), transparent 60%), var(--bg); background-attachment: fixed; }
-:root[data-theme="laos"] .brand-mark, :root[data-theme="laos"] .btn.primary { box-shadow: 0 0 22px rgba(232,51,74,.35); }
-.tc-laos { background: #060b22; }
-.tc-laos i { background: #e8334a; }
-.tc-laos b { background: #25356e; }
+/* Nova Eclipse (antes tema de Laos): azul noche con rojo NovaPX. Fondo con el logo, selección y cursor propios. */
+:root[data-theme="eclipse"] { --bg: #060b22; --surface-solid: #0c1536; --raised-solid: #121e48; --line: #25356e; --text: #f3f5ff; --text-2: #c9d1f5; --muted: #8e9bd0; --log-bg: #050918; color-scheme: dark; }
+:root[data-theme="eclipse"] body { background: radial-gradient(45vmax 40vmax at 85% 10%, rgba(232,51,74,.20), transparent 60%), radial-gradient(40vmax 35vmax at 5% 95%, rgba(40,84,200,.28), transparent 60%), radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.55), transparent), radial-gradient(1.5px 1.5px at 70% 60%, rgba(255,255,255,.4), transparent), radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.45), transparent), radial-gradient(1px 1px at 88% 24%, rgba(255,255,255,.5), transparent), var(--bg); background-attachment: fixed; }
+:root[data-theme="eclipse"]::after { content: ""; position: fixed; right: -6vmax; bottom: -6vmax; width: 46vmax; height: 46vmax; z-index: -1; pointer-events: none; background: url("images/logo.png") center / contain no-repeat; opacity: .07; filter: saturate(0) brightness(2); }
+:root[data-theme="eclipse"] .brand-mark, :root[data-theme="eclipse"] .btn.primary { box-shadow: 0 0 22px rgba(232,51,74,.35); }
+:root[data-theme="eclipse"] ::selection { background: #e8334a; color: #fff; text-shadow: none; }
+:root[data-theme="eclipse"], :root[data-theme="eclipse"] body { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M4 3l20 9-8.5 2.5L12 23z' fill='%23fff' stroke='%23e8334a' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M25 3l1.1 2.4L28.5 6.5l-2.4 1.1L25 10l-1.1-2.4L21.5 6.5l2.4-1.1z' fill='%236f93ff'/%3E%3C/svg%3E") 4 3, auto; }
+:root[data-theme="eclipse"] button, :root[data-theme="eclipse"] a, :root[data-theme="eclipse"] [role="button"], :root[data-theme="eclipse"] .nav-item, :root[data-theme="eclipse"] .theme-card, :root[data-theme="eclipse"] select, :root[data-theme="eclipse"] summary { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M4 3l20 9-8.5 2.5L12 23z' fill='%23e8334a' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M25 3l1.1 2.4L28.5 6.5l-2.4 1.1L25 10l-1.1-2.4L21.5 6.5l2.4-1.1z' fill='%23fff'/%3E%3C/svg%3E") 4 3, pointer; }
+.tc-eclipse { background: #060b22; }
+.tc-eclipse i { background: #e8334a; }
+.tc-eclipse b { background: #25356e; }
 .theme-secret:not([hidden]) { box-shadow: 0 0 0 1px rgba(232,51,74,.5), 0 0 18px rgba(232,51,74,.25); }
 
 /* El bloque grande de Inicio es siempre oscuro: en los temas claros su botón secundario debe leerse. */

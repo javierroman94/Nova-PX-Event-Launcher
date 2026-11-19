@@ -50,7 +50,7 @@
     deepdark: { shape: 'ring', colors: ['#2ee6d6', '#1a9e94'] },
     nether: { shape: 'ember', colors: ['#ff6a2b', '#ffb347', '#ff3b1f'] },
     end: { shape: 'spark', colors: ['#b86bff', '#e0c3ff', '#7a3cd0'] },
-    laos: { shape: 'spark', colors: ['#e8334a', '#6f93ff', '#ffffff'] },
+    eclipse: { shape: 'spark', colors: ['#e8334a', '#6f93ff', '#ffffff'] },
     oled: { shape: 'dot', colors: null },
     light: { shape: 'dot', colors: null },
     dark: { shape: 'dot', colors: null }
@@ -158,7 +158,7 @@
     ecuador: ['chick', 'fox', 'bunny']
   };
   const THEME_ROSTER = {
-    nova: ['bot', 'bee', 'chick'], cyberpunk: ['bot', 'fox', 'ghost'], synthwave: ['bot', 'bunny', 'bee'], laos: ['fox', 'bot', 'bee'],
+    nova: ['bot', 'bee', 'chick'], cyberpunk: ['bot', 'fox', 'ghost'], synthwave: ['bot', 'bunny', 'bee'], eclipse: ['fox', 'bot', 'bee'],
     deepdark: ['bot', 'ghost', 'fox'], nether: ['pumpkin', 'fox', 'ghost'], end: ['ghost', 'bot', 'bee'], sakura: ['bunny', 'bee', 'chick']
   };
   const DEFAULT_ROSTER = ['bunny', 'chick', 'fox'];

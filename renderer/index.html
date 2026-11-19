@@ -744,7 +744,7 @@
             <div><label for="lk-sub">Subtítulo</label><input id="lk-sub" type="text" maxlength="60" placeholder="Event Launcher" /></div>
           </div>
           <div class="field inline">
-            <div><label for="lk-preset">Tema por defecto</label><select id="lk-preset"><option value="">Sin cambiar</option><option value="nova">Nova Neón</option><option value="dark">Oscuro</option><option value="light">Claro</option><option value="oled">OLED</option><option value="catppuccin">Catppuccin</option><option value="tokyonight">Tokyo Night</option><option value="dracula">Dracula</option><option value="rosepine">Rosé Pine</option><option value="synthwave">Synthwave</option><option value="cyberpunk">Cyberpunk</option><option value="sakura">Sakura</option><option value="deepdark">Deep Dark</option><option value="nether">Nether</option><option value="end">The End</option></select></div>
+            <div><label for="lk-preset">Tema por defecto</label><select id="lk-preset"><option value="">Sin cambiar</option><option value="nova">Nova Neón</option><option value="dark">Oscuro</option><option value="light">Claro</option><option value="oled">OLED</option><option value="catppuccin">Catppuccin</option><option value="tokyonight">Tokyo Night</option><option value="dracula">Dracula</option><option value="rosepine">Rosé Pine</option><option value="synthwave">Synthwave</option><option value="cyberpunk">Cyberpunk</option><option value="sakura">Sakura</option><option value="deepdark">Deep Dark</option><option value="nether">Nether</option><option value="end">The End</option><option value="eclipse">Nova Eclipse</option></select></div>
             <div><label for="lk-season">Temporada</label><select id="lk-season"><option value="">Sin cambiar</option><option value="auto">Automática</option><option value="off">Sin decoración</option><option value="halloween">Halloween</option><option value="navidad">Navidad</option><option value="anio">Año Nuevo</option><option value="sanvalentin">San Valentín</option><option value="carnaval">Carnaval</option><option value="madres">Día de la Madre</option><option value="ecuador">10 de Agosto</option></select></div>
             <div><label for="lk-accent">Color principal</label><div class="ad-color"><input id="lk-accent" type="color" value="#35d6ff" /><button id="lk-accent-clear" type="button" class="ghost">Sin cambiar</button></div></div>
           </div>
@@ -1108,7 +1108,7 @@
               <button type="button" data-theme-value="deepdark" data-accent="#2ee6d6" class="theme-card"><span class="tc-prev tc-deepdark"><i></i><b></b><b></b></span><span class="tc-name">Deep Dark</span></button>
               <button type="button" data-theme-value="nether" data-accent="#ff6a2b" class="theme-card"><span class="tc-prev tc-nether"><i></i><b></b><b></b></span><span class="tc-name">Nether</span></button>
               <button type="button" data-theme-value="end" data-accent="#b86bff" class="theme-card"><span class="tc-prev tc-end"><i></i><b></b><b></b></span><span class="tc-name">The End</span></button>
-              <button type="button" data-theme-value="laos" data-accent="#e8334a" class="theme-card theme-secret" id="theme-secret-laos" hidden><span class="tc-prev tc-laos"><i></i><b></b><b></b></span><span class="tc-name">Laos ✦ Edición secreta</span></button>
+              <button type="button" data-theme-value="eclipse" data-accent="#e8334a" class="theme-card"><span class="tc-prev tc-eclipse"><i></i><b></b><b></b></span><span class="tc-name">Nova Eclipse</span></button>
             </div>
           </div>
           <div class="field">
@@ -1132,6 +1132,7 @@
           <label class="check"><input id="effects" type="checkbox" /> Efectos animados (partículas y transiciones)</label>
           <label class="check"><input id="fun-trail" type="checkbox" /> Estela del cursor (cambia con cada tema y temporada)</label>
           <label class="check"><input id="fun-critters" type="checkbox" /> Criaturas pixeladas paseando por la pantalla</label>
+          <label class="check"><input id="fun-sound" type="checkbox" /> Sonidos suaves al pasar el cursor (solo con el tema Nova Eclipse)</label>
           <label class="check"><input id="fun-pet" type="checkbox" /> PX, la mascota, habla y reacciona (saluda, se duerme, comenta)</label>
           <label class="check"><input id="fun-pet-ai" type="checkbox" /> PX con IA: charla, bromas, memoria y ayuda con errores (usa internet)</label>
           <small class="muted">Al activarlo, lo que le escribas a PX (y, si se lo pides, el final de un registro de error ya sin tu usuario ni claves) se envía a un servidor de Nova PX que usa Claude, de Anthropic, para responder. No escribas datos personales. Hay un tope diario de mensajes. Lo que PX aprende de ti se guarda solo en este PC y lo borras con «Olvidar todo» en su chat.</small>
@@ -1279,6 +1280,7 @@
   <script src="seasons.js"></script>
   <script src="theme.js"></script>
   <script src="fun.js"></script>
+  <script src="nova-sound.js"></script>
   <script src="mascot-brain.js"></script>
   <script src="mascot.js"></script>
   <script src="mascot-chat.js"></script>

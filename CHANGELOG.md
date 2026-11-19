@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.91
+- **Tema Nova Eclipse**: el antiguo tema secreto de un creador externo pasa a ser un tema de NovaPX para todos (azul noche con rojo). Trae fondo con estrellas y el logo de Nova, **color de selección** rojo, **cursor propio** (flecha con estrella) y **sonidos suaves** al pasar el cursor (un tic musical en botones y un susurro cósmico en tarjetas grandes). Los sonidos se generan en el equipo, solo suenan con este tema y se apagan en Ajustes → Apariencia.
+- Se quita el desbloqueo de temas secretos por persona: las menciones a otros creadores quedan solo en los eventos.
+
 ## 1.0.90
 - **Ajustes**: el botón «Guardar ajustes» solo aparece cuando cambias algo y desaparece al guardar.
 - **Eventos**: las portadas rellenan su marco sin bordes difuminados; el desenfoque queda solo en el detalle del evento, detrás de las imágenes que no llenan el cuadro (como los logos verticales). Los enlaces del evento (post de X, tráiler…) van centrados justo debajo de la descripción.
