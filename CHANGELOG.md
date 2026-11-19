@@ -2,7 +2,7 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
-## 1.0.101
+## 1.0.102
 - **Cambios del administrador, casi al instante**: cuando publicas algo (evento, modpack, noticia, ajustes), los demás launchers lo reciben en unos 20 segundos en lugar de hasta 10 minutos. El launcher consulta un aviso diminuto del Worker cada 20 s y, si cambió, recarga los datos. Además el reloj normal de ajustes remotos baja de 10 a 3 minutos. El aviso se guarda automáticamente al publicar (sin claves extra).
 
 ## 1.0.100
