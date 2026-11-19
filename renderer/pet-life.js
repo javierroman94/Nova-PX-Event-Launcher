@@ -228,6 +228,38 @@
     const m = L.mood(st);
     if (m === 'hambre' || m === 'sueño' || m === 'triste') { lastWhine = Date.now(); M.say(pick(m), 6000); }
   }, 60000);
+  /* ---------- el nacimiento de PX: una sola vez, al abrir el launcher por primera vez ---------- */
+  const BORN = 'px.pet.born';
+  const isBorn = () => { try { return localStorage.getItem(BORN) === '1'; } catch { return true; } };
+  function birth() {
+    const d = document.createElement('dialog'); d.className = 'event-modal pl-modal pl-birth';
+    const b = el('div', 'event-modal-body');
+    const egg = el('button', 'pl-egg', '🥚'); egg.type = 'button'; egg.setAttribute('aria-label', 'Toca el huevo');
+    const msg = el('p', 'pl-mood', 'Algo se mueve dentro del huevo… ¡tócalo!');
+    const form = el('div', 'pl-name'); form.hidden = true;
+    const inp = el('input'); inp.maxLength = 16; inp.placeholder = '¿Cómo lo llamas?'; inp.value = st.name === 'PX' ? '' : st.name; inp.setAttribute('aria-label', 'Nombre de tu mascota');
+    const ok = el('button', 'primary', 'Listo'); ok.type = 'button'; form.append(inp, ok);
+    b.append(el('h3', '', '✨ Nace tu mascota'), egg, msg, form); d.append(b); document.body.append(d);
+    let taps = 0; 
+    egg.addEventListener('click', () => {
+      taps += 1; egg.classList.remove('pl-shake'); void egg.offsetWidth; egg.classList.add('pl-shake');
+      if (taps === 1) msg.textContent = 'Se escucha un crujido… ¡otra vez!';
+      if (taps === 2) { egg.textContent = '🐣'; msg.textContent = '¡Casi, casi…!'; }
+      if (taps >= 3) { egg.textContent = '🐼'; egg.classList.add('pl-pop'); egg.disabled = true; msg.textContent = '¡Nació! Ponle un nombre.'; form.hidden = false; inp.focus(); }
+    });
+    const finish = () => {
+      st = { ...st, name: L.sanitize({ name: inp.value }, Date.now()).name, love: 100, xp: st.xp + 5 }; store(st);
+      try { localStorage.setItem(BORN, '1'); } catch {}
+      try { d.close(); } catch {} d.remove();
+      const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(3); if (c.hop) c.hop(); }
+      setTimeout(() => M.say(`¡Hola${M.name() ? ' ' + M.name() : ''}! Soy ${st.name} y estoy muy feliz de conocerte 🐼`, 7000), 500);
+    };
+    ok.addEventListener('click', finish); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(); });
+    d.addEventListener('cancel', (e) => e.preventDefault());
+    d.showModal();
+  }
+  window.NovaPetLife.birth = birth;
+  if (!isBorn()) setTimeout(() => { if (!isBorn() && !document.querySelector('dialog[open]')) birth(); else if (!isBorn()) setTimeout(birth, 15000); }, 4000);
   document.addEventListener('dblclick', (e) => { if (e.target && e.target.id === 'pet-hit') open(); });
   const openBtn = document.getElementById('pet-care-open');
   if (openBtn) openBtn.addEventListener('click', open);

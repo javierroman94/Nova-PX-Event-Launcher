@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.96
+- **El nacimiento de PX**: la primera vez que abres el launcher aparece un huevo que se mueve; lo tocas tres veces, PX nace y le pones su nombre. Pasa una sola vez.
+
 ## 1.0.95
 - **Minijuego «Atrapar estrellas»** con PX (en Cuidar a PX): 20 segundos moviendo el cursor para atrapar estrellas y esquivar rocas. Da cariño y puntos, cansa un poco a PX y guarda tu récord.
 

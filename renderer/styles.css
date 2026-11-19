@@ -2588,3 +2588,13 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .pl-mood { margin: 0; text-align: center; font-weight: 600; }
 .pl-modal .mp-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .pl-modal .mp-actions button { justify-self: auto; }
+
+/* Nacimiento de PX */
+.pl-birth .event-modal-body { text-align: center; justify-items: center; }
+.pl-egg { font-size: 84px; line-height: 1; background: none; border: 0; cursor: pointer; padding: 6px; }
+.pl-egg:disabled { cursor: default; opacity: 1; }
+.pl-shake { animation: pl-shake .45s ease; }
+.pl-pop { animation: pl-pop .6s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pl-shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(12deg); } 70% { transform: rotate(-8deg); } }
+@keyframes pl-pop { 0% { transform: scale(.4); } 100% { transform: scale(1); } }
+:root.no-fx .pl-shake, :root.no-fx .pl-pop { animation: none; }
