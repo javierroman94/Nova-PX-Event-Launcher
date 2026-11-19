@@ -1,0 +1,14 @@
+'use strict';
+const assert = require('assert');
+const N = require('../renderer/nick-alias.js');
+const map = { viejo: { name: 'Nuevo' }, malo: { name: 'Malo', hidden: true } };
+assert.strictEqual(N.show(map, 'Viejo'), 'Nuevo');
+assert.strictEqual(N.show(map, 'otro'), 'otro');
+assert.strictEqual(N.show(map, 'malo'), null);
+const ev = N.events([{ name: 'E', winners: ['viejo', 'malo', 'x'], roster: [{ nick: 'Viejo', role: 'a' }, { nick: 'malo' }], commissioner: { name: 'C', nick: 'malo' } }], map)[0];
+assert.deepStrictEqual(ev.winners, ['Nuevo', 'x']);
+assert.deepStrictEqual(ev.roster, [{ nick: 'Nuevo', role: 'a' }]);
+assert.strictEqual(ev.commissioner.nick, '');
+assert.deepStrictEqual(N.team([{ nick: 'viejo' }, { nick: 'malo' }], map), [{ nick: 'Nuevo' }]);
+assert.deepStrictEqual(N.team([{ nick: 'a' }], null), [{ nick: 'a' }]);
+console.log('nick-alias.test OK');

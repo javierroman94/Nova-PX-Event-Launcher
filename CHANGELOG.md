@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.92
+- **Acomodar la foto antes de subirla** (administración): después de elegir una imagen se abre un recuadro para moverla y acercarla, como en Instagram o X; solo se sube lo que ves dentro del cuadro. Aplica a la imagen y el fondo de eventos, banner/logo, foto de perfil del equipo, noticias, anuncios y patrocinadores. También puedes «Subir sin recortar». Las skins no se recortan.
+- **Cambios de nombre**: si un jugador cambia su nick de Minecraft, el launcher muestra el nuevo (y por tanto su skin actual) en ganadores, participantes, colaboraciones, comisionados y equipo.
+- **Advertencias** (nueva pestaña de administración): revisa los nicks contra Mojang, avisa de quién cambió de nombre o ya no existe, y permite marcarlo como revisado, quitarlo del launcher (nombres inapropiados) o asignarle su nick actual.
+
 ## 1.0.91
 - **Tema Nova Eclipse**: el antiguo tema secreto de un creador externo pasa a ser un tema de NovaPX para todos (azul noche con rojo). Trae fondo con estrellas y el logo de Nova, **color de selección** rojo, **cursor propio** (flecha con estrella) y **sonidos suaves** al pasar el cursor (un tic musical en botones y un susurro cósmico en tarjetas grandes). Los sonidos se generan en el equipo, solo suenan con este tema y se apagan en Ajustes → Apariencia.
 - Se quita el desbloqueo de temas secretos por persona: las menciones a otros creadores quedan solo en los eventos.

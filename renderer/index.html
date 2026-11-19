@@ -626,6 +626,7 @@
           <button type="button" data-ad-tab="reco">Recomendados</button>
           <button type="button" data-ad-tab="control">Control</button>
           <button type="button" data-ad-tab="status">Estado</button>
+          <button type="button" data-ad-tab="warnings">Advertencias <span id="ad-warn-count" class="ad-chip" hidden></span></button>
           <button type="button" data-ad-tab="perms">Permisos</button>
           <button type="button" data-ad-tab="ads">Publicidad</button>
         </div>
@@ -831,6 +832,14 @@
           <header><div><h3>Últimos cambios publicados</h3><p class="muted">Lo más reciente primero. Para volver atrás, usa el botón Historial de cada sección.</p></div></header>
           <div id="ad-recent" class="mods-list"></div>
           <div class="mp-actions"><button id="ad-recent-refresh" type="button">Actualizar</button></div>
+        </article>
+      </div>
+
+      <div id="ad-tab-warnings" hidden>
+        <article class="ad-card">
+          <header><div><h3>Advertencias de nombres</h3><p class="muted">Se revisan los nicks que aparecen en eventos y en el equipo. Si alguien cambió de nick en Minecraft, el launcher usa el nuevo y su skin automáticamente, y aquí queda el aviso para que puedas quitar nombres inapropiados o a quienes ya no existen.</p></div></header>
+          <div class="mp-actions"><button id="ad-warn-scan" type="button" class="primary">Revisar nicks ahora</button><span id="ad-warn-status" class="muted"></span></div>
+          <div id="ad-warn-list" class="mods-list"></div>
         </article>
       </div>
 
@@ -1284,6 +1293,8 @@
   <script src="mascot-brain.js"></script>
   <script src="mascot.js"></script>
   <script src="mascot-chat.js"></script>
+  <script src="cropper.js"></script>
+  <script src="nick-alias.js"></script>
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
   <!-- Asistente de primer uso -->

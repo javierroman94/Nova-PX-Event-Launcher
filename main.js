@@ -48,7 +48,7 @@ const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
-const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher', 'ads'];
+const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher', 'ads', 'nicks'];
 const ICON = path.join(__dirname, 'build', 'icon.png');
 
 let mainWindow = null;
@@ -1451,6 +1451,91 @@ ipcMain.handle('admin:resolveNick', async (_e, nick) => {
   if (!found || !found.id) throw new Error('Ese nick no es una cuenta premium.');
   return { nick: found.name, uuid: found.id };
 });
+/* ---------- cambios de nick y advertencias (solo administrador) ---------- */
+const nickLib = require('./lib/nicks');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function mojangByNick(n) {
+  try { const f = await fetchJson(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(n)}`); return f && f.id ? { uuid: String(f.id).toLowerCase(), name: f.name } : { missing: true }; } catch (e) { return /HTTP (404|204)|Unexpected end of JSON/i.test(String(e && e.message)) ? { missing: true } : null; }
+}
+async function mojangByUuid(uuid) {
+  try { const f = await fetchJson(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`); return f && f.name ? { uuid, name: f.name } : null; } catch { return null; }
+}
+const readAdminJson = async (r, n, fb) => { try { const g = await r.getJson(`data/${n}.json`); return g && g.data != null ? g.data : fb; } catch { return fb; } };
+ipcMain.handle('admin:warnings', async () => {
+  const r = await requireAdmin();
+  return nickLib.sanitizeWarnings(await readAdminJson(r, 'warnings', []));
+});
+// Revisa los nicks que salen en eventos y equipo. Si alguien cambió de nick, se actualiza al nuevo (nick y skin) y queda un aviso para que un admin lo revise.
+ipcMain.handle('admin:nickScan', async () => {
+  const r = await requireAdmin();
+  const events = await readAdminJson(r, 'events', []);
+  const team = await readAdminJson(r, 'team', []);
+  const nicks = nickLib.sanitizeMap(await readAdminJson(r, 'nicks', { map: {} }));
+  let warnings = nickLib.sanitizeWarnings(await readAdminJson(r, 'warnings', []));
+  const list = nickLib.collect(events, team).slice(0, 120);
+  let changed = false; let added = 0; let failed = 0;
+  const now = new Date().toISOString();
+  const warn = (w) => { warnings.unshift({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, at: now, status: 'open', ...w }); added++; };
+  for (const it of list) {
+    const key = it.nick.toLowerCase();
+    const known = nicks.map[key];
+    if (known) {
+      const cur = await mojangByUuid(known.uuid);
+      if (!cur) { failed++; await sleep(150); continue; }
+      if (cur.name.toLowerCase() !== known.name.toLowerCase()) {
+        warn({ kind: 'rename', nick: it.nick, from: known.name, to: cur.name, where: it.where });
+        nicks.map[key] = { ...known, name: cur.name };
+        changed = true;
+      }
+    } else {
+      const f = await mojangByNick(it.nick);
+      if (!f) failed++;
+      else if (f.missing) {
+        if (!warnings.some((w) => w.kind === 'missing' && w.nick.toLowerCase() === key && w.status === 'open')) { warn({ kind: 'missing', nick: it.nick, where: it.where }); changed = true; }
+      } else { nicks.map[key] = { uuid: f.uuid, name: f.name }; changed = true; }
+    }
+    await sleep(180);
+  }
+  if (changed) {
+    warnings = nickLib.trimWarnings(warnings);
+    await r.putJson('data/nicks.json', nicks, 'Nicks actualizados (revisión automática desde el launcher)');
+    await r.putJson('data/warnings.json', warnings, 'Advertencias de nicks (desde el launcher)');
+    remember('nicks', nicks);
+  }
+  return { warnings, scanned: list.length, failed, added };
+});
+// Acción sobre un aviso: ok (revisado), hide (quitar a esa persona del launcher) o assign (para "no encontrado": indicar su nick actual).
+ipcMain.handle('admin:warningAct', async (_e, id, action, value) => {
+  const r = await requireAdmin();
+  let warnings = nickLib.sanitizeWarnings(await readAdminJson(r, 'warnings', []));
+  const nicks = nickLib.sanitizeMap(await readAdminJson(r, 'nicks', { map: {} }));
+  const w = warnings.find((x) => x.id === cleanStr(id, 40));
+  if (!w) throw new Error('Ese aviso ya no existe.');
+  const key = w.nick.toLowerCase();
+  if (action === 'ok') w.status = 'ok';
+  else if (action === 'hide') {
+    const e = nicks.map[key];
+    if (e) nicks.map[key] = { ...e, hidden: true };
+    else {
+      const f = await mojangByNick(w.nick);
+      if (f && f.uuid) nicks.map[key] = { uuid: f.uuid, name: f.name, hidden: true };
+      else throw new Error('No se pudo ocultar: ese nick no se encontró en Mojang. Asígnale primero su nick actual.');
+    }
+    w.status = 'hidden';
+  } else if (action === 'assign') {
+    const n = cleanStr(value, 16).trim();
+    if (!nickLib.NICK_RE.test(n)) throw new Error('Ese nick no es válido.');
+    const f = await mojangByNick(n);
+    if (!f || !f.uuid) throw new Error('Ese nick no es una cuenta premium.');
+    nicks.map[key] = { uuid: f.uuid, name: f.name };
+    w.status = 'assigned'; w.to = f.name;
+  } else throw new Error('Acción no válida.');
+  warnings = nickLib.trimWarnings(warnings);
+  await r.putJson('data/nicks.json', nicks, 'Nicks actualizados (desde el launcher)');
+  await r.putJson('data/warnings.json', warnings, 'Advertencias de nicks (desde el launcher)');
+  remember('nicks', nicks);
+  return { warnings };
+});
 ipcMain.handle('admin:saveAdmins', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeAdmins(list);
@@ -1465,11 +1550,7 @@ ipcMain.handle('admin:saveEvents', async (_e, list) => {
   return clean;
 });
 // Elige una imagen, la valida por sus bytes (máx. 3 MB) y la sube a data/images del repositorio.
-ipcMain.handle('admin:pickImage', async (_e, label) => {
-  const r = await requireAdmin();
-  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen del evento', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
-  if (res.canceled) return null;
-  const buf = fs.readFileSync(res.filePaths[0]);
+async function uploadAdminImage(r, label, buf) {
   if (buf.length > adminLib.MAX_IMAGE) throw new Error('La imagen pesa más de 3 MB. Redúcela y vuelve a intentarlo.');
   const kind = adminLib.imageKind(buf);
   if (!kind) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
@@ -1478,6 +1559,24 @@ ipcMain.handle('admin:pickImage', async (_e, label) => {
   await r.putFile(`data/images/${name}`, buf, `Imagen del evento: ${name} (desde el launcher)`);
   const mime = kind === 'jpg' ? 'image/jpeg' : `image/${kind}`;
   return { path: `images/${name}`, preview: `data:${mime};base64,${buf.toString('base64')}` };
+}
+// Con opts.crop la imagen no se sube todavía: se devuelve para que el administrador la recorte (Instagram, X…) y luego se sube con admin:uploadImage.
+ipcMain.handle('admin:pickImage', async (_e, label, opts) => {
+  const r = await requireAdmin();
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+  if (res.canceled) return null;
+  const buf = fs.readFileSync(res.filePaths[0]);
+  if (buf.length > 12 * 1024 * 1024) throw new Error('La imagen pesa demasiado (máx. 12 MB para recortarla).');
+  const kind = adminLib.imageKind(buf);
+  if (!kind) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
+  if (opts && opts.crop) return { raw: `data:${kind === 'jpg' ? 'image/jpeg' : `image/${kind}`};base64,${buf.toString('base64')}`, kind };
+  return uploadAdminImage(r, label, buf);
+});
+ipcMain.handle('admin:uploadImage', async (_e, label, dataUrl) => {
+  const r = await requireAdmin();
+  const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
+  if (!m) throw new Error('La imagen recortada no es válida.');
+  return uploadAdminImage(r, label, Buffer.from(m[2], 'base64'));
 });
 /* ---------- avisos a Discord y atajo a X (solo administrador) ---------- */
 const HOOK_FILE = path.join(app.getPath('userData'), 'discord.hook');

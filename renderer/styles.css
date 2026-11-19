@@ -2567,3 +2567,12 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .lp-img { object-fit: cover; }
 .lp-hero:not(.has-pack)::before { display: none; }
 .save-row[hidden] { display: none; }
+
+/* Recortador de fotos del panel de administración */
+.crop-modal { max-width: 96vw; }
+.crop-modal .event-modal-body { justify-items: center; }
+.crop-canvas { border-radius: 10px; border: 1px solid var(--line, rgba(255,255,255,.18)); cursor: grab; touch-action: none; background: #0008; max-width: 100%; }
+.crop-canvas:active { cursor: grabbing; }
+.crop-modal input[type="range"] { width: min(360px, 90%); }
+.crop-modal .mp-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.crop-modal .mp-actions button { justify-self: auto; }

@@ -2,7 +2,7 @@
  * vista previa en vivo, arrastrar y soltar, historial (deshacer) y borradores.
  * Usa las utilidades de app.js ($, el, toast, cleanError, adm) solo cuando se llama, nunca al cargar. */
 (function () {
-  const AD_TABS = ['event', 'team', 'events', 'news', 'look', 'config', 'reco', 'control', 'status', 'users', 'perms', 'ads'];
+  const AD_TABS = ['event', 'team', 'events', 'news', 'look', 'config', 'reco', 'control', 'status', 'warnings', 'users', 'perms', 'ads'];
   window.AD_TABS = AD_TABS;
   const LAUNCHER_TABS = ['look', 'config', 'control'];
   const g = (id) => document.getElementById(id);
@@ -298,7 +298,7 @@
     g('ct-an-imgpick').addEventListener('click', async () => {
       try {
         setStatus('Eligiendo imagen…');
-        const r = await window.api.adminPickImage('anuncio');
+        const r = await (async () => { const q = await window.api.adminPickImage('anuncio', { crop: true }); if (!q) return null; const o = window.NovaCrop ? await window.NovaCrop.open(q.raw, 16 / 9, q.kind) : 'orig'; if (o === null) return null; return window.api.adminUploadImage('anuncio', o === 'orig' ? q.raw : o); })();
         if (r) { g(F.anImg).value = r.path; onFormChange(); } else setStatus('');
       } catch (err) { setStatus(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
     });

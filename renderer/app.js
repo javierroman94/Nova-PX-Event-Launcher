@@ -602,7 +602,7 @@ function paintAds() {
     const showImg = () => { media.replaceChildren(); const u = a.image && imageUrl(a.image); if (u) { const im = el('img'); im.alt = ''; im.src = u; media.append(im); } else media.append(el('span', 'ne-ph', '🖼\nSin imagen')); };
     showImg();
     const pick = el('button', 'ne-pick', a.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
-    pick.addEventListener('click', async () => { try { const r = await window.api.adminPickImage(a.name || 'anuncio'); if (r) { a.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); } } catch (e) { $('ad-ads-status').textContent = cleanError(e); } });
+    pick.addEventListener('click', async () => { try { const r = await pickImageCropped(a.name || 'anuncio', 16 / 9); if (r) { a.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); } } catch (e) { $('ad-ads-status').textContent = cleanError(e); } });
     const left = el('div', 'ne-left'); left.append(media, pick);
     const f = el('div', 'ne-fields');
     const inp = (ph, key, max, type) => { const i = el('input'); i.type = type || 'text'; i.placeholder = ph; i.maxLength = max || 120; i.value = a[key] || ''; i.addEventListener('input', () => { a[key] = i.value; }); return i; };
@@ -786,7 +786,8 @@ async function renderEvents() {
   const list = $('events-list');
   list.replaceChildren();
   try {
-    const events = (await window.api.getData('events')).sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
+    const nickMap = await window.api.getData('nicks').then((d) => (d && d.map) || null).catch(() => null);
+    const events = window.NovaNicks.events(await window.api.getData('events'), nickMap).sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
     const modal = $('event-modal');
     const facts = (ev, withWinners) => {
       const box = el('div', 'facts');
@@ -2419,7 +2420,8 @@ async function renderTeam(force) {
   const trib = $('team-tribute');
   let team;
   try {
-    team = await window.api.getData('team');
+    const nickMap = await window.api.getData('nicks').then((d) => (d && d.map) || null).catch(() => null);
+    team = window.NovaNicks.team(await window.api.getData('team'), nickMap);
   } catch {
     if (!lastTeamJson) { grid.replaceChildren(el('p', 'muted', 'No se pudo cargar el equipo.')); }
     return;
@@ -3318,8 +3320,55 @@ document.querySelectorAll('[data-ad-tab]').forEach((b) =>
     window.AD_TABS.forEach((t) => ($(`ad-tab-${t}`).hidden = t !== b.dataset.adTab));
     if (b.dataset.adTab === 'control') refreshSocial();
     if (b.dataset.adTab === 'users') loadUsers();
+    if (b.dataset.adTab === 'warnings') openWarnings();
   })
 );
+
+/* ---------- advertencias de nombres (cambios de nick) ---------- */
+const WARN_SCAN_KEY = 'px.warn.lastScan';
+function paintWarnings(list) {
+  const open = list.filter((w) => w.status === 'open');
+  const badge = $('ad-warn-count');
+  badge.hidden = !open.length; badge.textContent = String(open.length);
+  const box = $('ad-warn-list');
+  box.replaceChildren();
+  if (!list.length) { box.append(el('p', 'muted', 'Sin advertencias. Todos los nicks coinciden con Minecraft.')); return; }
+  const lbl = { open: 'Pendiente', ok: 'Revisado', hidden: 'Quitado', assigned: 'Reasignado' };
+  list.slice().sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || String(b.at).localeCompare(String(a.at))).forEach((w) => {
+    const row = el('div', 'mods-row');
+    const head = w.kind === 'rename' ? `${w.from} ahora es ${w.to}` : `${w.nick} ya no existe en Minecraft`;
+    const info = el('div', 'mods-main');
+    info.append(el('b', '', head), el('small', 'muted', `${(w.where || []).join(' · ') || 'sin lugar'} · ${new Date(w.at).toLocaleString()} · ${lbl[w.status] || w.status}`));
+    row.append(info);
+    if (w.status === 'open') {
+      const act = el('div', 'mp-actions');
+      const mk = (t, fn, cls) => { const b = el('button', cls || '', t); b.type = 'button'; b.addEventListener('click', async () => { b.disabled = true; try { const r = await fn(); paintWarnings(r.warnings); } catch (e) { $('ad-warn-status').textContent = cleanError(e); b.disabled = false; } }); return b; };
+      act.append(mk('Revisado', () => window.api.adminWarningAct(w.id, 'ok')), mk('Quitar del launcher', () => window.api.adminWarningAct(w.id, 'hide'), 'ghost'));
+      if (w.kind === 'missing') {
+        const inp = el('input'); inp.placeholder = 'Nick actual'; inp.maxLength = 16;
+        act.append(inp, mk('Asignar', () => window.api.adminWarningAct(w.id, 'assign', inp.value.trim())));
+      }
+      row.append(act);
+    }
+    box.append(row);
+  });
+}
+async function scanWarnings() {
+  const st = $('ad-warn-status'); const btn = $('ad-warn-scan');
+  btn.disabled = true; st.textContent = 'Revisando nicks en Mojang…';
+  try {
+    const r = await window.api.adminNickScan();
+    try { localStorage.setItem(WARN_SCAN_KEY, String(Date.now())); } catch {}
+    st.textContent = `Revisados ${r.scanned}${r.failed ? ` · ${r.failed} sin respuesta` : ''}${r.added ? ` · ${r.added} aviso(s) nuevo(s)` : ''}.`;
+    paintWarnings(r.warnings);
+  } catch (e) { st.textContent = cleanError(e); } finally { btn.disabled = false; }
+}
+async function openWarnings() {
+  try { paintWarnings(await window.api.adminWarnings()); } catch (e) { $('ad-warn-status').textContent = cleanError(e); }
+  let last = 0; try { last = Number(localStorage.getItem(WARN_SCAN_KEY)) || 0; } catch {}
+  if (Date.now() - last > 6 * 3600 * 1000) scanWarnings();
+}
+$('ad-warn-scan').addEventListener('click', scanWarnings);
 
 function chip(text, cls) { return el('span', `ad-chip${cls ? ' ' + cls : ''}`, text); }
 
@@ -3348,7 +3397,7 @@ function sponsorsEditor() {
         const showLogo = () => { lg.replaceChildren(); const u = x.logo && imageUrl(x.logo); if (u) { const im = el('img'); im.alt = ''; im.src = u; lg.append(im); } else lg.append(el('span', '', '＋ Logo')); };
         showLogo();
         lg.addEventListener('click', async () => {
-          try { const a = await window.api.adminPickImage(`sponsor-${x.name || 'logo'}`); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
+          try { const a = await pickImageCropped(`sponsor-${x.name || 'logo'}`, 2); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
         });
         const fields = el('div', 'brand-fields');
         const r = el('input'); r.type = 'text'; r.maxLength = 60; r.value = x.role || g.roles[0]; r.setAttribute('list', `ad-roles-${g.kind}`); r.placeholder = 'Rol';
@@ -3382,10 +3431,19 @@ function sponsorsEditor() {
 function paintArtState() {
   $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con logo' : 'sin logo'}`;
 }
+/* Elige una imagen, deja acomodarla en un cuadro (como Instagram o X) y solo entonces la sube. Devuelve {path, preview} o null. */
+async function pickImageCropped(label, aspect) {
+  const r = await window.api.adminPickImage(label, { crop: true });
+  if (!r) return null;
+  if (!window.NovaCrop) return window.api.adminUploadImage(label, r.raw);
+  const out = await window.NovaCrop.open(r.raw, aspect, r.kind);
+  if (out === null) return null;
+  return window.api.adminUploadImage(label, out === 'orig' ? r.raw : out);
+}
 async function pickEventArt(kind) {
   $('ad-status').textContent = 'Eligiendo imagen…';
   try {
-    const r = await window.api.adminPickImage(`${kind}-${$('ad-name').value || 'evento'}`);
+    const r = await pickImageCropped(`${kind}-${$('ad-name').value || 'evento'}`, kind === 'banner' ? 16 / 9 : 1);
     if (!r) { $('ad-status').textContent = ''; return; }
     if (kind === 'banner') adm.evImage = r.path; else adm.evLogo = r.path;
     paintArtState();
@@ -3796,7 +3854,7 @@ $('ade-clear').addEventListener('click', () => { ade.draft.image = ''; ade.previ
 $('ade-pick').addEventListener('click', async () => {
   $('ade-status').textContent = 'Eligiendo imagen…';
   try {
-    const r = await window.api.adminPickImage($('ade-name').value);
+    const r = await pickImageCropped($('ade-name').value, 4 / 3);
     if (!r) { $('ade-status').textContent = ''; return; }
     ade.draft.image = r.path;
     ade.preview = r.preview;
@@ -3808,7 +3866,7 @@ $('ade-bg-clear').addEventListener('click', () => { delete ade.draft.background;
 $('ade-bg-pick').addEventListener('click', async () => {
   $('ade-status').textContent = 'Eligiendo fondo…';
   try {
-    const r = await window.api.adminPickImage(`fondo-${$('ade-name').value}`);
+    const r = await pickImageCropped(`fondo-${$('ade-name').value}`, 16 / 9);
     if (!r) { $('ade-status').textContent = ''; return; }
     ade.draft.background = r.path;
     $('ade-bg-state').textContent = 'Con fondo';
@@ -4021,7 +4079,7 @@ function paintTeam() {
     const avPick = el('button', '', m.avatar ? 'Cambiar foto' : 'Subir foto'); avPick.type = 'button';
     avPick.addEventListener('click', async () => {
       try {
-        const r = await window.api.adminPickImage(m.nick || 'perfil');
+        const r = await pickImageCropped(m.nick || 'perfil', 1);
         if (r) { m.avatar = r.path; if (r.preview) avatarPreviews.set(m, r.preview); avPick.textContent = 'Cambiar foto'; paintPh(); paintAv(); sync(); }
       } catch (e) { $('ad-team-status').textContent = cleanError(e); }
     });
@@ -4104,7 +4162,7 @@ function paintNews() {
     showImg();
     const pick = el('button', 'ne-pick', n.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
     pick.addEventListener('click', async () => {
-      try { const r = await window.api.adminPickImage(n.title || 'noticia'); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
+      try { const r = await pickImageCropped(n.title || 'noticia', 16 / 9); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
     });
     const clr = el('button', 'ne-clr ghost', 'Quitar'); clr.type = 'button';
     clr.addEventListener('click', () => { delete n.image; pick.textContent = '+ Imagen'; showImg(); prev(); });
@@ -4793,7 +4851,7 @@ async function autoDiscord(kind, payload) {
 
 // Paneles de administración: iconos en pestañas y encabezados de tarjeta (solo decoración).
 (function decorateAdmin() {
-  const tabIcons = { event: '🎮', team: '👥', events: '🏆', news: '📰', users: '📊', look: '🎨', config: '⚙️', reco: '⭐', control: '🛰️', status: '🩺', perms: '🔑' };
+  const tabIcons = { event: '🎮', team: '👥', events: '🏆', news: '📰', users: '📊', look: '🎨', config: '⚙️', reco: '⭐', control: '🛰️', status: '🩺', warnings: '⚠️', perms: '🔑' };
   document.querySelectorAll('#ad-tabs [data-ad-tab]').forEach((b) => {
     const ic = tabIcons[b.dataset.adTab];
     if (ic && !b.querySelector('.ad-tab-ico')) b.prepend(el('span', 'ad-tab-ico', ic));
