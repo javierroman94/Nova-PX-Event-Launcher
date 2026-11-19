@@ -233,13 +233,13 @@ const dataMemo = new Map();
 /* ---------- aviso de contenido nuevo (rápido, sin esperar al reloj de cada launcher) ---------- */
 const revLib = require('./lib/rev');
 let lastRev = null;
-// El administrador avisa al Worker cuando publica (necesita la clave del contador; sin ella, los demás se enteran por el reloj normal).
-async function bumpRev() {
-  try {
-    const key = readUsersKey();
-    if (!USAGE_URL || !key) return;
-    await fetch(`${USAGE_URL}/rev/bump`, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(5000) });
-  } catch {}
+// El administrador avisa al publicar: escribe data/rev.json en el repositorio (el Worker lo reparte a todos los launchers).
+let bumpTimer = null;
+function bumpRev() {
+  clearTimeout(bumpTimer); // varias publicaciones seguidas = un solo aviso
+  bumpTimer = setTimeout(async () => {
+    try { const r = await requireAdmin(); await r.putJson('data/rev.json', { rev: revLib.makeRev() }, 'Aviso de contenido nuevo'); } catch {}
+  }, 2500);
 }
 async function checkRev() {
   try {

@@ -206,29 +206,28 @@ async function presence(request, env, op) {
 
 
 // ---- Revisión de contenido: avisa a los launchers de que un administrador publicó algo ----
+// El launcher del administrador escribe data/rev.json en el repositorio al publicar; el Worker lo lee (con caché corta) y lo reparte.
 const REV_RE = /^[a-z0-9]{6,32}$/;
+const REV_URL = 'https://raw.githubusercontent.com/javierroman94/Nova-PX-Event-Launcher/main/data/rev.json';
 async function getRev(request, env, ctx) {
   const cache = caches.default;
   const key = new Request('https://rev.cache/rev');
   const hit = await cache.match(key);
   if (hit) return hit;
-  const rev = (await env.USERS.get('rev')) || '000000';
-  const res = new Response(JSON.stringify({ rev: REV_RE.test(rev) ? rev : '000000' }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=8', 'Access-Control-Allow-Origin': '*' } });
+  let rev = '000000';
+  try {
+    const r = await fetch(`${REV_URL}?t=${Math.floor(Date.now() / 10000)}`, { cf: { cacheTtl: 5 } });
+    if (r.ok) { const d = await r.json(); if (REV_RE.test(String(d.rev || ''))) rev = d.rev; }
+  } catch {}
+  const res = new Response(JSON.stringify({ rev }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=12', 'Access-Control-Allow-Origin': '*' } });
   ctx.waitUntil(cache.put(key, res.clone()));
   return res;
 }
-async function bumpRev(request, env) {
-  if (!isAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
-  const rev = Date.now().toString(36) + Math.floor(Math.random() * 36 ** 4).toString(36).padStart(4, '0');
-  await env.USERS.put('rev', rev);
-  await caches.default.delete(new Request('https://rev.cache/rev'));
-  return json({ ok: true, rev });
-}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/rev') return getRev(request, env, ctx);
-    if (request.method === 'POST' && url.pathname === '/rev/bump') return bumpRev(request, env);
     if (request.method === 'POST' && url.pathname === '/ping') return handlePing(request, env);
     if (request.method === 'POST' && url.pathname.startsWith('/presence/') && OPS.has(url.pathname.slice(10))) return presence(request, env, url.pathname.slice(10));
     if (request.method === 'POST' && url.pathname === '/ads/track') {

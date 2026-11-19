@@ -35,4 +35,4 @@ El Worker incluye un Durable Object (`Presence`) que guarda en memoria quién es
 
 
 ## Aviso de contenido nuevo (versión 1.0.101 o posterior)
-El Worker tiene dos rutas más: `GET /rev` (la consultan los launchers cada 20 s) y `POST /rev/bump` (la llama el launcher del administrador al publicar, con su clave del contador). **Si actualizas el launcher, vuelve a pegar el contenido de `worker/index.mjs` en tu Worker y pulsa Deploy**; sin eso, los launchers siguen funcionando con el reloj normal (3 minutos).
+El Worker tiene la ruta `GET /rev`: lee `data/rev.json` del repositorio (que el launcher del administrador actualiza al publicar) y la reparte con una caché de 12 s. Los launchers la consultan cada 20 s. Si el Worker no está actualizado, todo sigue funcionando con el reloj normal (3 minutos).
