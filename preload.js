@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('api', {
   authExpiredNotice: () => ipcRenderer.invoke('auth:expiredNotice'),
 
   // jugar
+  petChat: (payload) => ipcRenderer.invoke('pet:chat', payload),
   launch: (opts) => ipcRenderer.invoke('game:launch', opts),
 
   // actualizaciones del programa

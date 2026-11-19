@@ -1133,6 +1133,8 @@
           <label class="check"><input id="fun-trail" type="checkbox" /> Estela del cursor (cambia con cada tema y temporada)</label>
           <label class="check"><input id="fun-critters" type="checkbox" /> Criaturas pixeladas paseando por la pantalla</label>
           <label class="check"><input id="fun-pet" type="checkbox" /> PX, la mascota, habla y reacciona (saluda, se duerme, comenta)</label>
+          <label class="check"><input id="fun-pet-ai" type="checkbox" /> PX con IA: charla, bromas, memoria y ayuda con errores (usa internet)</label>
+          <small class="muted">Al activarlo, lo que le escribas a PX (y, si se lo pides, el final de un registro de error ya sin tu usuario ni claves) se envía a un servidor de Nova PX que usa Claude, de Anthropic, para responder. No escribas datos personales. Hay un tope diario de mensajes. Lo que PX aprende de ti se guarda solo en este PC y lo borras con «Olvidar todo» en su chat.</small>
           <label class="check"><input id="intro-on" type="checkbox" /> Animación de inicio con el logo de Nova PX</label>
           <small id="theme-msg" class="msg" role="status"></small>
         </fieldset>
@@ -1279,6 +1281,7 @@
   <script src="fun.js"></script>
   <script src="mascot-brain.js"></script>
   <script src="mascot.js"></script>
+  <script src="mascot-chat.js"></script>
   <script src="viewer3d.js"></script>
   <script src="skins.js"></script>
   <!-- Asistente de primer uso -->

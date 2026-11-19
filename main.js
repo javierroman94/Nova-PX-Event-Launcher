@@ -849,6 +849,21 @@ async function downloadWithProgress(url, onProgress) {
   }
 }
 
+// PX con IA: el launcher habla con un Worker propio (la clave de Anthropic vive allí) con límites diarios. No se guarda ninguna conversación.
+const PET_PROXY = 'https://nova-px-pet.javier-1994yoop.workers.dev';
+ipcMain.handle('pet:chat', async (_e, p) => {
+  try {
+    const body = JSON.stringify({ id: p && p.id, mode: p && p.mode, messages: p && p.messages, memory: p && p.memory, log: p && p.log });
+    if (body.length > 8000) return { status: 413, data: { error: 'too_big' } };
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 20000);
+    try {
+      const res = await fetch(`${PET_PROXY}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': `Nova-PX-Event-Launcher/${app.getVersion()}` }, body, signal: ctl.signal });
+      let data = null; try { data = await res.json(); } catch {}
+      return { status: res.status, data };
+    } finally { clearTimeout(timer); }
+  } catch { return { status: 0, data: null }; }
+});
 ipcMain.handle('modpacks:providers', () => ({ modrinth: true, ftb: true }));
 ipcMain.handle('modpacks:search', async (_e, p = {}) =>
   providerFor(cleanStr(p.provider, 20)).search({ query: cleanStr(p.query, 80), offset: Math.max(0, Math.floor(Number(p.offset) || 0)), loader: cleanStr(p.loader, 12), mc: cleanStr(p.mc, 24), sort: cleanStr(p.sort, 12) })

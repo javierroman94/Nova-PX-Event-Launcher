@@ -1,0 +1,9 @@
+{
+  // PX con IA: intermediario hacia Anthropic con límites diarios. Secreto: ANTHROPIC_KEY (wrangler secret put ANTHROPIC_KEY).
+  "name": "nova-px-pet",
+  "main": "index.mjs",
+  "compatibility_date": "2025-01-01",
+  "workers_dev": true,
+  "kv_namespaces": [{ "binding": "PET", "id": "REEMPLAZAR_CON_EL_ID_DEL_KV" }],
+  "vars": { "PET_USER_DAILY": "30", "PET_IP_DAILY": "80", "PET_GLOBAL_DAILY": "3000", "PET_MODEL": "claude-haiku-5-5" }
+}

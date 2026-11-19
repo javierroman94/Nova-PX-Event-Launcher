@@ -115,5 +115,55 @@
     return String(text == null ? '' : text).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max || 140);
   }
 
-  return { dayPart, greeting, line, click, pet, tip, wake, sleepLine, remember, shouldSleep, clean, fill };
+  /* ---------- Nivel 2 (IA): memoria, privacidad y registros ---------- */
+  const SECRET = /(sk-ant-[\w-]{10,}|accessToken|access_token|Bearer\s+[\w.-]{12,}|[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}|\b\d{13,19}\b|[\w.+-]+@[\w-]+\.[\w.]+)/i;
+  const looksSecret = (t) => SECRET.test(String(t || ''));
+
+  /* Un dato que PX puede recordar: corto, sin datos personales. Devuelve '' si no vale. */
+  function cleanFact(t) {
+    const f = clean(t, 80).replace(/^[-•#\s]+/, '');
+    if (f.length < 4 || looksSecret(f) || /\b(\+?\d[\d\s-]{7,})\b/.test(f)) return '';
+    return f;
+  }
+  function addFacts(facts, list, max) {
+    const out = (facts || []).slice();
+    for (const raw of list || []) {
+      const f = cleanFact(raw);
+      if (!f || out.some((x) => x.toLowerCase() === f.toLowerCase())) continue;
+      out.push(f);
+    }
+    return out.slice(-(max || 30));
+  }
+  /* Lo que se le cuenta a la IA sobre el usuario (memoria local + datos del launcher). */
+  function memoryString(mem, facts, name) {
+    const m = mem || {};
+    const bits = [];
+    if (name) bits.push(`Se llama ${clean(name, 24)} en el juego.`);
+    if (m.visits) bits.push(`Ha abierto el launcher ${m.visits} veces.`);
+    if (m.plays) bits.push(`Ha jugado ${m.plays} partidas (${Math.round(m.minutes || 0)} min en total).`);
+    if (m.crashes) bits.push(`Cierres con error: ${m.crashes}${m.crashStreak >= 2 ? ` (los últimos ${m.crashStreak} seguidos)` : ''}.`);
+    if (m.pets) bits.push(`Te ha acariciado ${m.pets} veces.`);
+    if ((facts || []).length) bits.push('Cosas que has aprendido de él: ' + facts.slice(-20).join('; ') + '.');
+    return bits.join(' ').slice(0, 700);
+  }
+  /* Quita de un registro lo que no debe salir del PC: rutas con el usuario, claves, UUID, correos e IP. */
+  function redactLog(lines, maxChars) {
+    const KEY = /exception|error|fatal|caused by|crash|failed|mixin|outofmemory|could not|unable|incompatible|missing|requires|java\.lang/i;
+    const all = (Array.isArray(lines) ? lines : String(lines || '').split('\n')).map((l) => String(l)).filter(Boolean);
+    const important = all.filter((l) => KEY.test(l));
+    const pickLines = (important.length >= 3 ? important : all).slice(-25);
+    return pickLines.map((l) => l
+      .replace(/([A-Za-z]:\\Users\\)[^\\\s"']+/gi, '$1<usuario>')
+      .replace(/(\/(?:home|Users)\/)[^\/\s"']+/g, '$1<usuario>')
+      .replace(/(--(?:accessToken|uuid|username|clientId|xuid|userProperties)\s+)\S+/gi, '$1<oculto>')
+      .replace(/(access[_-]?token["'=:\s]+)[\w.-]+/gi, '$1<oculto>')
+      .replace(/Bearer\s+[\w.-]+/gi, 'Bearer <oculto>')
+      .replace(/[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}/g, '<oculto>')
+      .replace(/[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}/gi, '<uuid>')
+      .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '<correo>')
+      .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, '<ip>')
+      .slice(0, 300)).join('\n').slice(-(maxChars || 1700));
+  }
+
+  return { looksSecret, cleanFact, addFacts, memoryString, redactLog, dayPart, greeting, line, click, pet, tip, wake, sleepLine, remember, shouldSleep, clean, fill };
 });

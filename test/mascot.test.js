@@ -39,3 +39,24 @@ assert.strictEqual(B.clean('  hola\n\u0007  mundo '), 'hola mundo');
 assert.strictEqual(B.clean('x'.repeat(500), 10).length, 10);
 assert.strictEqual(B.fill('Hola {name}{x}', { name: 'A' }), 'Hola A');
 console.log('mascot ok');
+
+// ---- Nivel 2: memoria y privacidad ----
+const B2 = require('../renderer/mascot-brain.js');
+assert.ok(B2.looksSecret('mi clave sk-ant-abcdefghijklmnop') && B2.looksSecret('escríbeme a yo@correo.com') && !B2.looksSecret('me gusta Fabric'));
+assert.strictEqual(B2.cleanFact('- le gusta minar de noche'), 'le gusta minar de noche');
+assert.strictEqual(B2.cleanFact('su correo es yo@correo.com'), '');
+assert.strictEqual(B2.cleanFact('llámalo al 0991234567 ya'), '');
+assert.strictEqual(B2.cleanFact('ok'), '');
+const fa = B2.addFacts(['le gusta Fabric'], ['LE GUSTA FABRIC', 'juega de noche'], 2);
+assert.deepStrictEqual(fa, ['le gusta Fabric', 'juega de noche']);
+assert.strictEqual(B2.addFacts(fa, ['tercer dato aquí'], 2).length, 2);
+const ms = B2.memoryString({ visits: 5, plays: 3, minutes: 200, crashes: 2, crashStreak: 2 }, ['usa Forge'], 'Javi');
+assert.ok(/Javi/.test(ms) && /5 veces/.test(ms) && /usa Forge/.test(ms) && /seguidos/.test(ms));
+const red = B2.redactLog([
+  'java.lang.OutOfMemoryError: Java heap space at C:\\Users\\Francisco\\AppData\\x',
+  'Launching with --accessToken eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnopqrstuvwxyz --uuid 123e4567-e89b-12d3-a456-426614174000 Exception',
+  'Caused by: java.io.IOException en /home/pedro/.minecraft de 192.168.1.20 mail@x.com', 'línea normal'
+]);
+assert.ok(!/Francisco|eyJ|123e4567|pedro|192\.168|mail@x/.test(red), red);
+assert.ok(/<usuario>/.test(red) && /OutOfMemory/.test(red));
+console.log('mascot ia ok');

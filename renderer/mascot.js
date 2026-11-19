@@ -23,6 +23,7 @@
   let playing = false, playStart = 0;
   let petCount = 0, petReset = 0;
   let greeted = false;
+  let clickHook = null; // nivel 2: si devuelve true, el clic lo atiende el chat
 
   const bubble = document.createElement('div');
   bubble.id = 'pet-bubble';
@@ -91,7 +92,7 @@
     if (sleeping) wakeUp(true); else lastActive = Date.now();
   }, { passive: true }));
 
-  hit.addEventListener('click', () => { wakeUp(false); hop(); note('pet'); react('click'); });
+  hit.addEventListener('click', () => { wakeUp(false); hop(); note('pet'); if (clickHook && clickHook()) return; react('click'); });
   hit.addEventListener('mouseenter', () => { petCount = 0; });
   hit.addEventListener('mousemove', () => {
     const now = Date.now();
@@ -148,5 +149,5 @@
   // Si no hubo sesión (aún sin cuenta), saluda igualmente pasado un momento.
   setTimeout(() => { if (!greeted && on) { greeted = true; say(Brain.greeting(mem, Date.now(), ex()), 6000, true); note('visit'); } }, 9000);
 
-  window.NovaMascot = { say: (t, ms) => say(t, ms, true), notify, setProvider: (fn) => { provider = typeof fn === 'function' ? fn : null; }, setEnabled, memory: () => Object.assign({}, mem) };
+  window.NovaMascot = { onClick: (fn) => { clickHook = typeof fn === 'function' ? fn : null; }, name: () => userName, say: (t, ms) => say(t, ms, true), notify, setProvider: (fn) => { provider = typeof fn === 'function' ? fn : null; }, setEnabled, memory: () => Object.assign({}, mem) };
 })();

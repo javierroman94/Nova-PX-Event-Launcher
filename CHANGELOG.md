@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.87
+- **Eventos**: los participantes (y colaboradores) ahora se ven como la **cabeza del jugador en 3D**, igual que los ganadores, y todas las cabezas 3D del launcher quedan **fijas** (sin balanceo ni giro).
+- **PX con IA (opcional, apagado por defecto)**: en Ajustes → Apariencia puedes activar que PX charle contigo con IA (Claude), sea bromista, aprenda gustos y te ayude a entender un error de Minecraft («Revisar mi último error»). Haz clic en PX para abrir su chat. Tiene tope diario de mensajes, no guarda las conversaciones en el servidor, quita tu usuario y claves de los registros antes de enviarlos y guarda lo aprendido solo en tu PC (botón «Olvidar todo»). Sin internet o sin cupo, PX sigue con sus reglas locales.
+
 ## 1.0.86
 - **Eventos**: añadidos los participantes de RubroCraft Nations (64 jugadores, por nación) y de Cobblemon PX, el evento «PX Play's», y corregidas las fechas de OneBlock Deathmatch y OneBlock 1000 días (eran de 2025). La lista de participantes de un evento ahora admite hasta 80 nombres.
 

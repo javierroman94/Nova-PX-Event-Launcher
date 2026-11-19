@@ -762,7 +762,7 @@ function paintPeople(ev) {
     const row = el('div', 'people-row compact');
     list.forEach((p) => {
       const c = el('div', 'person');
-      c.append(personFace(p), el('div', 'nick', p.nick));
+      c.append(head3d({ nick: p.nick, ...(p.skin ? { skin: p.skin, slim: p.slim } : {}) }, 52), el('div', 'nick', p.nick));
       if (p.role) c.append(el('div', 'role', p.role));
       if (p.links && p.links.length) c.append(linkChips(p.links));
       row.append(c);
@@ -2815,6 +2815,7 @@ const logLines = [];
 const MAX_LOG_LINES = 2000;
 const logBox = $('log');
 let logFilter = 'all';
+if (window.NovaMascot && window.NovaMascot.setLogProvider) window.NovaMascot.setLogProvider(() => logLines.slice(-80));
 
 function logLevel(line) {
   if (/\b(ERROR|FATAL|SEVERE)\b|Exception|Caused by|\bat [\w.$]+\(/.test(line)) return 'error';
