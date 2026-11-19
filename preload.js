@@ -104,6 +104,8 @@ contextBridge.exposeInMainWorld('api', {
   adminSaveEvents: (l) => ipcRenderer.invoke('admin:saveEvents', l),
   adminPickImage: (l, opts) => ipcRenderer.invoke('admin:pickImage', l, opts),
   adminUploadImage: (l, dataUrl) => ipcRenderer.invoke('admin:uploadImage', l, dataUrl),
+  overlayShow: (p) => ipcRenderer.invoke('overlay:show', p),
+  overlayHide: () => ipcRenderer.invoke('overlay:hide'),
   adminWarnings: () => ipcRenderer.invoke('admin:warnings'),
   adminNickScan: () => ipcRenderer.invoke('admin:nickScan'),
   adminWarningAct: (id, action, value) => ipcRenderer.invoke('admin:warningAct', id, action, value),

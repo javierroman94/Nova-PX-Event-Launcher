@@ -40,7 +40,7 @@
     },
     advancement: ['¡Avance logrado: {what}! 🎉', '¡Muy bien, {name}! «{what}» desbloqueado. ✨'],
     challenge: ['¡Desafío completado: {what}! Eres un crack. 🏆'],
-    server: ['¡Entrando a {host}! Espero que haya buena gente. 🌐', 'Nuevo servidor… ¡suerte, {name}!'],
+    server: ['¡Entrando a {host}! Espero que haya buena gente. 🌐', 'Nuevo servidor ({host})… ¡suerte, {name}!'],
     mention: ['Te mencionaron en el chat, {name}. 👀', 'Alguien te nombró… ¿le respondes?']
   };
   const pick = (a, rng) => a[Math.floor((rng || Math.random)() * a.length) % a.length];

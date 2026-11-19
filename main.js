@@ -580,6 +580,7 @@ function createWindow() {
       pendingImportFile = null;
     }
     if (pendingClose) {
+      overlayHide();
       send('game:close', pendingClose);
       pendingClose = null;
     }
@@ -1578,6 +1579,34 @@ ipcMain.handle('admin:uploadImage', async (_e, label, dataUrl) => {
   if (!m) throw new Error('La imagen recortada no es válida.');
   return uploadAdminImage(r, label, Buffer.from(m[2], 'base64'));
 });
+
+/* ---------- PX flotante sobre Minecraft (opcional, la activa el usuario) ---------- */
+const overlayLib = require('./lib/overlay');
+let overlayWin = null;
+function overlayShow(p) {
+  const { screen } = require('electron');
+  const d = overlayLib.sanitize(p);
+  if (!overlayWin || overlayWin.isDestroyed()) {
+    const b = overlayLib.bounds(screen.getPrimaryDisplay().workArea);
+    overlayWin = new BrowserWindow({
+      ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, skipTaskbar: true, hasShadow: false, show: false, alwaysOnTop: true,
+      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
+    });
+    overlayWin.setAlwaysOnTop(true, 'screen-saver');
+    overlayWin.setIgnoreMouseEvents(true, { forward: true }); // los clics pasan al juego
+    overlayWin.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
+    overlayWin.once('ready-to-show', () => { if (overlayWin && !overlayWin.isDestroyed()) overlayWin.showInactive(); });
+    overlayWin.on('closed', () => { overlayWin = null; });
+    overlayWin.webContents.once('did-finish-load', () => overlayWin && overlayWin.webContents.send('overlay:update', d));
+    return;
+  }
+  if (!overlayWin.isVisible()) overlayWin.showInactive();
+  overlayWin.webContents.send('overlay:update', d);
+}
+function overlayHide() { if (overlayWin && !overlayWin.isDestroyed()) overlayWin.close(); overlayWin = null; }
+ipcMain.handle('overlay:show', (_e, p) => { overlayShow(p); return true; });
+ipcMain.handle('overlay:hide', () => { overlayHide(); return true; });
+app.on('before-quit', overlayHide);
 /* ---------- avisos a Discord y atajo a X (solo administrador) ---------- */
 const HOOK_FILE = path.join(app.getPath('userData'), 'discord.hook');
 function readHook() {
@@ -2870,6 +2899,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       pendingClose = { code, crash: code === 0 ? [] : analyzeCrash(logBuffer) };
       leaveGameMode();
       if (windowWasOpen) {
+        overlayHide();
         send('game:close', pendingClose);
         pendingClose = null;
       }

@@ -289,6 +289,24 @@
   }
   window.NovaPetLife.birth = birth;
   if (!isBorn()) setTimeout(() => { if (!isBorn() && !document.querySelector('dialog[open]')) birth(); else if (!isBorn()) setTimeout(birth, 15000); }, 4000);
+  /* ---------- PX flotante sobre Minecraft (opcional) ---------- */
+  const OV = 'px.pet.overlay';
+  const ovOn = () => { try { return localStorage.getItem(OV) === '1'; } catch { return false; } };
+  let inGame = false;
+  const ovPayload = (text) => ({ text: text || '', acc: st.acc || '', name: st.name });
+  const ovShow = (text) => { if (ovOn() && inGame && window.api && window.api.overlayShow) window.api.overlayShow(ovPayload(text)).catch(() => {}); };
+  const ovHide = () => { if (window.api && window.api.overlayHide) window.api.overlayHide().catch(() => {}); };
+  // Todo lo que PX dice en el launcher se copia a la ventana flotante mientras juegas.
+  const bub = document.getElementById('pet-bubble');
+  if (bub) new MutationObserver(() => { if (!bub.hidden && bub.textContent) ovShow(bub.textContent); }).observe(bub, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  const ovBox = document.getElementById('fun-pet-overlay');
+  if (ovBox) { ovBox.checked = ovOn(); ovBox.addEventListener('change', () => { try { localStorage.setItem(OV, ovBox.checked ? '1' : '0'); } catch {} if (!ovBox.checked) ovHide(); else ovShow('¡Te acompaño mientras juegas! 🐼'); }); }
+  const prevNotify = M.notify;
+  M.notify = (type, data) => {
+    if (type === 'game-start') { inGame = true; setTimeout(() => ovShow('¡Vamos a jugar! 🎮'), 4000); }
+    if (type === 'game-end') { inGame = false; ovHide(); }
+    return prevNotify(type, data);
+  };
   document.addEventListener('dblclick', (e) => { if (e.target && e.target.id === 'pet-hit') open(); });
   const openBtn = document.getElementById('pet-care-open');
   if (openBtn) openBtn.addEventListener('click', open);

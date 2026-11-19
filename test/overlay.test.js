@@ -1,0 +1,12 @@
+'use strict';
+const assert = require('assert');
+const O = require('../lib/overlay.js');
+const b = O.bounds({ x: 0, y: 0, width: 1920, height: 1040 });
+assert.deepStrictEqual(b, { x: 1920 - 260 - 12, y: 1040 - 190 - 12, width: 260, height: 190 });
+const b2 = O.bounds({ x: 1920, y: 0, width: 1280, height: 720 });
+assert.ok(b2.x >= 1920 && b2.x + b2.width <= 3200, 'segundo monitor');
+assert.ok(O.bounds(null).x > 0);
+assert.deepStrictEqual(O.sanitize({ text: 'hola', acc: 'hack', name: 'PX', extra: 1 }), { text: 'hola', acc: '', name: 'PX' });
+assert.strictEqual(O.sanitize({ text: 'x'.repeat(999) }).text.length, 200);
+assert.deepStrictEqual(O.sanitize(null), { text: '', acc: '', name: '' });
+console.log('overlay.test OK');
