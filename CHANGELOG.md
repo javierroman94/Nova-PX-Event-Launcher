@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.98
+- **Accesorios para PX**: moño, sombrero, bufanda, gafas y corona, dibujados en píxeles como el panda. Se desbloquean subiendo de nivel o con rachas de días y se eligen en «Cuidar a PX».
+
 ## 1.0.97
 - **PX ve tu partida** (opcional, apagado por defecto, en Ajustes → Apariencia): lee solo el texto del registro de Minecraft, en tu PC, y reacciona cuando mueres (según cómo: lava, caída, creeper…), logras un avance o desafío, entras a un servidor o te mencionan en el chat. No usa IA ni envía nada a internet.
 

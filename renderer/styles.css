@@ -2598,3 +2598,8 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 @keyframes pl-shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 45% { transform: rotate(12deg); } 70% { transform: rotate(-8deg); } }
 @keyframes pl-pop { 0% { transform: scale(.4); } 100% { transform: scale(1); } }
 :root.no-fx .pl-shake, :root.no-fx .pl-pop { animation: none; }
+
+.pl-ward { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.pl-acc { font-size: 20px; padding: 4px 8px; border-radius: 10px; }
+.pl-acc.on { outline: 2px solid var(--accent, #7c5cff); }
+.pl-acc.locked { opacity: .35; filter: grayscale(1); cursor: not-allowed; }

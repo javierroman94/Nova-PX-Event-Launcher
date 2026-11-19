@@ -5,6 +5,7 @@
   else root.NovaPetLife = factory();
 }(typeof self !== 'undefined' ? self : this, function () {
   const HOUR = 3600000;
+  const ACC_IDS = ['bow', 'hat', 'scarf', 'glasses', 'crown'];
   const clamp = (v, a = 0, b = 100) => Math.min(b, Math.max(a, Number.isFinite(+v) ? +v : a));
   // Puntos por hora que se pierden. Con el launcher cerrado se pierde menos (tope de 12 h) para que nadie vuelva a una mascota "perdida".
   const DECAY = { hunger: 5, energy: 3, love: 2.5 };
@@ -13,7 +14,7 @@
 
   const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0 }; }
+  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '' }; }
 
   function sanitize(raw, now) {
     const s = fresh(now);
@@ -25,6 +26,7 @@
     s.day = /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : '';
     s.last = Number.isFinite(+raw.last) && +raw.last > 0 ? Math.min(+raw.last, now) : now;
     s.played = Math.max(0, Math.floor(+raw.played || 0));
+    s.acc = ACC_IDS.includes(raw.acc) ? raw.acc : '';
     s.best = Math.max(0, Math.min(40, Math.floor(+raw.best || 0)));
     if (raw.cd && typeof raw.cd === 'object') for (const k of Object.keys(CD)) s.cd[k] = Math.min(+raw.cd[k] || 0, now + CD[k]);
     return s;
@@ -95,7 +97,18 @@
     return { ...s, xp: s.xp + Math.floor(m / 10) * 3, energy: clamp(s.energy - m / 20), hunger: clamp(s.hunger - m / 15) };
   }
 
-  return { sanitize, fresh, tick, act, visit, minigame, gameTime, level, progress, mood, dayKey, CD, LEVELS };
+  // Accesorios: se desbloquean por nivel o por racha de días.
+  const ACCESSORIES = [
+    { id: 'bow', name: 'Moño', emoji: '🎀', need: 'nivel 2', ok: (s) => level(s.xp) >= 2 },
+    { id: 'hat', name: 'Sombrero', emoji: '🎩', need: 'nivel 3', ok: (s) => level(s.xp) >= 3 },
+    { id: 'scarf', name: 'Bufanda', emoji: '🧣', need: 'racha de 3 días', ok: (s) => s.streak >= 3 },
+    { id: 'glasses', name: 'Gafas', emoji: '🕶️', need: 'nivel 5', ok: (s) => level(s.xp) >= 5 },
+    { id: 'crown', name: 'Corona', emoji: '👑', need: 'nivel 8', ok: (s) => level(s.xp) >= 8 }
+  ];
+  const canWear = (s, id) => { const a = ACCESSORIES.find((x) => x.id === id); return !!a && a.ok(s); };
+  function equip(s, id) { return id === '' || canWear(s, id) ? { ...s, acc: id } : s; }
+
+  return { ACCESSORIES, canWear, equip, sanitize, fresh, tick, act, visit, minigame, gameTime, level, progress, mood, dayKey, CD, LEVELS };
 }));
 
 (function () {
@@ -106,7 +119,9 @@
   const load = () => { try { return L.sanitize(JSON.parse(localStorage.getItem(KEY) || 'null'), Date.now()); } catch { return L.fresh(Date.now()); } };
   const store = (s) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
   let st = L.tick(load(), Date.now());
-  const v0 = L.visit(st, Date.now()); st = v0.state; store(st);
+  const v0 = L.visit(st, Date.now()); st = v0.state; if (st.acc && !L.canWear(st, st.acc)) st = { ...st, acc: '' }; store(st);
+  const applyAcc = () => { const c = window.NovaFun && window.NovaFun.petCtl; if (c) c.acc = st.acc || ''; };
+  applyAcc(); setTimeout(applyAcc, 1500);
 
   const LINES = {
     feed: ['¡Ñam! Qué rico 😋', '¡Gracias, tenía hambre!', 'Mmm, mi comida favorita 🎋'],
@@ -145,6 +160,7 @@
     const refresh = () => {
       st = L.tick(st, Date.now());
       const p = L.progress(st.xp);
+      paintWard();
       lvl.textContent = `Nivel ${p.level}${st.streak > 1 ? ` · racha de ${st.streak} días 🔥` : ''}`;
       xpFill.style.width = p.pct + '%';
       b1.fill.style.width = st.hunger + '%'; b2.fill.style.width = st.energy + '%'; b3.fill.style.width = st.love + '%';
@@ -171,11 +187,24 @@
       });
     });
     btns.append(gb);
+    const wardrobe = el('div', 'pl-ward');
+    const paintWard = () => {
+      wardrobe.replaceChildren(el('small', 'muted', 'Accesorios'));
+      const mk = (id, emoji, label, locked, need) => {
+        const b = el('button', 'pl-acc' + (st.acc === id ? ' on' : ''), emoji); b.type = 'button'; b.title = locked ? `${label}: se desbloquea con ${need}` : label; b.disabled = locked;
+        if (locked) b.classList.add('locked');
+        b.addEventListener('click', () => { st = L.equip(st, id); store(st); applyAcc(); paintWard(); });
+        wardrobe.append(b);
+      };
+      mk('', '🚫', 'Sin accesorio', false);
+      L.ACCESSORIES.forEach((a) => mk(a.id, a.emoji, a.name, !a.ok(st), a.need));
+    };
+    paintWard();
     const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; btns.append(close);
     nameIn.addEventListener('change', () => { st = { ...st, name: L.sanitize({ name: nameIn.value }, Date.now()).name }; nameIn.value = st.name; store(st); refresh(); });
     const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
     close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
-    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, note); dlg.append(body); document.body.append(dlg);
+    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, wardrobe, note); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
   }
   /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */

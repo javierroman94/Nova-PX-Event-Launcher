@@ -209,7 +209,7 @@
   }
 
   // Control externo del panda PX (lo usa mascot.js): dormir, saltar, alegrarse.
-  const petCtl = { sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; } };
+  const petCtl = { acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; } };
   function getPet() {
     const c = crits.find((k) => k.name === 'px');
     if (!c || !opt.critters || root.classList.contains('no-fx')) return null;
@@ -264,6 +264,27 @@
     void ground;
   }
 
+  // Accesorios de PX (píxeles del mismo tamaño que el panda: escala 4). Cada fila: [fila, columna, texto]; las filas negativas quedan por encima de la cabeza.
+  const ACC_COL = { Y: '#ffd23f', R: '#e8334a', K: '#14141f', P: '#ff8fb8', C: '#7fe7ff', W: '#ffffff', B: '#3b82f6' };
+  const ACC = {
+    hat: [[-2, 4, 'KKK'], [-1, 4, 'KRK'], [0, 4, 'KKK'], [1, 3, 'KKKKK']],
+    bow: [[0, 5, 'P.P'], [1, 5, 'PRP']],
+    glasses: [[5, 2, 'KKKKKKK']],
+    scarf: [[9, 3, 'RRRRRR'], [10, 3, 'RW'], [11, 3, 'RW']],
+    crown: [[-1, 3, 'Y.Y.Y'], [0, 3, 'YYYYY'], [1, 3, 'YRYBY']]
+  };
+  function drawAcc(c, ox, oy) {
+    const rows = c.name === 'px' && petCtl.acc ? ACC[petCtl.acc] : null;
+    if (!rows) return;
+    for (const [r, col, txt] of rows) {
+      for (let i = 0; i < txt.length; i++) {
+        const k = txt[i]; if (k === '.') continue;
+        ctx.fillStyle = ACC_COL[k] || '#fff';
+        ctx.fillRect(ox + (col + i) * 4, oy + r * 4, 4, 4);
+      }
+    }
+  }
+
   function drawCritter(c) {
     const sprite = sheet(c.name, c.fly || !c.moving ? 0 : Math.floor(c.ph / 2) % 2, accent());
     const sh = sprite.height;
@@ -278,8 +299,8 @@
       ctx.globalAlpha = 1;
     }
     ctx.save();
-    if (c.dir < 0 && !c.fly) { ctx.translate(Math.round(x) + sprite.width, 0); ctx.scale(-1, 1); ctx.drawImage(sprite, 0, Math.round(y)); }
-    else ctx.drawImage(sprite, Math.round(x), Math.round(y));
+    if (c.dir < 0 && !c.fly) { ctx.translate(Math.round(x) + sprite.width, 0); ctx.scale(-1, 1); ctx.drawImage(sprite, 0, Math.round(y)); drawAcc(c, 0, Math.round(y)); }
+    else { ctx.drawImage(sprite, Math.round(x), Math.round(y)); drawAcc(c, Math.round(x), Math.round(y)); }
     ctx.restore();
     ctx.globalAlpha = 1;
   }

@@ -48,4 +48,11 @@ let mg = L.minigame(s, 999, T); assert.strictEqual(mg.state.best, 40); assert.ok
 assert.ok(mg.state.love <= 100 && mg.state.xp <= s.xp + 12 && mg.state.energy < s.energy);
 assert.ok(!L.minigame(mg.state, 10, T).record);
 assert.strictEqual(L.minigame(s, 'x', T).state.best, 0);
+// Accesorios: se desbloquean por nivel/racha, y los bloqueados no se pueden poner.
+assert.strictEqual(L.equip(s, 'crown').acc, '');
+assert.strictEqual(L.equip({ ...s, xp: 30 }, 'bow').acc, 'bow');
+assert.ok(L.canWear({ ...s, streak: 3 }, 'scarf') && !L.canWear(s, 'scarf'));
+assert.strictEqual(L.equip({ ...s, acc: 'bow' }, '').acc, '');
+assert.strictEqual(L.sanitize({ acc: 'hackeo' }, T).acc, '');
+assert.strictEqual(L.sanitize({ acc: 'hat' }, T).acc, 'hat');
 console.log('pet-life.test OK');
