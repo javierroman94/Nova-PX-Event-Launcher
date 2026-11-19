@@ -1,0 +1,184 @@
+/* La vida de PX: hambre, energía, cariño, nivel y racha de días. Todo se guarda en este PC.
+ * Núcleo puro (probado en test/pet-life.test.js) + un panel «Cuidar a PX». */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.NovaPetLife = factory();
+}(typeof self !== 'undefined' ? self : this, function () {
+  const HOUR = 3600000;
+  const clamp = (v, a = 0, b = 100) => Math.min(b, Math.max(a, Number.isFinite(+v) ? +v : a));
+  // Puntos por hora que se pierden. Con el launcher cerrado se pierde menos (tope de 12 h) para que nadie vuelva a una mascota "perdida".
+  const DECAY = { hunger: 5, energy: 3, love: 2.5 };
+  const CD = { feed: 20 * 60000, play: 8 * 60000, pet: 60000, sleep: 30 * 60000 };
+  const LEVELS = [0, 30, 80, 160, 280, 450, 700, 1000, 1400, 1900];
+
+  const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+  function fresh(now) { return { name: 'PX', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0 }; }
+
+  function sanitize(raw, now) {
+    const s = fresh(now);
+    if (!raw || typeof raw !== 'object') return s;
+    s.name = String(raw.name || 'PX').replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 16) || 'PX';
+    ['hunger', 'energy', 'love'].forEach((k) => { s[k] = clamp(raw[k] == null ? s[k] : raw[k]); });
+    s.xp = Math.max(0, Math.min(1e6, Math.floor(+raw.xp || 0)));
+    s.streak = Math.max(0, Math.min(9999, Math.floor(+raw.streak || 0)));
+    s.day = /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : '';
+    s.last = Number.isFinite(+raw.last) && +raw.last > 0 ? Math.min(+raw.last, now) : now;
+    s.played = Math.max(0, Math.floor(+raw.played || 0));
+    if (raw.cd && typeof raw.cd === 'object') for (const k of Object.keys(CD)) s.cd[k] = Math.min(+raw.cd[k] || 0, now + CD[k]);
+    return s;
+  }
+
+  function tick(s, now) {
+    const hours = Math.min(12, Math.max(0, (now - s.last) / HOUR));
+    const out = { ...s, cd: { ...s.cd }, last: now };
+    out.hunger = clamp(s.hunger - DECAY.hunger * hours);
+    out.energy = clamp(s.energy - DECAY.energy * hours);
+    out.love = clamp(s.love - DECAY.love * hours * (s.hunger < 20 ? 1.6 : 1));
+    return out;
+  }
+
+  const level = (xp) => { let l = 1; for (let i = 1; i < LEVELS.length; i++) if (xp >= LEVELS[i]) l = i + 1; return l; };
+  function progress(xp) {
+    const l = level(xp); const a = LEVELS[l - 1]; const b = LEVELS[l];
+    return b == null ? { level: l, pct: 100, next: null } : { level: l, pct: Math.round(((xp - a) / (b - a)) * 100), next: b - xp };
+  }
+
+  function mood(s) {
+    const worst = Math.min(s.hunger, s.energy, s.love);
+    if (s.hunger < 20) return 'hambre';
+    if (s.energy < 20) return 'sueño';
+    if (s.love < 20) return 'triste';
+    return worst > 65 && s.love > 70 ? 'feliz' : 'normal';
+  }
+
+  // Acciones. Devuelven { state, ok, wait } (wait en ms si aún no se puede repetir).
+  const EFFECT = {
+    feed: (s) => ({ ...s, hunger: clamp(s.hunger + 35), love: clamp(s.love + 3), xp: s.xp + 4 }),
+    play: (s) => ({ ...s, love: clamp(s.love + 12), energy: clamp(s.energy - 12), hunger: clamp(s.hunger - 6), xp: s.xp + 8, played: s.played + 1 }),
+    pet: (s) => ({ ...s, love: clamp(s.love + 6), xp: s.xp + 2 }),
+    sleep: (s) => ({ ...s, energy: clamp(s.energy + 40), xp: s.xp + 3 })
+  };
+  function act(s0, action, now) {
+    const s = tick(s0, now);
+    if (!EFFECT[action]) return { state: s, ok: false, wait: 0 };
+    const until = s.cd[action] || 0;
+    if (now < until) return { state: s, ok: false, wait: until - now };
+    if (action === 'play' && s.energy < 10) return { state: s, ok: false, wait: 0, tired: true };
+    const n = EFFECT[action](s);
+    n.cd = { ...s.cd, [action]: now + CD[action] };
+    return { state: n, ok: true, wait: 0, levelUp: level(n.xp) > level(s.xp) };
+  }
+
+  // Visita diaria: suma racha si vienes en días seguidos y da puntos extra.
+  function visit(s0, now) {
+    const s = tick(s0, now);
+    const today = dayKey(now);
+    if (s.day === today) return { state: s, fresh: false };
+    const yesterday = dayKey(now - 24 * HOUR);
+    const streak = s.day === yesterday ? s.streak + 1 : 1;
+    return { state: { ...s, day: today, streak, xp: s.xp + 5 + Math.min(10, streak), love: clamp(s.love + 5) }, fresh: true };
+  }
+
+  // Tiempo jugando a Minecraft: la mascota "acompaña" y gana puntos (tope por sesión).
+  function gameTime(s, minutes) {
+    const m = Math.max(0, Math.min(180, Math.floor(+minutes || 0)));
+    return { ...s, xp: s.xp + Math.floor(m / 10) * 3, energy: clamp(s.energy - m / 20), hunger: clamp(s.hunger - m / 15) };
+  }
+
+  return { sanitize, fresh, tick, act, visit, gameTime, level, progress, mood, dayKey, CD, LEVELS };
+}));
+
+(function () {
+  if (typeof document === 'undefined') return;
+  const L = window.NovaPetLife; const M = window.NovaMascot;
+  if (!L || !M) return;
+  const KEY = 'px.pet.life';
+  const load = () => { try { return L.sanitize(JSON.parse(localStorage.getItem(KEY) || 'null'), Date.now()); } catch { return L.fresh(Date.now()); } };
+  const store = (s) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
+  let st = L.tick(load(), Date.now());
+  const v0 = L.visit(st, Date.now()); st = v0.state; store(st);
+
+  const LINES = {
+    feed: ['¡Ñam! Qué rico 😋', '¡Gracias, tenía hambre!', 'Mmm, mi comida favorita 🎋'],
+    play: ['¡Otra vez, otra vez! 🎉', '¡Qué divertido!', 'Jajaja, ¡me encanta jugar contigo!'],
+    pet: ['Ronroneo de panda… 💗', 'Qué rico mimo 🥰', 'Quédate así un ratito…'],
+    sleep: ['Zzz… cinco minutitos 😴', 'Me recargo y vuelvo…', 'Buenas noches (aunque sea de día) 🌙'],
+    tired: ['Estoy muy cansado para jugar… ¿una siesta primero?'],
+    hambre: ['¡Tengo hambre! Ábreme el panel y dame de comer 🎋', 'Mi pancita hace ruidos…'],
+    sueño: ['Tengo mucho sueño… 😪'],
+    triste: ['Me siento solito… ¿jugamos?'],
+    level: ['¡Subí de nivel! 🎉']
+  };
+  const pick = (k) => { const a = LINES[k]; return a[Math.floor(Math.random() * a.length)]; };
+  const fmtWait = (ms) => { const m = Math.ceil(ms / 60000); return m <= 1 ? 'un minuto' : `${m} minutos`; };
+
+  /* ---------- panel «Cuidar a PX» ---------- */
+  let dlg = null; let timer = 0;
+  const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  function bar(label) {
+    const row = el('div', 'pl-row'); const fill = el('i'); const track = el('div', 'pl-bar'); track.append(fill);
+    row.append(el('span', 'pl-lbl', label), track); return { row, fill };
+  }
+  function open() {
+    if (dlg) return;
+    dlg = document.createElement('dialog'); dlg.className = 'event-modal pl-modal';
+    const body = el('div', 'event-modal-body');
+    const title = el('h3'); title.textContent = '🐼 Cuidar a tu mascota';
+    const nameRow = el('div', 'pl-name'); const nameIn = el('input'); nameIn.maxLength = 16; nameIn.value = st.name; nameIn.setAttribute('aria-label', 'Nombre de tu mascota');
+    const lvl = el('small', 'muted'); nameRow.append(nameIn, lvl);
+    const xpBar = el('div', 'pl-bar pl-xp'); const xpFill = el('i'); xpBar.append(xpFill);
+    const moodEl = el('p', 'pl-mood');
+    const b1 = bar('🍖 Hambre'); const b2 = bar('⚡ Energía'); const b3 = bar('💗 Cariño');
+    const btns = el('div', 'mp-actions');
+    const defs = [['feed', '🍖 Dar de comer'], ['play', '🎾 Jugar'], ['pet', '🤗 Acariciar'], ['sleep', '😴 Dormir']];
+    const note = el('small', 'muted pl-note');
+    const refresh = () => {
+      st = L.tick(st, Date.now());
+      const p = L.progress(st.xp);
+      lvl.textContent = `Nivel ${p.level}${st.streak > 1 ? ` · racha de ${st.streak} días 🔥` : ''}`;
+      xpFill.style.width = p.pct + '%';
+      b1.fill.style.width = st.hunger + '%'; b2.fill.style.width = st.energy + '%'; b3.fill.style.width = st.love + '%';
+      moodEl.textContent = { feliz: `${st.name} está feliz 😄`, normal: `${st.name} está tranquilo 🙂`, hambre: `${st.name} tiene hambre 😢`, sueño: `${st.name} tiene sueño 😪`, triste: `${st.name} se siente solito 🥺` }[L.mood(st)];
+    };
+    defs.forEach(([a, t]) => {
+      const b = el('button', '', t); b.type = 'button';
+      b.addEventListener('click', () => {
+        const r = L.act(st, a, Date.now()); st = r.state;
+        if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : '', 3500); refresh(); return; }
+        note.textContent = '';
+        store(st); M.say(r.levelUp ? pick('level') : pick(a), 4500); refresh();
+        const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2); if (c.hop) c.hop(); }
+      });
+      btns.append(b);
+    });
+    const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; btns.append(close);
+    nameIn.addEventListener('change', () => { st = { ...st, name: L.sanitize({ name: nameIn.value }, Date.now()).name }; nameIn.value = st.name; store(st); refresh(); });
+    const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
+    close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
+    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, note); dlg.append(body); document.body.append(dlg);
+    refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
+  }
+  window.NovaPetLife.open = open;
+
+  /* ---------- se integra con la mascota ---------- */
+  let gameStart = 0;
+  const origNotify = M.notify;
+  M.notify = (type, data) => {
+    if (type === 'game-start') gameStart = Date.now();
+    if (type === 'game-end' && gameStart) { st = L.gameTime(L.tick(st, Date.now()), Math.round((Date.now() - gameStart) / 60000)); store(st); gameStart = 0; }
+    return origNotify(type, data);
+  };
+  // Si pasa mucho tiempo con una necesidad baja, se queja (poco y sin molestar mientras juegas).
+  let lastWhine = Date.now();
+  setInterval(() => {
+    if (document.hidden || Date.now() - lastWhine < 15 * 60000) return;
+    st = L.tick(st, Date.now()); store(st);
+    const m = L.mood(st);
+    if (m === 'hambre' || m === 'sueño' || m === 'triste') { lastWhine = Date.now(); M.say(pick(m), 6000); }
+  }, 60000);
+  document.addEventListener('dblclick', (e) => { if (e.target && e.target.id === 'pet-hit') open(); });
+  const openBtn = document.getElementById('pet-care-open');
+  if (openBtn) openBtn.addEventListener('click', open);
+  if (v0.fresh && st.streak > 1) setTimeout(() => M.say(`¡${st.streak} días seguidos juntos! 🔥`, 5500), 12000);
+}());

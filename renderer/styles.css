@@ -2576,3 +2576,15 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .crop-modal input[type="range"] { width: min(360px, 90%); }
 .crop-modal .mp-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .crop-modal .mp-actions button { justify-self: auto; }
+
+/* Cuidar a PX */
+.pl-modal .event-modal-body { display: grid; gap: 10px; min-width: min(380px, 88vw); }
+.pl-name { display: flex; gap: 10px; align-items: center; }
+.pl-name input { flex: 1; max-width: 200px; font-weight: 700; }
+.pl-row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; }
+.pl-bar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+.pl-bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--accent, #7c5cff); transition: width .4s ease; }
+.pl-xp { height: 6px; }
+.pl-mood { margin: 0; text-align: center; font-weight: 600; }
+.pl-modal .mp-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.pl-modal .mp-actions button { justify-self: auto; }
