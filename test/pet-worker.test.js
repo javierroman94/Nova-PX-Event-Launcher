@@ -40,5 +40,15 @@ const assert = require('assert');
   assert.strictEqual((await W.handleChat(req(body), { PET: kv(), ANTHROPIC_KEY: 'k', PET_GLOBAL_DAILY: '0' }, ok('x'))).status, 429);
   res = await W.handleChat(req(body), { PET: kv(), ANTHROPIC_KEY: 'k' }, async () => new Response('no', { status: 500 }));
   assert.strictEqual(res.status, 502);
+  // Workers AI (sin clave) y filtro de salida
+  const ai = { run: async (model, o) => { calls.push({ model, o }); return { response: 'Hola desde Workers AI 🐼' }; } };
+  res = await W.handleChat(req(body), { PET: kv(), AI: ai }, async () => { throw new Error('no debe llamar a Anthropic'); });
+  j = await res.json();
+  assert.strictEqual(res.status, 200); assert.strictEqual(j.text, 'Hola desde Workers AI 🐼');
+  assert.strictEqual(calls[calls.length - 1].o.messages[0].role, 'system');
+  const ai2 = { run: async () => ({ choices: [{ message: { content: 'Formato OpenAI 🐼' } }] }) };
+  assert.strictEqual((await (await W.handleChat(req(body), { PET: kv(), AI: ai2 })).json()).text, 'Formato OpenAI 🐼');
+  const bad = { run: async () => ({ response: 'eres un idiota' }) };
+  assert.ok(!/idiota/.test((await (await W.handleChat(req(body), { PET: kv(), AI: bad })).json()).text));
   console.log('pet-worker ok');
 })().catch((e) => { console.error(e); process.exit(1); });

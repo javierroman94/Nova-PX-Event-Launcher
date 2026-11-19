@@ -2544,3 +2544,7 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 #pet-chat .pc-tools button { font-size: 11px; padding: 3px 8px; }
 #pet-chat .pc-form { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid rgba(255,255,255,.1); }
 #pet-chat .pc-form input { flex: 1; min-width: 0; }
+
+/* Participantes separados por grupo (p. ej. naciones) */
+.people-sub { margin: 16px 0 6px; padding: 5px 12px; border-radius: 8px; font-size: 13px; letter-spacing: .02em; background: color-mix(in srgb, var(--accent, #35d6ff) 16%, transparent); border-left: 3px solid var(--accent, #35d6ff); text-align: left; }
+.people-row.grouped { max-height: none; overflow: visible; margin-bottom: 4px; }

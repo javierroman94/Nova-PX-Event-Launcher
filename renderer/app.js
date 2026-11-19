@@ -753,21 +753,31 @@ function paintWinners(ev) {
 function paintPeople(ev) {
   const box = $('event-modal-people');
   box.replaceChildren();
+  // Si los participantes traen "rol" distinto (p. ej. cada nación), se separan en grupos con su propio título.
+  const split = (list) => {
+    const roles = [...new Set((list || []).map((p) => p.role || ''))];
+    if (roles.length < 2 || roles.length > 12 || roles.includes('')) return [['', list]];
+    return roles.map((r) => [r, list.filter((p) => (p.role || '') === r)]);
+  };
   const groups = [['👥 Participantes', ev.roster], ['🤝 Colaboraron con Nova PX', ev.collabs]];
   let any = false;
   groups.forEach(([title, list]) => {
     if (!list || !list.length) return;
     any = true;
     box.append(el('h4', 'winners-title', `${title} (${list.length})`));
-    const row = el('div', 'people-row compact');
-    list.forEach((p) => {
-      const c = el('div', 'person');
-      c.append(head3d({ nick: p.nick, ...(p.skin ? { skin: p.skin, slim: p.slim } : {}) }, 52), el('div', 'nick', p.nick));
-      if (p.role) c.append(el('div', 'role', p.role));
-      if (p.links && p.links.length) c.append(linkChips(p.links));
-      row.append(c);
+    const parts = title.startsWith('👥') ? split(list) : [['', list]];
+    parts.forEach(([sub, items]) => {
+      if (sub) box.append(el('h5', 'people-sub', `${sub} · ${items.length}`));
+      const row = el('div', 'people-row compact' + (sub ? ' grouped' : ''));
+      items.forEach((p) => {
+        const c = el('div', 'person');
+        c.append(head3d({ nick: p.nick, ...(p.skin ? { skin: p.skin, slim: p.slim } : {}) }, 52), el('div', 'nick', p.nick));
+        if (p.role && !sub) c.append(el('div', 'role', p.role));
+        if (p.links && p.links.length) c.append(linkChips(p.links));
+        row.append(c);
+      });
+      box.append(row);
     });
-    box.append(row);
   });
   box.hidden = !any;
 }

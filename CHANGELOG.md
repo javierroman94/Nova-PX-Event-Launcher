@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.88
+- **Eventos**: los participantes con grupo (como las 4 naciones de RubroCraft Nations) ahora se muestran **separados por grupo**, cada uno con su título, en vez de todos pegados.
+- **PX con IA**: ya está publicada y funcionando con Workers AI de Cloudflare (sin clave de pago, con tope diario). Es una IA más sencilla que Claude: sirve para charlar y chistes; si algún día se pone una clave de Anthropic, el mismo servidor pasa a usar Claude solo.
+
 ## 1.0.87
 - **Eventos**: los participantes (y colaboradores) ahora se ven como la **cabeza del jugador en 3D**, igual que los ganadores, y todas las cabezas 3D del launcher quedan **fijas** (sin balanceo ni giro).
 - **PX con IA (opcional, apagado por defecto)**: en Ajustes → Apariencia puedes activar que PX charle contigo con IA (Claude), sea bromista, aprenda gustos y te ayude a entender un error de Minecraft («Revisar mi último error»). Haz clic en PX para abrir su chat. Tiene tope diario de mensajes, no guarda las conversaciones en el servidor, quita tu usuario y claves de los registros antes de enviarlos y guarda lo aprendido solo en tu PC (botón «Olvidar todo»). Sin internet o sin cupo, PX sigue con sus reglas locales.

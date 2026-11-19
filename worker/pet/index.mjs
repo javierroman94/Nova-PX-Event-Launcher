@@ -68,8 +68,36 @@ async function bump(env, key, limit, ttl = 172800) {
   return { ok: true, n: n + 1 };
 }
 
+// Filtro de salida (los modelos abiertos fallan más que Claude): si algo no apto se cuela, se cambia por una broma segura.
+const BAD = /\b(put[oa]s?|mierda|co[ñn]o|verga|pendej[oa]s?|carajo|joder|chingar|marica|idiota|estúpid[oa]|matar(te|se)?|suicid\w*|porn\w*|sexo|sexual\w*|desnud\w*|droga\w*|cocaína|marihuana|fuck|shit|bitch)\b/i;
+const SAFE = ['Eso mejor lo dejo para los creepers. 🐼 ¿Hablamos de Minecraft?', 'Uy, ese tema me da lag. 😅 Pregúntame de mods, modpacks o chistes.'];
+export const safeText = (t) => (BAD.test(t) ? SAFE[t.length % SAFE.length] : t);
+
+async function callModel(env, r, fetchFn) {
+  const system = buildSystem(r);
+  if (env.ANTHROPIC_KEY) {
+    const res = await fetchFn('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: env.PET_MODEL || 'claude-haiku-5-5', max_tokens: r.mode === 'help' ? 450 : 200, temperature: 0.9, system, messages: r.messages })
+    });
+    if (!res.ok) throw new Error('upstream');
+    const data = await res.json();
+    return (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
+  }
+  if (env.AI) { // Workers AI (sin clave): modelo abierto de Cloudflare
+    const out = await env.AI.run(env.PET_AI_MODEL || '@cf/meta/llama-3.1-8b-instruct-fast', {
+      messages: [{ role: 'system', content: system }, ...r.messages], max_tokens: r.mode === 'help' ? 450 : 200, temperature: 0.9
+    });
+    const o = out && out.result ? out.result : out;
+    const c = o && o.choices && o.choices[0] && o.choices[0].message;
+    return String((o && o.response) || (c && c.content) || '');
+  }
+  return null;
+}
+
 export async function handleChat(request, env, fetchFn = fetch) {
-  if (!env.ANTHROPIC_KEY) return json({ error: 'off' }, 503);
+  if (!env.ANTHROPIC_KEY && !env.AI) return json({ error: 'off' }, 503);
   const text = await request.text();
   if (text.length > 8000) return json({ error: 'too_big' }, 413);
   let b; try { b = JSON.parse(text); } catch { return json({ error: 'bad_json' }, 400); }
@@ -88,18 +116,11 @@ export async function handleChat(request, env, fetchFn = fetch) {
   const i = await bump(env, `i:${d}:${ip}`, ipMax);
   if (!i.ok) return json({ error: 'limit', left: 0 }, 429);
 
-  let res;
-  try {
-    res = await fetchFn('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: env.PET_MODEL || 'claude-haiku-5-5', max_tokens: r.mode === 'help' ? 450 : 200, temperature: 0.9, system: buildSystem(r), messages: r.messages })
-    });
-  } catch { return json({ error: 'upstream' }, 502); }
-  if (!res.ok) return json({ error: 'upstream' }, 502);
-  let data; try { data = await res.json(); } catch { return json({ error: 'upstream' }, 502); }
-  const raw = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
+  let raw;
+  try { raw = await callModel(env, r, fetchFn); } catch (e) { console.error('pet upstream', String(e && e.message).slice(0, 200)); return json({ error: 'upstream', detail: String(e && e.message).slice(0, 120) }, 502); }
+  if (raw == null) return json({ error: 'off' }, 503);
   const out = parseReply(raw);
+  out.text = safeText(out.text);
   if (!out.text) return json({ error: 'empty' }, 502);
   return json({ ...out, left: Math.max(0, userMax - u.n) });
 }
@@ -108,7 +129,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/chat') return handleChat(request, env);
-    if (url.pathname === '/health') return json({ ok: true, on: !!env.ANTHROPIC_KEY });
+    if (url.pathname === '/health') return json({ ok: true, on: !!(env.ANTHROPIC_KEY || env.AI), engine: env.ANTHROPIC_KEY ? 'claude' : env.AI ? 'workers-ai' : 'none' });
     return json({ error: 'not_found' }, 404);
   }
 };
