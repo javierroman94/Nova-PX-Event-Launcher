@@ -13,7 +13,7 @@ Instálalo una vez y juega: eventos, modpacks, skins y amigos en un solo lugar.
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-5fd38d?style=for-the-badge&labelColor=0e1220)](LICENSE)
 ![Electron](https://img.shields.io/badge/Electron-33-4cc9f0?style=for-the-badge&labelColor=0e1220&logo=electron&logoColor=white)
 
-### [⬇️ Descargar para Windows y Linux](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)
+### [🪟 Obtener en Microsoft Store](https://apps.microsoft.com/detail/9mvjl4gf5wj8) · [⬇️ Descargar para Windows y Linux](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)
 
 [📖 Guía completa](docs/GUIA.md) · [💬 Discord](https://discord.gg/VAfuFEQtjv) · [𝕏 @NovaPX_](https://x.com/NovaPX_) · [🧾 Historial de cambios](CHANGELOG.md)
 
@@ -101,9 +101,14 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 
 ## 📥 Instalación (jugadores)
 
+**Windows (recomendado):** instálalo desde la **[Microsoft Store](https://apps.microsoft.com/detail/9mvjl4gf5wj8)**. Lo distribuye Microsoft, sin el aviso de «editor desconocido» del instalador suelto, y se actualiza solo.
+
+**Otras opciones:**
+
 1. Entra a **[Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest)** y descarga el instalador (`.exe` en Windows, `.AppImage` en Linux).
-2. Ábrelo e instala. Windows puede avisar de «editor desconocido» porque el instalador aún no está firmado: pulsa **Más información → Ejecutar de todas formas**.
-3. Inicia sesión y pulsa **Jugar**.
+2. Ábrelo e instala. El `.exe` de GitHub aún no está firmado y Windows puede avisar de «editor desconocido»: pulsa **Más información → Ejecutar de todas formas**.
+
+Después, inicia sesión y pulsa **Jugar**.
 
 ## 🛠️ Para el equipo (desarrollo)
 
