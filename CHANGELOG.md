@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.90
+- **Ajustes**: el botón «Guardar ajustes» solo aparece cuando cambias algo y desaparece al guardar.
+- **Eventos**: las portadas rellenan su marco sin bordes difuminados; el desenfoque queda solo en el detalle del evento, detrás de las imágenes que no llenan el cuadro (como los logos verticales). Los enlaces del evento (post de X, tráiler…) van centrados justo debajo de la descripción.
+- **Inicio**: la imagen de NovaPX se ajusta al marco sin bordes difuminados, sea cual sea la resolución.
+
 ## 1.0.89
 - **Clic derecho**: el menú ahora es solo texto, sin emojis de Windows, para que se vea más serio y uniforme.
 - **Criaturas pixeladas**: vienen **apagadas por defecto**; quien las quiera las activa en Ajustes → Apariencia.

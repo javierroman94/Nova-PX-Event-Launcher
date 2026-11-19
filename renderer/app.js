@@ -798,8 +798,8 @@ async function renderEvents() {
     };
     const open = (ev) => {
       const src = imageUrl(ev.image);
-      $('event-modal-img').hidden = !src;
-      if (src) $('event-modal-img').src = src;
+      $('event-modal-media').hidden = !src;
+      if (src) { $('event-modal-img').src = src; $('event-modal-media').style.setProperty('--ev-img', `url("${src.replace(/"/g, '%22')}")`); }
       $('event-modal-name').textContent = ev.name;
       $('event-modal-date').textContent = ev.date || '';
       $('event-modal-desc').textContent = ev.description || '';
@@ -2998,6 +2998,7 @@ $('save-settings').addEventListener('click', async () => {
     msg.textContent = 'Ajustes guardados.';
     msg.className = 'msg';
     toast('Ajustes guardados');
+    window.dispatchEvent(new Event('settings-saved'));
   } catch (err) {
     msg.textContent = `No se pudieron guardar los ajustes: ${cleanError(err)}`;
     msg.className = 'msg error';
@@ -4399,11 +4400,13 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   // Aviso de cambios sin guardar junto al botón.
   const saveRow = document.querySelector('#page-settings .save-row');
   if (saveRow) {
-    const dirty = el('span', 'set-dirty', 'Cambios sin guardar'); dirty.hidden = true;
+    // El botón Guardar solo aparece cuando hay algo que guardar y se esconde al guardar.
+    const dirty = el('span', 'set-dirty', 'Cambios sin guardar');
     saveRow.prepend(dirty);
-    const on = (e) => { if (e.target.closest('.set-nav') || e.target.id === 'lang-select') return; dirty.hidden = false; };
+    saveRow.hidden = true;
+    const on = (e) => { if (e.target.closest('.set-nav') || e.target.id === 'lang-select') return; saveRow.hidden = false; };
     root.addEventListener('input', on); root.addEventListener('change', on);
-    $$('save-settings')?.addEventListener('click', () => { dirty.hidden = true; });
+    window.addEventListener('settings-saved', () => { saveRow.hidden = true; });
   }
 })();
 

@@ -2549,3 +2549,17 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .people-sub { margin: 16px 0 6px; padding: 5px 12px; border-radius: 8px; font-size: 13px; letter-spacing: .02em; background: color-mix(in srgb, var(--accent, #35d6ff) 16%, transparent); border-left: 3px solid var(--accent, #35d6ff); text-align: left; }
 .people-row.grouped { max-height: none; overflow: visible; margin-bottom: 4px; }
 .people-editor[hidden], .ade-sub[hidden] { display: none; }
+
+/* 1.0.90: imágenes sin bordes difuminados en tarjetas y en Inicio; el desenfoque solo en el detalle del evento */
+.ev-media::before { display: none; }
+.ev-img { object-fit: cover; filter: none; }
+.event-modal-media { position: relative; overflow: hidden; isolation: isolate; background: #0c0e16; }
+.event-modal-media[hidden] { display: none; }
+.event-modal-media::before { content: ""; position: absolute; inset: -24px; z-index: -1; background: var(--ev-img) center / cover no-repeat; filter: blur(24px) saturate(1.3) brightness(.6); }
+.event-modal-media .event-modal-img { background: transparent; margin: 0 auto; }
+#event-modal-posts .link-chips { justify-content: center; }
+.hero.has-banner { background: linear-gradient(90deg, rgba(10, 12, 22, .6) 0%, rgba(10, 12, 22, .15) 55%, rgba(10, 12, 22, 0) 100%), var(--hero-image) center / cover no-repeat, #0b0e18; }
+.hero.has-banner::before { display: none; }
+.lp-img { object-fit: cover; }
+.lp-hero:not(.has-pack)::before { display: none; }
+.save-row[hidden] { display: none; }
