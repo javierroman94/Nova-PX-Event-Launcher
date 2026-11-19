@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.85
+- **PX, la mascota, ahora tiene personalidad**: te saluda por tu nick según la hora (y se acuerda de cuánto llevas sin venir), te mira cuando pasas el cursor, salta si le haces clic, se deja acariciar, se duerme si no tocas nada y se despierta al volver. Comenta cuando abres o cierras Minecraft (avisa si jugaste mucho rato o si se cerró con error y te manda a la Consola) y cuando termina de instalarse un modpack. Ya no huye del cursor.
+- Todo funciona sin internet y no envía nada: la memoria (visitas, caricias) queda solo en tu PC. Se apaga en Ajustes → Apariencia → «PX, la mascota, habla y reacciona», o con «Criaturas pixeladas».
+
 ## 1.0.84
 - **NeoForge** (Minecraft 1.20.2 en adelante): el launcher descarga el instalador oficial, elige la versión adecuada y juega modpacks de NeoForge. Antes salían como «no soportados». Función nueva: pruébala y avisa si algún modpack da problemas.
 - **Modpacks de CurseForge**: ya se pueden importar los `.zip` descargados de la web de CurseForge (Importar archivo o arrastrándolos). Los mods cuyo autor bloquea las descargas externas se avisan y se omiten. La clave de CurseForge vive en un servidor intermedio, nunca dentro del launcher.

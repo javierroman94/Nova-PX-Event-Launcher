@@ -2142,7 +2142,7 @@ function busyShow(title, d) {
 function busyHide() { clearTimeout(busyTimer); $('busy-card').hidden = true; }
 window.api.onModpackProgress((d) => {
   const text = d.text || '';
-  if (text === 'Listo') busyHide(); else busyShow(null, d);
+  if (text === 'Listo') { busyHide(); if (window.NovaMascot) window.NovaMascot.notify('pack-done'); } else busyShow(null, d);
   if (adminProgress) adminProgress(d);
   if ($('mp-add-modal').open) $('mp-add-status').textContent = text;
   $('mp-status').textContent = text;
@@ -2589,6 +2589,7 @@ window.api.onAuthChanged && window.api.onAuthChanged((info) => setSession(info))
 
 function setSession(info) {
   currentUser = info;
+  if (info && window.NovaMascot) window.NovaMascot.notify('session', { name: info.name });
   syncSecretThemes(info);
   paintAccounts();
   renderAccountRows();
@@ -2662,6 +2663,7 @@ $('logout-btn').addEventListener('click', async () => {
 /* ---------- jugar ---------- */
 let playing = false;
 function setPlaying(value) {
+  if (value && !playing && window.NovaMascot) window.NovaMascot.notify('game-start');
   playing = value;
   $('play-btn').disabled = value || !eventActive;
   const other = value && launchTarget && launchTarget.kind === 'pack';
@@ -2802,6 +2804,7 @@ window.api.onClose((d) => {
   else $('status').textContent = eventActive ? 'Listo para jugar' : eventState === 'ended' ? 'Este evento ya finalizó' : 'Todavía no hay un evento activo';
   if (d.code !== 0) toast(`Minecraft se cerró con el código ${d.code}. Revisa Inicio o la Consola.`, 'error');
   setPlaying(false);
+  if (window.NovaMascot) window.NovaMascot.notify('game-end', { code: d.code });
   renderContinue();
   showCrash(d.code === 0 ? null : d.crash);
   refreshPlaytime();

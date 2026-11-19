@@ -2522,3 +2522,12 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .acc-txt { display: grid; flex: 1; min-width: 0; line-height: 1.25; }
 .acc-txt span { font-size: 12px; color: var(--muted); }
 .acc-row button { margin-top: 0; }
+
+/* PX, la mascota: burbuja de diálogo y zona para acariciarlo */
+#pet-hit { position: fixed; z-index: 61; cursor: pointer; background: transparent; }
+#pet-bubble { position: fixed; z-index: 62; max-width: 240px; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.35; pointer-events: none;
+  background: var(--panel, #1b2130); color: var(--text, #fff); border: 1px solid var(--accent, #35d6ff); box-shadow: 0 6px 18px rgba(0,0,0,.35); animation: pet-pop .18s ease-out; }
+#pet-bubble::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 10px; height: 10px; margin-left: -5px; transform: rotate(45deg);
+  background: inherit; border-right: 1px solid var(--accent, #35d6ff); border-bottom: 1px solid var(--accent, #35d6ff); }
+.no-fx #pet-bubble { animation: none; }
+@keyframes pet-pop { from { transform: translateY(4px) scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }

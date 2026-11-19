@@ -208,8 +208,18 @@
     });
   }
 
+  // Control externo del panda PX (lo usa mascot.js): dormir, saltar, alegrarse.
+  const petCtl = { sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; } };
+  function getPet() {
+    const c = crits.find((k) => k.name === 'px');
+    if (!c || !opt.critters || root.classList.contains('no-fx')) return null;
+    const sp = sheet(c.name, 0, '#fff');
+    return { x: c.x, top: h - 4 - sp.height + c.y, w: sp.width, h: sp.height, dir: c.dir };
+  }
+
   function updateCritter(c, dt, lb) {
     const sh = sheet(c.name, 0, '#fff').height;
+    if (c.name === 'px') return updatePet(c, dt, lb);
     const ground = h - 4;
     c.t -= dt; c.ph += dt * (c.fly ? 6 : 9);
     const near = Math.hypot(mx - c.x, my - (ground - sh / 2));
@@ -234,6 +244,24 @@
     if (scared && c.y === 0 && Math.random() < 0.06) c.vy = -190;
     if (c.vy || c.y < 0) { c.vy += 520 * dt; c.y += c.vy * dt; if (c.y >= 0) { c.y = 0; c.vy = 0; } }
     c.moving = speed > 0;
+  }
+
+  // PX es amistoso: no huye del cursor. Lo mira, se duerme si se lo pide mascot.js y salta de alegría.
+  function updatePet(c, dt, lb) {
+    const ground = h - 4;
+    c.t -= dt; c.ph += dt * 9;
+    if (petCtl.joy > 0) { petCtl.joy -= dt; if (!c.vy && c.y === 0) c.vy = -150; }
+    const near = Math.abs(mx - c.x) < 150 && my > h - 190;
+    c.moving = false;
+    if (petCtl.sleep) { c.state = 'idle'; }
+    else if (near) { c.dir = mx < c.x ? -1 : 1; c.state = 'idle'; }
+    else if (c.t <= 0) { c.state = Math.random() < 0.3 ? 'idle' : 'walk'; c.dir = Math.random() < 0.5 ? -1 : 1; c.t = rnd(1.2, 4); }
+    const speed = c.state === 'walk' ? 26 : 0;
+    c.x += c.dir * speed * dt;
+    if (c.x < lb) { c.x = lb; c.dir = 1; } else if (c.x > w - 24) { c.x = w - 24; c.dir = -1; }
+    if (c.vy || c.y < 0) { c.vy += 520 * dt; c.y += c.vy * dt; if (c.y >= 0) { c.y = 0; c.vy = 0; } }
+    c.moving = speed > 0;
+    void ground;
   }
 
   function drawCritter(c) {
@@ -311,5 +339,5 @@
   }
   bind('fun-trail', 'trail');
   bind('fun-critters', 'critters');
-  window.NovaFun = { refresh, options: opt };
+  window.NovaFun = { refresh, options: opt, petCtl, getPet };
 })();
