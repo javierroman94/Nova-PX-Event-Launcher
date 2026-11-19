@@ -8,7 +8,10 @@
   const get = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const put = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
-  let on = get(AI, '0') === '1';
+  let want = get(AI, '0') === '1';
+  let allowed = false; // la IA de PX es solo para administradores
+  let on = false;
+  const refreshOn = () => { on = want && allowed; };
   let facts = [];
   try { facts = JSON.parse(get(FACTS, '[]')) || []; } catch { facts = []; }
   facts = Brain.addFacts([], facts, 30);
@@ -128,7 +131,11 @@
 
   const box = document.getElementById('fun-pet-ai');
   if (box) {
-    box.checked = on;
-    box.addEventListener('change', () => { on = box.checked; put(AI, on ? '1' : '0'); if (!on) close(); });
+    box.checked = want;
+    box.addEventListener('change', () => { want = box.checked; put(AI, want ? '1' : '0'); refreshOn(); if (!on) close(); });
   }
+  const aiRows = () => ['fun-pet-ai-row', 'fun-pet-ai-note'].map((i) => document.getElementById(i)).filter(Boolean);
+  // La llama app.js cuando cambia el modo administrador.
+  M.setAiAllowed = (v) => { allowed = !!v; refreshOn(); aiRows().forEach((e) => { e.hidden = !allowed; }); if (!on) close(); };
+  M.setAiAllowed(false);
 })();

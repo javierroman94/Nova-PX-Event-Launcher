@@ -3277,6 +3277,7 @@ let isAdmin = false;
 let adminProgress = null;
 function setAdminUi(on, repo, err, eligible) {
   isAdmin = on;
+  if (window.NovaMascot && window.NovaMascot.setAiAllowed) window.NovaMascot.setAiAllowed(on);
   syncSecretThemes();
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;

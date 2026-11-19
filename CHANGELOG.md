@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.93
+- **PX con IA solo para administradores**: la charla con IA de la mascota (y su opción en Ajustes) solo aparece con el modo administrador activo. Los demás siguen con las reglas locales de PX.
+
 ## 1.0.92
 - **Acomodar la foto antes de subirla** (administración): después de elegir una imagen se abre un recuadro para moverla y acercarla, como en Instagram o X; solo se sube lo que ves dentro del cuadro. Aplica a la imagen y el fondo de eventos, banner/logo, foto de perfil del equipo, noticias, anuncios y patrocinadores. También puedes «Subir sin recortar». Las skins no se recortan.
 - **Cambios de nombre**: si un jugador cambia su nick de Minecraft, el launcher muestra el nuevo (y por tanto su skin actual) en ganadores, participantes, colaboraciones, comisionados y equipo.
