@@ -129,9 +129,26 @@
     try { lib = await window.api.srvPluginsList(); } catch { wrap.hidden = true; return; }
     if (!lib.plugins.length) { wrap.hidden = true; return; }
     lib.plugins.forEach((p) => {
-      const row = el('div', 'sv-item');
-      row.append(el('span', '', `${p.locked ? '🔒' : '🌐'} ${p.name}${p.description ? ' — ' + p.description : ''}`));
-      const add = el('button', 'primary', 'Instalar'); add.type = 'button';
+      const row = el('div', 'sv-card');
+      const src = p.image && typeof imageUrl === 'function' ? imageUrl(p.image) : '';
+      if (src) { const im = el('img'); im.alt = ''; im.src = src; row.append(im); } else row.append(el('div', 'sv-noimg', p.locked ? '🔒' : '🧩'));
+      const info = el('div', 'sv-grow');
+      info.append(el('b', '', `${p.locked ? '🔒 ' : ''}${p.name}`));
+      if (p.creator && p.creator.name) {
+        const by = el('div', 'muted', 'Por ');
+        if (p.creator.url) { const a = el('a', '', p.creator.name); a.addEventListener('click', () => window.api.openLink(p.creator.url).catch(() => {})); by.append(a); } else by.append(document.createTextNode(p.creator.name));
+        info.append(by);
+      }
+      if (p.description) info.append(el('p', '', p.description));
+      if (p.info) info.append(el('p', 'muted', p.info));
+      if (p.locked) info.append(el('p', 'muted', 'Bloqueado: puedes verlo, pero para instalarlo necesitas la clave que te dé un administrador.'));
+      if (p.links && p.links.length) {
+        const ls = el('div', 'sv-links');
+        p.links.forEach((l) => { const a = el('a', '', l.label); a.addEventListener('click', () => window.api.openLink(l.url).catch(() => {})); ls.append(a); });
+        info.append(ls);
+      }
+      row.append(info);
+      const add = el('button', 'primary', p.locked ? 'Desbloquear e instalar' : 'Instalar'); add.type = 'button';
       add.addEventListener('click', async () => {
         add.disabled = true;
         const run = (pw) => window.api.srvPluginInstall(current, p.id, pw);
@@ -140,13 +157,13 @@
           try { r = await run(''); } catch (e) {
             const m = cleanError(e);
             if (m !== 'LOCKED' && m !== 'BAD_KEY') throw e;
-            const pw = await window.askPassword(m === 'BAD_KEY' ? 'Contraseña incorrecta. Inténtalo otra vez.' : 'Este plugin está bloqueado. Escribe la contraseña de la biblioteca (te la da un administrador).');
+            const pw = await window.askPassword(m === 'BAD_KEY' ? 'Clave incorrecta. Inténtalo otra vez.' : 'Este plugin está bloqueado. Escribe la clave de la biblioteca (te la da un administrador).');
             if (!pw) { add.disabled = false; return; }
             r = await run(pw);
           }
           toast(`Instalado: ${r.file}`);
           paintInstalled();
-        } catch (e) { const m = cleanError(e); toast(m === 'BAD_KEY' ? 'Esa contraseña no es la correcta.' : m); }
+        } catch (e) { const m = cleanError(e); toast(m === 'BAD_KEY' ? 'Esa clave no es la correcta.' : m); }
         add.disabled = false;
       });
       row.append(add);

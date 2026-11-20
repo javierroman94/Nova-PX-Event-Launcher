@@ -906,11 +906,17 @@
           <div class="btn-row"><button id="pl-pick" type="button">Elegir .jar…</button><span id="pl-file" class="muted">Ningún archivo elegido</span></div>
           <div class="sv-props">
             <label class="sv-prop"><span>Nombre</span><input id="pl-name" type="text" maxlength="60" /></label>
-            <label class="sv-prop"><span>Descripción</span><input id="pl-desc" type="text" maxlength="240" /></label>
+            <label class="sv-prop"><span>Descripción corta</span><input id="pl-desc" type="text" maxlength="240" /></label>
+            <label class="sv-prop"><span>Información (qué hace, comandos, requisitos)</span><textarea id="pl-info" rows="4" maxlength="800"></textarea></label>
+            <label class="sv-prop"><span>Creador</span><input id="pl-creator" type="text" maxlength="60" /></label>
+            <label class="sv-prop"><span>Enlace del creador (https)</span><input id="pl-creator-url" type="url" maxlength="300" placeholder="https://" /></label>
+            <label class="sv-prop"><span>Enlace 1 (texto y https)</span><span class="btn-row"><input id="pl-l1t" type="text" maxlength="30" placeholder="Web" /><input id="pl-l1u" type="url" maxlength="300" placeholder="https://" /></span></label>
+            <label class="sv-prop"><span>Enlace 2</span><span class="btn-row"><input id="pl-l2t" type="text" maxlength="30" placeholder="Documentación" /><input id="pl-l2u" type="url" maxlength="300" placeholder="https://" /></span></label>
+            <div class="sv-prop"><span>Imagen</span><span class="btn-row"><button id="pl-img" type="button">Elegir imagen…</button><button id="pl-img-clear" type="button" class="ghost">Quitar</button><img id="pl-img-prev" alt="" hidden class="pl-prev" /></span></div>
             <label class="sv-prop"><span>Contraseña de la biblioteca (solo si lo bloqueas)</span><input id="pl-pass" type="password" autocomplete="off" /></label>
             <label class="sv-prop"><span>Acceso</span><select id="pl-locked"><option value="1">Bloqueado (cifrado)</option><option value="0">Público</option></select></label>
           </div>
-          <div class="mp-actions"><button id="pl-publish" type="button" class="primary">Subir plugin</button></div>
+          <div class="mp-actions"><button id="pl-publish" type="button" class="primary">Subir plugin</button><button id="pl-cancel" type="button" class="ghost" hidden>Cancelar edición</button></div>
           <p id="pl-status" class="muted" role="status"></p>
           <div id="pl-list" class="mods-list"></div>
         </article>

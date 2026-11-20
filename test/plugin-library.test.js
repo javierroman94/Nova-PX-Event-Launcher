@@ -71,5 +71,30 @@ const PW = 'una frase larga y segura';
     await assert.rejects(L.fetchPlugin({ entry: b.entry, lock: null, download: async () => jar('cambiado') }), /no coincide/);
   });
 
+  await test('imagen, creador, enlaces e info se ven aunque esté bloqueado, y se filtran', () => {
+    const b = L.buildPlugin({ name: 'Bonito', description: 'd', info: 'Mucho texto', image: 'images/bonito-1.webp', creator: { name: 'Javier', url: 'https://x.com/NovaPX_' },
+      links: [{ label: 'Web', url: 'https://nova.example/p' }, { label: 'Malo', url: 'javascript:alert(1)' }, { label: '', url: 'http://inseguro' }], file: 'b.jar', data: jar(), locked: true, password: PW, baseUrl: BASE });
+    assert.strictEqual(b.entry.creator.name, 'Javier');
+    assert.deepStrictEqual(b.entry.links, [{ label: 'Web', url: 'https://nova.example/p' }]);
+    assert.strictEqual(b.entry.image, 'images/bonito-1.webp');
+    const lib = L.upsert({}, b.entry, b.lock).library;
+    assert.strictEqual(L.sanitizeLibrary(lib).plugins[0].info, 'Mucho texto');
+    const bad = L.buildPlugin({ name: 'Raro', image: 'file:///etc/passwd', creator: { name: 'A', url: 'ftp://x' }, file: 'r.jar', data: jar(), locked: false, baseUrl: BASE });
+    assert.strictEqual(bad.entry.image, '');
+    assert.strictEqual(bad.entry.creator.url, '');
+  });
+
+  await test('editar la información no toca el archivo ni el bloqueo', () => {
+    const b = L.buildPlugin({ name: 'Edit', file: 'e.jar', data: jar(), locked: true, password: PW, baseUrl: BASE });
+    const lib = L.upsert({}, b.entry, b.lock).library;
+    const r = L.updateInfo(lib, 'edit', { name: 'Edit 2', description: 'nueva', creator: { name: 'Ana' }, links: [{ label: 'Docs', url: 'https://d.example' }] });
+    const p = r.library.plugins[0];
+    assert.strictEqual(p.name, 'Edit 2');
+    assert.strictEqual(p.asset, b.entry.asset);
+    assert.strictEqual(p.locked, true);
+    assert.deepStrictEqual(r.library.lock, lib.lock);
+    assert.throws(() => L.updateInfo(lib, 'nada', {}));
+  });
+
   console.log(`  ${count} pruebas de plugin-library`);
 })().catch((e) => { console.error(e); process.exit(1); });

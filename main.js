@@ -1390,7 +1390,7 @@ ipcMain.handle('admin:pluginPublish', async (_e, p = {}) => {
   if (!pendingPlugin) throw new Error('Primero elige el archivo .jar.');
   const cur = await pluginsNow(r);
   const built = pluginLib.buildPlugin({
-    name: p.name, description: p.description, file: pendingPlugin.file, data: pendingPlugin.data,
+    name: p.name, description: p.description, info: p.info, image: p.image, creator: p.creator, links: p.links, file: pendingPlugin.file, data: pendingPlugin.data,
     locked: !!p.locked, password: typeof p.password === 'string' ? p.password : '', previousLock: cur.lock, baseUrl: r.downloadBase(PLUGIN_TAG)
   });
   const release = await r.ensureRelease(PLUGIN_TAG, 'Plugins de Nova PX');
@@ -1408,11 +1408,17 @@ ipcMain.handle('admin:pluginSetLock', async (_e, id, locked, password) => {
   if (!!locked === entry.locked) return cur;
   const pw = typeof password === 'string' ? password : '';
   const data = await pluginLib.fetchPlugin({ entry, lock: cur.lock, password: pw, download: downloadBuffer });
-  const built = pluginLib.buildPlugin({ name: entry.name, description: entry.description, file: entry.file, data, locked: !!locked, password: pw, previousLock: cur.lock, baseUrl: r.downloadBase(PLUGIN_TAG) });
+  const built = pluginLib.buildPlugin({ name: entry.name, description: entry.description, info: entry.info, image: entry.image, creator: entry.creator, links: entry.links, file: entry.file, data, locked: !!locked, password: pw, previousLock: cur.lock, baseUrl: r.downloadBase(PLUGIN_TAG) });
   const release = await r.ensureRelease(PLUGIN_TAG, 'Plugins de Nova PX');
   await r.uploadAsset(release, built.asset.name, built.asset.data);
   const next = pluginLib.upsert(cur, built.entry, built.lock);
   await publishPluginLib(r, next.library, next.staleAssets, `Plugin ${built.entry.name}: ${locked ? 'bloqueado' : 'público'} (desde el launcher)`);
+  return next.library;
+});
+ipcMain.handle('admin:pluginSaveInfo', async (_e, id, fields) => {
+  const r = await requireAdmin();
+  const next = pluginLib.updateInfo(await pluginsNow(r), String(id), fields || {});
+  await publishPluginLib(r, next.library, [], `Plugin ${id}: información (desde el launcher)`);
   return next.library;
 });
 ipcMain.handle('admin:pluginRemove', async (_e, id) => {

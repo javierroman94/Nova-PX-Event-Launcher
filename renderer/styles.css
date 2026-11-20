@@ -2620,3 +2620,11 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 #sv-main { gap: 12px; display: grid; }
 
 .sv-grow { flex: 1; min-width: 0; }
+
+.pl-prev { width: 96px; height: 54px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.sv-card { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.sv-card img { width: 96px; height: 54px; object-fit: cover; border-radius: 8px; background: rgba(0,0,0,.3); }
+.sv-card .sv-noimg { width: 96px; height: 54px; border-radius: 8px; background: rgba(255,255,255,.05); display: grid; place-items: center; font-size: 22px; }
+.sv-card p { margin: 4px 0 0; }
+.sv-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sv-links a { color: var(--accent, #b78cff); cursor: pointer; text-decoration: underline; }

@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.108
+- **Plugins propios con ficha**: cada plugin puede llevar imagen, descripción, información, creador (con enlace) y hasta 2 enlaces. Todo eso se ve en «Servidores → Plugins de Nova PX» aunque el plugin esté **bloqueado**; solo la descarga queda protegida hasta que se escriba la clave. En administración hay un botón **Editar** para cambiar la ficha sin volver a subir el archivo.
+
 ## 1.0.107
 - **Plugins propios de Nova PX** (administración → pestaña Plugins): sube tus `.jar` y aparecen en «Servidores → Plugins, mods y datapacks» para instalarlos en un clic. Cada plugin puede ser **público** o **bloqueado**: los bloqueados se publican cifrados y solo se instalan con la contraseña de la biblioteca (el archivo público no sirve sin ella). Puedes bloquear, hacer público o quitar un plugin cuando quieras.
 

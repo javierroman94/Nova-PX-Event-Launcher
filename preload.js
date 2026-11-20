@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
   pluginList: () => ipcRenderer.invoke('admin:pluginList'),
   pluginPublish: (o) => ipcRenderer.invoke('admin:pluginPublish', o),
   pluginSetLock: (id, locked, password) => ipcRenderer.invoke('admin:pluginSetLock', id, locked, password),
+  pluginSaveInfo: (id, fields) => ipcRenderer.invoke('admin:pluginSaveInfo', id, fields),
   pluginRemove: (id) => ipcRenderer.invoke('admin:pluginRemove', id),
   srvPluginsList: () => ipcRenderer.invoke('srv:plugins:list'),
   srvPluginInstall: (id, pluginId, password) => ipcRenderer.invoke('srv:plugins:install', id, pluginId, password),
