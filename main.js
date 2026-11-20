@@ -1819,6 +1819,20 @@ ipcMain.handle('admin:uploadImage', async (_e, label, dataUrl) => {
 /* ---------- PX flotante sobre Minecraft (opcional, la activa el usuario) ---------- */
 const overlayLib = require('./lib/overlay');
 let overlayWin = null;
+let overlayKeep = null;
+// En pantalla completa el juego pasa por encima de la ventana flotante: se vuelve a subir cada segundo mientras esté visible.
+function overlayKeepOnTop() {
+  if (overlayKeep) return;
+  overlayKeep = setInterval(() => {
+    if (!overlayWin || overlayWin.isDestroyed() || !overlayWin.isVisible()) return;
+    try {
+      const d = require('electron').screen.getDisplayMatching(overlayWin.getBounds());
+      overlayWin.setBounds(overlayLib.bounds(d.bounds));
+      overlayWin.setAlwaysOnTop(true, 'screen-saver');
+      overlayWin.moveTop();
+    } catch {}
+  }, 1000);
+}
 function overlayShow(p) {
   const { screen } = require('electron');
   const d = overlayLib.sanitize(p);
@@ -1832,7 +1846,8 @@ function overlayShow(p) {
     overlayWin.setIgnoreMouseEvents(true, { forward: true }); // los clics pasan al juego
     overlayWin.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
     overlayWin.once('ready-to-show', () => { if (overlayWin && !overlayWin.isDestroyed()) overlayWin.showInactive(); });
-    overlayWin.on('closed', () => { overlayWin = null; });
+    overlayWin.on('closed', () => { overlayWin = null; if (overlayKeep) { clearInterval(overlayKeep); overlayKeep = null; } });
+    overlayKeepOnTop();
     overlayWin.webContents.once('did-finish-load', () => overlayWin && overlayWin.webContents.send('overlay:update', d));
     return;
   }

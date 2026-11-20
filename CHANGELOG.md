@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.109
+- **La mascota ya se ve en pantalla completa**: la ventana flotante de PX se vuelve a poner por encima del juego cada segundo, así no se queda detrás cuando Minecraft pasa a pantalla completa (F11).
+
 ## 1.0.108
 - **Plugins propios con ficha**: cada plugin puede llevar imagen, descripción, información, creador (con enlace) y hasta 2 enlaces. Todo eso se ve en «Servidores → Plugins de Nova PX» aunque el plugin esté **bloqueado**; solo la descarga queda protegida hasta que se escriba la clave. En administración hay un botón **Editar** para cambiar la ficha sin volver a subir el archivo.
 
