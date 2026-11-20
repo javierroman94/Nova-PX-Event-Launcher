@@ -119,5 +119,33 @@ const bin = (txt) => ({ ok: true, status: 200, headers: { get: () => String(txt.
     await assert.rejects(S.installContent({ dir, meta, kind: 'plugin', projectId: '../x', fetchImpl: f }));
   });
 
+  await test('plugins: mezcla Modrinth, Hangar y SpigotMC, con respaldo para versiones nuevas', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nsrv-'));
+    const meta = { type: 'purpur', mc: '26.3' };
+    const f = async (url) => {
+      const u = decodeURIComponent(url);
+      if (u.includes('modrinth.com/v2/search')) return json({ hits: u.includes('versions:26.3') ? [] : [{ project_id: 'modr1234', title: 'Essentials' }] });
+      if (u.includes('hangar.papermc.io/api/v1/projects?')) return json({ result: u.includes('version=26.3') ? [] : [{ name: 'ViaVersion', namespace: { owner: 'ViaVersion', slug: 'ViaVersion' }, stats: { downloads: 5 }, description: 'd' }, { name: 'Essentials', namespace: { owner: 'x', slug: 'Essentials' }, stats: {} }] });
+      if (u.includes('api.spiget.org/v2/resources?')) return json([{ id: 28140, name: 'LuckPerms', tag: 't', downloads: 9 }, { id: 1, name: 'Pago', premium: true }, { id: 2, name: 'Ext', external: true }]);
+      if (u.includes('hangar.papermc.io/api/v1/projects/ViaVersion/versions')) return json({ result: [{ platformDependencies: { PAPER: ['1.21.1'] }, downloads: { PAPER: { downloadUrl: 'https://hangarcdn.papermc.io/v.jar', fileInfo: { name: 'ViaVersion-5.jar' } } } }] });
+      if (u.includes('api.spiget.org/v2/resources/28140?')) return json({ id: 28140, name: 'LuckPerms', file: { type: '.jar' } });
+      if (u.includes('/version?')) return json([]);
+      if (/^https:\/\/(hangarcdn|api\.spiget)/.test(u)) return bin('X');
+      throw new Error('url inesperada ' + u);
+    };
+    const r = await S.searchContent({ type: 'purpur', mc: '26.3', kind: 'plugin', query: '' }, f);
+    const names = r.map((x) => `${x.source}:${x.title}`);
+    assert.deepStrictEqual(names.sort(), ['hangar:ViaVersion', 'modrinth:Essentials', 'spiget:LuckPerms']); // sin repetidos ni de pago/externos
+    assert.strictEqual(r.find((x) => x.source === 'modrinth').exact, false);
+    const a = await S.installContent({ dir, meta, kind: 'plugin', projectId: 'ViaVersion/ViaVersion', source: 'hangar', fetchImpl: f });
+    assert.strictEqual(a.file, 'ViaVersion-5.jar');
+    assert.ok(a.warning);
+    const b = await S.installContent({ dir, meta, kind: 'plugin', projectId: '28140', source: 'spiget', fetchImpl: f });
+    assert.ok(fs.existsSync(path.join(dir, 'plugins', b.file)));
+    await assert.rejects(S.installContent({ dir, meta, kind: 'plugin', projectId: 'a/../b', source: 'hangar', fetchImpl: f }), /no válido/);
+    await assert.rejects(S.installContent({ dir, meta, kind: 'datapack', projectId: '28140', source: 'spiget', fetchImpl: f }), /Fuente no válida/);
+    await assert.rejects(S.installContent({ dir, meta, kind: 'plugin', projectId: 'abcd1234', source: 'otra', fetchImpl: f }), /Fuente no válida/);
+  });
+
   console.log(`  ${count} pruebas de server-manager`);
 })().catch((e) => { console.error(e); process.exit(1); });

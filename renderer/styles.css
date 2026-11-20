@@ -2708,3 +2708,13 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .svn-quick button.on { border-color: var(--accent); color: var(--accent); }
 .svn-hint { margin: 0; padding: 10px 12px; font-size: 12.5px; color: var(--text-2); border-radius: 10px; background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--line)); }
 .svn-status { margin: 0; min-height: 1em; font-size: 12.5px; color: var(--muted); }
+
+.sv-res { justify-content: flex-start; }
+.sv-res .primary { margin-left: auto; flex: none; }
+.sv-ic { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; background: var(--line); }
+.sv-res-text { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.sv-res-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sv-res-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-src { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); opacity: .85; }
+.sv-dl { font-size: 11px; opacity: .65; }
+.sv-note { font-size: 12px; margin: 0; }

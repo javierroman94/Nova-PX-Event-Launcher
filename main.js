@@ -1506,10 +1506,10 @@ ipcMain.handle('srv:content:search', async (_e, id, kind, query) => {
   const meta = serverMgr.readMeta(serverMgr.serverDir(SERVERS_DIR, id));
   return serverMgr.searchContent({ type: meta.type, mc: meta.mc, kind: String(kind), query });
 });
-ipcMain.handle('srv:content:install', async (_e, id, kind, projectId) => {
+ipcMain.handle('srv:content:install', async (_e, id, kind, projectId, source) => {
   await srvGuard();
   const dir = serverMgr.serverDir(SERVERS_DIR, id);
-  return serverMgr.installContent({ dir, meta: serverMgr.readMeta(dir), kind: String(kind), projectId });
+  return serverMgr.installContent({ dir, meta: serverMgr.readMeta(dir), kind: String(kind), projectId, source: String(source || 'modrinth') });
 });
 ipcMain.handle('srv:content:list', async (_e, id) => {
   await srvGuard();

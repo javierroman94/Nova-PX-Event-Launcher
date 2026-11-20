@@ -74,6 +74,7 @@
     sel.textContent = '';
     kinds.forEach((k) => { const o = document.createElement('option'); o.value = k.id; o.textContent = k.label; sel.append(o); });
     g('sv-results').textContent = '';
+    g('sv-q').value = '';
     paintProps();
     paintInstalled();
     paintNova();
@@ -316,31 +317,45 @@
   g('sv-tabs').querySelectorAll('[data-svt]').forEach((b) => b.addEventListener('click', () => {
     g('sv-tabs').querySelectorAll('[data-svt]').forEach((x) => x.classList.toggle('active', x === b));
     ['console', 'props', 'content'].forEach((t) => { g(`svt-${t}`).hidden = t !== b.dataset.svt; });
+    if (b.dataset.svt === 'content' && !g('sv-results').children.length) search();
   }));
+  const SRC = { modrinth: 'Modrinth', hangar: 'Hangar', spiget: 'SpigotMC' };
+  const fmtN = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} M` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : String(n || 0));
+  let searchSeq = 0;
   const search = async () => {
     const box = g('sv-results');
+    const seq = ++searchSeq;
     box.textContent = '';
-    box.append(el('p', 'muted', 'Buscando…'));
+    box.append(el('p', 'muted', 'Buscando en Modrinth, Hangar y SpigotMC…'));
     try {
-      const res = await window.api.srvContentSearch(current, g('sv-kind').value, g('sv-q').value);
+      const kind = g('sv-kind').value;
+      const res = await window.api.srvContentSearch(current, kind, g('sv-q').value);
+      if (seq !== searchSeq) return;
       box.textContent = '';
-      if (!res.length) box.append(el('p', 'muted', 'No encontré nada para esta versión.'));
+      if (!res.length) { box.append(el('p', 'muted', 'No encontré nada con ese nombre. Prueba con otra palabra.')); return; }
+      if (res.some((r) => r.exact === false)) box.append(el('p', 'muted sv-note', 'Tu versión de Minecraft es muy nueva: se muestra lo más descargado y puede que alguno aún no tenga versión para ella.'));
       res.forEach((r) => {
-        const row = el('div', 'sv-item');
-        const t = el('span', '', `${r.title} — ${r.description || ''}`);
+        const row = el('div', 'sv-item sv-res');
+        if (r.icon) { const im = document.createElement('img'); im.className = 'sv-ic'; im.alt = ''; im.loading = 'lazy'; im.src = r.icon; im.addEventListener('error', () => im.remove()); row.append(im); }
+        const t = el('div', 'sv-res-text');
+        const head = el('div', 'sv-res-head');
+        head.append(el('strong', '', r.title), el('span', 'sv-src', SRC[r.source] || r.source), el('span', 'sv-dl', `⬇ ${fmtN(r.downloads)}`));
+        t.append(head, el('small', 'muted', r.description || ''));
         const add = el('button', 'primary', 'Instalar'); add.type = 'button';
         add.addEventListener('click', async () => {
           add.disabled = true;
-          try { const x = await window.api.srvContentInstall(current, g('sv-kind').value, r.id); toast(`Instalado: ${x.file}`); paintInstalled(); } catch (e) { toast(cleanError(e)); }
+          try { const x = await window.api.srvContentInstall(current, kind, r.id, r.source); toast(x.warning ? `Instalado: ${x.file}. ${x.warning}` : `Instalado: ${x.file}`); paintInstalled(); } catch (e) { toast(cleanError(e)); }
           add.disabled = false;
         });
         row.append(t, add);
         box.append(row);
       });
-    } catch (e) { box.textContent = ''; toast(cleanError(e)); }
+    } catch (e) { if (seq !== searchSeq) return; box.textContent = ''; box.append(el('p', 'muted', 'No pude conectar con las tiendas de contenido. Revisa tu internet e inténtalo otra vez.')); toast(cleanError(e)); }
   };
+  window.svSearchPopular = () => { g('sv-q').value = ''; return search(); };
   g('sv-search').addEventListener('click', search);
   g('sv-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+  g('sv-kind').addEventListener('change', () => search());
 
   window.api.onSrvLine((d) => { if (d.id === current) appendLine(d.line); });
   window.api.onSrvExit((d) => { if (d.id === current) { setState(false); appendLine(`[launcher] El servidor se apagó (código ${d.code}).`); } });

@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.114
+- **Servidores de prueba → Plugins, mods y datapacks**: ahora la lista de lo más descargado aparece sola al abrir la pestaña y al cambiar de tipo (antes había que pulsar «Buscar» y con versiones nuevas como la 26.3 salía vacía). Cada resultado muestra su icono, la tienda de donde viene y cuántas descargas tiene.
+- **Más tiendas**: los plugins se buscan a la vez en **Modrinth, Hangar y SpigotMC** (solo los gratuitos que se pueden bajar directo). Los datapacks y mods siguen en Modrinth.
+- **Versiones muy nuevas de Minecraft**: si todavía no hay nada marcado para tu versión, se muestra igual lo más descargado con un aviso, y al instalar se avisa si el archivo puede no ser compatible.
+
 ## 1.0.113
 - **Panel de descargas**: el botón de descargas de arriba ahora abre una lista con lo que se está descargando (con barra de avance) y el **historial** de lo ya terminado (se puede borrar). La importación de instancias, la instalación de modpacks y la descarga del juego se ven ahí, ya no en un cuadro abajo a la derecha.
 - **Novedades y soporte rediseñado**: cabecera con tu versión, tarjetas de ayuda (Discord, copiar reporte, guía, carpeta) y el historial con etiquetas «Nuevo» y «Arreglo»; las versiones viejas se despliegan al pulsarlas.

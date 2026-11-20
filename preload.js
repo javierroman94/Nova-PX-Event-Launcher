@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('api', {
   srvPropsGet: (id) => ipcRenderer.invoke('srv:props:get', id),
   srvPropsSave: (id, changes) => ipcRenderer.invoke('srv:props:save', id, changes),
   srvContentSearch: (id, kind, query) => ipcRenderer.invoke('srv:content:search', id, kind, query),
-  srvContentInstall: (id, kind, projectId) => ipcRenderer.invoke('srv:content:install', id, kind, projectId),
+  srvContentInstall: (id, kind, projectId, source) => ipcRenderer.invoke('srv:content:install', id, kind, projectId, source),
   srvContentList: (id) => ipcRenderer.invoke('srv:content:list', id),
   srvContentRemove: (id, kind, file) => ipcRenderer.invoke('srv:content:remove', id, kind, file),
   srvExport: (id) => ipcRenderer.invoke('srv:export', id),
