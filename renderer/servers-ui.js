@@ -31,11 +31,33 @@
     ]]
   ];
 
+  // Tus servidores de prueba, también en la Biblioteca para que se vean donde creas perfiles.
+  async function paintLibrary() {
+    const box = g('mp-servers');
+    if (!box) return;
+    let list = [];
+    try { if (await window.api.srvAllowed()) list = await window.api.srvList(); } catch {}
+    box.textContent = '';
+    box.hidden = !list.length;
+    if (!list.length) return;
+    box.append(el('h3', 'mp-heading', 'Mis servidores de prueba'));
+    const row = el('div', 'mp-srv-row');
+    list.forEach((s) => {
+      const c = el('button', 'mp-srv'); c.type = 'button';
+      c.append(el('span', 'mp-srv-ic', '🖥️'), el('b', '', s.name), el('small', 'muted', `${(s.type || '').toUpperCase()} · Minecraft ${s.mc}`));
+      c.addEventListener('click', () => { current = s.id; goTo('servers'); });
+      row.append(c);
+    });
+    box.append(row);
+  }
+  window.serversPaintLibrary = paintLibrary;
+
   async function refreshNav() {
     let ok = false;
     try { ok = !!(await window.api.srvAllowed()); } catch {}
-    g('nav-servers').hidden = true; // ahora se entra desde «Nuevo perfil»
+    g('nav-servers').hidden = !ok; // también se entra desde «Nuevo perfil» y desde la Biblioteca
     const c = g('np-server'); if (c) c.hidden = !ok;
+    paintLibrary();
   }
   window.serversRefreshNav = refreshNav;
   window.addEventListener('load', () => setTimeout(refreshNav, 2000));
@@ -44,6 +66,7 @@
 
   async function loadList(keep) {
     servers = await window.api.srvList();
+    setTimeout(paintLibrary, 0);
     const pick = g('sv-pick');
     pick.textContent = '';
     servers.forEach((s) => { const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name} · ${(s.type || '').toUpperCase()} ${s.mc}`; pick.append(o); });
@@ -319,7 +342,7 @@
     create: (o) => window.api.srvCreate(o),
     progress: (fn) => { window.__svProg = fn; },
     typeInfo: (id) => TYPE_INFO[id] || ['📦', '', ''],
-    after: async (id) => { await loadList(id); }
+    after: async (id) => { await loadList(id); paintLibrary(); }
   };
   g('sv-pick').addEventListener('change', (e) => { current = e.target.value; paint(); });
   g('sv-new').addEventListener('click', newServer);

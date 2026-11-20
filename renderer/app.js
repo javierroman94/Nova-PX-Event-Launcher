@@ -1167,6 +1167,7 @@ async function renderLibrary() {
   list = [...list.filter((p) => libPins.has(p.id)), ...list.filter((p) => !libPins.has(p.id))];
   host.replaceChildren();
   paintLibStats();
+  if (window.serversPaintLibrary) window.serversPaintLibrary();
   $('mp-import-hint').hidden = mp.installed.length > 0 && !$('mp-import-hint').classList.contains('over');
   $('mp-lib-note').textContent = mp.installed.length
     ? `${list.length} de ${mp.installed.length} modpack${mp.installed.length === 1 ? '' : 's'}${hiddenCount ? ` · ${hiddenCount} oculto${hiddenCount === 1 ? '' : 's'}${libShowHidden ? ' (visibles)' : ''}` : ''}`
@@ -1759,7 +1760,7 @@ $('mp-create-form').addEventListener('submit', async (e) => {
       const made = await window.serversApi.create({ name: $('mc-name').value.trim() || `${mcw.srvType} ${$('mc-version').value}`, type: mcw.srvType, mc: $('mc-version').value, ramGb: mcw.ram });
       $('mp-create-modal').close();
       toast('Servidor creado.');
-      await window.serversApi.after(made.id);
+      try { await window.serversApi.after(made.id); } catch {}
       goTo('servers');
       return;
     }
