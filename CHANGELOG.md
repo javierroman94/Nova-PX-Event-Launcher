@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.119
+- **Imágenes oficiales de Minecraft en «Versiones»**: cada tarjeta y el panel de la derecha muestran la imagen oficial de esa versión. Se cargan en línea del contenido que publica Mojang para su launcher y no se guardan en Nova PX; si una versión no tiene imagen (las anteriores a la 1.13) se ve el degradado de siempre.
+
 ## 1.0.118
 - **Nueva página «Versiones»** (menú lateral): una tarjeta por versión de Minecraft (26, 1.21, 1.20…) con buscador y orden. A la derecha eliges la versión exacta y el loader (Nova, Fabric, Forge, OptiFine o Vanilla) y pulsas **Jugar**: si ya tienes un perfil así lo abre, y si no lo crea al momento.
 - **Nuevo perfil con tarjetas grandes**: cada opción (Asistente, Instalar modpack, Importar archivo, Importar de otros launchers, Importar carpeta y Servidor de prueba) ahora es una tarjeta con icono grande.

@@ -2815,3 +2815,9 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .lm-picker { width: 100%; justify-items: stretch; }
 .lm-pick { width: 100%; box-sizing: border-box; }
 .np-card { padding: 20px 18px; min-height: 150px; width: 100%; box-sizing: border-box; }
+
+.vr-art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.has-img::before { display: none; }
+.has-img .vr-card-num, .has-img .vr-card-name { text-shadow: 0 2px 10px rgba(0,0,0,.9); }
+.has-img { box-shadow: inset 0 -90px 60px -40px rgba(0,0,0,.75); }
+.vr-credit { font-size: 11px; opacity: .6; margin-top: 10px; }

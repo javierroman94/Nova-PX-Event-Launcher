@@ -28,12 +28,23 @@
   let picked = null;     // key de la serie elegida
   let loader = 'nova';
   let ready = false;
+  let art = {};          // versión -> { image, title } con las imágenes oficiales de Mojang
 
   const keyOf = (v) => {
     const m = /^(\d+)\.(\d+)/.exec(v);
     if (!m) return null;
     return +m[1] >= 26 ? m[1] : `${m[1]}.${m[2]}`;
   };
+  // Imagen de la serie: la versión .0 (1.21) y, si no, la primera que tenga.
+  const seriesArt = (s) => art[s.key] || art[s.versions.slice().reverse().find((v) => art[v])] || null;
+  function putArt(box, a) {
+    if (!a) return;
+    const im = document.createElement('img');
+    im.className = 'vr-art-img'; im.alt = ''; im.loading = 'lazy'; im.src = a.image;
+    im.addEventListener('error', () => im.remove());
+    box.prepend(im);
+    box.classList.add('has-img');
+  }
   const hue = (k) => { let n = 0; for (const c of k) n = (n * 31 + c.charCodeAt(0)) % 360; return n; };
 
   function buildSeries() {
@@ -67,6 +78,7 @@
       c.type = 'button';
       const art = el('div', 'vr-card-art');
       art.style.setProperty('--h', String(hue(s.key)));
+      putArt(art, seriesArt(s));
       art.append(el('span', 'vr-card-num', s.key), el('span', 'vr-card-name', (NAMES[s.key] || ['', ''])[0]));
       const foot = el('div', 'vr-card-foot');
       foot.append(el('b', '', `${LOADER_INFO[loader].name} ${s.key}`), el('span', 'vr-play-ico', '▶'));
@@ -79,12 +91,14 @@
 
   function paintSide() {
     const s = series.find((x) => x.key === picked);
-    const art = g('vr-art');
-    art.replaceChildren();
+    const artBox = g('vr-art');
+    artBox.replaceChildren();
+    artBox.classList.remove('has-img');
     if (!s) { g('vr-title').textContent = 'Elige una versión'; g('vr-desc').textContent = 'Toca una tarjeta de la izquierda.'; g('vr-play').disabled = true; return; }
     g('vr-play').disabled = false;
-    art.style.setProperty('--h', String(hue(s.key)));
-    art.append(el('span', 'vr-card-num', s.key), el('span', 'vr-card-name', (NAMES[s.key] || ['', ''])[0]));
+    artBox.style.setProperty('--h', String(hue(s.key)));
+    putArt(artBox, art[g('vr-ver').value] || seriesArt(s));
+    artBox.append(el('span', 'vr-card-num', s.key), el('span', 'vr-card-name', (NAMES[s.key] || ['', ''])[0]));
     g('vr-title').textContent = `Minecraft ${s.key}${NAMES[s.key] ? ' · ' + NAMES[s.key][0] : ''}`;
     g('vr-desc').textContent = (NAMES[s.key] || ['', 'Elige la versión exacta y el loader que quieras.'])[1];
     const sel = g('vr-ver');
@@ -140,6 +154,7 @@
       g('vr-status').textContent = 'Cargando versiones…';
       try { await loadMcVersions(); } catch {}
       buildSeries();
+      try { art = (await window.api.mojangVersionArt()) || {}; } catch { art = {}; }
       g('vr-status').textContent = series.length ? '' : 'No se pudo cargar la lista de versiones. Revisa tu conexión.';
       ready = series.length > 0;
       picked = picked || (series.find((s) => s.key === '1.21') || series[0] || {}).key || null;

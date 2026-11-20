@@ -9,6 +9,7 @@ const { autoUpdater } = require('electron-updater');
 const { execFile } = require('child_process');
 const loaders = require('./lib/loaders');
 const jvmDefaults = require('./lib/jvm-args');
+const mojangArt = require('./lib/mojang-art');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
@@ -1135,6 +1136,14 @@ ipcMain.handle('modpacks:pickIconFile', async () => {
   const side = Math.min(width, height);
   img = img.crop({ x: Math.floor((width - side) / 2), y: Math.floor((height - side) / 2), width: side, height: side }).resize({ width: 128, height: 128, quality: 'best' });
   return `data:image/png;base64,${img.toPNG().toString('base64')}`;
+});
+
+// Imágenes oficiales de cada versión (de lo que publica Mojang); se piden una vez por sesión.
+let mojangArtCache = null;
+ipcMain.handle('mojang:versionArt', async () => {
+  if (mojangArtCache) return mojangArtCache;
+  try { mojangArtCache = mojangArt.buildArtMap(await apiRequest(mojangArt.FEED)); } catch { return {}; }
+  return mojangArtCache;
 });
 
 ipcMain.handle('modpacks:duplicate', (_e, p = {}) => {
