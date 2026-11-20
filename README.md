@@ -51,6 +51,8 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 - Mods, shaders y texturas: activa, quita y **actualiza** (con aviso)
 - RAM, Java y cuenta **por modpack**; respaldo de mundos
 - Exporta un `.novapx` para compartir
+- **Crear instancia** con icono propio, loader en botones y versión de Minecraft
+- **Panel de descargas** arriba, con historial (modpacks, importaciones y actualizaciones)
 
 </td>
 <td width="33%" valign="top">
@@ -98,6 +100,7 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 | 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |
 | 📊 **Estadísticas opcionales** | Contador anónimo gratis en Cloudflare, sin IP; cada jugador puede apagarlo. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
 | 🛰️ **Modo administrador** | Crea el modpack, pruébalo y publícalo como evento con un botón; edita equipo, noticias, eventos, patrocinadores y publicidad. |
+| 🖥️ **Servidores de prueba** | Para administradores: crea un servidor Vanilla, Paper, Purpur, Spigot, Fabric, Forge o NeoForge en tu PC, instala plugins, mods y datapacks desde Modrinth, Hangar y SpigotMC, pruébalo y expórtalo a tu host. |
 
 ## 📥 Instalación (jugadores)
 
