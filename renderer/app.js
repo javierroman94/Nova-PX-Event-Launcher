@@ -2092,8 +2092,10 @@ async function openPackModal(it) {
     const sel = $('mp-version');
     let first = -1;
     versions.forEach((v, i) => {
-      const ok = v.supported && v.downloadUrl;
-      const label = `${v.name || v.number}${v.mcVersions[0] ? ' · MC ' + v.mcVersions[0] : ''}${v.loaders.length ? ' · ' + v.loaders.map((l) => LOADER_NAMES[l] || l).join('/') : ''}${!v.supported ? ' (no compatible)' : !v.downloadUrl ? ' (descarga bloqueada)' : ''}`;
+      // FTB no da un enlace directo: el launcher baja los archivos de la lista del modpack, así que no está bloqueado.
+      const hasLink = v.downloadUrl || it.provider === 'ftb';
+      const ok = v.supported && hasLink;
+      const label = `${v.name || v.number}${v.mcVersions[0] ? ' · MC ' + v.mcVersions[0] : ''}${v.loaders.length ? ' · ' + v.loaders.map((l) => LOADER_NAMES[l] || l).join('/') : ''}${!v.supported ? ' (no compatible)' : !hasLink ? ' (descarga bloqueada)' : ''}`;
       const o = el('option', '', label);
       o.value = v.id;
       o.disabled = !ok;

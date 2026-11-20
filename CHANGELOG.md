@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.110
+- **Modpacks de FTB ya se pueden instalar**: todas sus versiones salían como «descarga bloqueada» y el botón Instalar no se activaba. Era un error de la lista; ahora se eligen e instalan normal.
+
 ## 1.0.109
 - **La mascota ya se ve en pantalla completa**: la ventana flotante de PX se vuelve a poner por encima del juego cada segundo, así no se queda detrás cuando Minecraft pasa a pantalla completa (F11).
 
