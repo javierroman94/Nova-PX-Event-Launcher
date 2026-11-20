@@ -26,6 +26,7 @@ const providers = require('./lib/providers');
 const content = require('./lib/content');
 const packs = require('./lib/packs');
 const novaLib = require('./lib/nova');
+const optifineLib = require('./lib/optifine');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const serverMgr = require('./lib/server-manager');
@@ -1073,6 +1074,16 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
     } finally {
       progress('Listo');
     }
+  }
+  // Perfil OptiFine: Forge + el .jar oficial, bajado directo de optifine.net a la carpeta mods.
+  if (entry.preset === 'optifine') {
+    const progress = (text) => send('modpack:progress', { text });
+    try {
+      progress('Descargando OptiFine desde optifine.net…');
+      entry.optifine = await optifineLib.installOptiFine({
+        fetchText: async (u) => (await fetchWithTimeout(u, 30000)).text(), download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion
+      });
+    } catch (e) { entry.optifine = null; entry.optifineError = String((e && e.message) || e).slice(0, 200); } finally { progress('Listo'); }
   }
   return entry;
 });

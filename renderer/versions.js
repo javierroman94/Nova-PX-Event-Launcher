@@ -36,7 +36,7 @@
     return +m[1] >= 26 ? m[1] : `${m[1]}.${m[2]}`;
   };
   // Imagen de la serie: la versión .0 (1.21) y, si no, la primera que tenga.
-  const seriesArt = (s) => art[s.key] || art[s.versions.slice().reverse().find((v) => art[v])] || null;
+  const seriesArt = (s) => art[s.key] || art[s.versions.slice().reverse().find((v) => art[v])] || fallbackArt(s.key);
   function putArt(box, a) {
     if (!a) return;
     const im = document.createElement('img');
@@ -44,6 +44,16 @@
     im.addEventListener('error', () => im.remove());
     box.prepend(im);
     box.classList.add('has-img');
+  }
+  // Paisaje propio (cielo, sol, colinas y bloques) cuando Mojang no publica imagen de esa versión.
+  function fallbackArt(k) {
+    const h = hue(k), h2 = (h + 40) % 360;
+    let n = h + 7;
+    const rnd = () => { n = (n * 9301 + 49297) % 233280; return n / 233280; };
+    let blocks = '';
+    for (let i = 0; i < 9; i++) { const w = 18 + Math.floor(rnd() * 3) * 6, x = Math.floor(rnd() * 8) * 14, y = 150 + Math.floor(rnd() * 5) * 12; blocks += `<rect x="${x}" y="${y}" width="${w}" height="${w}" fill="hsl(${h2},45%,${22 + Math.floor(rnd() * 14)}%)"/>`; }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 200" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="hsl(${h},70%,62%)"/><stop offset="1" stop-color="hsl(${h2},60%,28%)"/></linearGradient></defs><rect width="120" height="200" fill="url(#s)"/><circle cx="${30 + Math.floor(rnd() * 60)}" cy="38" r="12" fill="#fff6" /><path d="M0 130 L30 108 L56 126 L86 100 L120 124 L120 200 L0 200Z" fill="hsl(${h2},40%,20%)"/>${blocks}</svg>`;
+    return { image: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg) };
   }
   const hue = (k) => { let n = 0; for (const c of k) n = (n * 31 + c.charCodeAt(0)) % 360; return n; };
 
@@ -70,7 +80,7 @@
     grid.replaceChildren();
     const q = g('vr-q').value.trim().toLowerCase();
     let list = series.filter((s) => !q || s.key.includes(q) || s.versions.some((v) => v.includes(q)) || ((NAMES[s.key] || [''])[0] || '').toLowerCase().includes(q));
-    const num = (k) => parseFloat(k);
+    const num = (k) => { const [a, b] = k.split('.').map(Number); return a * 1000 + (b || 0); };
     list = list.sort((a, b) => (g('vr-sort').value === 'old' ? num(a.key) - num(b.key) : num(b.key) - num(a.key)));
     if (!list.length) grid.append(el('p', 'muted', q ? `Ninguna versión coincide con "${g('vr-q').value}".` : 'No se pudo cargar la lista de versiones.'));
     list.forEach((s) => {

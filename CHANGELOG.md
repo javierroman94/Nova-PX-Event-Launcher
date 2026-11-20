@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.120
+- **OptiFine se instala solo**: al crear un perfil OptiFine el launcher baja el .jar oficial directamente de optifine.net y lo deja en Mods (ya no tienes que descargarlo tú). No se guarda ni se redistribuye.
+- **Versiones bien ordenadas**: «Más nuevas primero» ya no mezcla 1.9 con 1.21.
+- **Tarjetas sin imagen oficial**: las versiones que Mojang no ilustra ahora tienen un paisaje propio en lugar de solo un degradado.
+
 ## 1.0.119
 - **Imágenes oficiales de Minecraft en «Versiones»**: cada tarjeta y el panel de la derecha muestran la imagen oficial de esa versión. Se cargan en línea del contenido que publica Mojang para su launcher y no se guardan en Nova PX; si una versión no tiene imagen (las anteriores a la 1.13) se ve el degradado de siempre.
 
