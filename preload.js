@@ -15,6 +15,14 @@ contextBridge.exposeInMainWorld('api', {
   serverStatus: () => ipcRenderer.invoke('server:status'),
 
   getChangelog: () => ipcRenderer.invoke('app:changelog'),
+  // plugins propios (administración)
+  pluginPick: () => ipcRenderer.invoke('admin:pluginPick'),
+  pluginList: () => ipcRenderer.invoke('admin:pluginList'),
+  pluginPublish: (o) => ipcRenderer.invoke('admin:pluginPublish', o),
+  pluginSetLock: (id, locked, password) => ipcRenderer.invoke('admin:pluginSetLock', id, locked, password),
+  pluginRemove: (id) => ipcRenderer.invoke('admin:pluginRemove', id),
+  srvPluginsList: () => ipcRenderer.invoke('srv:plugins:list'),
+  srvPluginInstall: (id, pluginId, password) => ipcRenderer.invoke('srv:plugins:install', id, pluginId, password),
   // servidores de prueba (administradores)
   srvAllowed: () => ipcRenderer.invoke('srv:allowed'),
   srvTypes: () => ipcRenderer.invoke('srv:types'),

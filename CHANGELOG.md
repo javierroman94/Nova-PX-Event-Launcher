@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.107
+- **Plugins propios de Nova PX** (administración → pestaña Plugins): sube tus `.jar` y aparecen en «Servidores → Plugins, mods y datapacks» para instalarlos en un clic. Cada plugin puede ser **público** o **bloqueado**: los bloqueados se publican cifrados y solo se instalan con la contraseña de la biblioteca (el archivo público no sirve sin ella). Puedes bloquear, hacer público o quitar un plugin cuando quieras.
+
 ## 1.0.106
 - **Servidores de prueba** (por ahora solo para administradores): nueva pestaña para crear un servidor en tu computadora, configurarlo, encenderlo con consola y comandos, y probarlo entrando a `localhost`. Soporta Vanilla, Paper, Purpur, Spigot, Fabric, Forge y NeoForge; descarga la versión y el Java que hagan falta. Editas `server.properties` con una lista de opciones, instalas plugins, mods y datapacks desde Modrinth, y al terminar exportas todo en un `.zip` listo para subir a tu host. El EULA lo aceptas tú.
 - **Novedades y soporte**: nueva pestaña con el historial de cambios del launcher y accesos de ayuda (Discord, copiar reporte, guía para reportar errores, carpeta del juego). Tras actualizar, el launcher muestra una ventana con lo nuevo.

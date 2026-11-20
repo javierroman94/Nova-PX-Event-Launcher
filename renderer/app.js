@@ -4888,7 +4888,7 @@ async function autoDiscord(kind, payload) {
 
 // Paneles de administración: iconos en pestañas y encabezados de tarjeta (solo decoración).
 (function decorateAdmin() {
-  const tabIcons = { event: '🎮', team: '👥', events: '🏆', news: '📰', users: '📊', look: '🎨', config: '⚙️', reco: '⭐', control: '🛰️', status: '🩺', warnings: '⚠️', perms: '🔑' };
+  const tabIcons = { event: '🎮', team: '👥', events: '🏆', news: '📰', plugins: '🧩', users: '📊', look: '🎨', config: '⚙️', reco: '⭐', control: '🛰️', status: '🩺', warnings: '⚠️', perms: '🔑' };
   document.querySelectorAll('#ad-tabs [data-ad-tab]').forEach((b) => {
     const ic = tabIcons[b.dataset.adTab];
     if (ic && !b.querySelector('.ad-tab-ico')) b.prepend(el('span', 'ad-tab-ico', ic));

@@ -24,6 +24,7 @@ same('news.json', admin.sanitizeNews(news), news);
 same('ads.json', admin.sanitizeAds(ads), ads);
 same('admins.json', admin.sanitizeAdmins(admins), admins);
 same('nicks.json', nicks.sanitizeMap(nickMap), nickMap);
+same('plugins.json', require('../lib/plugin-library').sanitizeLibrary(read('plugins')), read('plugins'));
 
 // 2) Imágenes citadas: deben existir dentro de data/ (y no escapar de la carpeta).
 const imgs = [];

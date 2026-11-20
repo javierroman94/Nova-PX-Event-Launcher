@@ -2618,3 +2618,5 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .sv-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 #sv-log { min-height: 240px; max-height: 360px; overflow: auto; white-space: pre-wrap; }
 #sv-main { gap: 12px; display: grid; }
+
+.sv-grow { flex: 1; min-width: 0; }

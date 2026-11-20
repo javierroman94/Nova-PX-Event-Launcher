@@ -622,6 +622,7 @@
           <button type="button" data-ad-tab="team">Equipo</button>
           <button type="button" data-ad-tab="events">Eventos</button>
           <button type="button" data-ad-tab="news">Noticias</button>
+          <button type="button" data-ad-tab="plugins">Plugins</button>
           <button type="button" data-ad-tab="users">Usuarios</button>
           <button type="button" data-ad-tab="look">Apariencia</button>
           <button type="button" data-ad-tab="config">Ajustes</button>
@@ -899,6 +900,21 @@
         </article>
       </div>
 
+      <div id="ad-tab-plugins" hidden>
+        <article class="ad-card">
+          <header><div><h3>Plugins de Nova PX</h3><p class="muted">Sube tus propios plugins y aparecen al crear un servidor, en «Plugins, mods y datapacks». Los <b>bloqueados</b> se publican cifrados: nadie puede usarlos sin la contraseña de la biblioteca. Los públicos puede descargarlos cualquiera con el enlace.</p></div></header>
+          <div class="btn-row"><button id="pl-pick" type="button">Elegir .jar…</button><span id="pl-file" class="muted">Ningún archivo elegido</span></div>
+          <div class="sv-props">
+            <label class="sv-prop"><span>Nombre</span><input id="pl-name" type="text" maxlength="60" /></label>
+            <label class="sv-prop"><span>Descripción</span><input id="pl-desc" type="text" maxlength="240" /></label>
+            <label class="sv-prop"><span>Contraseña de la biblioteca (solo si lo bloqueas)</span><input id="pl-pass" type="password" autocomplete="off" /></label>
+            <label class="sv-prop"><span>Acceso</span><select id="pl-locked"><option value="1">Bloqueado (cifrado)</option><option value="0">Público</option></select></label>
+          </div>
+          <div class="mp-actions"><button id="pl-publish" type="button" class="primary">Subir plugin</button></div>
+          <p id="pl-status" class="muted" role="status"></p>
+          <div id="pl-list" class="mods-list"></div>
+        </article>
+      </div>
       <div id="ad-tab-news" hidden>
         <article class="ad-card">
           <header><div><h3>Noticias</h3><p class="muted">Aparecen en Inicio. Arrastra ⠿ para ordenar; la primera sale arriba. <b id="ad-news-count"></b></p></div><button type="button" class="ghost" data-history="news">Historial</button></header>
@@ -1042,6 +1058,7 @@
           <p class="muted">Se aplican la próxima vez que enciendas el servidor.</p>
         </div>
         <div id="svt-content" hidden>
+          <div id="sv-nova-box" hidden><h4>Plugins de Nova PX</h4><div id="sv-nova" class="sv-list"></div></div>
           <div class="btn-row"><select id="sv-kind"></select><input id="sv-q" type="search" placeholder="Buscar en Modrinth…" /><button id="sv-search" type="button">Buscar</button></div>
           <div id="sv-results" class="sv-list"></div>
           <h4>Instalado</h4>
@@ -1431,6 +1448,7 @@
   <script src="brand-icons.js"></script>
   <script src="remote.js"></script>
   <script src="admin-ext.js"></script>
+  <script src="plugins-admin.js"></script>
   <script src="whatsnew.js"></script>
   <script src="servers-ui.js"></script>
   <script src="ctxmenu.js"></script>

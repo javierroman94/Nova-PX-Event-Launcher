@@ -2,7 +2,7 @@
  * vista previa en vivo, arrastrar y soltar, historial (deshacer) y borradores.
  * Usa las utilidades de app.js ($, el, toast, cleanError, adm) solo cuando se llama, nunca al cargar. */
 (function () {
-  const AD_TABS = ['event', 'team', 'events', 'news', 'look', 'config', 'reco', 'control', 'status', 'warnings', 'users', 'perms', 'ads'];
+  const AD_TABS = ['event', 'team', 'events', 'news', 'plugins', 'look', 'config', 'reco', 'control', 'status', 'warnings', 'users', 'perms', 'ads'];
   window.AD_TABS = AD_TABS;
   const LAUNCHER_TABS = ['look', 'config', 'control'];
   const g = (id) => document.getElementById(id);

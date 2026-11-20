@@ -76,6 +76,7 @@
     g('sv-results').textContent = '';
     paintProps();
     paintInstalled();
+    paintNova();
   }
 
   async function paintProps() {
@@ -112,6 +113,43 @@
         try { await window.api.srvContentRemove(current, it.kind, it.file); toast('Quitado.'); paintInstalled(); } catch (e) { toast(cleanError(e)); }
       });
       row.append(rm);
+      box.append(row);
+    });
+  }
+
+  // Plugins propios de Nova PX (solo en Paper, Purpur y Spigot). Los bloqueados piden la contraseña de la biblioteca.
+  async function paintNova() {
+    const s = meta();
+    const box = g('sv-nova');
+    const wrap = g('sv-nova-box');
+    box.textContent = '';
+    wrap.hidden = !s || !['paper', 'purpur', 'spigot'].includes(s.type);
+    if (wrap.hidden) return;
+    let lib;
+    try { lib = await window.api.srvPluginsList(); } catch { wrap.hidden = true; return; }
+    if (!lib.plugins.length) { wrap.hidden = true; return; }
+    lib.plugins.forEach((p) => {
+      const row = el('div', 'sv-item');
+      row.append(el('span', '', `${p.locked ? '🔒' : '🌐'} ${p.name}${p.description ? ' — ' + p.description : ''}`));
+      const add = el('button', 'primary', 'Instalar'); add.type = 'button';
+      add.addEventListener('click', async () => {
+        add.disabled = true;
+        const run = (pw) => window.api.srvPluginInstall(current, p.id, pw);
+        try {
+          let r;
+          try { r = await run(''); } catch (e) {
+            const m = cleanError(e);
+            if (m !== 'LOCKED' && m !== 'BAD_KEY') throw e;
+            const pw = await window.askPassword(m === 'BAD_KEY' ? 'Contraseña incorrecta. Inténtalo otra vez.' : 'Este plugin está bloqueado. Escribe la contraseña de la biblioteca (te la da un administrador).');
+            if (!pw) { add.disabled = false; return; }
+            r = await run(pw);
+          }
+          toast(`Instalado: ${r.file}`);
+          paintInstalled();
+        } catch (e) { const m = cleanError(e); toast(m === 'BAD_KEY' ? 'Esa contraseña no es la correcta.' : m); }
+        add.disabled = false;
+      });
+      row.append(add);
       box.append(row);
     });
   }

@@ -27,6 +27,7 @@ const novaLib = require('./lib/nova');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
 const serverMgr = require('./lib/server-manager');
+const pluginLib = require('./lib/plugin-library');
 const telemetry = require('./lib/telemetry');
 const friendsLib = require('./lib/friends');
 const social = require('./lib/social');
@@ -49,7 +50,7 @@ const ACCOUNT_FILE = path.join(app.getPath('userData'), 'account.json');
 const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
 const BACKGROUND_FILE = path.join(app.getPath('userData'), 'background.jpg');
 const DATA_CACHE_DIR = path.join(app.getPath('userData'), 'data-cache');
-const ALLOWED_DATA = ['news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher', 'ads', 'nicks'];
+const ALLOWED_DATA = ['plugins', 'news', 'events', 'team', 'manifest', 'recommended', 'admins', 'launcher', 'ads', 'nicks'];
 const ICON = path.join(__dirname, 'build', 'icon.png');
 
 let mainWindow = null;
@@ -1358,6 +1359,69 @@ ipcMain.handle('admin:invite', async (_e, user) => {
   }
 });
 
+/* ---------- plugins propios de Nova PX (el administrador los sube; los bloqueados van cifrados) ---------- */
+const PLUGIN_TAG = 'plugins-nova';
+let pendingPlugin = null;
+const pluginPw = new Map(); // contraseña de la biblioteca, solo en memoria durante la sesión
+const pluginsNow = async (r) => pluginLib.sanitizeLibrary((((await r.getJson('data/plugins.json').catch(() => null)) || {}).data) || {});
+async function publishPluginLib(r, library, stale, message) {
+  if (stale.length) {
+    const release = await r.ensureRelease(PLUGIN_TAG, 'Plugins de Nova PX');
+    for (const name of stale) await r.deleteAsset(release, name);
+  }
+  await r.putJson('data/plugins.json', library, message);
+  remember('plugins', library);
+}
+ipcMain.handle('admin:pluginPick', async () => {
+  await requireAdmin();
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige el plugin (.jar)', properties: ['openFile'], filters: [{ name: 'Plugin de Minecraft', extensions: ['jar'] }] });
+  if (res.canceled || !res.filePaths[0]) return null;
+  const file = res.filePaths[0];
+  if (fs.statSync(file).size > pluginLib.MAX_BYTES) throw new Error(`El plugin pesa más de ${Math.round(pluginLib.MAX_BYTES / 1048576)} MB.`);
+  pendingPlugin = { file: path.basename(file), data: fs.readFileSync(file) };
+  return { file: pendingPlugin.file, size: pendingPlugin.data.length };
+});
+ipcMain.handle('admin:pluginList', async () => {
+  const r = await requireAdmin();
+  return pluginsNow(r);
+});
+ipcMain.handle('admin:pluginPublish', async (_e, p = {}) => {
+  const r = await requireAdmin();
+  if (!pendingPlugin) throw new Error('Primero elige el archivo .jar.');
+  const cur = await pluginsNow(r);
+  const built = pluginLib.buildPlugin({
+    name: p.name, description: p.description, file: pendingPlugin.file, data: pendingPlugin.data,
+    locked: !!p.locked, password: typeof p.password === 'string' ? p.password : '', previousLock: cur.lock, baseUrl: r.downloadBase(PLUGIN_TAG)
+  });
+  const release = await r.ensureRelease(PLUGIN_TAG, 'Plugins de Nova PX');
+  await r.uploadAsset(release, built.asset.name, built.asset.data);
+  const next = pluginLib.upsert(cur, built.entry, built.lock);
+  await publishPluginLib(r, next.library, next.staleAssets, `Plugin: ${built.entry.name}${built.entry.locked ? ' (bloqueado)' : ''} (desde el launcher)`);
+  pendingPlugin = null;
+  return next.library;
+});
+ipcMain.handle('admin:pluginSetLock', async (_e, id, locked, password) => {
+  const r = await requireAdmin();
+  const cur = await pluginsNow(r);
+  const entry = cur.plugins.find((x) => x.id === id);
+  if (!entry) throw new Error('Ese plugin no está en la biblioteca.');
+  if (!!locked === entry.locked) return cur;
+  const pw = typeof password === 'string' ? password : '';
+  const data = await pluginLib.fetchPlugin({ entry, lock: cur.lock, password: pw, download: downloadBuffer });
+  const built = pluginLib.buildPlugin({ name: entry.name, description: entry.description, file: entry.file, data, locked: !!locked, password: pw, previousLock: cur.lock, baseUrl: r.downloadBase(PLUGIN_TAG) });
+  const release = await r.ensureRelease(PLUGIN_TAG, 'Plugins de Nova PX');
+  await r.uploadAsset(release, built.asset.name, built.asset.data);
+  const next = pluginLib.upsert(cur, built.entry, built.lock);
+  await publishPluginLib(r, next.library, next.staleAssets, `Plugin ${built.entry.name}: ${locked ? 'bloqueado' : 'público'} (desde el launcher)`);
+  return next.library;
+});
+ipcMain.handle('admin:pluginRemove', async (_e, id) => {
+  const r = await requireAdmin();
+  const next = pluginLib.remove(await pluginsNow(r), String(id));
+  await publishPluginLib(r, next.library, next.staleAssets, `Plugin quitado: ${id} (desde el launcher)`);
+  return next.library;
+});
+
 /* ---------- servidores de prueba (solo administradores, o todos si features.publicServers) ---------- */
 const SERVERS_DIR = path.join(GAME_DIR, 'servidores');
 const srvProcs = new Map();
@@ -1451,6 +1515,26 @@ ipcMain.handle('srv:content:remove', async (_e, id, kind, file) => {
   const dir = serverMgr.serverDir(SERVERS_DIR, id);
   serverMgr.removeContent(dir, serverMgr.readMeta(dir), String(kind), String(file));
   return true;
+});
+ipcMain.handle('srv:plugins:list', async () => {
+  await srvGuard();
+  const lib = pluginLib.sanitizeLibrary(await loadData('plugins').catch(() => ({})));
+  return { plugins: lib.plugins, unlocked: pluginPw.size > 0 };
+});
+ipcMain.handle('srv:plugins:install', async (_e, id, pluginId, password) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  const meta = serverMgr.readMeta(dir);
+  if (!pluginLib.SERVER_TYPES.includes(meta.type)) throw new Error('Los plugins son para Paper, Purpur y Spigot.');
+  const lib = pluginLib.sanitizeLibrary(await loadData('plugins'));
+  const entry = lib.plugins.find((x) => x.id === String(pluginId));
+  if (!entry) throw new Error('Ese plugin ya no está en la biblioteca.');
+  const pw = (typeof password === 'string' && password) || pluginPw.get('lib') || '';
+  const buf = await pluginLib.fetchPlugin({ entry, lock: lib.lock, password: pw, download: downloadBuffer });
+  if (entry.locked && pw) pluginPw.set('lib', pw);
+  fs.mkdirSync(path.join(dir, 'plugins'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'plugins', entry.file), buf);
+  return { file: entry.file };
 });
 ipcMain.handle('srv:export', async (_e, id) => {
   await srvGuard();
