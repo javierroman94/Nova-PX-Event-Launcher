@@ -536,42 +536,50 @@
       </dialog>
 
       <!-- Crear instancia propia -->
-      <dialog id="mp-create-modal" class="event-modal mcw" aria-label="Crear instancia">
+      <dialog id="mp-create-modal" class="event-modal mcw mcw2" aria-label="Crear">
         <form id="mp-create-form" class="event-modal-body">
-          <div class="mcw-head">
-            <div id="mcw-icon" class="mcw-icon" aria-hidden="true">🌲</div>
-            <div class="mcw-head-text">
-              <h3>Crear instancia</h3>
-              <p id="mcw-preview" class="muted">Tu propio perfil de Minecraft, con su carpeta separada.</p>
+          <div class="mcw2-top"><h3 id="mcw-title">Crear instancia</h3><button id="mcw-x" type="button" class="ghost" aria-label="Cerrar">✕</button></div>
+          <div class="seg mcw2-mode" id="mcw-mode" role="group" aria-label="Qué quieres crear">
+            <button type="button" data-mode="instance" class="active">🎮 Instancia</button>
+            <button type="button" data-mode="server" id="mcw-mode-server" hidden>🖥️ Servidor de prueba</button>
+          </div>
+          <div class="mcw2-iconrow" id="mcw-iconrow">
+            <div id="mcw-icon" class="mcw2-icon" aria-hidden="true">🌲</div>
+            <div class="mcw2-iconbtns">
+              <button type="button" id="mcw-upload" class="mcw2-btn">⤒ Subir</button>
+              <button type="button" id="mcw-random" class="mcw2-btn">⟳ Aleatorio</button>
+              <button type="button" id="mcw-custom" class="mcw2-btn">🎨 Personalizar</button>
             </div>
           </div>
-          <div class="field inline">
-            <div><label for="mc-name">Nombre</label><input id="mc-name" type="text" maxlength="60" placeholder="Mi survival" autocomplete="off" /></div>
-            <div><label for="mc-emoji">Icono (emoji)</label><input id="mc-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
-          </div>
-          <div id="mcw-emojis" class="mcw-emojis" role="group" aria-label="Iconos rápidos"></div>
+          <div id="mcw-emojis" class="mcw-emojis" role="group" aria-label="Iconos rápidos" hidden></div>
+          <input id="mc-emoji" type="text" maxlength="4" hidden />
 
-          <label class="mcw-label">1 · Tipo de perfil</label>
-          <div id="mcw-loaders" class="mcw-loaders" role="radiogroup" aria-label="Tipo de perfil"></div>
+          <label class="mcw2-label" for="mc-name">Nombre</label>
+          <input id="mc-name" type="text" maxlength="60" placeholder="Fabric 1.21.1" autocomplete="off" />
+
+          <label class="mcw2-label">Loader</label>
+          <div id="mcw-loaders" class="mcw2-chips" role="radiogroup" aria-label="Loader"></div>
           <select id="mc-loader" hidden>
             <option value="nova">Nova</option><option value="fabric">Fabric</option><option value="forge">Forge</option><option value="optifine">OptiFine</option><option value="vanilla">Vanilla</option>
           </select>
+          <small id="mcw-loader-desc" class="muted"></small>
 
-          <label class="mcw-label" for="mcw-search">2 · Versión de Minecraft</label>
-          <div class="mcw-vhead">
-            <input id="mcw-search" class="events-search" type="search" placeholder="Buscar versión (ej. 1.20)" autocomplete="off" />
+          <label class="mcw2-label" for="mc-version">Versión de Minecraft</label>
+          <div class="mcw2-verrow">
+            <select id="mc-version" class="mcw2-select"></select>
             <label class="check mcw-snap"><input id="mc-snap" type="checkbox" /> Incluir snapshots</label>
           </div>
-          <div id="mc-popular" class="ver-grid" role="group" aria-label="Versiones populares"></div>
-          <div id="mcw-list" class="mcw-list" role="listbox" aria-label="Todas las versiones"></div>
-          <select id="mc-version" hidden></select>
+
+          <div id="mcw-ram" class="mcw2-ramrow" hidden>
+            <label class="mcw2-label">Memoria</label>
+            <div class="mcw2-chips" id="mcw-ram-chips"></div>
+          </div>
 
           <div id="mcw-summary" class="mcw-summary" aria-live="polite"></div>
-          <small id="mc-loader-hint" class="muted" hidden></small>
           <p id="mc-status" class="muted" role="status"></p>
-          <div class="mp-actions">
-            <button id="mc-cancel" type="button">Cancelar</button>
-            <button id="mc-create" type="submit" class="primary">Crear instancia</button>
+          <div class="mp-actions mcw2-actions">
+            <button id="mc-cancel" type="button">← Atrás</button>
+            <button id="mc-create" type="submit" class="primary">＋ Crear instancia</button>
           </div>
         </form>
       </dialog>

@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.116
+- **Crear instancia y servidor en un mismo cuadro, más compacto**: icono con **Subir** (tu imagen), **Aleatorio** y **Personalizar** (emoji), nombre, loader en botones y versión de Minecraft en una lista. Arriba eliges **Instancia** o **Servidor de prueba** (este último con su tipo, versión y memoria), y desde «Nuevo perfil» → «Servidor de prueba» se abre ya en ese modo.
+- **Ya no se abre la ventana negra de comandos al jugar** (salía con Forge 1.16.5 y Java 8 del sistema): en Windows el juego se inicia con javaw, el mismo Java pero sin consola.
+
 ## 1.0.115
 - **Servidor de prueba dentro de «Nuevo perfil»**: ahora se crea desde el cuadro de Nuevo perfil (tarjeta «Servidor de prueba»), junto a Asistente e Importar. Ya no ocupa un botón aparte en el menú lateral.
 - **Ajustes del servidor rediseñados**: agrupados en tarjetas (General, Reglas del juego, Acceso, Mundo), con interruptores en vez de listas Sí/No, ayuda en cada opción y valores por defecto (antes PvP, volar, spawn, distancia y mundo salían vacíos).

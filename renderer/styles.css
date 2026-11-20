@@ -2732,3 +2732,27 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .sv-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #cfd5e6; transition: transform .2s, background .2s; }
 .sv-switch:checked { background: linear-gradient(135deg, #ef3b5a, #b04fd4); border-color: transparent; }
 .sv-switch:checked::after { transform: translateX(20px); background: #fff; }
+
+/* Crear instancia / servidor (estilo compacto) */
+.mcw2 { width: min(560px, 94vw); }
+.mcw2 .event-modal-body { display: grid; gap: 10px; padding: 24px; }
+.mcw2-top { display: flex; align-items: center; justify-content: space-between; }
+.mcw2-top h3 { margin: 0; font-size: 20px; }
+.mcw2-mode { width: 100%; }
+.mcw2-mode button { flex: 1; }
+.mcw2-iconrow { display: flex; align-items: center; gap: 14px; }
+.mcw2-icon { --tint: #a855f7; width: 104px; height: 104px; flex: none; display: grid; place-items: center; font-size: 46px; border-radius: 22px; overflow: hidden; background: linear-gradient(135deg, color-mix(in srgb, var(--tint) 75%, #fff 0%), color-mix(in srgb, var(--tint) 35%, #000)); border: 1px solid var(--line); }
+.mcw2-icon img { width: 100%; height: 100%; object-fit: cover; }
+.mcw2-iconbtns { display: grid; gap: 8px; }
+.mcw2-btn { text-align: left; padding: 8px 16px; border-radius: 12px; font-weight: 600; }
+.mcw2-label { margin-top: 6px; font-weight: 700; font-size: 15px; }
+.mcw2-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mcw2-chip { padding: 8px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; font-weight: 600; cursor: pointer; transition: border-color .15s, background .15s; }
+.mcw2-chip:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.mcw2-chip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--raised)); }
+.mcw2-chip:disabled { opacity: .4; cursor: not-allowed; }
+.mcw2-verrow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.mcw2-select { flex: 1 1 220px; }
+.mcw2-actions { margin-top: 6px; }
+.mcw2-iconbtns { justify-items: stretch; min-width: 170px; }
+.mcw2-iconbtns .mcw2-btn { width: 100%; text-align: left; }

@@ -1608,46 +1608,59 @@ const verAtLeast = (v, min) => { const a = verParts(v); if (!a) return true; for
 const javaFor = (v) => { const a = verParts(v); if (!a) return null; if (a[0] >= 26) return 25; if (verAtLeast(v, [1, 20, 5])) return 21; if (verAtLeast(v, [1, 18, 0])) return 17; if (verAtLeast(v, [1, 17, 0])) return 16; return 8; };
 const loaderOk = (loader, v) => (loader === 'fabric' || loader === 'nova') ? verAtLeast(v, [1, 14, 0]) : true;
 
+const NOVA_CLIENT_MC = ['1.21.1']; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
+const RANDOM_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎', '🐉', '🎮', '🌙', '🧪', '🛡️', '🍀', '🌋', '🦊', '👑'];
+const RANDOM_TINTS = ['#a855f7', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1'];
+const mcw = { mode: 'instance', iconData: '', tint: RANDOM_TINTS[0], srvType: '', srvTypes: [], ram: 4 };
+
+function paintIcon() {
+  const box = $('mcw-icon');
+  box.replaceChildren();
+  box.style.setProperty('--tint', mcw.tint);
+  if (mcw.iconData) { const im = document.createElement('img'); im.src = mcw.iconData; im.alt = ''; box.append(im); }
+  else box.textContent = $('mc-emoji').value.trim() || (LOADER_INFO[$('mc-loader').value] || LOADER_INFO.nova).icon;
+}
+
+function wizChip(label, on, onClick, disabled = false, title = '') {
+  const c = el('button', 'mcw2-chip' + (on ? ' on' : ''));
+  c.type = 'button'; c.disabled = disabled; if (title) c.title = title;
+  c.setAttribute('role', 'radio'); c.setAttribute('aria-checked', String(!!on));
+  c.textContent = (on ? '✓ ' : '') + label;
+  c.addEventListener('click', onClick);
+  return c;
+}
+
 function paintWizard() {
+  const server = mcw.mode === 'server';
   const ver = $('mc-version').value;
-  let loader = $('mc-loader').value;
-  if (!loaderOk(loader, ver)) { loader = 'forge'; $('mc-loader').value = loader; }
-  // tarjetas de tipo de perfil
   const box = $('mcw-loaders');
   box.replaceChildren();
-  Object.entries(LOADER_INFO).forEach(([id, info]) => {
-    const ok = loaderOk(id, ver);
-    const c = el('button', 'mcw-loader');
-    c.type = 'button'; c.disabled = !ok;
-    c.setAttribute('role', 'radio'); c.setAttribute('aria-checked', String(loader === id));
-    c.classList.toggle('active', loader === id);
-    const top = el('div', 'mcw-loader-top');
-    top.append(el('span', 'mcw-loader-ico', info.icon), el('b', '', info.name));
-    if (info.tag) top.append(el('span', 'mcw-tag', info.tag));
-    c.append(top, el('small', '', ok ? info.desc : `No disponible en Minecraft ${ver} (necesita 1.14 o más).`));
-    c.addEventListener('click', () => { $('mc-loader').value = id; paintWizard(); });
-    box.append(c);
-  });
-  // versiones populares + lista completa filtrada
-  paintPopularVersions();
-  const q = $('mcw-search').value.trim().toLowerCase();
-  const list = $('mcw-list');
-  list.replaceChildren();
-  const shown = (mcList || []).filter((v) => !q || v.toLowerCase().includes(q));
-  shown.slice(0, 400).forEach((v) => {
-    const b = el('button', 'ver-chip', v);
-    b.type = 'button'; b.setAttribute('role', 'option');
-    b.classList.toggle('active', ver === v);
-    b.addEventListener('click', () => { $('mc-version').value = v; paintWizard(); });
-    list.append(b);
-  });
-  if (!shown.length) list.append(el('p', 'muted', q ? `Ninguna versión coincide con "${q}".` : 'No se pudo cargar la lista de versiones.'));
-  const act = list.querySelector('.active'); if (act && !q) act.scrollIntoView({ block: 'nearest' });
-  // resumen
-  const info = LOADER_INFO[loader];
-  const java = javaFor(ver);
+  const desc = $('mcw-loader-desc');
   const sum = $('mcw-summary');
   sum.replaceChildren();
+  if (server) {
+    mcw.srvTypes.forEach((t) => {
+      const info = window.serversApi.typeInfo(t.id);
+      box.append(wizChip(t.label, mcw.srvType === t.id, () => { mcw.srvType = t.id; loadServerVersions().then(paintWizard); paintWizard(); }));
+    });
+    const info = window.serversApi.typeInfo(mcw.srvType);
+    desc.textContent = `${info[1]} (${info[2]})`;
+    sum.append(el('small', 'muted', mcw.srvType === 'spigot' ? 'Spigot se compila al crearlo y la primera vez tarda varios minutos.' : 'Se crea en tu PC para probar; luego lo exportas a tu host. Se descarga solo lo necesario.'));
+    const rc = $('mcw-ram-chips');
+    rc.replaceChildren();
+    [2, 4, 6, 8].forEach((n) => rc.append(wizChip(`${n} GB`, mcw.ram === n, () => { mcw.ram = n; paintWizard(); })));
+    $('mc-create').disabled = !ver;
+    return;
+  }
+  let loader = $('mc-loader').value;
+  if (!loaderOk(loader, ver)) { loader = 'forge'; $('mc-loader').value = loader; }
+  Object.entries(LOADER_INFO).forEach(([id, info]) => {
+    const ok = loaderOk(id, ver);
+    box.append(wizChip(info.name, loader === id, () => { $('mc-loader').value = id; paintWizard(); }, !ok, ok ? '' : `No disponible en Minecraft ${ver} (necesita 1.14 o más).`));
+  });
+  const info = LOADER_INFO[loader];
+  desc.textContent = info.desc;
+  const java = javaFor(ver);
   const row = el('div', 'mcw-sum-row');
   row.append(el('span', 'chip', `Minecraft ${ver}`), el('span', 'chip', `${info.icon} ${info.name}`));
   if (java) row.append(el('span', 'chip', `Java ${java}`));
@@ -1657,62 +1670,103 @@ function paintWizard() {
   if (loader === 'optifine') notes.push('Después de crear la instancia, añade el .jar de OptiFine en Mods.');
   if (java) notes.push(`El launcher instala Java ${java} solo si hace falta.`);
   sum.append(el('small', 'muted', notes.join(' ')));
-  // cabecera
-  $('mcw-icon').textContent = $('mc-emoji').value.trim() || info.icon;
-  $('mcw-preview').textContent = `${$('mc-name').value.trim() || 'Mi instancia'} · Minecraft ${ver} · ${info.name}`;
+  if (!$('mc-name').value.trim()) $('mc-name').placeholder = `${info.name} ${ver}`;
+  paintIcon();
   $('mc-create').disabled = !(mcList || []).length;
 }
-const NOVA_CLIENT_MC = ['1.21.1']; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
+
+async function loadServerVersions() {
+  const sel = $('mc-version');
+  sel.replaceChildren(); sel.disabled = true;
+  $('mc-status').textContent = 'Buscando versiones…';
+  const mine = mcw.srvType;
+  try {
+    const v = await window.serversApi.versions(mine);
+    if (mine !== mcw.srvType) return;
+    v.slice(0, 80).forEach((x, i) => { const o = el('option', '', i === 0 ? `${x} (la más nueva)` : x); o.value = x; sel.append(o); });
+    $('mc-status').textContent = v.length ? '' : 'No hay versiones disponibles.';
+  } catch (e) { $('mc-status').textContent = cleanError(e); }
+  sel.disabled = false;
+}
+
+async function setWizardMode(mode) {
+  mcw.mode = mode;
+  const server = mode === 'server';
+  $('mcw-mode').querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+  $('mcw-title').textContent = server ? 'Crear servidor de prueba' : 'Crear instancia';
+  $('mc-create').textContent = server ? '＋ Crear servidor' : '＋ Crear instancia';
+  $('mcw-iconrow').hidden = server; $('mcw-emojis').hidden = true;
+  $('mcw-ram').hidden = !server;
+  $('mc-snap').closest('label').hidden = server;
+  $('mc-name').placeholder = server ? 'Ej.: Survival, Minijuegos, Pruebas…' : 'Mi survival';
+  $('mc-status').textContent = '';
+  if (server) {
+    if (!mcw.srvTypes.length) mcw.srvTypes = await window.serversApi.types();
+    if (!mcw.srvType) mcw.srvType = (mcw.srvTypes.find((t) => t.id === 'paper') || mcw.srvTypes[0] || {}).id || 'vanilla';
+    paintWizard();
+    await loadServerVersions();
+  } else {
+    await loadMcVersions($('mc-version'));
+    if (mcList.length) $('mc-version').value = mcList.includes('1.21.1') ? '1.21.1' : mcList[0];
+  }
+  paintWizard();
+}
 
 $('mp-go-create').addEventListener('click', async () => {
   $('mc-name').value = '';
   $('mc-emoji').value = '';
-  $('mcw-search').value = '';
   $('mc-loader').value = 'nova';
-  $('mc-status').textContent = 'Cargando versiones de Minecraft…';
+  mcw.iconData = ''; mcw.tint = RANDOM_TINTS[Math.floor(Math.random() * RANDOM_TINTS.length)];
   $('mc-create').disabled = true;
+  let allowed = false;
+  try { allowed = !!(await window.api.srvAllowed()); } catch {}
+  $('mcw-mode-server').hidden = !allowed;
   const eb = $('mcw-emojis');
   eb.replaceChildren();
   QUICK_EMOJIS.forEach((e) => {
     const b = el('button', 'mcw-emoji', e); b.type = 'button';
-    b.addEventListener('click', () => { $('mc-emoji').value = e; paintWizard(); });
+    b.addEventListener('click', () => { $('mc-emoji').value = e; mcw.iconData = ''; paintIcon(); });
     eb.append(b);
   });
   $('mp-create-modal').showModal();
-  await loadMcVersions($('mc-version'));
-  if (mcList.length) $('mc-version').value = mcList.includes('1.21.1') ? '1.21.1' : mcList[0]; // 1.21.1: ya tiene Nova Client
-  paintWizard();
-  $('mc-status').textContent = mcList.length ? '' : 'No se pudo cargar la lista de versiones.';
+  await setWizardMode(mcw.requestMode === 'server' && allowed ? 'server' : 'instance');
+  mcw.requestMode = '';
   $('mc-name').focus();
 });
-/* versiones populares en cuadrícula */
-function paintPopularVersions() {
-  const box = $('mc-popular');
-  box.replaceChildren();
-  const pops = ['1.21.4', '1.21.1', '1.20.1', '1.19.2', '1.18.2', '1.16.5', '1.12.2', '1.8.9'].filter((v) => mcList && mcList.includes(v));
-  const latest = mcList && mcList[0];
-  [latest, ...pops].filter((v, i, a) => v && a.indexOf(v) === i).forEach((v) => {
-    const b = el('button', 'ver-chip', v);
-    b.type = 'button';
-    b.classList.toggle('active', $('mc-version').value === v);
-    b.addEventListener('click', () => { $('mc-version').value = v; paintWizard(); });
-    box.append(b);
-  });
-}
+$('mcw-mode').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b && b.dataset.mode !== mcw.mode) setWizardMode(b.dataset.mode); });
+$('mcw-upload').addEventListener('click', async () => {
+  try { const d = await window.api.modpackPickIconFile(); if (d) { mcw.iconData = d; paintIcon(); } } catch (e) { toast(cleanError(e), 'error'); }
+});
+$('mcw-random').addEventListener('click', () => {
+  mcw.iconData = '';
+  $('mc-emoji').value = RANDOM_EMOJIS[Math.floor(Math.random() * RANDOM_EMOJIS.length)];
+  mcw.tint = RANDOM_TINTS[Math.floor(Math.random() * RANDOM_TINTS.length)];
+  paintIcon();
+});
+$('mcw-custom').addEventListener('click', () => { $('mcw-emojis').hidden = !$('mcw-emojis').hidden; });
+$('mc-version').addEventListener('change', paintWizard);
 $('mc-snap').addEventListener('change', async () => { const keep = $('mc-version').value; await loadMcVersions($('mc-version')); if (mcList.includes(keep)) $('mc-version').value = keep; paintWizard(); });
-$('mcw-search').addEventListener('input', paintWizard);
 $('mc-name').addEventListener('input', paintWizard);
-$('mc-emoji').addEventListener('input', paintWizard);
-
+$('mcw-x').addEventListener('click', () => $('mp-create-modal').close());
 $('mc-cancel').addEventListener('click', () => $('mp-create-modal').close());
 $('mp-create-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('mc-create').disabled = true;
   try {
+    if (mcw.mode === 'server') {
+      window.serversApi.progress((d) => { if (d.text) $('mc-status').textContent = d.text; else if (d.percent != null) $('mc-status').textContent = `Descargando… ${d.percent}%`; });
+      $('mc-status').textContent = 'Creando servidor…';
+      const made = await window.serversApi.create({ name: $('mc-name').value.trim() || `${mcw.srvType} ${$('mc-version').value}`, type: mcw.srvType, mc: $('mc-version').value, ramGb: mcw.ram });
+      $('mp-create-modal').close();
+      toast('Servidor creado.');
+      await window.serversApi.after(made.id);
+      goTo('servers');
+      return;
+    }
     const loader = $('mc-loader').value;
     const name = $('mc-name').value.trim() || `${LOADER_INFO[loader].name} ${$('mc-version').value}`;
     $('mc-status').textContent = loader === 'nova' ? 'Instalando mods de rendimiento… puede tardar un poco.' : 'Creando…';
-    const entry = await window.api.modpackCreate({ name, icon: $('mc-emoji').value, mcVersion: $('mc-version').value, loader });
+    const entry = await window.api.modpackCreate({ name, icon: $('mc-emoji').value, iconData: mcw.iconData, mcVersion: $('mc-version').value, loader });
     $('mp-create-modal').close();
     toast(`Instancia "${entry.title}" creada${entry.novaSkipped && entry.novaSkipped.length ? ` (sin ${entry.novaSkipped.length} mod(s) que no existen para esa versión)` : ''}`);
     if (entry.preset === 'nova') toast(entry.novaClient ? 'Nova Client instalado: en el juego pulsa Shift derecho para abrir su menú.' : `Nova Client todavía no tiene versión para Minecraft ${entry.mcVersion} (por ahora solo 1.21.1).`);
@@ -4539,7 +4593,7 @@ $('np-modal').addEventListener('click', (e) => { if (e.target === $('np-modal'))
 $('np-wizard').addEventListener('click', () => { $('np-modal').close(); $('mp-go-create').click(); });
 $('np-install').addEventListener('click', () => { $('np-modal').close(); $('mp-go-discover').click(); });
 $('np-file').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'file' }); });
-$('np-server').addEventListener('click', () => { $('np-modal').close(); goTo('servers'); });
+$('np-server').addEventListener('click', () => { $('np-modal').close(); mcw.requestMode = 'server'; $('mp-go-create').click(); });
 $('np-folder').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'folder' }); });
 $('np-other').addEventListener('click', () => { $('np-modal').close(); openLauncherImport(); });
 

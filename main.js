@@ -532,6 +532,19 @@ function managedJavaPath(major) {
 
 // Elige el Java correcto para el modpack. Orden: el que el jugador eligió en Ajustes, el que instaló
 // el launcher, el del sistema. Si ninguno sirve, lo descarga (si el jugador no lo desactivó).
+// En Windows, java.exe abre una ventana negra de consola al jugar; javaw.exe es el mismo Java sin esa ventana.
+async function preferJavaw(bin) {
+  if (process.platform !== 'win32') return bin;
+  try {
+    if (bin) {
+      const w = String(bin).replace(/java(\.exe)?$/i, 'javaw.exe');
+      return w !== bin && fs.existsSync(w) ? w : bin;
+    }
+    const found = await new Promise((resolve) => execFile('where', ['javaw'], { timeout: 5000, windowsHide: true }, (err, out) => resolve(err ? '' : String(out).split(/\r?\n/)[0].trim())));
+    return found && fs.existsSync(found) ? found : bin;
+  } catch { return bin; }
+}
+
 // Devuelve la ruta de Java, o undefined para usar el Java del sistema.
 async function resolveJava(manifest, loaderType, st = readSettings()) {
   const mc = manifest.minecraftVersion;
@@ -1038,6 +1051,7 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
   const entry = packs.buildCustomEntry({
     name: p.name, icon: p.icon, mcVersion: cleanStr(p.mcVersion, 20), loader: cleanStr(p.loader, 10), existingIds: list.map((x) => x.id)
   });
+  if (typeof p.iconData === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.iconData) && p.iconData.length < 400000) { entry.icon = p.iconData; entry.iconTried = true; }
   const dir = instanceDir(GAME_DIR, { event: { id: entry.id } });
   fs.mkdirSync(dir, { recursive: true });
   writeModpacks([...list, entry]);
@@ -1105,6 +1119,21 @@ ipcMain.handle('modpacks:pickIcon', async (_e, p = {}) => {
   entry.iconTried = true;
   writeModpacks(list);
   return entry;
+});
+
+// Elige una imagen para una instancia que todavía no existe: devuelve un PNG cuadrado de 128 px (data URL).
+ipcMain.handle('modpacks:pickIconFile', async () => {
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+  if (res.canceled) return null;
+  const buf = fs.readFileSync(res.filePaths[0]);
+  if (buf.length > adminLib.MAX_IMAGE) throw new Error('La imagen pesa más de 3 MB. Redúcela y vuelve a intentarlo.');
+  if (!adminLib.imageKind(buf)) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
+  let img = nativeImage.createFromBuffer(buf);
+  if (img.isEmpty()) throw new Error('No pude leer esa imagen.');
+  const { width, height } = img.getSize();
+  const side = Math.min(width, height);
+  img = img.crop({ x: Math.floor((width - side) / 2), y: Math.floor((height - side) / 2), width: side, height: side }).resize({ width: 128, height: 128, quality: 'best' });
+  return `data:image/png;base64,${img.toPNG().toString('base64')}`;
 });
 
 ipcMain.handle('modpacks:duplicate', (_e, p = {}) => {
@@ -3092,7 +3121,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     await ensureLocalSkinInGame(eventDir, manifest, loaderType);
     // Los ajustes propios del modpack (RAM, Java, argumentos, ventana) pesan más que los de Ajustes.
     const st = packs.mergeSettings(readSettings(), pack && pack.settings);
-    const javaPath = await resolveJava(manifest, loaderType, st);
+    const javaPath = await preferJavaw(await resolveJava(manifest, loaderType, st));
 
     let customId = null;
     let forgeInstaller = null;

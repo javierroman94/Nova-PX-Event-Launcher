@@ -166,6 +166,7 @@ contextBridge.exposeInMainWorld('api', {
   langOpenFolder: () => ipcRenderer.invoke('lang:openFolder'),
   modpackServerStatus: (id) => ipcRenderer.invoke('modpacks:serverStatus', id),
   modpackPickIcon: (p) => ipcRenderer.invoke('modpacks:pickIcon', p),
+  modpackPickIconFile: () => ipcRenderer.invoke('modpacks:pickIconFile'),
   onModpacksChanged: (cb) => ipcRenderer.on('modpacks:changed', () => cb()),
   modpackDuplicate: (p) => ipcRenderer.invoke('modpacks:duplicate', p),
   instanceWorldDuplicate: (p) => ipcRenderer.invoke('instance:worldDuplicate', p),

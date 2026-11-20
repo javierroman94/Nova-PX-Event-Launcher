@@ -312,6 +312,15 @@
     } catch (e) { toast(cleanError(e)); }
   }
 
+  // Lo usa el cuadro unificado «Crear» (Nuevo perfil → Servidor de prueba).
+  window.serversApi = {
+    types: async () => { if (!types.length) types = await window.api.srvTypes(); return types; },
+    versions: (t) => window.api.srvVersions(t),
+    create: (o) => window.api.srvCreate(o),
+    progress: (fn) => { window.__svProg = fn; },
+    typeInfo: (id) => TYPE_INFO[id] || ['📦', '', ''],
+    after: async (id) => { await loadList(id); }
+  };
   g('sv-pick').addEventListener('change', (e) => { current = e.target.value; paint(); });
   g('sv-new').addEventListener('click', newServer);
   g('sv-start').addEventListener('click', start);
