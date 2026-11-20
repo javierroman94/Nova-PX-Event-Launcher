@@ -1015,18 +1015,22 @@
 
     <!-- NOVEDADES Y SOPORTE -->
     <section class="page" id="page-whatsnew">
-      <h2 class="page-title">Novedades y soporte</h2>
-      <section class="card" id="wn-support">
-        <h3>¿Necesitas ayuda?</h3>
-        <p>Cuéntanos qué pasó y lo revisamos. Mientras más datos nos des, más rápido lo arreglamos.</p>
-        <div class="btn-row">
-          <button id="wn-discord" type="button" class="primary">Abrir el Discord</button>
-          <button id="wn-report" type="button">Copiar reporte</button>
-          <button id="wn-guide" type="button">Cómo reportar un error</button>
-          <button id="wn-folder" type="button">Abrir carpeta del juego</button>
+      <header class="wn-hero">
+        <div class="wn-hero-text">
+          <span class="wn-kicker">Nova PX Event Launcher</span>
+          <h2 class="wn-title">Novedades y soporte</h2>
+          <p class="wn-sub">Lo que cambió en cada versión y a dónde acudir si algo falla.</p>
         </div>
-        <p class="muted" id="wn-info"></p>
-      </section>
+        <div class="wn-ver"><b id="wn-ver-num">—</b><span id="wn-info"></span></div>
+      </header>
+      <h3 class="wn-sec">¿Necesitas ayuda?</h3>
+      <div class="wn-tiles" id="wn-support">
+        <button id="wn-discord" type="button" class="wn-tile wn-tile-main"><span class="wn-ic">💬</span><strong>Abrir el Discord</strong><small>Pregunta y te ayudamos en la comunidad.</small></button>
+        <button id="wn-report" type="button" class="wn-tile"><span class="wn-ic">📋</span><strong>Copiar reporte</strong><small>Copia los datos del juego para pegarlos al pedir ayuda.</small></button>
+        <button id="wn-guide" type="button" class="wn-tile"><span class="wn-ic">📖</span><strong>Cómo reportar un error</strong><small>Qué datos mandar para que lo arreglemos rápido.</small></button>
+        <button id="wn-folder" type="button" class="wn-tile"><span class="wn-ic">📁</span><strong>Abrir carpeta del juego</strong><small>Tus mundos, mods y registros.</small></button>
+      </div>
+      <h3 class="wn-sec">Historial de versiones</h3>
       <div id="wn-list" class="wn-list"></div>
     </section>
 
@@ -1458,6 +1462,7 @@
   <script src="whatsnew.js"></script>
   <script src="servers-ui.js"></script>
   <script src="ctxmenu.js"></script>
+  <script src="downloads.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

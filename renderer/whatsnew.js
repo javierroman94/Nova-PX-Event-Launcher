@@ -36,14 +36,25 @@
     });
   }
 
-  function renderEntry(e, withTitle) {
-    const box = el('article', 'news-item');
-    const h = el('h3', '', `Versión ${e.version}${withTitle && e.title ? ' · ' + e.title : ''}`);
-    box.append(h);
+  // Etiqueta de cada punto: arreglo o novedad (se adivina por las palabras del texto).
+  const isFix = (t) => /\b(error|arregl|ya no|ya se|salían|salia|antes |congel|fallaba|corrig)/i.test(t);
+  function renderEntry(e, withTitle, opts = {}) {
+    const box = el('article', 'news-item wn-entry');
+    const head = el('div', 'wn-entry-head');
+    head.append(el('span', 'wn-badge', `v${e.version}`));
+    if (opts.current) head.append(el('span', 'wn-now', 'Tu versión'));
+    if (withTitle && e.title) head.append(el('span', 'wn-entry-title', e.title));
+    box.append(head);
     const ul = document.createElement('ul');
     ul.className = 'wn-items';
-    e.items.forEach((t) => { const li = document.createElement('li'); richText(li, t); ul.append(li); });
-    if (!e.items.length && e.title) { const p = el('p', '', e.title); box.append(p); }
+    e.items.forEach((t) => {
+      const li = document.createElement('li');
+      const fix = isFix(String(t).split(':')[0]);
+      li.append(el('span', fix ? 'wn-tag wn-tag-fix' : 'wn-tag wn-tag-new', fix ? 'Arreglo' : 'Nuevo'));
+      const txt = document.createElement('span'); txt.className = 'wn-li-text'; richText(txt, t); li.append(txt);
+      ul.append(li);
+    });
+    if (!e.items.length && e.title && !withTitle) box.append(el('p', '', e.title));
     box.append(ul);
     return box;
   }
@@ -58,13 +69,24 @@
     const list = g('wn-list');
     list.textContent = '';
     const entries = await load();
-    if (!entries.length) list.append(el('p', 'muted', 'No pude cargar el historial de cambios.'));
-    entries.slice(0, 25).forEach((e, i) => list.append(renderEntry(e, true)));
+    let version = '';
     try {
       const cfg = await window.api.getConfig();
+      version = cfg.version;
       const sys = await window.api.systemInfo().catch(() => null);
-      g('wn-info').textContent = `Versión ${cfg.version}${sys && sys.platform ? ' · ' + sys.platform : ''}`;
+      g('wn-ver-num').textContent = `v${cfg.version}`;
+      g('wn-info').textContent = sys && sys.platform ? sys.platform : '';
     } catch {}
+    if (!entries.length) list.append(el('p', 'muted', 'No pude cargar el historial de cambios.'));
+    entries.slice(0, 25).forEach((e, i) => {
+      const card = renderEntry(e, true, { current: e.version === version });
+      // Las 3 más recientes salen abiertas; las demás se despliegan al pulsar.
+      if (i < 3) { list.append(card); return; }
+      const d = document.createElement('details'); d.className = 'wn-old';
+      const sm = document.createElement('summary'); sm.append(el('span', 'wn-badge', `v${e.version}`), el('span', 'wn-old-count', `${e.items.length} cambio${e.items.length === 1 ? '' : 's'}`));
+      d.append(sm, card);
+      list.append(d);
+    });
   }
   window.whatsnewShow = show;
 

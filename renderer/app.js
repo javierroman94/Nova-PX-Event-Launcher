@@ -383,6 +383,34 @@ function renderRecent(packs) {
 }
 
 /* --- Launchpad (pantalla principal tipo Lunar) --- */
+// Color principal de una imagen (da más peso a los colores vivos). Devuelve '' si no se puede leer.
+const tintCache = new Map();
+function iconTint(url) {
+  if (tintCache.has(url)) return Promise.resolve(tintCache.get(url));
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => {
+      let out = '';
+      try {
+        const c = document.createElement('canvas'); c.width = c.height = 16;
+        const x = c.getContext('2d'); x.drawImage(im, 0, 0, 16, 16);
+        const d = x.getImageData(0, 0, 16, 16).data;
+        let r = 0, g = 0, b = 0, w = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 128) continue;
+          const wt = 1 + (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2])) / 32;
+          r += d[i] * wt; g += d[i + 1] * wt; b += d[i + 2] * wt; w += wt;
+        }
+        if (w) out = `rgb(${Math.round(r / w)}, ${Math.round(g / w)}, ${Math.round(b / w)})`;
+      } catch { out = ''; }
+      tintCache.set(url, out);
+      resolve(out);
+    };
+    im.onerror = () => { tintCache.set(url, ''); resolve(''); };
+    im.src = url;
+  });
+}
 let lpPackId = null;
 function renderLaunchpad(packs) {
   const w = $('lp-welcome');
@@ -401,8 +429,14 @@ function renderLaunchpad(packs) {
   if (last) {
     $('lp-kicker').textContent = last.lastPlayedAt ? `Última partida · ${ago(last.lastPlayedAt)}` : 'Listo para jugar';
     $('lp-pack-title').textContent = last.title;
-    if (last.icon) { const ic = el('img'); ic.alt = ''; ic.src = last.icon; artBox.append(ic); hero.style.setProperty('--lp-bg', `url(${JSON.stringify(last.icon)})`); }
-    else { artBox.textContent = last.emoji || last.title.slice(0, 1).toUpperCase(); hero.style.removeProperty('--lp-bg'); }
+    // El fondo ya no es el icono ampliado y borroso: es un degradado limpio con el color principal del icono.
+    hero.style.removeProperty('--lp-bg');
+    hero.style.removeProperty('--lp-tint');
+    if (last.icon) {
+      const ic = el('img'); ic.alt = ''; ic.src = last.icon; artBox.append(ic);
+      const want = last.icon;
+      iconTint(want).then((c) => { if (c && hero.classList.contains('has-pack') && ic.src === want) hero.style.setProperty('--lp-tint', c); });
+    } else artBox.textContent = last.emoji || last.title.slice(0, 1).toUpperCase();
     img.hidden = true;
   } else {
     $('lp-kicker').textContent = 'Bienvenido';
@@ -2146,17 +2180,19 @@ $('mp-install').addEventListener('click', async () => {
   }
 });
 let busyTimer = null;
+let busyTitle = 'Trabajando…';
+// El avance ya no sale en un cuadro abajo: va al botón de descargas de arriba (panel con en curso e historial).
 function busyShow(title, d) {
-  const card = $('busy-card');
-  if (title) $('busy-title').textContent = title;
-  $('busy-text').textContent = (d && d.text) || '';
-  const bar = $('busy-bar');
-  if (d && d.total) { bar.max = d.total; bar.value = d.done; } else bar.removeAttribute('value');
-  card.hidden = false;
+  if (title) busyTitle = title;
+  const pct = d && d.total ? Math.round((d.done / d.total) * 100) : -1;
+  if (window.Downloads) window.Downloads.progress('busy', busyTitle, (d && d.text) || '', pct);
   clearTimeout(busyTimer);
-  busyTimer = setTimeout(busyHide, 90000);
+  busyTimer = setTimeout(() => busyHide(), 90000);
 }
-function busyHide() { clearTimeout(busyTimer); $('busy-card').hidden = true; }
+function busyHide(ok = true) {
+  clearTimeout(busyTimer);
+  if (window.Downloads) window.Downloads.done('busy', ok);
+}
 window.api.onModpackProgress((d) => {
   const text = d.text || '';
   if (text === 'Listo') { busyHide(); if (window.NovaMascot) window.NovaMascot.notify('pack-done'); } else busyShow(null, d);
@@ -2786,19 +2822,13 @@ window.api.onStatus((d) => {
 });
 
 let dlTimer = 0;
-function topDownload(pct) {
-  const b = $('top-dl'), t = $('top-dl-text');
-  if (!b) return;
-  b.classList.add('busy'); t.hidden = false; t.textContent = `${pct}%`;
-  b.style.setProperty('--p', `${pct}%`);
-  clearTimeout(dlTimer);
-  dlTimer = setTimeout(() => { b.classList.remove('busy'); t.hidden = true; }, 5000);
+function topDownload(pct, title, text) {
+  if (window.Downloads) window.Downloads.progressAuto('game', title || 'Descargando archivos del juego', text || '', pct);
 }
-$('top-dl').addEventListener('click', () => { const t = document.querySelector('[data-tab=modpacks]'); if (t) t.click(); });
 window.api.onProgress((d) => {
   if (!d.total) return;
-  topDownload(Math.min(100, Math.round(d.type === 'java' ? d.task : (d.task / d.total) * 100)));
   const text = d.type === 'java' ? `Instalando Java… ${Math.round(d.task)}%` : `Descargando archivos del juego (${d.task} de ${d.total})`;
+  topDownload(Math.min(100, Math.round(d.type === 'java' ? d.task : (d.task / d.total) * 100)), d.type === 'java' ? 'Instalando Java' : 'Descargando archivos del juego', text);
   const npBar = $('np-progress');
   npBar.hidden = false;
   npBar.max = d.total;
@@ -4569,6 +4599,7 @@ $('lm-all').addEventListener('change', (e) => {
 $('lm-go').addEventListener('click', async () => {
   if (importing || !lmSel.size) return;
   importing = true;
+  let failed = false;
   const dirs = [...lmSel];
   $('lm-modal').close();
   try {
@@ -4577,7 +4608,7 @@ $('lm-go').addEventListener('click', async () => {
     if (r.ok.length) toast(`${r.ok.length} ${r.ok.length === 1 ? 'instancia importada' : 'instancias importadas'}`);
     r.failed.forEach((f) => toast(`${f.name}: ${f.error}`, 'error'));
     await loadInstalled();
-  } catch (e) { toast(cleanError(e), 'error'); renderLibrary(); } finally { busyHide(); importing = false; }
+  } catch (e) { failed = true; toast(cleanError(e), 'error'); renderLibrary(); } finally { busyHide(!failed); importing = false; }
 });
 $('np-search-form').addEventListener('submit', (e) => {
   e.preventDefault();

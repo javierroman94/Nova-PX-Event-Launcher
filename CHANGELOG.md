@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.113
+- **Panel de descargas**: el botón de descargas de arriba ahora abre una lista con lo que se está descargando (con barra de avance) y el **historial** de lo ya terminado (se puede borrar). La importación de instancias, la instalación de modpacks y la descarga del juego se ven ahí, ya no en un cuadro abajo a la derecha.
+- **Novedades y soporte rediseñado**: cabecera con tu versión, tarjetas de ayuda (Discord, copiar reporte, guía, carpeta) y el historial con etiquetas «Nuevo» y «Arreglo»; las versiones viejas se despliegan al pulsarlas.
+- **Nuevo servidor más claro**: eliges el tipo en tarjetas con una descripción (Vanilla, Paper, Purpur, Spigot, Fabric, Forge, NeoForge) y la memoria con botones rápidos.
+- **Inicio más limpio**: el recuadro grande ya no usa el icono del modpack ampliado y borroso; ahora lleva un degradado con el color principal del icono.
+
 ## 1.0.112
 - **Administración → Historial**: al editar un evento ya se ven los participantes con nombre que tiene guardados (por ejemplo los 64 de RubroCraft Nations) y se pueden quitar uno por uno con «Quitar». Antes esa lista estaba oculta y no se podía tocar.
 

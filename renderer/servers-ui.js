@@ -172,35 +172,80 @@
   }
 
   /* ---------- crear ---------- */
+  // Descripción corta de cada tipo para elegir sin adivinar.
+  const TYPE_INFO = {
+    vanilla: ['🟩', 'El servidor oficial de Mojang, sin cambios.', 'Datapacks'],
+    paper: ['📄', 'Rápido y estable. El más usado para plugins.', 'Plugins'],
+    purpur: ['🟣', 'Basado en Paper con muchos ajustes extra.', 'Plugins'],
+    spigot: ['🔌', 'El clásico de plugins. Se compila al crearlo.', 'Plugins'],
+    fabric: ['🧵', 'Ligero y moderno, para mods de Fabric.', 'Mods'],
+    forge: ['⚒️', 'El de mods clásicos y packs grandes.', 'Mods'],
+    neoforge: ['🔥', 'El sucesor de Forge para versiones nuevas.', 'Mods']
+  };
   async function newServer() {
-    const dlg = el('dialog', 'event-modal confirm-modal');
+    const dlg = el('dialog', 'event-modal confirm-modal sv-new');
     dlg.setAttribute('aria-label', 'Nuevo servidor');
     const body = el('div', 'event-modal-body');
-    body.append(el('h3', '', 'Nuevo servidor de prueba'));
-    const name = document.createElement('input'); name.type = 'text'; name.placeholder = 'Nombre (por ejemplo: Survival)'; name.maxLength = 40;
-    const type = document.createElement('select');
-    types.forEach((t) => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.label; type.append(o); });
+    const head = el('div', 'svn-head');
+    head.append(el('span', 'svn-ic', '🖥️'));
+    const ht = el('div', '');
+    ht.append(el('h3', '', 'Nuevo servidor de prueba'), el('p', 'muted', 'Se crea en tu computadora para probar. Luego lo exportas a tu host.'));
+    head.append(ht);
+
+    const name = document.createElement('input'); name.type = 'text'; name.placeholder = 'Ej.: Survival, Minijuegos, Pruebas…'; name.maxLength = 40;
+    let chosen = (types[0] && types[0].id) || 'vanilla';
+    const grid = el('div', 'svn-types');
+    const cards = new Map();
+    types.forEach((t) => {
+      const [icon, desc, kind] = TYPE_INFO[t.id] || ['📦', '', ''];
+      const c = el('button', 'svn-type'); c.type = 'button';
+      c.append(el('span', 'svn-type-ic', icon), el('strong', '', t.label), el('small', '', desc), el('span', 'svn-kind', kind));
+      c.addEventListener('click', () => { chosen = t.id; mark(); loadVersions(); });
+      cards.set(t.id, c);
+      grid.append(c);
+    });
+    const mark = () => {
+      cards.forEach((c, id) => c.classList.toggle('on', id === chosen));
+      hint.textContent = chosen === 'spigot' ? 'Spigot se compila al crearlo y la primera vez tarda varios minutos.'
+        : (chosen === 'forge' || chosen === 'neoforge') ? 'Forge y NeoForge instalan sus archivos al crear el servidor; puede tardar un poco.'
+        : 'Se descarga solo lo necesario, con el Java que haga falta.';
+    };
+
     const mc = document.createElement('select');
-    const ram = document.createElement('input'); ram.type = 'number'; ram.min = '1'; ram.max = '32'; ram.value = '2';
-    const status = el('p', 'muted', '');
-    const hint = el('p', 'muted', 'Spigot se compila al crearlo y la primera vez tarda varios minutos.');
-    const lab = (t, n) => { const l = el('label', 'sv-prop'); l.append(el('span', '', t), n); return l; };
+    const ram = document.createElement('input'); ram.type = 'number'; ram.min = '1'; ram.max = '32'; ram.value = '4';
+    const quick = el('div', 'svn-quick');
+    [2, 4, 6, 8].forEach((n) => {
+      const q = el('button', '', `${n} GB`); q.type = 'button';
+      q.addEventListener('click', () => { ram.value = String(n); syncQuick(); });
+      quick.append(q);
+    });
+    const syncQuick = () => [...quick.children].forEach((q) => q.classList.toggle('on', q.textContent === `${Number(ram.value)} GB`));
+    ram.addEventListener('input', syncQuick);
+    syncQuick();
+
+    const status = el('p', 'svn-status', '');
+    const hint = el('p', 'svn-hint', '');
+    const lab = (t, n, extra) => { const l = el('label', 'svn-field'); l.append(el('span', '', t), n); if (extra) l.append(extra); return l; };
     const loadVersions = async () => {
+      const mine = chosen;
       mc.textContent = ''; mc.disabled = true; status.textContent = 'Buscando versiones…';
       try {
-        const v = await window.api.srvVersions(type.value);
-        v.slice(0, 80).forEach((x) => { const o = document.createElement('option'); o.value = x; o.textContent = x; mc.append(o); });
+        const v = await window.api.srvVersions(mine);
+        if (mine !== chosen) return;
+        v.slice(0, 80).forEach((x, i) => { const o = document.createElement('option'); o.value = x; o.textContent = i === 0 ? `${x} (la más nueva)` : x; mc.append(o); });
         status.textContent = v.length ? '' : 'No hay versiones disponibles.';
       } catch (e) { status.textContent = cleanError(e); }
       mc.disabled = false;
     };
-    type.addEventListener('change', loadVersions);
+    const row = el('div', 'svn-row');
+    row.append(lab('Versión de Minecraft', mc), lab('Memoria (GB)', ram, quick));
     const actions = el('div', 'mp-actions');
     const no = el('button', '', 'Cancelar'); no.type = 'button';
-    const yes = el('button', 'primary', 'Crear'); yes.type = 'button';
+    const yes = el('button', 'primary', 'Crear servidor'); yes.type = 'button';
     actions.append(no, yes);
-    body.append(lab('Nombre', name), lab('Tipo', type), lab('Versión de Minecraft', mc), lab('Memoria (GB)', ram), hint, status, actions);
+    body.append(head, lab('Nombre', name), el('span', 'svn-label', 'Tipo de servidor'), grid, row, hint, status, actions);
     dlg.append(body);
+    mark();
     const close = () => { try { dlg.close(); } catch {} dlg.remove(); };
     no.addEventListener('click', close);
     dlg.addEventListener('cancel', (e) => { if (yes.disabled) e.preventDefault(); else close(); });
@@ -208,7 +253,7 @@
     yes.addEventListener('click', async () => {
       yes.disabled = no.disabled = true;
       try {
-        const made = await window.api.srvCreate({ name: name.value, type: type.value, mc: mc.value, ramGb: Number(ram.value) || 2 });
+        const made = await window.api.srvCreate({ name: name.value, type: chosen, mc: mc.value, ramGb: Number(ram.value) || 2 });
         toast('Servidor creado.');
         close();
         await loadList(made.id);
@@ -216,6 +261,7 @@
     });
     document.body.append(dlg);
     dlg.showModal();
+    name.focus();
     loadVersions();
   }
 
