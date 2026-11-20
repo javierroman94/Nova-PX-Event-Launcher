@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.112
+- **Administración → Historial**: al editar un evento ya se ven los participantes con nombre que tiene guardados (por ejemplo los 64 de RubroCraft Nations) y se pueden quitar uno por uno con «Quitar». Antes esa lista estaba oculta y no se podía tocar.
+
 ## 1.0.111
 - **Importar instancias muestra el avance real**: ahora dice qué instancia copia y «n de m archivos» con barra que avanza, y el launcher ya no se congela mientras copia.
 - **Las instancias importadas traen su imagen**: se usa la miniatura de la instancia de CurseForge o, si no tiene, la del modpack del mismo nombre en Modrinth.

@@ -3824,7 +3824,7 @@ function skinEditor(obj) {
   return row;
 }
 // Editor de personas nombradas (participantes / colaboradores): nick, rol opcional y enlaces.
-function peopleEditor(box, list, withRole, addLabel) {
+function peopleEditor(box, list, withRole, addLabel, canAdd = true) {
   const paint = () => {
     box.replaceChildren();
     list.forEach((p, i) => {
@@ -3847,9 +3847,11 @@ function peopleEditor(box, list, withRole, addLabel) {
       row.append(head, lk);
       box.append(row);
     });
-    const add = el('button', '', addLabel); add.type = 'button';
-    add.addEventListener('click', () => { list.push({ nick: '', links: [] }); paint(); });
-    box.append(add);
+    if (canAdd) {
+      const add = el('button', '', addLabel); add.type = 'button';
+      add.addEventListener('click', () => { list.push({ nick: '', links: [] }); paint(); });
+      box.append(add);
+    }
   };
   paint();
 }
@@ -3865,8 +3867,10 @@ function openAdminEvent(idx) {
   ade.draft = { ...base, winners: [...(base.winners || (base.winner ? [base.winner] : []))], roster: (base.roster || []).map((p) => ({ ...p, links: [...(p.links || [])].map((l) => ({ ...l })) })), collabs: (base.collabs || []).map((p) => ({ ...p, links: [...(p.links || [])].map((l) => ({ ...l })) })) };
   // Alta de participantes en pausa (sin lista oficial de eventos pasados). Los ya guardados se conservan; se reactiva con localStorage px.admin.roster = 1.
   const rosterOn = (() => { try { return localStorage.getItem('px.admin.roster') === '1'; } catch { return false; } })();
-  $('ade-roster-title').hidden = $('ade-roster').hidden = !rosterOn;
-  if (rosterOn) peopleEditor($('ade-roster'), ade.draft.roster, false, '+ Participante');
+  // Los participantes que ya están guardados siempre se pueden ver y quitar; añadir nuevos sigue en pausa.
+  const showRoster = rosterOn || ade.draft.roster.length > 0;
+  $('ade-roster-title').hidden = $('ade-roster').hidden = !showRoster;
+  if (showRoster) peopleEditor($('ade-roster'), ade.draft.roster, false, '+ Participante', rosterOn);
   peopleEditor($('ade-collabs'), ade.draft.collabs, true, '+ Colaborador');
   ade.preview = '';
   ade.posts = { links: (base.posts || []).map((l) => ({ ...l })) };
