@@ -3148,14 +3148,13 @@ function renderUpdate(s) {
   track.hidden = true; pct.hidden = true; banner.classList.remove('ready');
 
   if (s.state === 'downloading') {
-    banner.hidden = false;
-    $('update-ico').textContent = '⬇';
-    $('update-title').textContent = `Descargando la versión ${s.version || 'nueva'}`;
-    text.textContent = 'Se instalará al reiniciar el launcher. Puedes seguir usándolo.';
+    // El avance va al botón de descargas de arriba (con su historial), no a una barra en medio de la pantalla.
+    banner.hidden = true;
     const n = Math.max(0, Math.min(100, Math.round(s.percent || 0)));
-    track.hidden = false; pct.hidden = false; fill.style.width = `${n}%`; pct.textContent = `${n}%`;
+    window.Downloads.progress('update', `Actualización ${s.version || 'nueva'} del launcher`, 'Se instalará al reiniciar. Puedes seguir usándolo.', n);
     line.textContent = `Descargando la versión ${s.version || 'nueva'} (${s.percent || 0}%).`;
   } else if (s.state === 'ready') {
+    window.Downloads.done('update', true, `Versión ${s.version} lista para instalar`);
     banner.hidden = false;
     install.hidden = false;
     banner.classList.add('ready');
@@ -3169,6 +3168,7 @@ function renderUpdate(s) {
     line.textContent = `La versión ${s.version} está lista para instalar.`;
   } else {
     banner.hidden = true;
+    if (s.state === 'error') window.Downloads.done('update', false, 'No se pudo descargar la actualización');
     line.textContent = {
       checking: 'Buscando actualizaciones…',
       none: 'Tienes la última versión.',
