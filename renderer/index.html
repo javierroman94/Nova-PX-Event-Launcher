@@ -45,6 +45,7 @@
     <nav class="tabs" aria-label="Secciones" id="tabs">
       <span class="nav-group">Jugar</span>
       <button class="tab-btn active" data-tab="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-6h4v6"/></svg><span class="nav-label">Inicio</span></button>
+      <button class="tab-btn" data-tab="versions"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span class="nav-label">Versiones</span></button>
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
       <div id="nav-recent" class="nav-recent" hidden><span class="nav-group">Recientes</span></div>
@@ -290,6 +291,30 @@
     </section>
 
     <!-- MODPACKS: biblioteca, explorar e instancia -->
+    <section class="page" id="page-versions">
+      <div class="vr-layout">
+        <div class="vr-main">
+          <div class="vr-bar">
+            <select id="vr-src" aria-label="Tipo de perfil"></select>
+            <input id="vr-q" type="search" placeholder="Buscar versión (ej. 1.20)…" autocomplete="off" />
+            <select id="vr-sort" aria-label="Orden"><option value="new">Más nuevas primero</option><option value="old">Más antiguas primero</option></select>
+            <button id="vr-new" type="button" class="primary">＋ Nuevo perfil</button>
+          </div>
+          <div id="vr-grid" class="vr-grid"></div>
+        </div>
+        <aside class="vr-side">
+          <div id="vr-art" class="vr-art" aria-hidden="true"></div>
+          <h3 id="vr-title">Minecraft</h3>
+          <p id="vr-desc" class="muted"></p>
+          <div class="vr-field"><span>Versión</span><select id="vr-ver"></select></div>
+          <div class="vr-field vr-field-col"><span>Loader</span><div id="vr-loaders" class="mcw2-chips"></div></div>
+          <small id="vr-note" class="muted"></small>
+          <button id="vr-play" type="button" class="primary vr-play">▶ Jugar</button>
+          <p id="vr-status" class="muted" role="status"></p>
+        </aside>
+      </div>
+    </section>
+
     <section class="page" id="page-modpacks">
       <!-- Biblioteca -->
       <div id="mp-view-library">
@@ -528,11 +553,15 @@
       <!-- Importar desde otros launchers -->
       <dialog id="lm-modal" class="event-modal lm-modal" aria-label="Importar desde otros launchers">
         <div class="event-modal-body">
-          <div class="np-top"><h3>Importar desde otros launchers</h3><button id="lm-close" type="button" class="ghost" aria-label="Cerrar">✕</button></div>
-          <p class="muted">Encontré estas instancias en tu equipo. Marca las que quieras copiar a Nova PX; las originales no se tocan.</p>
-          <div class="lm-bar"><label class="lm-all"><input id="lm-all" type="checkbox" /> Marcar todas</label><span id="lm-count" class="muted"></span></div>
-          <div id="lm-list" class="lm-list"></div>
-          <div class="lm-actions"><button id="lm-manual" type="button" class="ghost">Elegir carpeta a mano…</button><button id="lm-go" type="button" class="primary" disabled>Importar seleccionadas</button></div>
+          <div class="np-top"><div class="lm-title"><button id="lm-back" type="button" class="ghost" aria-label="Volver" hidden>←</button><h3 id="lm-h">Desde otros launchers</h3></div><button id="lm-close" type="button" class="ghost" aria-label="Cerrar">✕</button></div>
+          <p id="lm-sub" class="muted">Elige el launcher del que quieres traer tus perfiles.</p>
+          <div id="lm-picker" class="lm-picker"></div>
+          <div id="lm-step-list" hidden>
+            <div class="lm-bar"><label class="lm-all"><input id="lm-all" type="checkbox" /> Marcar todas</label><span id="lm-count" class="muted"></span></div>
+            <div id="lm-list" class="lm-list"></div>
+            <div class="lm-actions"><button id="lm-manual" type="button" class="ghost">Elegir carpeta a mano…</button><button id="lm-go" type="button" class="primary" disabled>Importar seleccionadas</button></div>
+          </div>
+          <p class="muted lm-legal">Nova PX no está afiliado a estos launchers ni cuenta con su aval. Todas las marcas pertenecen a sus dueños.</p>
         </div>
       </dialog>
 
@@ -1474,5 +1503,6 @@
   <script src="ctxmenu.js"></script>
   <script src="downloads.js"></script>
   <script src="app.js"></script>
+  <script src="versions.js"></script>
 </body>
 </html>

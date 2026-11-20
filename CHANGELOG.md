@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.118
+- **Nueva página «Versiones»** (menú lateral): una tarjeta por versión de Minecraft (26, 1.21, 1.20…) con buscador y orden. A la derecha eliges la versión exacta y el loader (Nova, Fabric, Forge, OptiFine o Vanilla) y pulsas **Jugar**: si ya tienes un perfil así lo abre, y si no lo crea al momento.
+- **Nuevo perfil con tarjetas grandes**: cada opción (Asistente, Instalar modpack, Importar archivo, Importar de otros launchers, Importar carpeta y Servidor de prueba) ahora es una tarjeta con icono grande.
+- **Importar desde otros launchers en cuadrícula**: primero eliges el launcher (Modrinth App, CurseForge, Prism, MultiMC, ATLauncher, GDLauncher) y ves cuántos perfiles encontró de cada uno; luego marcas cuáles traer.
+- **Menos tirones al jugar**: con Java 17 o más nuevo (Minecraft 1.18 en adelante) el juego usa ahora un recolector de memoria afinado y arranca con la memoria ya reservada. Si pones tus propios argumentos en Ajustes, se respetan.
+
 ## 1.0.117
 - **La descarga de actualizaciones del launcher ahora va en el botón de descargas de arriba**, con su porcentaje y su historial, y ya no como una barra grande que ocupaba la pantalla. Cuando termina, solo queda el aviso para reiniciar e instalar.
 - **Tus servidores de prueba se ven en la Biblioteca** (sección «Mis servidores de prueba», con un clic se abren) y el menú lateral vuelve a tener «Servidores». Antes, al crear uno no quedaba claro dónde estaba.

@@ -8,6 +8,7 @@ const { Auth } = require('msmc');
 const { autoUpdater } = require('electron-updater');
 const { execFile } = require('child_process');
 const loaders = require('./lib/loaders');
+const jvmDefaults = require('./lib/jvm-args');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
@@ -3136,7 +3137,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       forgeInstaller = await ensureNeoForge(manifest.minecraftVersion, manifest.loader.version);
     }
 
-    const customArgs = st.jvmArgs.split(/\s+/).filter(Boolean);
+    const userArgs = st.jvmArgs.split(/\s+/).filter(Boolean);
+    const customArgs = userArgs.length ? userArgs : jvmDefaults.defaultJvmArgs({ javaMajor: loaders.requiredJavaMajor(manifest.minecraftVersion) });
     const launchOpts = {
       authorization: session.auth,
       root: GAME_DIR,
@@ -3146,7 +3148,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         ...(customId ? { custom: customId } : {})
       },
       overrides: { gameDirectory: eventDir },
-      memory: { max: `${st.ramGb}G`, min: '1G' },
+      memory: { max: `${st.ramGb}G`, min: userArgs.length ? '1G' : `${jvmDefaults.initialMemoryGb(st.ramGb)}G` },
       ...(forgeInstaller ? { forge: forgeInstaller } : {}),
       window: st.fullscreen
         ? { fullscreen: true }

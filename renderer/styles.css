@@ -2762,3 +2762,56 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .mp-srv { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; text-align: left; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; cursor: pointer; min-width: 230px; transition: border-color .15s, transform .15s; }
 .mp-srv:hover { border-color: var(--accent); transform: translateY(-1px); }
 .mp-srv-ic { grid-row: 1 / 3; font-size: 26px; }
+
+/* ===== Nuevo perfil con tarjetas grandes ===== */
+.np-modal { max-width: min(820px, 94vw); }
+.np-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+.np-card { flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; gap: 10px; padding: 24px 20px; min-height: 170px; }
+.np-card .np-ico { width: 64px; height: 64px; font-size: 32px; border-radius: 18px; }
+.np-card .np-txt { justify-items: center; }
+.np-card .np-txt b { justify-content: center; font-size: 17px; }
+.np-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+@media (max-width: 640px) { .np-grid { grid-template-columns: 1fr; } .np-card { min-height: 0; } }
+
+/* ===== Desde otros launchers en cuadrícula ===== */
+.lm-modal { max-width: min(860px, 94vw); }
+.lm-title { display: flex; align-items: center; gap: 10px; }
+.lm-title h3 { margin: 0; }
+.lm-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.lm-pick { display: grid; justify-items: center; align-content: center; gap: 8px; padding: 22px 14px; min-height: 140px; border-radius: 16px; border: 1px solid var(--line); background: var(--raised); color: inherit; font: inherit; cursor: pointer; transition: transform .15s, border-color .15s; }
+.lm-pick:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.lm-pick.none { opacity: .7; }
+.lm-pick-logo { --c: #888; width: 56px; height: 56px; display: grid; place-items: center; border-radius: 16px; font-weight: 800; font-size: 20px; color: #fff; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 45%, #000)); }
+.lm-pick-folder .lm-pick-logo { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); font-size: 26px; }
+.lm-legal { font-size: 11.5px; text-align: center; margin: 0; }
+@media (max-width: 700px) { .lm-picker { grid-template-columns: 1fr 1fr; } }
+
+/* ===== Página Versiones ===== */
+.vr-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+.vr-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.vr-bar input { flex: 1 1 200px; margin: 0; }
+.vr-bar select { width: auto; }
+.vr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 16px; }
+.vr-card { display: grid; gap: 8px; padding: 0; text-align: left; background: none; border: 2px solid transparent; border-radius: 16px; color: inherit; font: inherit; cursor: pointer; transition: transform .15s, border-color .15s; }
+.vr-card:hover { transform: translateY(-3px); }
+.vr-card.on { border-color: var(--ok, #4ade80); }
+.vr-card-art, .vr-art { --h: 260; position: relative; display: grid; align-content: end; justify-items: start; gap: 2px; aspect-ratio: 3 / 4; padding: 14px; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, hsl(var(--h) 75% 52%), hsl(calc(var(--h) + 40) 70% 22%)); box-shadow: inset 0 -80px 60px -40px rgba(0,0,0,.55); }
+.vr-card-art::before, .vr-art::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px); background-size: 22px 22px; mask-image: linear-gradient(180deg, #000, transparent 85%); }
+.vr-card-num { position: relative; font-size: 44px; font-weight: 900; line-height: 1; letter-spacing: -.03em; color: #fff; text-shadow: 0 4px 18px rgba(0,0,0,.45); }
+.vr-card-name { position: relative; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.85); }
+.vr-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px; }
+.vr-card-foot b { font-size: 15px; }
+.vr-play-ico { color: var(--ok, #4ade80); font-size: 13px; }
+.vr-side { position: sticky; top: 8px; display: grid; gap: 12px; padding: 16px; border-radius: 18px; border: 1px solid var(--line); background: var(--raised); }
+.vr-art { aspect-ratio: 16 / 9; width: 100%; }
+.vr-art .vr-card-num { font-size: 40px; }
+.vr-side h3 { margin: 0; font-size: 18px; }
+.vr-side p { margin: 0; font-size: 13px; line-height: 1.45; }
+.vr-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; }
+.vr-field select { width: auto; min-width: 110px; }
+.vr-field-col { flex-direction: column; align-items: flex-start; }
+.vr-play { padding: 14px; font-size: 16px; font-weight: 800; border-radius: 14px; }
+@media (max-width: 1000px) { .vr-layout { grid-template-columns: 1fr; } .vr-side { position: static; } }
+.lm-picker { width: 100%; justify-items: stretch; }
+.lm-pick { width: 100%; box-sizing: border-box; }
+.np-card { padding: 20px 18px; min-height: 150px; width: 100%; box-sizing: border-box; }

@@ -144,6 +144,7 @@ const PAGE_TITLES = {
   admin: ['Administración', 'Publica el evento, el modpack, el equipo y las noticias'],
   console: ['Consola', 'El registro del juego, para resolver problemas'],
   whatsnew: ['Novedades y soporte', 'Lo nuevo de cada versión y cómo pedir ayuda'],
+  versions: ['Versiones', 'Elige una versión de Minecraft y juega'],
   servers: ['Servidores de prueba', 'Crea, prueba y exporta tu servidor'],
   account: ['Cuenta', 'Inicia sesión como premium o no premium']
 };
@@ -218,6 +219,7 @@ function goTo(tab) {
   if (tab === 'home') renderContinue();
   if (tab === 'whatsnew' && window.whatsnewShow) window.whatsnewShow();
   if (tab === 'servers' && window.serversShow) window.serversShow();
+  if (tab === 'versions' && window.versionsShow) window.versionsShow();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
 
@@ -4608,44 +4610,77 @@ function lmCount() {
   $('lm-go').textContent = lmSel.size ? `Importar ${lmSel.size} ${lmSel.size === 1 ? 'instancia' : 'instancias'}` : 'Importar seleccionadas';
   $('lm-all').checked = total > 0 && lmSel.size === total;
 }
-async function openLauncherImport() {
+const LM_PICK = [
+  ['Modrinth App', '#1bd96a'], ['CurseForge App', '#f16436'], ['Prism Launcher', '#8b5cf6'],
+  ['MultiMC', '#a3a3a3'], ['ATLauncher', '#3b82f6'], ['GDLauncher', '#14b8a6']
+];
+let lmFound = [];
+function lmShow(step) {
+  const list = step === 'list';
+  $('lm-picker').hidden = list; $('lm-step-list').hidden = !list; $('lm-back').hidden = !list;
+  $('lm-h').textContent = list ? 'Elige qué importar' : 'Desde otros launchers';
+  $('lm-sub').textContent = list ? 'Marca las que quieras copiar a Nova PX; las originales no se tocan.' : 'Elige el launcher del que quieres traer tus perfiles.';
+}
+function lmPaintPicker() {
+  const box = $('lm-picker');
+  box.replaceChildren();
+  const count = (name) => lmFound.filter((x) => x.launcher === name || (name === 'Prism Launcher' && x.launcher === 'PolyMC')).length;
+  LM_PICK.forEach(([name, color]) => {
+    const n = count(name);
+    const c = el('button', 'lm-pick' + (n ? '' : ' none'));
+    c.type = 'button';
+    const logo = el('span', 'lm-pick-logo', name.replace(/ (App|Launcher)$/, '').split(/(?=[A-Z])/).map((w) => w[0]).join('').slice(0, 2).toUpperCase());
+    logo.style.setProperty('--c', color);
+    c.append(logo, el('b', '', name), el('small', 'muted', n ? `${n} ${n === 1 ? 'perfil encontrado' : 'perfiles encontrados'}` : 'No encontrado'));
+    c.addEventListener('click', () => lmPaintList(name));
+    box.append(c);
+  });
+  const other = el('button', 'lm-pick lm-pick-folder'); other.type = 'button';
+  other.append(el('span', 'lm-pick-logo', '📁'), el('b', '', 'Otra carpeta'), el('small', 'muted', 'Elige la carpeta de una instancia'));
+  other.addEventListener('click', () => { $('lm-modal').close(); doImport({ kind: 'folder' }); });
+  box.append(other);
+}
+function lmPaintList(name) {
   lmSel.clear();
+  lmShow('list');
   const list = $('lm-list');
-  list.replaceChildren(el('p', 'muted lm-empty', 'Buscando instancias…'));
-  $('lm-modal').showModal();
-  lmCount();
-  let found = [];
-  try { found = await window.api.launchersScan(); } catch (e) { toast(cleanError(e), 'error'); }
   list.replaceChildren();
+  const found = lmFound.filter((x) => x.launcher === name || (name === 'Prism Launcher' && x.launcher === 'PolyMC'));
   if (!found.length) {
     const box = el('div', 'lm-empty');
-    box.append(el('strong', '', 'No encontré instancias en las carpetas habituales'), el('p', 'muted', 'Si las guardas en otro sitio, usa «Elegir carpeta a mano» y selecciona la carpeta de la instancia.'));
+    box.append(el('strong', '', `No encontré perfiles de ${name} en las carpetas habituales`), el('p', 'muted', 'Si los guardas en otro sitio, usa «Elegir carpeta a mano» y selecciona la carpeta de la instancia.'));
     list.append(box); lmCount(); return;
   }
-  const groups = new Map();
-  found.forEach((x) => { if (!groups.has(x.launcher)) groups.set(x.launcher, []); groups.get(x.launcher).push(x); });
-  groups.forEach((items, name) => {
-    const g = el('section', 'lm-group');
-    const h = el('h4', '', ''); h.append(el('span', 'lm-gico', LM_ICONS[name] || '📁'), document.createTextNode(` ${name} `), el('small', 'muted', `${items.length}`));
-    g.append(h);
-    items.forEach((x) => {
-      const row = el('label', `lm-item${x.unsupported ? ' off' : ''}`);
-      const cb = el('input'); cb.type = 'checkbox'; cb.disabled = !!x.unsupported;
-      cb.addEventListener('change', () => { cb.checked ? lmSel.add(x.dir) : lmSel.delete(x.dir); lmCount(); });
-      const body = el('div', 'lm-body');
-      body.append(el('strong', '', x.name));
-      const chips = el('div', 'ad-chips');
-      chips.append(chip(`Minecraft ${x.mcVersion}`), chip(x.loader && x.loader.type !== 'vanilla' ? x.loader.type[0].toUpperCase() + x.loader.type.slice(1) : 'Vanilla'));
-      if (x.mods) chips.append(chip(`${x.mods} mods`, 'ok'));
-      if (x.unsupported) chips.append(chip(`${x.unsupported}: aún no soportado`, 'warn'));
-      body.append(chips);
-      row.append(cb, body);
-      g.append(row);
-    });
-    list.append(g);
+  const g = el('section', 'lm-group');
+  found.forEach((x) => {
+    const row = el('label', `lm-item${x.unsupported ? ' off' : ''}`);
+    const cb = el('input'); cb.type = 'checkbox'; cb.disabled = !!x.unsupported;
+    cb.addEventListener('change', () => { cb.checked ? lmSel.add(x.dir) : lmSel.delete(x.dir); lmCount(); });
+    const body = el('div', 'lm-body');
+    body.append(el('strong', '', x.name));
+    const chips = el('div', 'ad-chips');
+    chips.append(chip(`Minecraft ${x.mcVersion}`), chip(x.loader && x.loader.type !== 'vanilla' ? x.loader.type[0].toUpperCase() + x.loader.type.slice(1) : 'Vanilla'));
+    if (x.mods) chips.append(chip(`${x.mods} mods`, 'ok'));
+    if (x.unsupported) chips.append(chip(`${x.unsupported}: aún no soportado`, 'warn'));
+    body.append(chips);
+    row.append(cb, body);
+    g.append(row);
   });
+  list.append(g);
   lmCount();
 }
+async function openLauncherImport() {
+  lmSel.clear();
+  lmShow('picker');
+  lmFound = [];
+  lmPaintPicker();
+  $('lm-sub').textContent = 'Buscando tus perfiles…';
+  $('lm-modal').showModal();
+  try { lmFound = await window.api.launchersScan(); } catch (e) { toast(cleanError(e), 'error'); }
+  $('lm-sub').textContent = 'Elige el launcher del que quieres traer tus perfiles.';
+  lmPaintPicker();
+}
+$('lm-back').addEventListener('click', () => { lmSel.clear(); lmShow('picker'); });
 $('lm-close').addEventListener('click', () => $('lm-modal').close());
 $('lm-modal').addEventListener('click', (e) => { if (e.target === $('lm-modal')) $('lm-modal').close(); });
 $('lm-manual').addEventListener('click', () => { $('lm-modal').close(); doImport({ kind: 'folder' }); });
