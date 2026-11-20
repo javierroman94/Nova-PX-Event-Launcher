@@ -1601,7 +1601,7 @@ const LOADER_INFO = {
   nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris y Nova Client. Máximo rendimiento.' },
   fabric: { icon: '🧵', name: 'Fabric', tag: '', desc: 'Ligero y rápido. Mods modernos (desde 1.14).' },
   forge: { icon: '🔨', name: 'Forge', tag: '', desc: 'El clásico: el más compatible con modpacks antiguos.' },
-  optifine: { icon: '🔭', name: 'OptiFine', tag: 'Con tu .jar', desc: 'Forge + OptiFine oficial: el launcher lo descarga e instala solo desde optifine.net.' },
+  optifine: { icon: '🔭', name: 'OptiFine', tag: 'Con tu .jar', desc: 'OptiFine solo (sin Forge): el launcher baja el oficial de optifine.net y lo instala solo. Usa Java 8 en versiones viejas.' },
   vanilla: { icon: '🧱', name: 'Vanilla', tag: '', desc: 'Minecraft puro, sin mods.' }
 };
 const QUICK_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎', '🐉', '🎮', '🌙'];
@@ -1670,7 +1670,7 @@ function paintWizard() {
   sum.append(row);
   const notes = [];
   if (loader === 'nova') notes.push(NOVA_CLIENT_MC.includes(ver) ? 'Incluye Nova Client (menú con Shift derecho).' : `Nova Client todavía no existe para ${ver}; se instalan solo los mods de rendimiento.`);
-  if (loader === 'optifine') notes.push('OptiFine se descarga e instala solo desde optifine.net al crear la instancia.');
+  if (loader === 'optifine') notes.push('OptiFine se baja de optifine.net al crear el perfil y se instala solo la primera vez que juegas (sin Forge).');
   if (java) notes.push(`El launcher instala Java ${java} solo si hace falta.`);
   sum.append(el('small', 'muted', notes.join(' ')));
   if (!$('mc-name').value.trim()) $('mc-name').placeholder = `${info.name} ${ver}`;
@@ -1773,7 +1773,7 @@ $('mp-create-form').addEventListener('submit', async (e) => {
     $('mp-create-modal').close();
     toast(`Instancia "${entry.title}" creada${entry.novaSkipped && entry.novaSkipped.length ? ` (sin ${entry.novaSkipped.length} mod(s) que no existen para esa versión)` : ''}`);
     if (entry.preset === 'nova') toast(entry.novaClient ? 'Nova Client instalado: en el juego pulsa Shift derecho para abrir su menú.' : `Nova Client todavía no tiene versión para Minecraft ${entry.mcVersion} (por ahora 1.16.5 a 1.21.11).`);
-    if (entry.preset === 'optifine') toast(entry.optifine ? `OptiFine instalado (${entry.optifine.replace(/^OptiFine_|\.jar$/g, '').replace(/_/g, ' ')}).` : entry.optifineError ? `No se pudo bajar OptiFine: ${entry.optifineError}` : `OptiFine no tiene versión para Minecraft ${entry.mcVersion}; la instancia queda con Forge.`);
+    if (entry.preset === 'optifine') toast(entry.optifine ? `OptiFine descargado (${entry.optifine.replace(/^OptiFine_|\.jar$/g, '').replace(/_/g, ' ')}); se instala al pulsar Jugar.` : entry.optifineError ? `No se pudo bajar OptiFine: ${entry.optifineError}` : `OptiFine no tiene versión para Minecraft ${entry.mcVersion}; no se puede crear este perfil.`);
     await loadInstalled();
     openDetail(entry);
   } catch (err) {

@@ -478,6 +478,46 @@ async function ensureForge(mcVersion, wantedVersion) {
   return dest;
 }
 
+/* ---------- OptiFine solo (sin Forge) ---------- */
+
+// Deja el Minecraft vanilla de esa versión en <GAME_DIR>/versions (el instalador de OptiFine lo necesita).
+async function ensureVanillaFiles(mc) {
+  if (!loaders.isSafeVersion(mc)) throw new Error(`La versión de Minecraft "${mc}" no es válida.`);
+  const dir = path.join(GAME_DIR, 'versions', mc);
+  const jarFile = path.join(dir, `${mc}.jar`);
+  const jsonFile = path.join(dir, `${mc}.json`);
+  if (fs.existsSync(jarFile) && fs.existsSync(jsonFile)) return;
+  send('game:status', { text: `Descargando Minecraft ${mc}…` });
+  const manifest = mcManifestCache || (mcManifestCache = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json'));
+  const v = manifest.versions.find((x) => x.id === mc);
+  if (!v) throw new Error(`Mojang no tiene la versión ${mc}.`);
+  const info = await fetchJson(v.url);
+  fs.mkdirSync(dir, { recursive: true });
+  const jar = await downloadBuffer(info.downloads.client.url);
+  if (require('crypto').createHash('sha1').update(jar).digest('hex') !== info.downloads.client.sha1) throw new Error('El Minecraft descargado está dañado. Inténtalo de nuevo.');
+  fs.writeFileSync(jarFile, jar);
+  fs.writeFileSync(jsonFile, JSON.stringify(info));
+}
+
+// Devuelve el id de la versión «<mc>-OptiFine_…» lista para lanzar; la primera vez ejecuta el instalador oficial de OptiFine.
+async function ensureOptiFine(pack, javaPath) {
+  const mc = pack.mcVersion;
+  let file = pack.optifine;
+  if (!file) {
+    file = await optifineLib.fetchJar({ fetchText: async (u) => (await fetchWithTimeout(u, 30000)).text(), download: (u) => downloadBuffer(u), destDir: path.join(GAME_DIR, 'optifine'), mc });
+    if (!file) throw new Error(`OptiFine no tiene versión para Minecraft ${mc}.`);
+  }
+  const jarPath = path.join(GAME_DIR, 'optifine', file);
+  if (!fs.existsSync(jarPath)) await optifineLib.fetchJar({ fetchText: async (u) => (await fetchWithTimeout(u, 30000)).text(), download: (u) => downloadBuffer(u), destDir: path.join(GAME_DIR, 'optifine'), mc });
+  const javaBin = (javaPath || 'java').replace(/javaw(\.exe)?$/i, (m2) => m2.replace('javaw', 'java'));
+  send('game:status', { text: 'Instalando OptiFine…' });
+  return optifineLib.installStandalone({
+    gameDir: GAME_DIR, mc, jarPath, helperClass: require('./lib/of-helper'),
+    ensureVanilla: () => ensureVanillaFiles(mc),
+    run: (args) => new Promise((resolve, reject) => execFile(javaBin, args, { timeout: 180000, windowsHide: true, maxBuffer: 1 << 20 }, (err, out, errOut) => (err ? reject(new Error(`No se pudo ejecutar el instalador de OptiFine: ${String(errOut || err.message).split('\n')[0]}`)) : resolve(out))))
+  });
+}
+
 /* ---------- loader (NeoForge) ---------- */
 
 // Igual que Forge: se descarga el instalador oficial y minecraft-launcher-core lo ejecuta al iniciar.
@@ -1075,15 +1115,16 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
       progress('Listo');
     }
   }
-  // Perfil OptiFine: Forge + el .jar oficial, bajado directo de optifine.net a la carpeta mods.
+  // Perfil OptiFine (solo): se baja el .jar oficial de optifine.net; el instalador se ejecuta al jugar por primera vez.
   if (entry.preset === 'optifine') {
     const progress = (text) => send('modpack:progress', { text });
     try {
       progress('Descargando OptiFine desde optifine.net…');
-      entry.optifine = await optifineLib.installOptiFine({
-        fetchText: async (u) => (await fetchWithTimeout(u, 30000)).text(), download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion
+      entry.optifine = await optifineLib.fetchJar({
+        fetchText: async (u) => (await fetchWithTimeout(u, 30000)).text(), download: (u) => downloadBuffer(u), destDir: path.join(GAME_DIR, 'optifine'), mc: entry.mcVersion
       });
     } catch (e) { entry.optifine = null; entry.optifineError = String((e && e.message) || e).slice(0, 200); } finally { progress('Listo'); }
+    writeModpacks(readModpacks().map((x) => (x.id === entry.id ? entry : x)));
   }
   return entry;
 });
@@ -3186,7 +3227,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
 
     let customId = null;
     let forgeInstaller = null;
-    if (loaderType === 'fabric') {
+    if (pack && pack.preset === 'optifine' && loaderType === 'vanilla') {
+      customId = await ensureOptiFine(pack, javaPath);
+    } else if (loaderType === 'fabric') {
       send('game:status', { text: 'Preparando Fabric…' });
       customId = await ensureFabric(manifest.minecraftVersion, manifest.loader.version);
     } else if (loaderType === 'forge') {

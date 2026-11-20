@@ -10,10 +10,10 @@ const packs = require('../lib/packs');
   assert.strictEqual(r.installed.filter((f) => f === 'fabric-api.jar').length, 1);
   assert.ok(NOVA_MODS.length >= 10 && NOVA_MODS.some(([s]) => s === 'sodium'));
 
-  // Perfil nova = Fabric con preset; optifine = Forge con preset.
+  // Perfil nova = Fabric con preset; optifine = vanilla con preset.
   const mk = (loader) => packs.buildCustomEntry({ name: 'X', mcVersion: '1.21.1', loader });
   assert.deepStrictEqual([mk('nova').loader.type, mk('nova').preset], ['fabric', 'nova']);
-  assert.deepStrictEqual([mk('optifine').loader.type, mk('optifine').preset], ['forge', 'optifine']);
+  assert.deepStrictEqual([mk('optifine').loader.type, mk('optifine').preset], ['vanilla', 'optifine']);
   assert.strictEqual(mk('fabric').preset, undefined);
   assert.throws(() => mk('lunar'), /no soportado/i);
 
