@@ -143,6 +143,8 @@ const PAGE_TITLES = {
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
   admin: ['Administración', 'Publica el evento, el modpack, el equipo y las noticias'],
   console: ['Consola', 'El registro del juego, para resolver problemas'],
+  whatsnew: ['Novedades y soporte', 'Lo nuevo de cada versión y cómo pedir ayuda'],
+  servers: ['Servidores de prueba', 'Crea, prueba y exporta tu servidor'],
   account: ['Cuenta', 'Inicia sesión como premium o no premium']
 };
 
@@ -214,6 +216,8 @@ function goTo(tab) {
   if (tab === 'modpacks') openModpacks();
   if (tab === 'admin') { loadAdmin(); if (window.adminEntered) window.adminEntered(); } else if (window.adminLeft) window.adminLeft();
   if (tab === 'home') renderContinue();
+  if (tab === 'whatsnew' && window.whatsnewShow) window.whatsnewShow();
+  if (tab === 'servers' && window.serversShow) window.serversShow();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));
 
@@ -3312,6 +3316,7 @@ function setAdminUi(on, repo, err, eligible) {
   syncSecretThemes();
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
+  if (window.serversRefreshNav) window.serversRefreshNav();
   $('adm-login-box').hidden = on;
   $('adm-logout-box').hidden = !on;
   $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';

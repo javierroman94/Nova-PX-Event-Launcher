@@ -2603,3 +2603,18 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .pl-acc { font-size: 20px; padding: 4px 8px; border-radius: 10px; }
 .pl-acc.on { outline: 2px solid var(--accent, #7c5cff); }
 .pl-acc.locked { opacity: .35; filter: grayscale(1); cursor: not-allowed; }
+
+/* Novedades y servidores de prueba */
+.wn-list { display: grid; gap: 12px; margin-top: 16px; }
+.wn-items { margin: 8px 0 0; padding-left: 20px; color: var(--text-2); max-width: 78ch; line-height: 1.55; }
+.wn-items li + li { margin-top: 6px; }
+.wn-modal-scroll { max-height: 50vh; overflow: auto; margin: 12px 0; display: grid; gap: 10px; }
+.sv-bar { margin: 12px 0; align-items: center; }
+.sv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sv-prop { display: grid; gap: 4px; margin: 8px 0; }
+.sv-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 16px; }
+.sv-list { display: grid; gap: 8px; margin: 10px 0; }
+.sv-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.sv-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#sv-log { min-height: 240px; max-height: 360px; overflow: auto; white-space: pre-wrap; }
+#sv-main { gap: 12px; display: grid; }

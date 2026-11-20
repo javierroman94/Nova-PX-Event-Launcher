@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.106
+- **Servidores de prueba** (por ahora solo para administradores): nueva pestaña para crear un servidor en tu computadora, configurarlo, encenderlo con consola y comandos, y probarlo entrando a `localhost`. Soporta Vanilla, Paper, Purpur, Spigot, Fabric, Forge y NeoForge; descarga la versión y el Java que hagan falta. Editas `server.properties` con una lista de opciones, instalas plugins, mods y datapacks desde Modrinth, y al terminar exportas todo en un `.zip` listo para subir a tu host. El EULA lo aceptas tú.
+- **Novedades y soporte**: nueva pestaña con el historial de cambios del launcher y accesos de ayuda (Discord, copiar reporte, guía para reportar errores, carpeta del juego). Tras actualizar, el launcher muestra una ventana con lo nuevo.
+
 ## 1.0.105
 - **Copiar reporte** (pestaña Consola): copia un resumen corto listo para pegar en el canal de comentarios: versión, sistema, tipo de cuenta, qué se estaba jugando y las últimas 40 líneas del registro (ocultando tu usuario y recortando las líneas larguísimas). Nueva guía `docs/REPORTAR-ERRORES.md` con la plantilla para beta testers.
 

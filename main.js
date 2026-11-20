@@ -26,6 +26,7 @@ const packs = require('./lib/packs');
 const novaLib = require('./lib/nova');
 const { GithubRepo } = require('./lib/github');
 const adminLib = require('./lib/admin');
+const serverMgr = require('./lib/server-manager');
 const telemetry = require('./lib/telemetry');
 const friendsLib = require('./lib/friends');
 const social = require('./lib/social');
@@ -1356,6 +1357,121 @@ ipcMain.handle('admin:invite', async (_e, user) => {
     return { ok: false, user: name, message: String(err.message || err), url: `https://github.com/${r.owner}/${r.repo}/settings/access` };
   }
 });
+
+/* ---------- servidores de prueba (solo administradores, o todos si features.publicServers) ---------- */
+const SERVERS_DIR = path.join(GAME_DIR, 'servidores');
+const srvProcs = new Map();
+async function srvAllowed() {
+  if (remoteCfg.features && remoteCfg.features.publicServers) return true;
+  return adminEligible();
+}
+async function srvGuard() {
+  if (!(await srvAllowed())) throw new Error('Los servidores de prueba son solo para administradores.');
+}
+function srvProc(id) {
+  if (!srvProcs.has(id)) {
+    const p = new serverMgr.ServerProcess();
+    p.on('line', (line) => send('srv:line', { id, line }));
+    p.on('exit', (code) => send('srv:exit', { id, code }));
+    srvProcs.set(id, p);
+  }
+  return srvProcs.get(id);
+}
+const srvJava = (mc, type) => resolveJava({ minecraftVersion: mc }, type === 'forge' || type === 'neoforge' ? type : 'vanilla').then((j) => j || 'java');
+ipcMain.handle('app:changelog', () => {
+  try { return fs.readFileSync(path.join(app.getAppPath(), 'CHANGELOG.md'), 'utf8').slice(0, 200000); } catch { return ''; }
+});
+ipcMain.handle('srv:allowed', () => srvAllowed());
+ipcMain.handle('srv:types', async () => {
+  await srvGuard();
+  return Object.entries(serverMgr.TYPES).map(([id, t]) => ({ id, label: t.label, content: serverMgr.contentKinds(id) }));
+});
+ipcMain.handle('srv:versions', async (_e, type) => { await srvGuard(); return serverMgr.listVersions(String(type)); });
+ipcMain.handle('srv:list', async () => {
+  await srvGuard();
+  return serverMgr.listServers(SERVERS_DIR).map((s) => {
+    let eula = false;
+    try { eula = /eula\s*=\s*true/i.test(fs.readFileSync(path.join(SERVERS_DIR, s.id, 'eula.txt'), 'utf8')); } catch {}
+    return { ...s, eula, running: srvProcs.has(s.id) && srvProcs.get(s.id).running };
+  });
+});
+ipcMain.handle('srv:create', async (_e, o) => {
+  await srvGuard();
+  const type = String(o && o.type);
+  return serverMgr.createServer({
+    root: SERVERS_DIR, name: o && o.name, type, mc: String(o && o.mc), ramGb: o && o.ramGb,
+    javaFor: (mc) => srvJava(mc, type),
+    onStatus: (text) => send('srv:progress', { text }),
+    onProgress: (percent) => send('srv:progress', { percent })
+  });
+});
+ipcMain.handle('srv:eula', async (_e, id) => {
+  await srvGuard();
+  fs.writeFileSync(path.join(serverMgr.serverDir(SERVERS_DIR, id), 'eula.txt'), '# Aceptado por el administrador en Nova PX (https://aka.ms/MinecraftEULA)\neula=true\n');
+  return true;
+});
+ipcMain.handle('srv:start', async (_e, id) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  const meta = serverMgr.readMeta(dir);
+  const java = await srvJava(meta.mc, meta.type);
+  srvProc(id).start(java, dir, meta);
+  return true;
+});
+ipcMain.handle('srv:stop', async (_e, id) => { await srvGuard(); serverMgr.serverDir(SERVERS_DIR, id); await srvProc(id).stop(); return true; });
+ipcMain.handle('srv:command', async (_e, id, text) => { await srvGuard(); serverMgr.serverDir(SERVERS_DIR, id); srvProc(id).command(text); return true; });
+ipcMain.handle('srv:log', async (_e, id) => { await srvGuard(); serverMgr.serverDir(SERVERS_DIR, id); const p = srvProc(id); return { running: p.running, lines: p.lines.slice(-300) }; });
+ipcMain.handle('srv:props:get', async (_e, id) => {
+  await srvGuard();
+  return serverMgr.parseProperties(fs.readFileSync(path.join(serverMgr.serverDir(SERVERS_DIR, id), 'server.properties'), 'utf8'));
+});
+ipcMain.handle('srv:props:save', async (_e, id, changes) => {
+  await srvGuard();
+  const f = path.join(serverMgr.serverDir(SERVERS_DIR, id), 'server.properties');
+  fs.writeFileSync(f, serverMgr.applyProperties(fs.readFileSync(f, 'utf8'), changes));
+  return true;
+});
+ipcMain.handle('srv:content:search', async (_e, id, kind, query) => {
+  await srvGuard();
+  const meta = serverMgr.readMeta(serverMgr.serverDir(SERVERS_DIR, id));
+  return serverMgr.searchContent({ type: meta.type, mc: meta.mc, kind: String(kind), query });
+});
+ipcMain.handle('srv:content:install', async (_e, id, kind, projectId) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  return serverMgr.installContent({ dir, meta: serverMgr.readMeta(dir), kind: String(kind), projectId });
+});
+ipcMain.handle('srv:content:list', async (_e, id) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  return serverMgr.listContent(dir, serverMgr.readMeta(dir));
+});
+ipcMain.handle('srv:content:remove', async (_e, id, kind, file) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  serverMgr.removeContent(dir, serverMgr.readMeta(dir), String(kind), String(file));
+  return true;
+});
+ipcMain.handle('srv:export', async (_e, id) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  const meta = serverMgr.readMeta(dir);
+  if (srvProcs.has(id) && srvProcs.get(id).running) throw new Error('Apaga el servidor antes de exportarlo.');
+  const res = await dialog.showSaveDialog(mainWindow, { title: 'Guardar el servidor', defaultPath: `${id}.zip`, filters: [{ name: 'Zip', extensions: ['zip'] }] });
+  if (res.canceled || !res.filePath) return null;
+  const r = serverMgr.exportServer(dir, res.filePath);
+  return { file: res.filePath, files: r.files, bytes: r.bytes, name: meta.name };
+});
+ipcMain.handle('srv:folder', async (_e, id) => { await srvGuard(); const err = await shell.openPath(serverMgr.serverDir(SERVERS_DIR, id)); if (err) throw new Error(err); return true; });
+ipcMain.handle('srv:delete', async (_e, id) => {
+  await srvGuard();
+  const dir = serverMgr.serverDir(SERVERS_DIR, id);
+  if (srvProcs.has(id) && srvProcs.get(id).running) throw new Error('Apaga el servidor antes de borrarlo.');
+  fs.rmSync(dir, { recursive: true, force: true });
+  srvProcs.delete(id);
+  return true;
+});
+app.on('before-quit', () => { for (const p of srvProcs.values()) if (p.running) p.stop(3000); });
 
 ipcMain.handle('admin:status', async () => {
   const eligible = await adminEligible();

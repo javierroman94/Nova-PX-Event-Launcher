@@ -1,0 +1,254 @@
+/* Servidores de prueba (solo administradores). Usa $, el, toast, cleanError y askConfirm de app.js solo cuando se llama. */
+(function () {
+  const g = (id) => document.getElementById(id);
+  let current = null; // id del servidor abierto
+  let servers = [];
+  let types = [];
+  const KEEP_LINES = 400;
+
+  const PROPS = [
+    ['motd', 'Mensaje del servidor', 'text'],
+    ['server-port', 'Puerto', 'number'],
+    ['max-players', 'Jugadores máximos', 'number'],
+    ['gamemode', 'Modo de juego', ['survival', 'creative', 'adventure', 'spectator']],
+    ['difficulty', 'Dificultad', ['peaceful', 'easy', 'normal', 'hard']],
+    ['online-mode', 'Solo cuentas premium (online-mode)', 'bool'],
+    ['white-list', 'Lista blanca', 'bool'],
+    ['pvp', 'PvP', 'bool'],
+    ['allow-flight', 'Permitir volar', 'bool'],
+    ['spawn-protection', 'Protección del spawn', 'number'],
+    ['view-distance', 'Distancia de visión', 'number'],
+    ['level-name', 'Nombre del mundo', 'text'],
+    ['level-seed', 'Semilla', 'text']
+  ];
+
+  async function refreshNav() {
+    try { g('nav-servers').hidden = !(await window.api.srvAllowed()); } catch { g('nav-servers').hidden = true; }
+  }
+  window.serversRefreshNav = refreshNav;
+  window.addEventListener('load', () => setTimeout(refreshNav, 2000));
+
+  const meta = () => servers.find((s) => s.id === current);
+
+  async function loadList(keep) {
+    servers = await window.api.srvList();
+    const pick = g('sv-pick');
+    pick.textContent = '';
+    servers.forEach((s) => { const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name} · ${(s.type || '').toUpperCase()} ${s.mc}`; pick.append(o); });
+    if (keep && servers.some((s) => s.id === keep)) current = keep;
+    else current = servers[0] ? servers[0].id : null;
+    if (current) pick.value = current;
+    g('sv-empty').hidden = !!servers.length;
+    g('sv-pick').hidden = !servers.length;
+    g('sv-main').hidden = !current;
+    if (current) await paint();
+  }
+
+  function setState(running) {
+    g('sv-state').textContent = running ? 'Encendido' : 'Apagado';
+    g('sv-start').disabled = running;
+    g('sv-stop').disabled = !running;
+    g('sv-delete').disabled = running;
+    g('sv-export').disabled = running;
+  }
+
+  function appendLine(line) {
+    const log = g('sv-log');
+    const stick = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.append(document.createTextNode(line + '\n'));
+    while (log.childNodes.length > KEEP_LINES) log.removeChild(log.firstChild);
+    if (stick) log.scrollTop = log.scrollHeight;
+  }
+
+  async function paint() {
+    const s = meta();
+    if (!s) return;
+    g('sv-title').textContent = s.name;
+    g('sv-meta').textContent = `${(s.type || '').toUpperCase()} · Minecraft ${s.mc}${s.build ? ' · compilación ' + s.build : ''} · ${s.ramGb} GB de memoria · se conecta a localhost:${'25565'}`;
+    const st = await window.api.srvLog(s.id);
+    setState(st.running);
+    g('sv-log').textContent = st.lines.join('\n') + (st.lines.length ? '\n' : '');
+    g('sv-log').scrollTop = g('sv-log').scrollHeight;
+    const kinds = (types.find((t) => t.id === s.type) || { content: [] }).content;
+    const sel = g('sv-kind');
+    sel.textContent = '';
+    kinds.forEach((k) => { const o = document.createElement('option'); o.value = k.id; o.textContent = k.label; sel.append(o); });
+    g('sv-results').textContent = '';
+    paintProps();
+    paintInstalled();
+  }
+
+  async function paintProps() {
+    const box = g('sv-props');
+    box.textContent = '';
+    let props = {};
+    try { props = await window.api.srvPropsGet(current); } catch (e) { toast(cleanError(e)); return; }
+    g('sv-meta').textContent = g('sv-meta').textContent.replace(/localhost:\d+/, `localhost:${props['server-port'] || 25565}`);
+    PROPS.forEach(([key, label, kind]) => {
+      const row = el('label', 'sv-prop');
+      row.append(el('span', '', label));
+      let input;
+      if (Array.isArray(kind)) { input = document.createElement('select'); kind.forEach((v) => { const o = document.createElement('option'); o.value = v; o.textContent = v; input.append(o); }); }
+      else if (kind === 'bool') { input = document.createElement('select'); [['true', 'Sí'], ['false', 'No']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; input.append(o); }); }
+      else { input = document.createElement('input'); input.type = kind === 'number' ? 'number' : 'text'; }
+      input.dataset.prop = key;
+      input.value = props[key] !== undefined ? props[key] : '';
+      row.append(input);
+      box.append(row);
+    });
+  }
+
+  async function paintInstalled() {
+    const box = g('sv-installed');
+    box.textContent = '';
+    let items = [];
+    try { items = await window.api.srvContentList(current); } catch { return; }
+    if (!items.length) box.append(el('p', 'muted', 'Todavía no instalaste nada.'));
+    items.forEach((it) => {
+      const row = el('div', 'sv-item');
+      row.append(el('span', '', `${it.file} · ${it.kind}`));
+      const rm = el('button', '', 'Quitar'); rm.type = 'button';
+      rm.addEventListener('click', async () => {
+        try { await window.api.srvContentRemove(current, it.kind, it.file); toast('Quitado.'); paintInstalled(); } catch (e) { toast(cleanError(e)); }
+      });
+      row.append(rm);
+      box.append(row);
+    });
+  }
+
+  /* ---------- crear ---------- */
+  async function newServer() {
+    const dlg = el('dialog', 'event-modal confirm-modal');
+    dlg.setAttribute('aria-label', 'Nuevo servidor');
+    const body = el('div', 'event-modal-body');
+    body.append(el('h3', '', 'Nuevo servidor de prueba'));
+    const name = document.createElement('input'); name.type = 'text'; name.placeholder = 'Nombre (por ejemplo: Survival)'; name.maxLength = 40;
+    const type = document.createElement('select');
+    types.forEach((t) => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.label; type.append(o); });
+    const mc = document.createElement('select');
+    const ram = document.createElement('input'); ram.type = 'number'; ram.min = '1'; ram.max = '32'; ram.value = '2';
+    const status = el('p', 'muted', '');
+    const hint = el('p', 'muted', 'Spigot se compila al crearlo y la primera vez tarda varios minutos.');
+    const lab = (t, n) => { const l = el('label', 'sv-prop'); l.append(el('span', '', t), n); return l; };
+    const loadVersions = async () => {
+      mc.textContent = ''; mc.disabled = true; status.textContent = 'Buscando versiones…';
+      try {
+        const v = await window.api.srvVersions(type.value);
+        v.slice(0, 80).forEach((x) => { const o = document.createElement('option'); o.value = x; o.textContent = x; mc.append(o); });
+        status.textContent = v.length ? '' : 'No hay versiones disponibles.';
+      } catch (e) { status.textContent = cleanError(e); }
+      mc.disabled = false;
+    };
+    type.addEventListener('change', loadVersions);
+    const actions = el('div', 'mp-actions');
+    const no = el('button', '', 'Cancelar'); no.type = 'button';
+    const yes = el('button', 'primary', 'Crear'); yes.type = 'button';
+    actions.append(no, yes);
+    body.append(lab('Nombre', name), lab('Tipo', type), lab('Versión de Minecraft', mc), lab('Memoria (GB)', ram), hint, status, actions);
+    dlg.append(body);
+    const close = () => { try { dlg.close(); } catch {} dlg.remove(); };
+    no.addEventListener('click', close);
+    dlg.addEventListener('cancel', (e) => { if (yes.disabled) e.preventDefault(); else close(); });
+    window.api.onSrvProgress && (window.__svProg = (d) => { if (d.text) status.textContent = d.text; else if (d.percent != null) status.textContent = `Descargando… ${d.percent}%`; });
+    yes.addEventListener('click', async () => {
+      yes.disabled = no.disabled = true;
+      try {
+        const made = await window.api.srvCreate({ name: name.value, type: type.value, mc: mc.value, ramGb: Number(ram.value) || 2 });
+        toast('Servidor creado.');
+        close();
+        await loadList(made.id);
+      } catch (e) { status.textContent = cleanError(e); yes.disabled = no.disabled = false; }
+    });
+    document.body.append(dlg);
+    dlg.showModal();
+    loadVersions();
+  }
+
+  /* ---------- acciones ---------- */
+  async function start() {
+    const s = meta();
+    try {
+      const props = await window.api.srvPropsGet(s.id);
+      // El EULA lo acepta la persona, nunca el launcher por su cuenta.
+      if (!s.eula) {
+        const ok = await askConfirm('Para encender el servidor tienes que aceptar el EULA de Minecraft (https://aka.ms/MinecraftEULA). ¿Lo aceptas?', 'Acepto', 'Cancelar').catch(() => false);
+        if (!ok) return;
+        await window.api.srvEula(s.id);
+        s.eula = true;
+      }
+      g('sv-log').textContent = '';
+      await window.api.srvStart(s.id);
+      setState(true);
+      toast(`Encendiendo… entra a localhost:${props['server-port'] || 25565}`);
+    } catch (e) { toast(cleanError(e)); }
+  }
+
+  g('sv-pick').addEventListener('change', (e) => { current = e.target.value; paint(); });
+  g('sv-new').addEventListener('click', newServer);
+  g('sv-start').addEventListener('click', start);
+  g('sv-stop').addEventListener('click', async () => { try { toast('Apagando…'); await window.api.srvStop(current); } catch (e) { toast(cleanError(e)); } });
+  g('sv-folder').addEventListener('click', () => window.api.srvFolder(current).catch((e) => toast(cleanError(e))));
+  g('sv-export').addEventListener('click', async () => {
+    try {
+      const r = await window.api.srvExport(current);
+      if (r) toast(`Exportado: ${r.files} archivos. Súbelo a tu host y descomprímelo en la carpeta del servidor.`);
+    } catch (e) { toast(cleanError(e)); }
+  });
+  g('sv-delete').addEventListener('click', async () => {
+    const s = meta();
+    if (!(await askConfirm(`¿Borrar «${s.name}» con su mundo y todo su contenido? No se puede deshacer. Si quieres conservarlo, expórtalo primero.`, 'Borrar', 'Cancelar'))) return;
+    try { await window.api.srvDelete(s.id); toast('Servidor borrado.'); await loadList(); } catch (e) { toast(cleanError(e)); }
+  });
+  const send = async () => {
+    const t = g('sv-cmd').value.trim();
+    if (!t) return;
+    g('sv-cmd').value = '';
+    try { appendLine('> ' + t); await window.api.srvCommand(current, t); } catch (e) { toast(cleanError(e)); }
+  };
+  g('sv-send').addEventListener('click', send);
+  g('sv-cmd').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+  g('sv-props-save').addEventListener('click', async () => {
+    const changes = {};
+    g('sv-props').querySelectorAll('[data-prop]').forEach((i) => { changes[i.dataset.prop] = i.value; });
+    try { await window.api.srvPropsSave(current, changes); toast('Ajustes guardados.'); paintProps(); } catch (e) { toast(cleanError(e)); }
+  });
+  g('sv-tabs').querySelectorAll('[data-svt]').forEach((b) => b.addEventListener('click', () => {
+    g('sv-tabs').querySelectorAll('[data-svt]').forEach((x) => x.classList.toggle('active', x === b));
+    ['console', 'props', 'content'].forEach((t) => { g(`svt-${t}`).hidden = t !== b.dataset.svt; });
+  }));
+  const search = async () => {
+    const box = g('sv-results');
+    box.textContent = '';
+    box.append(el('p', 'muted', 'Buscando…'));
+    try {
+      const res = await window.api.srvContentSearch(current, g('sv-kind').value, g('sv-q').value);
+      box.textContent = '';
+      if (!res.length) box.append(el('p', 'muted', 'No encontré nada para esta versión.'));
+      res.forEach((r) => {
+        const row = el('div', 'sv-item');
+        const t = el('span', '', `${r.title} — ${r.description || ''}`);
+        const add = el('button', 'primary', 'Instalar'); add.type = 'button';
+        add.addEventListener('click', async () => {
+          add.disabled = true;
+          try { const x = await window.api.srvContentInstall(current, g('sv-kind').value, r.id); toast(`Instalado: ${x.file}`); paintInstalled(); } catch (e) { toast(cleanError(e)); }
+          add.disabled = false;
+        });
+        row.append(t, add);
+        box.append(row);
+      });
+    } catch (e) { box.textContent = ''; toast(cleanError(e)); }
+  };
+  g('sv-search').addEventListener('click', search);
+  g('sv-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+
+  window.api.onSrvLine((d) => { if (d.id === current) appendLine(d.line); });
+  window.api.onSrvExit((d) => { if (d.id === current) { setState(false); appendLine(`[launcher] El servidor se apagó (código ${d.code}).`); } });
+  window.api.onSrvProgress((d) => { if (window.__svProg) window.__svProg(d); });
+
+  window.serversShow = async function () {
+    try {
+      if (!types.length) types = await window.api.srvTypes();
+      await loadList(current);
+    } catch (e) { toast(cleanError(e)); }
+  };
+})();
