@@ -2440,8 +2440,40 @@ ipcMain.handle('settings:save', (_e, s) => {
   return clean;
 });
 
+// Cuánto ocupa cada parte de la carpeta del juego (instancias, versiones, librerías…). Recorre con tope para no tardar.
+async function folderSize(dir, budget = { n: 60000 }) {
+  let total = 0;
+  let entries;
+  try { entries = await fs.promises.readdir(dir, { withFileTypes: true }); } catch { return 0; }
+  for (const e of entries) {
+    if (budget.n-- <= 0) return total;
+    const p = path.join(dir, e.name);
+    if (e.isSymbolicLink()) continue;
+    if (e.isDirectory()) total += await folderSize(p, budget);
+    else { try { total += (await fs.promises.stat(p)).size; } catch {} }
+  }
+  return total;
+}
+ipcMain.handle('system:storage', async () => {
+  let names = [];
+  try { names = (await fs.promises.readdir(GAME_DIR, { withFileTypes: true })).filter((e) => e.isDirectory() && !e.isSymbolicLink()).map((e) => e.name); } catch {}
+  const out = [];
+  for (const n of names) out.push({ name: n, bytes: await folderSize(path.join(GAME_DIR, n)) });
+  return out.sort((a, b) => b.bytes - a.bytes).slice(0, 8);
+});
+
+// «Sincronizar perfiles»: quita los ajustes propios (RAM, ventana, Java) de todos los perfiles para que usen los globales.
+ipcMain.handle('modpacks:syncSettings', () => {
+  const list = readModpacks();
+  let n = 0;
+  for (const e of list) if (e.settings && Object.keys(e.settings).length) { const { account, ...rest } = e.settings; n++; e.settings = account ? { account } : {}; void rest; }
+  writeModpacks(list);
+  return { changed: n };
+});
+
 ipcMain.handle('system:info', () => ({
   totalRamGb: Math.max(2, Math.floor(os.totalmem() / 1073741824)),
+  freeRamGb: Math.max(0, Math.floor(os.freemem() / 1073741824)),
   gameDir: GAME_DIR,
   platform: process.platform
 }));

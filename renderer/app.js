@@ -3092,6 +3092,20 @@ $('java-browse').addEventListener('click', async () => {
   if (p) $('java-path').value = p;
 });
 
+// Espacio que ocupa cada carpeta del juego.
+(async function paintStorage() {
+  const box = $('storage-list');
+  if (!box) return;
+  try {
+    const rows = await window.api.systemStorage();
+    const max = Math.max(1, ...rows.map((r) => r.bytes));
+    const fmt = (b) => (b >= 1073741824 ? `${(b / 1073741824).toFixed(1)} GB` : `${Math.max(1, Math.round(b / 1048576))} MB`);
+    box.replaceChildren(...rows.map((r) => { const d = el('div', 'st-row'); const bar = el('i'); bar.style.width = `${Math.max(3, Math.round(r.bytes / max * 100))}%`; d.append(el('span', '', r.name), el('small', 'muted', fmt(r.bytes)), bar); return d; }));
+  } catch {}
+})();
+$('sync-profiles').addEventListener('click', async () => {
+  try { const r = await window.api.modpackSyncSettings(); $('sync-msg').textContent = r.changed ? `Listo: ${r.changed} perfil(es) ahora usan los ajustes de aquí.` : 'Todos tus perfiles ya usaban los ajustes de aquí.'; } catch (e) { $('sync-msg').textContent = cleanError(e); }
+});
 $('open-folder').addEventListener('click', async () => {
   try {
     await window.api.openGameFolder();
@@ -3342,7 +3356,8 @@ $('wz-offline').addEventListener('click', async () => {
 
   const maxRam = Math.min(16, sys.totalRamGb);
   $('ram').max = String(maxRam);
-  $('ram-hint').textContent = `Tu equipo tiene ${sys.totalRamGb} GB en total. Deja al menos 2 GB libres para el sistema.`;
+  $('ram-hint').textContent = `Tu equipo tiene ${sys.totalRamGb} GB en total y ahora tienes ${sys.freeRamGb} GB libres. Deja al menos 2 GB para el sistema.`;
+  { const rr = $('ram').closest('.range-row'); if (rr && !rr.nextElementSibling?.classList.contains('range-ends')) { const ends = el('div', 'range-ends muted'); ends.append(el('span', '', '1 GB'), el('span', '', `${maxRam} GB`)); rr.after(ends); } }
   $('game-dir').textContent = sys.gameDir;
   fillSettingsForm({ ...settings, ramGb: Math.min(settings.ramGb, maxRam) });
   setTimeout(() => maybeWelcome(settings, sys), 1200);
@@ -4380,6 +4395,7 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
     ['Cuenta', ['Mi cuenta', 'Privacidad', 'Modo administrador']],
     ['Visualización', ['Apariencia', 'Idioma']],
     ['Juego', ['Memoria y Java', 'Ventana del juego', 'Al jugar']],
+    ['Conexiones', ['Discord', 'Notificaciones']],
     ['Sistema', ['Actualizaciones', 'Archivos del juego']]
   ];
   const sets = [...root.querySelectorAll(':scope > fieldset')];
@@ -4463,6 +4479,8 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
     'Ventana del juego': '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
     'Al jugar': '<path d="M7 4l13 8-13 8z"/>',
     'Actualizaciones': '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
+    'Discord': '<path d="M7 7c3-1.2 7-1.2 10 0 2 3 3 6 3 9-1.5 1.2-3 1.8-4.5 2l-1-2c-1 .3-3 .3-4 0l-1 2c-1.5-.2-3-.8-4.5-2 0-3 1-6 3-9z"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/>',
+    'Notificaciones': '<path d="M6 16V11a6 6 0 1112 0v5l2 2H4z"/><path d="M10 21h4"/>',
     'Archivos del juego': '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>'
   };
   const DESC = {
@@ -4475,7 +4493,9 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
     'Ventana del juego': 'Tamaño de la ventana y pantalla completa',
     'Al jugar': 'Qué pasa cuando pulsas Jugar',
     'Actualizaciones': 'Mantén el launcher al día',
-    'Archivos del juego': 'Carpeta de datos y reparación'
+    'Discord': 'Muestra a tus amigos a qué estás jugando',
+    'Notificaciones': 'Avisos de eventos',
+    'Archivos del juego': 'Carpeta de datos, espacio usado y reparación'
   };
   const svg = (inner) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', 'set-ico'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = inner; return s; };
 

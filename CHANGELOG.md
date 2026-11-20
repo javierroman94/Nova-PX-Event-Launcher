@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.123
+- **Ajustes**: nuevas secciones **Discord** y **Notificaciones**, el espacio que ocupa cada carpeta del juego, la RAM libre y los extremos del deslizador de memoria, y **«Usar estos ajustes en todos mis perfiles»** para sincronizar RAM, ventana y Java.
+
 ## 1.0.122
 - **Imágenes oficiales también en las versiones antiguas**: 1.12 y anteriores (hasta 1.1) usan la portada oficial de cada versión, leída en vivo de minecraft.wiki (no se guardan en Nova PX). Si una versión no tiene imagen sigue el paisaje propio.
 

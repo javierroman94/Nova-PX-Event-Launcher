@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('api', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (s) => ipcRenderer.invoke('settings:save', s),
   systemInfo: () => ipcRenderer.invoke('system:info'),
+  systemStorage: () => ipcRenderer.invoke('system:storage'),
+  modpackSyncSettings: () => ipcRenderer.invoke('modpacks:syncSettings'),
   appState: () => ipcRenderer.invoke('app:state'),
   openGameFolder: () => ipcRenderer.invoke('folder:open'),
   browseJava: () => ipcRenderer.invoke('java:browse'),

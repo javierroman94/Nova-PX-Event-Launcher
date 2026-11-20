@@ -1190,6 +1190,11 @@
             <small id="ram-hint" class="muted">Para modpacks con muchos mods se recomiendan 4 a 6 GB.</small>
           </div>
           <div class="field">
+            <label>Sincronizar perfiles</label>
+            <div class="mp-actions"><button id="sync-profiles" type="button">Usar estos ajustes en todos mis perfiles</button></div>
+            <small id="sync-msg" class="muted">Quita los ajustes propios (RAM, ventana, Java) de cada perfil para que todos usen los de aquí.</small>
+          </div>
+          <div class="field">
             <label for="java-path">Ruta de Java</label>
             <div class="input-row">
               <input id="java-path" type="text" placeholder="Automática (usa el Java instalado)" />
@@ -1298,8 +1303,6 @@
         <fieldset>
           <legend>Al jugar</legend>
           <label class="check"><input id="join-server" type="checkbox" /> Entrar directo al servidor del evento</label>
-          <label class="check"><input id="discord-rpc" type="checkbox" /> Mostrar mi actividad en Discord</label>
-          <label class="check"><input id="notify-events" type="checkbox" /> Avisarme cuando un evento esté por empezar</label>
           <label class="check"><input id="share-usage" type="checkbox" /> Contar mi uso para las estadísticas del equipo</label>
           <small class="muted">Solo se envía un número de instalación al azar, tu nick (si iniciaste sesión), si eres premium, la versión del launcher y tu sistema operativo. Nunca tu IP, tu contraseña ni tus archivos.</small>
           <div class="field">
@@ -1310,6 +1313,18 @@
               <option value="keep">No hacer nada</option>
             </select>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Discord</legend>
+          <label class="check"><input id="discord-rpc" type="checkbox" /> Mostrar mi actividad en Discord (qué modpack juegas)</label>
+          <small class="muted">Tus amigos de Discord ven que estás jugando con Nova PX. Puedes apagarlo cuando quieras.</small>
+        </fieldset>
+
+        <fieldset>
+          <legend>Notificaciones</legend>
+          <label class="check"><input id="notify-events" type="checkbox" /> Avisarme cuando un evento esté por empezar</label>
+          <small class="muted">Te llega un aviso del sistema unos minutos antes de cada evento.</small>
         </fieldset>
 
         <fieldset>
@@ -1325,6 +1340,7 @@
           <legend>Archivos del juego</legend>
           <div class="field">
             <div id="game-dir" class="path"></div>
+            <div id="storage-list" class="storage-list" aria-live="polite"></div>
             <button id="open-folder" type="button">Abrir carpeta</button>
             <button id="repair-install" type="button">Reparar instalación</button>
             <small class="muted">Si el juego no abre o falta un mod, vuelve a descargar los mods del evento. No borra tus ajustes ni tus mundos.</small>
