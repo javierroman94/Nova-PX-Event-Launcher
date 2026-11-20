@@ -314,10 +314,10 @@
     "date": "2026-03-01",
     "image": "images/evento-mwinmmva.jpg",
     "description": "",
+    "participants": 40,
     "winners": [
       "XANELBR"
     ],
-    "participants": 40,
     "roster": [
       {
         "nick": "AlphonseGaming"
@@ -486,11 +486,5 @@
     "date": "2026-02-17",
     "image": "images/sylpharos-lumen-invasion-by-kityevil-mwiodua9.jpg",
     "description": "Evento organizado por Nova PX."
-  },
-  {
-    "name": "PX Play's",
-    "date": "2025-04-21",
-    "image": "",
-    "description": "Eventos y torneos de distintos juegos organizados por Nova PX, lanzados en abril de 2025."
   }
 ]
