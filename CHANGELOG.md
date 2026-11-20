@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.122
+- **Imágenes oficiales también en las versiones antiguas**: 1.12 y anteriores (hasta 1.1) usan la portada oficial de cada versión, leída en vivo de minecraft.wiki (no se guardan en Nova PX). Si una versión no tiene imagen sigue el paisaje propio.
+
 ## 1.0.121
 - **Nova Client para más versiones**: ahora existe de Minecraft 1.16.5 a 1.21.11 (antes solo 1.20 en adelante). El perfil Nova lo instala solo.
 

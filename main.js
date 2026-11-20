@@ -1153,7 +1153,15 @@ ipcMain.handle('modpacks:pickIconFile', async () => {
 let mojangArtCache = null;
 ipcMain.handle('mojang:versionArt', async () => {
   if (mojangArtCache) return mojangArtCache;
-  try { mojangArtCache = mojangArt.buildArtMap(await apiRequest(mojangArt.FEED)); } catch { return {}; }
+  let art = {};
+  try { art = mojangArt.buildArtMap(await apiRequest(mojangArt.FEED)); } catch { return {}; }
+  try {
+    const missing = [];
+    for (let n = 0; n <= 21; n++) if (!art[`1.${n}`]) missing.push(`1.${n}`);
+    const wiki = mojangArt.buildWikiMap(await apiRequest(mojangArt.wikiUrl(missing)));
+    for (const [k, v] of Object.entries(wiki)) if (!art[k]) art[k] = v;
+  } catch {}
+  mojangArtCache = art;
   return mojangArtCache;
 });
 
