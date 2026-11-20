@@ -4539,6 +4539,7 @@ $('np-modal').addEventListener('click', (e) => { if (e.target === $('np-modal'))
 $('np-wizard').addEventListener('click', () => { $('np-modal').close(); $('mp-go-create').click(); });
 $('np-install').addEventListener('click', () => { $('np-modal').close(); $('mp-go-discover').click(); });
 $('np-file').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'file' }); });
+$('np-server').addEventListener('click', () => { $('np-modal').close(); goTo('servers'); });
 $('np-folder').addEventListener('click', () => { $('np-modal').close(); doImport({ kind: 'folder' }); });
 $('np-other').addEventListener('click', () => { $('np-modal').close(); openLauncherImport(); });
 

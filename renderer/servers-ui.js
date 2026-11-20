@@ -6,24 +6,36 @@
   let types = [];
   const KEEP_LINES = 400;
 
-  const PROPS = [
-    ['motd', 'Mensaje del servidor', 'text'],
-    ['server-port', 'Puerto', 'number'],
-    ['max-players', 'Jugadores máximos', 'number'],
-    ['gamemode', 'Modo de juego', ['survival', 'creative', 'adventure', 'spectator']],
-    ['difficulty', 'Dificultad', ['peaceful', 'easy', 'normal', 'hard']],
-    ['online-mode', 'Solo cuentas premium (online-mode)', 'bool'],
-    ['white-list', 'Lista blanca', 'bool'],
-    ['pvp', 'PvP', 'bool'],
-    ['allow-flight', 'Permitir volar', 'bool'],
-    ['spawn-protection', 'Protección del spawn', 'number'],
-    ['view-distance', 'Distancia de visión', 'number'],
-    ['level-name', 'Nombre del mundo', 'text'],
-    ['level-seed', 'Semilla', 'text']
+  // [clave, etiqueta, tipo, valor por defecto, ayuda]
+  const GROUPS = [
+    ['🏷️ General', [
+      ['motd', 'Mensaje del servidor', 'text', 'Servidor de pruebas Nova PX', 'Lo que ven los jugadores en la lista de servidores.'],
+      ['server-port', 'Puerto', 'number', '25565', 'Para entrar usa localhost y este puerto.'],
+      ['max-players', 'Jugadores máximos', 'number', '10', '']
+    ]],
+    ['🎮 Reglas del juego', [
+      ['gamemode', 'Modo de juego', ['survival', 'creative', 'adventure', 'spectator'], 'survival', ''],
+      ['difficulty', 'Dificultad', ['peaceful', 'easy', 'normal', 'hard'], 'easy', ''],
+      ['pvp', 'PvP', 'bool', 'true', 'Que los jugadores se puedan golpear entre sí.'],
+      ['allow-flight', 'Permitir volar', 'bool', 'false', 'Evita que te expulsen por volar con mods o plugins.']
+    ]],
+    ['🔐 Acceso', [
+      ['online-mode', 'Solo cuentas premium', 'bool', 'true', 'Apágalo para que entren cuentas no premium.'],
+      ['white-list', 'Lista blanca', 'bool', 'false', 'Solo entran los jugadores que agregues con /whitelist.']
+    ]],
+    ['🌍 Mundo', [
+      ['level-name', 'Nombre del mundo', 'text', 'world', 'Carpeta donde se guarda el mundo.'],
+      ['level-seed', 'Semilla', 'text', '', 'Vacío = mundo aleatorio.'],
+      ['spawn-protection', 'Protección del spawn', 'number', '16', 'Radio en bloques donde solo los operadores construyen.'],
+      ['view-distance', 'Distancia de visión', 'number', '10', 'Más alta se ve más lejos pero pide más memoria.']
+    ]]
   ];
 
   async function refreshNav() {
-    try { g('nav-servers').hidden = !(await window.api.srvAllowed()); } catch { g('nav-servers').hidden = true; }
+    let ok = false;
+    try { ok = !!(await window.api.srvAllowed()); } catch {}
+    g('nav-servers').hidden = true; // ahora se entra desde «Nuevo perfil»
+    const c = g('np-server'); if (c) c.hidden = !ok;
   }
   window.serversRefreshNav = refreshNav;
   window.addEventListener('load', () => setTimeout(refreshNav, 2000));
@@ -73,6 +85,8 @@
     const sel = g('sv-kind');
     sel.textContent = '';
     kinds.forEach((k) => { const o = document.createElement('option'); o.value = k.id; o.textContent = k.label; sel.append(o); });
+    const tabBtn = g('sv-tabs').querySelector('[data-svt="content"]');
+    if (tabBtn) tabBtn.textContent = kinds.map((k) => k.label).join(' y ').replace(/^(.*) y (.*) y (.*)$/, '$1, $2 y $3');
     g('sv-results').textContent = '';
     g('sv-q').value = '';
     paintProps();
@@ -86,17 +100,30 @@
     let props = {};
     try { props = await window.api.srvPropsGet(current); } catch (e) { toast(cleanError(e)); return; }
     g('sv-meta').textContent = g('sv-meta').textContent.replace(/localhost:\d+/, `localhost:${props['server-port'] || 25565}`);
-    PROPS.forEach(([key, label, kind]) => {
-      const row = el('label', 'sv-prop');
-      row.append(el('span', '', label));
-      let input;
-      if (Array.isArray(kind)) { input = document.createElement('select'); kind.forEach((v) => { const o = document.createElement('option'); o.value = v; o.textContent = v; input.append(o); }); }
-      else if (kind === 'bool') { input = document.createElement('select'); [['true', 'Sí'], ['false', 'No']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; input.append(o); }); }
-      else { input = document.createElement('input'); input.type = kind === 'number' ? 'number' : 'text'; }
-      input.dataset.prop = key;
-      input.value = props[key] !== undefined ? props[key] : '';
-      row.append(input);
-      box.append(row);
+    GROUPS.forEach(([title, items]) => {
+      const card = el('section', 'sv-pgroup');
+      card.append(el('h4', '', title));
+      const grid = el('div', 'sv-pgrid');
+      items.forEach(([key, label, kind, def, help]) => {
+        const row = el('label', 'sv-prop' + (kind === 'bool' ? ' sv-prop-bool' : ''));
+        const top = el('span', 'sv-prop-name', label);
+        let input;
+        const val = props[key] !== undefined && props[key] !== '' ? props[key] : def;
+        if (Array.isArray(kind)) { input = document.createElement('select'); kind.forEach((v) => { const o = document.createElement('option'); o.value = v; o.textContent = v; input.append(o); }); input.value = val; }
+        else if (kind === 'bool') {
+          input = document.createElement('input'); input.type = 'checkbox'; input.className = 'sv-switch';
+          input.checked = String(val) === 'true';
+          input.addEventListener('change', () => { input.dataset.val = input.checked ? 'true' : 'false'; });
+          input.dataset.val = input.checked ? 'true' : 'false';
+          input.dataset.bool = '1';
+        } else { input = document.createElement('input'); input.type = kind === 'number' ? 'number' : 'text'; input.value = val; if (key === 'level-seed') input.placeholder = 'aleatoria'; }
+        input.dataset.prop = key;
+        if (kind === 'bool') { row.append(top, input); } else row.append(top, input);
+        if (help) row.append(el('small', 'muted', help));
+        grid.append(row);
+      });
+      card.append(grid);
+      box.append(card);
     });
   }
 
@@ -311,7 +338,7 @@
   g('sv-cmd').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
   g('sv-props-save').addEventListener('click', async () => {
     const changes = {};
-    g('sv-props').querySelectorAll('[data-prop]').forEach((i) => { changes[i.dataset.prop] = i.value; });
+    g('sv-props').querySelectorAll('[data-prop]').forEach((i) => { changes[i.dataset.prop] = i.dataset.bool ? (i.checked ? 'true' : 'false') : i.value; });
     try { await window.api.srvPropsSave(current, changes); toast('Ajustes guardados.'); paintProps(); } catch (e) { toast(cleanError(e)); }
   });
   g('sv-tabs').querySelectorAll('[data-svt]').forEach((b) => b.addEventListener('click', () => {

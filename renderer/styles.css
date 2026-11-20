@@ -2718,3 +2718,17 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .sv-src { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); opacity: .85; }
 .sv-dl { font-size: 11px; opacity: .65; }
 .sv-note { font-size: 12px; margin: 0; }
+
+.sv-props { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-top: 14px; }
+.sv-pgroup { padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)); }
+.sv-pgroup h4 { margin: 0 0 10px; font-size: 14px; letter-spacing: .02em; }
+.sv-pgrid { display: grid; gap: 12px; }
+.sv-pgroup .sv-prop { margin: 0; gap: 5px; }
+.sv-prop-name { font-size: 13px; font-weight: 600; }
+.sv-pgroup .sv-prop small { font-size: 12px; line-height: 1.3; }
+.sv-prop-bool { grid-template-columns: 1fr auto; align-items: center; column-gap: 12px; }
+.sv-prop-bool small { grid-column: 1 / -1; }
+.sv-switch { appearance: none; -webkit-appearance: none; width: 44px; height: 24px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.08); position: relative; cursor: pointer; transition: background .2s, border-color .2s; padding: 0; }
+.sv-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #cfd5e6; transition: transform .2s, background .2s; }
+.sv-switch:checked { background: linear-gradient(135deg, #ef3b5a, #b04fd4); border-color: transparent; }
+.sv-switch:checked::after { transform: translateX(20px); background: #fff; }

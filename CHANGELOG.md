@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.115
+- **Servidor de prueba dentro de «Nuevo perfil»**: ahora se crea desde el cuadro de Nuevo perfil (tarjeta «Servidor de prueba»), junto a Asistente e Importar. Ya no ocupa un botón aparte en el menú lateral.
+- **Ajustes del servidor rediseñados**: agrupados en tarjetas (General, Reglas del juego, Acceso, Mundo), con interruptores en vez de listas Sí/No, ayuda en cada opción y valores por defecto (antes PvP, volar, spawn, distancia y mundo salían vacíos).
+- La pestaña de contenido ya no dice «mods» cuando tu servidor solo usa plugins y datapacks: se llama «Plugins y datapacks», «Mods y datapacks» según el tipo.
+
 ## 1.0.114
 - **Servidores de prueba → Plugins, mods y datapacks**: ahora la lista de lo más descargado aparece sola al abrir la pestaña y al cambiar de tipo (antes había que pulsar «Buscar» y con versiones nuevas como la 26.3 salía vacía). Cada resultado muestra su icono, la tienda de donde viene y cuántas descargas tiene.
 - **Más tiendas**: los plugins se buscan a la vez en **Modrinth, Hangar y SpigotMC** (solo los gratuitos que se pueden bajar directo). Los datapacks y mods siguen en Modrinth.
