@@ -2045,9 +2045,15 @@ async function importFromPath(src) {
     if (!info) throw new Error('No reconozco esa carpeta. Debe ser una instancia de Prism/MultiMC o del CurseForge App. Para otras, crea una instancia y copia tus mods y mundos a su carpeta.');
     if (info.unsupported) throw new Error(`Esa instancia usa ${info.unsupported}, que el launcher todavía no soporta.`);
     const id = idFor(info.name || path.basename(src));
-    progress('Copiando archivos…');
-    importers.copyFolder(info.contentDir, instanceDir(GAME_DIR, { event: { id } }));
-    return packEntryFrom(id, info.name || path.basename(src), info);
+    const label = cleanStr(info.name || path.basename(src), 40);
+    progress(`Copiando ${label}…`);
+    await importers.copyFolderAsync(info.contentDir, instanceDir(GAME_DIR, { event: { id } }),
+      (done, total) => progress(`Copiando ${label} (${done} de ${total} archivos)…`, done, total));
+    const entry = packEntryFrom(id, info.name || path.basename(src), info);
+    // Imagen: la de la instancia (CurseForge) o, si no hay, un modpack de Modrinth con el mismo nombre.
+    entry.icon = info.icon || await lookupModrinthIcon(entry.title);
+    entry.iconTried = true;
+    return entry;
   }
   if (st.size > 1.5 * 1024 ** 3) throw new Error('Ese archivo es demasiado grande para importarlo.');
   const buffer = fs.readFileSync(src);

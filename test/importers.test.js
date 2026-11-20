@@ -82,6 +82,16 @@ const sha1 = (b) => crypto.createHash('sha1').update(b).digest('hex');
     const evil = path.join(tmp, 'evil.novapx');
     writeZip(evil, [{ name: 'novapx.json', data: JSON.stringify({ format: 1, mcVersion: '1.21.1', files: [] }) }, { name: 'overrides/../../x.txt', data: 'x' }]);
     await assert.rejects(im.installNovapx({ buffer: fs.readFileSync(evil), root: path.join(tmp, 'r4'), download: async () => Buffer.alloc(0) }), /ruta/);
+    // copia con avance y miniatura de CurseForge
+    const cfSrc = path.join(tmp, 'cfinst');
+    fs.mkdirSync(path.join(cfSrc, 'mods'), { recursive: true });
+    for (let k = 0; k < 60; k++) fs.writeFileSync(path.join(cfSrc, 'mods', `m${k}.jar`), 'x');
+    fs.writeFileSync(path.join(cfSrc, 'minecraftinstance.json'), JSON.stringify({ name: 'RLCraft', gameVersion: '1.12.2', baseModLoader: { name: 'forge-14.23.5.2860' }, installedModpack: { thumbnailUrl: 'https://media.forgecdn.net/x.png' } }));
+    assert.strictEqual(im.inspectFolder(cfSrc).icon, 'https://media.forgecdn.net/x.png');
+    const seen = [];
+    assert.strictEqual(await im.copyFolderAsync(cfSrc, path.join(tmp, 'cfout'), (d, t) => seen.push([d, t])), 60);
+    assert.deepStrictEqual(seen[seen.length - 1], [60, 60]);
+    assert.ok(!fs.existsSync(path.join(tmp, 'cfout', 'minecraftinstance.json')));
     console.log('importers.test OK');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
