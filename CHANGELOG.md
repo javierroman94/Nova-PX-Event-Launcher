@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.121
+- **Nova Client para más versiones**: ahora existe de Minecraft 1.16.5 a 1.21.11 (antes solo 1.20 en adelante). El perfil Nova lo instala solo.
+
 ## 1.0.120
 - **OptiFine se instala solo**: al crear un perfil OptiFine el launcher baja el .jar oficial directamente de optifine.net y lo deja en Mods (ya no tienes que descargarlo tú). No se guarda ni se redistribuye.
 - **Versiones bien ordenadas**: «Más nuevas primero» ya no mezcla 1.9 con 1.21.

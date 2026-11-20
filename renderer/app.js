@@ -1611,7 +1611,7 @@ const verAtLeast = (v, min) => { const a = verParts(v); if (!a) return true; for
 const javaFor = (v) => { const a = verParts(v); if (!a) return null; if (a[0] >= 26) return 25; if (verAtLeast(v, [1, 20, 5])) return 21; if (verAtLeast(v, [1, 18, 0])) return 17; if (verAtLeast(v, [1, 17, 0])) return 16; return 8; };
 const loaderOk = (loader, v) => (loader === 'fabric' || loader === 'nova') ? verAtLeast(v, [1, 14, 0]) : true;
 
-const NOVA_CLIENT_MC = ['1.21.1']; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
+const NOVA_CLIENT_MC = { includes: (v) => verAtLeast(v, [1, 16, 5]) && !verAtLeast(v, [1, 21, 12]) }; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
 const RANDOM_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎', '🐉', '🎮', '🌙', '🧪', '🛡️', '🍀', '🌋', '🦊', '👑'];
 const RANDOM_TINTS = ['#a855f7', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1'];
 const mcw = { mode: 'instance', iconData: '', tint: RANDOM_TINTS[0], srvType: '', srvTypes: [], ram: 4 };
@@ -1772,7 +1772,7 @@ $('mp-create-form').addEventListener('submit', async (e) => {
     const entry = await window.api.modpackCreate({ name, icon: $('mc-emoji').value, iconData: mcw.iconData, mcVersion: $('mc-version').value, loader });
     $('mp-create-modal').close();
     toast(`Instancia "${entry.title}" creada${entry.novaSkipped && entry.novaSkipped.length ? ` (sin ${entry.novaSkipped.length} mod(s) que no existen para esa versión)` : ''}`);
-    if (entry.preset === 'nova') toast(entry.novaClient ? 'Nova Client instalado: en el juego pulsa Shift derecho para abrir su menú.' : `Nova Client todavía no tiene versión para Minecraft ${entry.mcVersion} (por ahora solo 1.21.1).`);
+    if (entry.preset === 'nova') toast(entry.novaClient ? 'Nova Client instalado: en el juego pulsa Shift derecho para abrir su menú.' : `Nova Client todavía no tiene versión para Minecraft ${entry.mcVersion} (por ahora 1.16.5 a 1.21.11).`);
     if (entry.preset === 'optifine') toast(entry.optifine ? `OptiFine instalado (${entry.optifine.replace(/^OptiFine_|\.jar$/g, '').replace(/_/g, ' ')}).` : entry.optifineError ? `No se pudo bajar OptiFine: ${entry.optifineError}` : `OptiFine no tiene versión para Minecraft ${entry.mcVersion}; la instancia queda con Forge.`);
     await loadInstalled();
     openDetail(entry);
