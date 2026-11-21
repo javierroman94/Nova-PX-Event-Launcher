@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.125
+- **Barra superior nueva**: búsqueda rápida de páginas y modpacks (también con Ctrl+K), campana con los últimos avisos y tu cuenta con menú (cuenta, skins, ajustes, cerrar sesión).
+
 ## 1.0.124
 - **OptiFine solo, sin Forge**: el perfil OptiFine baja el .jar oficial de optifine.net y, al pulsar Jugar por primera vez, ejecuta su instalador oficial sin ventana (crea una versión «<mc>-OptiFine_…»). Ya no instala Forge. Los perfiles OptiFine anteriores con Forge siguen funcionando.
 - **Nova Client** disponible de 1.16.5 a 1.21.11 (ver 1.0.121).
