@@ -1027,7 +1027,7 @@ async function renderMods() {
 /* ---------- modpacks: biblioteca, explorar e instancia ---------- */
 const mp = { view: 'library', provider: 'modrinth', query: '', offset: 0, total: 0, enabled: { modrinth: true }, installed: [], current: null, seq: 0, busy: false, pack: null, filter: 'all', items: [], addType: 'mod', addSeq: 0 };
 const compact = new Intl.NumberFormat('es', { notation: 'compact' });
-const LOADER_NAMES = { fabric: 'Fabric', forge: 'Forge', vanilla: 'Vanilla' };
+const LOADER_NAMES = { fabric: 'Fabric', forge: 'Forge', vanilla: 'Vanilla', neoforge: 'NeoForge', quilt: 'Quilt' };
 const TYPE_NAMES = { mod: 'Mod', shader: 'Shader', resourcepack: 'Textura' };
 const packMeta = (p) => `Minecraft ${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}${p.version ? ' · ' + p.version : ''}`;
 
@@ -1612,6 +1612,8 @@ async function loadMcVersions(...selects) {
 const LOADER_INFO = {
   nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris y Nova Client. Máximo rendimiento.' },
   fabric: { icon: '🧵', name: 'Fabric', tag: '', desc: 'Ligero y rápido. Mods modernos (desde 1.14).' },
+  quilt: { icon: '🪡', name: 'Quilt', tag: '', desc: 'Basado en Fabric, usa sus mods y los de Quilt (desde 1.14).' },
+  neoforge: { icon: '🦊', name: 'NeoForge', tag: '', desc: 'El Forge moderno, para mods nuevos (desde 1.20.2).' },
   forge: { icon: '🔨', name: 'Forge', tag: '', desc: 'El clásico: el más compatible con modpacks antiguos.' },
   optifine: { icon: '🔭', name: 'OptiFine', tag: 'Con tu .jar', desc: 'OptiFine solo (sin Forge): el launcher baja el oficial de optifine.net y lo instala solo. Usa Java 8 en versiones viejas.' },
   vanilla: { icon: '🧱', name: 'Vanilla', tag: '', desc: 'Minecraft puro, sin mods.' }
@@ -1621,10 +1623,10 @@ const QUICK_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎'
 const verParts = (v) => { const m = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(String(v || '')); return m ? [+m[1], +m[2], +(m[3] || 0)] : null; };
 const verAtLeast = (v, min) => { const a = verParts(v); if (!a) return true; for (let i = 0; i < 3; i++) { if (a[i] !== (min[i] || 0)) return a[i] > (min[i] || 0); } return true; };
 const javaFor = (v) => { const a = verParts(v); if (!a) return null; if (a[0] >= 26) return 25; if (verAtLeast(v, [1, 20, 5])) return 21; if (verAtLeast(v, [1, 18, 0])) return 17; if (verAtLeast(v, [1, 17, 0])) return 16; return 8; };
-const loaderOk = (loader, v) => (loader === 'fabric' || loader === 'nova') ? verAtLeast(v, [1, 14, 0]) : true;
+const loaderOk = (loader, v) => (loader === 'fabric' || loader === 'nova' || loader === 'quilt') ? verAtLeast(v, [1, 14, 0]) : loader === 'neoforge' ? verAtLeast(v, [1, 20, 2]) : true;
 
 const NOVA_CLIENT_26 = ['26.1', '26.1.1', '26.1.2', '26.2', '26.3'];
-const NOVA_CLIENT_MC = { includes: (v) => NOVA_CLIENT_26.includes(String(v)) || (/^1\./.test(String(v)) && verAtLeast(v, [1, 16, 5]) && !verAtLeast(v, [1, 21, 12])) }; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
+const NOVA_CLIENT_MC = { includes: (v) => NOVA_CLIENT_26.includes(String(v)) || String(v) === '1.15.2' || (/^1\./.test(String(v)) && verAtLeast(v, [1, 16, 5]) && !verAtLeast(v, [1, 21, 12])) }; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
 const RANDOM_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎', '🐉', '🎮', '🌙', '🧪', '🛡️', '🍀', '🌋', '🦊', '👑'];
 const RANDOM_TINTS = ['#a855f7', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1'];
 const mcw = { mode: 'instance', iconData: '', tint: RANDOM_TINTS[0], srvType: '', srvTypes: [], ram: 4 };
@@ -1822,6 +1824,7 @@ async function renderPackSettings() {
     if (![...$('ps-mc').options].some((o) => o.value === p.mcVersion)) { const o = el('option', '', p.mcVersion); o.value = p.mcVersion; $('ps-mc').prepend(o); }
     $('ps-mc').value = p.mcVersion;
     $('ps-loader').value = (p.loader && p.loader.type) || 'vanilla';
+    $('ps-loader-version').value = (p.loader && p.loader.version) || '';
   }
 }
 
@@ -1832,7 +1835,7 @@ $('ps-save').addEventListener('click', async () => {
     title: $('ps-title').value, emoji: $('ps-emoji').value, notes: $('ps-notes').value,
     settings: { account: $('ps-account').value, ramGb: num('ps-ram'), jvmArgs: $('ps-args').value, javaPath: $('ps-java').value, width: num('ps-w'), height: num('ps-h'), ...($('ps-full').checked ? { fullscreen: true } : {}) }
   };
-  if (p.provider === 'custom') { changes.mcVersion = $('ps-mc').value; changes.loader = $('ps-loader').value; }
+  if (p.provider === 'custom') { changes.mcVersion = $('ps-mc').value; changes.loader = $('ps-loader').value; changes.loaderVersion = $('ps-loader-version').value.trim(); }
   try {
     mp.pack = await window.api.modpackUpdate({ id: p.id, changes });
     $('ps-status').textContent = 'Ajustes guardados.';

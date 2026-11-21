@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.130
+- **Quilt y NeoForge**: ya puedes crear perfiles con Quilt (desde 1.14) y NeoForge (desde 1.20.2), en Versiones y en el asistente de perfiles.
+- **Versión del loader**: en los ajustes de un perfil puedes escribir la versión exacta de Fabric, Quilt, Forge o NeoForge; vacía usa la recomendada.
+- **Nova Client en 1.15.2** (ahora de 1.15.2 y de 1.16.5 a 26.3).
+- **Barra superior**: botón de ayuda con accesos a novedades, consola y búsqueda.
+- Textos nuevos traducidos a los 7 idiomas.
+
 ## 1.0.129
 - **Acceso obligatorio**: después de la animación de inicio, si no has iniciado sesión solo se ve la pantalla para entrar (Microsoft o sin premium) o elegir una cuenta guardada. Al entrar o registrarte aparece el launcher. Al cerrar sesión vuelve esa pantalla.
 

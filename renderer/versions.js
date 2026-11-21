@@ -23,13 +23,13 @@
     '26': ['Game Drops', 'Las actualizaciones de la serie 26 llegan varias veces al año.']
   };
   const g = (id) => document.getElementById(id);
-  const LOADER_ORDER = ['nova', 'fabric', 'forge', 'optifine', 'vanilla'];
+  const LOADER_ORDER = ['nova', 'fabric', 'quilt', 'forge', 'neoforge', 'optifine', 'vanilla'];
   let series = [];       // [{ key, latest, versions:[...] }]
   let picked = null;     // key de la serie elegida
   let loader = 'nova';
   let ready = false;
   let art = {};          // versión -> { image, title } con las imágenes oficiales de Mojang
-  let meta = { versions: {}, forge: [], optifine: [] }; // tipo/fecha de cada versión y qué versiones tienen Forge y OptiFine
+  let meta = { versions: {}, forge: [], optifine: [], quilt: [] }; // tipo/fecha de cada versión y qué versiones tienen Forge y OptiFine
   let installed = [];    // perfiles que ya tiene el jugador
   let testVer = null;    // versión de prueba elegida (snapshot, pre-release…); null = una versión estable
   let showTests = false;
@@ -68,6 +68,8 @@
     if (ld === 'vanilla') return true;
     if (ld === 'nova') return NOVA_CLIENT_MC.includes(v);
     if (ld === 'fabric') return verAtLeast(v, [1, 14, 0]);
+    if (ld === 'quilt') return verAtLeast(v, [1, 14, 0]) && (meta.quilt && meta.quilt.length ? meta.quilt.includes(v) : true);
+    if (ld === 'neoforge') return verAtLeast(v, [1, 20, 2]);
     if (ld === 'forge') return meta.forge.length ? meta.forge.includes(v) : true;
     if (ld === 'optifine') return meta.optifine.length ? meta.optifine.includes(v) : true;
     return true;
@@ -78,6 +80,8 @@
   const LOADER_NOTE = {
     nova: 'Sodium, Lithium, Iris y el Nova Client con menú y HUD (Shift derecho).',
     fabric: 'Cargador ligero para mods modernos.',
+    quilt: 'Basado en Fabric: usa sus mods y los de Quilt.',
+    neoforge: 'El Forge moderno para mods nuevos.',
     forge: 'El clásico, el más compatible con modpacks.',
     optifine: 'OptiFine solo: el launcher lo baja de optifine.net y lo instala.',
     vanilla: 'Minecraft puro, sin mods.'

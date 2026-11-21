@@ -21,6 +21,9 @@
 
   const btnSearch = mk('button', 'top-ico');
   btnSearch.type = 'button'; btnSearch.title = 'Buscar (Ctrl+K)'; btnSearch.setAttribute('aria-label', 'Buscar'); btnSearch.innerHTML = ICON.search;
+  const btnHelp = mk('button', 'top-ico');
+  btnHelp.type = 'button'; btnHelp.title = 'Ayuda'; btnHelp.setAttribute('aria-label', 'Ayuda');
+  btnHelp.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 114 2c-.9.6-1.6 1.1-1.6 2.1"/><path d="M12 17h.01"/></svg>';
   const btnBell = mk('button', 'top-ico');
   btnBell.type = 'button'; btnBell.title = 'Avisos'; btnBell.setAttribute('aria-label', 'Avisos'); btnBell.innerHTML = ICON.bell;
   const dot = mk('i', 'top-badge'); dot.hidden = true; btnBell.append(dot);
@@ -29,6 +32,7 @@
   const nm = mk('span', '', 'Iniciar sesión');
   chip.append(av, nm);
   right.prepend(chip);
+  right.prepend(btnHelp);
   right.prepend(btnBell);
   right.prepend(btnSearch);
 
@@ -71,6 +75,18 @@
         p.append(row);
       }
       unread = 0; paintBell();
+    });
+  });
+
+  btnHelp.addEventListener('click', () => {
+    openPop(btnHelp, (p) => {
+      const go = (label, fn) => { const b = mk('button', 'pop-item', label); b.type = 'button'; b.addEventListener('click', () => { closePop(); fn(); }); p.append(b); };
+      p.append(mk('h4', '', 'Ayuda'));
+      go('Novedades y soporte', () => goTo('whatsnew'));
+      go('Consola del juego (para resolver errores)', () => goTo('console'));
+      go('Buscar en el launcher (Ctrl+K)', () => openSearch());
+      go('Versiones y loaders', () => goTo('versions'));
+      p.append(mk('p', 'muted', 'Dentro del juego, con Nova Client, abre su menú con Shift derecho. Zoom: mantén C.'));
     });
   });
 

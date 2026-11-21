@@ -27,7 +27,9 @@ try {
   assert.strictEqual(e.emoji, '🌲');
   assert.throws(() => packs.buildCustomEntry({ name: '', mcVersion: '1.21.1' }), /nombre/);
   assert.throws(() => packs.buildCustomEntry({ name: 'x', mcVersion: '../..' }), /versión/);
-  assert.throws(() => packs.buildCustomEntry({ name: 'x', mcVersion: '1.21.1', loader: 'quilt' }), /Loader/);
+  assert.throws(() => packs.buildCustomEntry({ name: 'x', mcVersion: '1.21.1', loader: 'lunar' }), /Loader/);
+  assert.strictEqual(packs.buildCustomEntry({ name: 'q', mcVersion: '1.21.1', loader: 'quilt' }).loader.type, 'quilt');
+  assert.strictEqual(packs.buildCustomEntry({ name: 'n', mcVersion: '1.21.1', loader: 'neoforge' }).loader.type, 'neoforge');
 
   // respaldo + zip válido
   const root = path.join(tmp, 'inst');

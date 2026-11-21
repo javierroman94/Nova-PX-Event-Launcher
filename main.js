@@ -426,6 +426,27 @@ async function ensureFabric(mcVersion, loaderVersion) {
   return id;
 }
 
+/* ---------- loader (Quilt) ---------- */
+
+async function ensureQuilt(mcVersion, loaderVersion) {
+  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
+  if (loaderVersion && !loaders.isSafeVersion(loaderVersion)) throw new Error(`La versión de Quilt "${loaderVersion}" no es válida.`);
+  if (!loaderVersion) {
+    const list = await fetchJson(`https://meta.quiltmc.org/v3/versions/loader/${mcVersion}`);
+    if (!list.length) throw new Error(`Quilt no soporta Minecraft ${mcVersion}`);
+    loaderVersion = (list.find((x) => x.loader && !/-(beta|pre|rc)/i.test(x.loader.version)) || list[0]).loader.version;
+  }
+  const id = `quilt-loader-${loaderVersion}-${mcVersion}`;
+  const dir = path.join(GAME_DIR, 'versions', id);
+  const file = path.join(dir, `${id}.json`);
+  if (!fs.existsSync(file)) {
+    const profile = await fetchJson(`https://meta.quiltmc.org/v3/versions/loader/${mcVersion}/${loaderVersion}/profile/json`);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(profile));
+  }
+  return id;
+}
+
 /* ---------- loader (Forge) ---------- */
 
 // Descarga el instalador de Forge (o el jar "universal" en Minecraft 1.12.2 y anteriores) y
@@ -1147,11 +1168,16 @@ ipcMain.handle('modpacks:update', (_e, p = {}) => {
   if (c.emoji !== undefined) entry.emoji = packs.buildCustomEntry({ name: 'x', icon: c.emoji, mcVersion: '1.0' }).emoji;
   if (c.notes !== undefined) entry.notes = packs.cleanNotes(c.notes);
   if (c.settings !== undefined) entry.settings = packs.sanitizeSettings(c.settings, true);
-  if ((c.mcVersion !== undefined || c.loader !== undefined) && entry.provider === 'custom') {
+  if ((c.mcVersion !== undefined || c.loader !== undefined || c.loaderVersion !== undefined) && entry.provider === 'custom') {
     if (launching) throw new Error('Cierra Minecraft antes de cambiar la versión.');
     const t = packs.buildCustomEntry({ name: 'x', mcVersion: cleanStr(c.mcVersion ?? entry.mcVersion, 20), loader: cleanStr(c.loader ?? entry.loader.type, 10) });
+    const same = t.mcVersion === entry.mcVersion && t.loader.type === entry.loader.type;
+    // Versión del loader: vacía = la recomendada; si la escribes, se usa esa (por ejemplo Fabric 0.16.9 o Forge 47.2.0).
+    let lv = c.loaderVersion !== undefined ? cleanStr(c.loaderVersion, 40) : (same ? (entry.loader.version || '') : '');
+    if (lv && !loaders.isSafeVersion(lv)) throw new Error('Esa versión del loader no es válida.');
+    if (t.loader.type === 'vanilla') lv = '';
     entry.mcVersion = t.mcVersion;
-    entry.loader = { type: t.loader.type, version: '' };
+    entry.loader = { type: t.loader.type, version: lv };
   }
   writeModpacks(list);
   return entry;
@@ -1199,7 +1225,7 @@ let mojangArtCache = null;
 let versionMetaCache = null;
 ipcMain.handle('mc:versionMeta', async () => {
   if (versionMetaCache) return versionMetaCache;
-  const out = { versions: {}, forge: [], optifine: [] };
+  const out = { versions: {}, forge: [], optifine: [], quilt: [] };
   try {
     const manifest = mcManifestCache || (mcManifestCache = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json'));
     for (const v of manifest.versions || []) if (v && v.id) out.versions[v.id] = { type: v.type, time: v.releaseTime };
@@ -1208,6 +1234,7 @@ ipcMain.handle('mc:versionMeta', async () => {
     const promos = (await fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json')).promos || {};
     out.forge = [...new Set(Object.keys(promos).map((k) => k.replace(/-(latest|recommended)$/, '')))];
   } catch {}
+  try { out.quilt = (await fetchJson('https://meta.quiltmc.org/v3/versions/game')).filter((g) => g.stable).map((g) => g.version); } catch {}
   try { out.optifine = Object.keys(await optifineLib.listVersions(async (u) => (await fetchWithTimeout(u, 30000)).text())); } catch {}
   if (Object.keys(out.versions).length) versionMetaCache = out;
   return out;
@@ -3253,6 +3280,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     } else if (loaderType === 'fabric') {
       send('game:status', { text: 'Preparando Fabric…' });
       customId = await ensureFabric(manifest.minecraftVersion, manifest.loader.version);
+    } else if (loaderType === 'quilt') {
+      send('game:status', { text: 'Preparando Quilt…' });
+      customId = await ensureQuilt(manifest.minecraftVersion, manifest.loader.version);
     } else if (loaderType === 'forge') {
       send('game:status', { text: 'Preparando Forge…' });
       forgeInstaller = await ensureForge(manifest.minecraftVersion, manifest.loader.version);
