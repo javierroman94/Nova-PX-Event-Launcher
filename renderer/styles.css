@@ -2899,3 +2899,11 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .splash.has-video { background: #fdfdfd; }
 .splash.has-video .sp-video { opacity: 1; }
 .splash.has-video .splash-content, .splash.has-video .sp-stars { opacity: 0; visibility: hidden; }
+
+/* Pantalla de acceso: mientras no hay sesión solo se ve el inicio de sesión / registro */
+body.auth-gate .sidebar, body.auth-gate .topbar, body.auth-gate .season-corner { display: none !important; }
+body.auth-gate main { display: grid; place-items: center; padding: 28px; }
+body.auth-gate #page-account { width: 100%; max-width: 1000px; margin: 0 auto; }
+body.auth-gate #page-account .page-title { text-align: center; font-size: 26px; margin-bottom: 18px; }
+body.auth-gate #logout-btn { display: none; }
+body.auth-gate .acc-saved { max-width: 980px; margin-left: auto; margin-right: auto; }

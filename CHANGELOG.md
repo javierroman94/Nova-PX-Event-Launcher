@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.129
+- **Acceso obligatorio**: después de la animación de inicio, si no has iniciado sesión solo se ve la pantalla para entrar (Microsoft o sin premium) o elegir una cuenta guardada. Al entrar o registrarte aparece el launcher. Al cerrar sesión vuelve esa pantalla.
+
 ## 1.0.128
 - **Nueva animación de inicio**: al abrir el launcher se reproduce el logo animado NOVA PX con su sonido (5 segundos). Se salta con un clic. En Ajustes > Apariencia puedes quitar el sonido o la animación completa.
 

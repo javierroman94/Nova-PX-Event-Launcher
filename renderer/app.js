@@ -2712,8 +2712,16 @@ function paintPackAccounts() {
 }
 window.api.onAuthChanged && window.api.onAuthChanged((info) => setSession(info));
 
+// Sin sesión no se ve el launcher: solo la pantalla para iniciar sesión o registrarse. Al entrar, se muestra el inicio.
+function applyAuthGate(info) {
+  const was = document.body.classList.contains('auth-gate');
+  document.body.classList.toggle('auth-gate', !info);
+  if (!info) { navHist.skip = true; goTo('account'); }
+  else if (was) { goTo('home'); }
+}
 function setSession(info) {
   currentUser = info;
+  applyAuthGate(info);
   if (info && window.NovaMascot) window.NovaMascot.notify('session', { name: info.name });
   syncSecretThemes(info);
   paintAccounts();
