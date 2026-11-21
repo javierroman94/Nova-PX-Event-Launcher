@@ -131,6 +131,7 @@ function defaultSettings() {
     shareUsage: true,
     streamer: 'auto',
     intro: true,
+    introSound: true,
     welcomed: false,
     playSeconds: 0
   };
@@ -179,6 +180,7 @@ function cleanSettings(s) {
     shareUsage: s.shareUsage !== false,
     streamer: streamer.cleanMode(s.streamer),
     intro: s.intro !== false,
+    introSound: s.introSound !== false,
     welcomed: s.welcomed === true,
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
   };
@@ -648,7 +650,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      spellcheck: false
+      spellcheck: false,
+      autoplayPolicy: 'no-user-gesture-required' // la animación de inicio suena sola
     }
   });
   mainWindow.setMenuBarVisibility(false);

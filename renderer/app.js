@@ -36,11 +36,23 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   }
   function tryClose() { if (ready && minDone) { clearInterval(tick); if (st) st.textContent = steps[steps.length - 1]; s.classList.add('ready'); setTimeout(close, 450); } }
   window.addEventListener('nova-ready', () => { ready = true; tryClose(); });
-  setTimeout(() => { minDone = true; tryClose(); }, MIN);
-  setTimeout(close, 6000);
+  setTimeout(() => { if (!s.classList.contains('has-video')) { minDone = true; tryClose(); } }, MIN); // con el video, espera a que termine
+  setTimeout(close, 7500);
+  // Animación del logo NOVA PX (video con sonido). Si no se puede reproducir, queda la animación de siempre.
+  const vid = document.getElementById('sp-video');
+  function playIntro(sound) {
+    if (!vid) return;
+    vid.muted = !sound;
+    vid.addEventListener('playing', () => { s.classList.add('has-video'); }, { once: true });
+    vid.addEventListener('ended', () => { minDone = true; tryClose(); }, { once: true });
+    vid.addEventListener('error', () => { s.classList.remove('has-video'); }, { once: true });
+    const p = vid.play();
+    if (p && p.catch) p.catch(() => { vid.muted = true; vid.play().catch(() => {}); });
+  }
   window.api.getSettings().then((st) => {
-    if (st && st.intro === false) { minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); }
-  }).catch(() => {});
+    if (st && st.intro === false) { minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
+    playIntro(!st || st.introSound !== false);
+  }).catch(() => playIntro(true));
   s.addEventListener('click', close);
   document.addEventListener('keydown', close, { once: true });
 })();
@@ -2629,8 +2641,9 @@ $('streamer-mode').addEventListener('change', async () => {
   try { await window.api.saveSettings({ streamer: $('streamer-mode').value }); applyStreamer(await window.api.streamerGet()); } catch {}
 });
 $('intro-on').addEventListener('change', () => { window.api.saveSettings({ intro: $('intro-on').checked }).catch(() => {}); });
+$('intro-sound').addEventListener('change', () => { window.api.saveSettings({ introSound: $('intro-sound').checked }).catch(() => {}); });
 async function initStreamer(settings) {
-  try { $('intro-on').checked = !settings || settings.intro !== false; } catch {}
+  try { $('intro-on').checked = !settings || settings.intro !== false; $('intro-sound').checked = !settings || settings.introSound !== false; } catch {}
   try { $('streamer-mode').value = (settings && settings.streamer) || 'auto'; } catch {}
   try { window.api.onStreamerChanged(applyStreamer); applyStreamer(await window.api.streamerGet()); } catch {}
 }

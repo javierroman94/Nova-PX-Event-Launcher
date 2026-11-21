@@ -2893,3 +2893,9 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .vr-side .vr-play { margin-top: 2px; }
 .vr-side #vr-status:empty { display: none; }
 .vr-side { max-height: calc(100vh - 24px); overflow-y: auto; scrollbar-width: thin; }
+
+/* Animación de inicio con el video del logo */
+.sp-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fdfdfd; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+.splash.has-video { background: #fdfdfd; }
+.splash.has-video .sp-video { opacity: 1; }
+.splash.has-video .splash-content, .splash.has-video .sp-stars { opacity: 0; visibility: hidden; }
