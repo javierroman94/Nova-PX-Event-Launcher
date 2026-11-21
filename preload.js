@@ -169,6 +169,7 @@ contextBridge.exposeInMainWorld('api', {
   modpackServerStatus: (id) => ipcRenderer.invoke('modpacks:serverStatus', id),
   modpackPickIcon: (p) => ipcRenderer.invoke('modpacks:pickIcon', p),
   mojangVersionArt: () => ipcRenderer.invoke('mojang:versionArt'),
+  mcVersionMeta: () => ipcRenderer.invoke('mc:versionMeta'),
   modpackPickIconFile: () => ipcRenderer.invoke('modpacks:pickIconFile'),
   onModpacksChanged: (cb) => ipcRenderer.on('modpacks:changed', () => cb()),
   modpackDuplicate: (p) => ipcRenderer.invoke('modpacks:duplicate', p),

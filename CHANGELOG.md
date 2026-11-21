@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.127
+- **Versiones más claras**: con Nova solo salen las versiones que ya tienen Nova Client (1.16.5 a 26.3); con Fabric, Forge y OptiFine solo las que de verdad funcionan con ese loader; con Vanilla salen todas, de la 1.0 a la más reciente.
+- **Versiones de prueba**: en Vanilla hay un interruptor «Mostrar versiones de prueba» (apagado por defecto) que muestra snapshots, pre-releases y release candidates en una sección aparte, agrupados por año.
+- **Panel derecho renovado**: imagen grande, etiquetas (estable/prueba, Java, Nova Client), fecha de lanzamiento, si ya tienes perfil y los loaders como tarjetas con su descripción.
+
 ## 1.0.126
 - **Nova Client para Minecraft 26.x**: el perfil Nova ahora incluye el Nova Client en 26.1, 26.1.1, 26.1.2, 26.2 y 26.3 (menú con Shift derecho, FPS, CPS, teclas, zoom, coordenadas y armadura). Ya cubre de 1.16.5 a 26.3.
 

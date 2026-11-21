@@ -1192,6 +1192,24 @@ ipcMain.handle('modpacks:pickIconFile', async () => {
 
 // Imágenes oficiales de cada versión (de lo que publica Mojang); se piden una vez por sesión.
 let mojangArtCache = null;
+// Datos para la página Versiones: tipo y fecha de cada versión de Mojang, y qué versiones tienen Forge y OptiFine.
+let versionMetaCache = null;
+ipcMain.handle('mc:versionMeta', async () => {
+  if (versionMetaCache) return versionMetaCache;
+  const out = { versions: {}, forge: [], optifine: [] };
+  try {
+    const manifest = mcManifestCache || (mcManifestCache = await fetchJson('https://launchermeta.mojang.com/mc/game/version_manifest_v2.json'));
+    for (const v of manifest.versions || []) if (v && v.id) out.versions[v.id] = { type: v.type, time: v.releaseTime };
+  } catch {}
+  try {
+    const promos = (await fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json')).promos || {};
+    out.forge = [...new Set(Object.keys(promos).map((k) => k.replace(/-(latest|recommended)$/, '')))];
+  } catch {}
+  try { out.optifine = Object.keys(await optifineLib.listVersions(async (u) => (await fetchWithTimeout(u, 30000)).text())); } catch {}
+  if (Object.keys(out.versions).length) versionMetaCache = out;
+  return out;
+});
+
 ipcMain.handle('mojang:versionArt', async () => {
   if (mojangArtCache) return mojangArtCache;
   let art = {};

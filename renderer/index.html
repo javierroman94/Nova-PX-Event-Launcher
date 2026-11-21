@@ -298,18 +298,25 @@
             <select id="vr-src" aria-label="Tipo de perfil"></select>
             <input id="vr-q" type="search" placeholder="Buscar versión (ej. 1.20)…" autocomplete="off" />
             <select id="vr-sort" aria-label="Orden"><option value="new">Más nuevas primero</option><option value="old">Más antiguas primero</option></select>
+            <label class="vr-switch" id="vr-tests-label" title="Snapshots, pre-releases y release candidates (solo Vanilla)"><input id="vr-tests" type="checkbox" /><span>Mostrar versiones de prueba</span></label>
             <button id="vr-new" type="button" class="primary">＋ Nuevo perfil</button>
           </div>
+          <p id="vr-count" class="muted vr-count"></p>
           <div id="vr-grid" class="vr-grid"></div>
+          <div id="vr-tests-box" class="vr-tests" hidden></div>
           <p class="muted vr-credit">Las imágenes de cada versión son de Mojang Studios y se cargan en línea desde su servidor y desde minecraft.wiki (las versiones antiguas); no se guardan en Nova PX. Minecraft es una marca de Mojang / Microsoft. Nova PX no está afiliado a Mojang.</p>
         </div>
         <aside class="vr-side">
           <div id="vr-art" class="vr-art" aria-hidden="true"></div>
           <h3 id="vr-title">Minecraft</h3>
+          <div id="vr-badges" class="vr-badges"></div>
           <p id="vr-desc" class="muted"></p>
-          <div class="vr-field"><span>Versión</span><select id="vr-ver"></select></div>
-          <div class="vr-field vr-field-col"><span>Loader</span><div id="vr-loaders" class="mcw2-chips"></div></div>
-          <small id="vr-note" class="muted"></small>
+          <div id="vr-body" class="vr-body">
+            <div id="vr-stats" class="vr-stats"></div>
+            <div class="vr-field"><span>Versión</span><select id="vr-ver"></select></div>
+            <div class="vr-field vr-field-col"><span>Loader</span><div id="vr-loaders" class="vr-loaders"></div></div>
+            <small id="vr-note" class="muted"></small>
+          </div>
           <button id="vr-play" type="button" class="primary vr-play">▶ Jugar</button>
           <p id="vr-status" class="muted" role="status"></p>
         </aside>

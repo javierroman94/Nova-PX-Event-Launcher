@@ -2848,3 +2848,48 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 .qs-list { margin-top: 8px; display: grid; gap: 2px; }
 .qs-item { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; text-align: left; background: transparent; border: 0; color: inherit; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
 .qs-item.on, .qs-item:hover { background: #ffffff16; }
+
+/* Versiones: filtros por loader, versiones de prueba y panel derecho renovado */
+.vr-switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; padding: 0 4px; }
+.vr-switch input { width: auto; margin: 0; }
+#vr-tests-label { display: none; }
+.vr-bar:has(#vr-src option[value="vanilla"]:checked) #vr-tests-label { display: inline-flex; }
+.vr-count { margin: -6px 0 12px; font-size: 12px; }
+.vr-card-n { margin-left: auto; font-size: 11.5px; opacity: .7; }
+.vr-card-foot { gap: 6px; }
+.vr-tests { margin-top: 26px; padding-top: 18px; border-top: 1px dashed var(--line); }
+.vr-tests-title { margin: 0 0 4px; font-size: 17px; }
+.vr-tests-sub { margin: 0 0 12px; font-size: 12.5px; }
+.vr-tests-group { margin-bottom: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
+.vr-tests-group > summary { cursor: pointer; padding: 9px 14px; font-weight: 700; font-size: 13px; }
+.vr-tests-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 12px 12px; }
+.vr-test-chip { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line); background: none; color: inherit; font: inherit; font-size: 12.5px; cursor: pointer; }
+.vr-test-chip small { font-size: 10px; opacity: .65; }
+.vr-test-chip:hover { border-color: var(--accent); }
+.vr-test-chip.on { border-color: var(--ok, #4ade80); background: color-mix(in srgb, var(--ok, #4ade80) 16%, transparent); }
+.vr-side { gap: 14px; padding: 0 0 16px; overflow: hidden; }
+.vr-side > :not(.vr-art) { margin-left: 16px; margin-right: 16px; }
+.vr-side .vr-art { border-radius: 0; aspect-ratio: 16 / 10; }
+.vr-num-sm { font-size: 24px !important; }
+.vr-body { display: grid; gap: 14px; }
+.vr-body[hidden] { display: none; }
+.vr-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -6px; }
+.vr-badge { padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg, #fff) 6%, transparent); }
+.vr-badge.ok { color: var(--ok, #4ade80); border-color: color-mix(in srgb, var(--ok, #4ade80) 45%, transparent); }
+.vr-badge.warn { color: #fbbf24; border-color: rgba(251,191,36,.5); }
+.vr-badge.nova { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.vr-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vr-stat { display: grid; gap: 2px; padding: 9px 11px; border-radius: 12px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg, #fff) 4%, transparent); }
+.vr-stat small { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
+.vr-stat b { font-size: 13.5px; }
+.vr-loaders { display: grid; gap: 6px; width: 100%; }
+.vr-loader { display: grid; gap: 2px; text-align: left; padding: 9px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: none; color: inherit; font: inherit; cursor: pointer; }
+.vr-loader:hover:not(:disabled) { border-color: var(--accent); }
+.vr-loader.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.vr-loader.off { opacity: .45; cursor: not-allowed; }
+.vr-loader-top { display: flex; align-items: center; gap: 8px; }
+.vr-loader-top em { margin-left: auto; font-style: normal; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: #fff; }
+.vr-loader small { font-size: 11.5px; opacity: .75; line-height: 1.35; }
+.vr-side .vr-play { margin-top: 2px; }
+.vr-side #vr-status:empty { display: none; }
+.vr-side { max-height: calc(100vh - 24px); overflow-y: auto; scrollbar-width: thin; }
