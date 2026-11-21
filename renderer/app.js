@@ -1611,7 +1611,8 @@ const verAtLeast = (v, min) => { const a = verParts(v); if (!a) return true; for
 const javaFor = (v) => { const a = verParts(v); if (!a) return null; if (a[0] >= 26) return 25; if (verAtLeast(v, [1, 20, 5])) return 21; if (verAtLeast(v, [1, 18, 0])) return 17; if (verAtLeast(v, [1, 17, 0])) return 16; return 8; };
 const loaderOk = (loader, v) => (loader === 'fabric' || loader === 'nova') ? verAtLeast(v, [1, 14, 0]) : true;
 
-const NOVA_CLIENT_MC = { includes: (v) => verAtLeast(v, [1, 16, 5]) && !verAtLeast(v, [1, 21, 12]) }; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
+const NOVA_CLIENT_26 = ['26.1', '26.1.1', '26.1.2', '26.2', '26.3'];
+const NOVA_CLIENT_MC = { includes: (v) => NOVA_CLIENT_26.includes(String(v)) || (/^1\./.test(String(v)) && verAtLeast(v, [1, 16, 5]) && !verAtLeast(v, [1, 21, 12])) }; // versiones para las que ya hay Nova Client (releases de javierroman94/Nova-Client)
 const RANDOM_EMOJIS = ['🌲', '⚔️', '⛏️', '🏰', '🚀', '🔥', '💎', '🐉', '🎮', '🌙', '🧪', '🛡️', '🍀', '🌋', '🦊', '👑'];
 const RANDOM_TINTS = ['#a855f7', '#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1'];
 const mcw = { mode: 'instance', iconData: '', tint: RANDOM_TINTS[0], srvType: '', srvTypes: [], ram: 4 };

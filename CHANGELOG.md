@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.126
+- **Nova Client para Minecraft 26.x**: el perfil Nova ahora incluye el Nova Client en 26.1, 26.1.1, 26.1.2, 26.2 y 26.3 (menú con Shift derecho, FPS, CPS, teclas, zoom, coordenadas y armadura). Ya cubre de 1.16.5 a 26.3.
+
 ## 1.0.125
 - **Barra superior nueva**: búsqueda rápida de páginas y modpacks (también con Ctrl+K), campana con los últimos avisos y tu cuenta con menú (cuenta, skins, ajustes, cerrar sesión).
 
