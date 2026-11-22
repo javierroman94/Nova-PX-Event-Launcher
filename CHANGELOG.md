@@ -5,6 +5,7 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 ## 1.0.160
 - Inicio: la tarjeta del evento muestra la foto del evento, no el logo.
 - Eventos protegidos: la consola oculta líneas con mods y los errores se guardan cifrados.
+- Eventos protegidos: el admin publica también la carpeta config de la instancia (FancyMenu, layouts) cifrada, y los jugadores la reciben.
 
 ## 1.0.159
 - Corregido: al darle Jugar al evento salía «No se pudo iniciar: Cannot read properties of null (reading 'ramGb')». El evento no tiene ajustes propios y el launcher no lo esperaba.

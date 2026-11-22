@@ -114,6 +114,27 @@ function makeKeyStore() {
     assert.deepStrictEqual(r, { status: 'ready' });
   });
 
+  await test('Evento protegido: la carpeta config viaja cifrada y se instala (FancyMenu)', async () => {
+    const a = require('../lib/admin');
+    const built = a.buildProtectedEvent({
+      jars: [{ file: 'fancymenu.jar', data: Buffer.from('jar') }],
+      extras: [
+        { rel: 'config/fancymenu/customization/title.txt', data: Buffer.from('layout') },
+        { rel: '../evil.txt', data: Buffer.from('x') },
+        { rel: 'mods/otro.jar', data: Buffer.from('x') }
+      ],
+      password: 'frase secreta del evento', baseUrl: 'https://example.com/rel', previous: null
+    });
+    assert.strictEqual(built.extraCount, 1);
+    const remote = {};
+    built.assets.forEach((x) => { remote[`https://example.com/rel/${encodeURIComponent(x.name)}`] = x.data; });
+    const gameDir = tmp();
+    const r = await pi.installProtected({ prot: built.envelope, password: 'frase secreta del evento', gameDir, download: async (u) => remote[u], keyStore: makeKeyStore() });
+    assert.deepStrictEqual(r, { status: 'ready' });
+    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'config/fancymenu/customization/title.txt'), 'utf8'), 'layout');
+    assert.ok(!fs.existsSync(path.join(gameDir, 'mods', 'otro.jar')));
+  });
+
   await test('Si el jugador borra un mod, vuelve a pedirlo (o usa la clave guardada)', async () => {
     const { prot, remote } = makePack('frase secreta del evento', { 'A.jar': 'contenido A' });
     const gameDir = tmp();

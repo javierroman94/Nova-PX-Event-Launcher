@@ -2427,7 +2427,24 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
       const eventId = (merged.event && merged.event.id) || modpacks.slugify(merged.event.name || 'evento');
       const tag = `evento-${eventId}`.slice(0, 60);
       progress('Cifrando los mods…');
+      // config/ de la instancia (FancyMenu, layouts…), hasta 40 MB, sin logs.
+      const extras = [];
+      let extraBytes = 0;
+      const walk = (abs, rel) => {
+        for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
+          const a = path.join(abs, e.name), r = `${rel}/${e.name}`;
+          if (e.isDirectory()) walk(a, r);
+          else if (e.isFile() && !/\.(log|lock|tmp)$/i.test(e.name)) {
+            const data = fs.readFileSync(a);
+            extraBytes += data.length;
+            if (extraBytes > 40 * 1024 * 1024) throw new Error('La carpeta config de la instancia pesa más de 40 MB.');
+            extras.push({ rel: r, data });
+          }
+        }
+      };
+      try { walk(path.join(pack.root, 'config'), 'config'); } catch (err) { if (err && err.code !== 'ENOENT') throw err; }
       const built = adminLib.buildProtectedEvent({
+        extras,
         jars: files.map((file) => ({ file, data: fs.readFileSync(path.join(dir, file)) })),
         password: typeof p.password === 'string' ? p.password : '', previous: cur.protected, baseUrl: r.downloadBase(tag)
       });
@@ -2440,7 +2457,7 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
       }
       merged.protected = built.envelope;
       merged.mods = [];
-      result = { mods: files.length, tag, sameSalt: built.reusedSalt };
+      result = { mods: files.length, config: built.extraCount, tag, sameSalt: built.reusedSalt };
     }
     progress('Publicando datos del evento…');
     await r.putJson('data/manifest.json', merged, `Evento: ${merged.event.name}${pack ? `, ${result.mods} mods` : ''} (desde el launcher)`);
