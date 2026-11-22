@@ -1819,7 +1819,7 @@ async function renderPackSettings() {
   $('ps-change-version').hidden = p.provider !== 'modrinth';
   $('ps-version-note').textContent = own
     ? 'Cambiar la versión o el loader no borra tus mods: revisa que sigan siendo compatibles.'
-    : `Modpack de ${p.provider === 'modrinth' ? 'Modrinth' : 'otro origen'}: su versión de Minecraft y su loader los define el autor.`;
+    : `Modpack de ${p.provider === 'modrinth' ? 'Modrinth' : p.provider === 'curseforge' ? 'CurseForge' : 'otro origen'}: su versión de Minecraft y su loader los define el autor.`;
   if (own) {
     await loadMcVersions($('ps-mc'));
     if (![...$('ps-mc').options].some((o) => o.value === p.mcVersion)) { const o = el('option', '', p.mcVersion); o.value = p.mcVersion; $('ps-mc').prepend(o); }

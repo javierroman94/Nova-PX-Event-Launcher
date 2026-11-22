@@ -1017,8 +1017,9 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     if (!v) throw new Error('Esa versión del modpack ya no está disponible.');
     if (!v.supported) throw new Error('Este modpack usa un loader que el launcher todavía no soporta (solo Fabric, Forge, NeoForge o Vanilla).');
     const isFtb = name === 'ftb';
-    if (!isFtb && !v.downloadUrl) throw new Error('El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de Modrinth.');
-    if (!isFtb && !modpacks.allowedUrl(v.downloadUrl, modpacks.MODRINTH_HOSTS)) {
+    const isCurse = name === 'curseforge';
+    if (!isFtb && !v.downloadUrl) throw new Error(`El autor de este modpack no permite descargarlo desde otros programas. Descárgalo desde la web de ${isCurse ? 'CurseForge e impórtalo con «Importar archivo»' : 'Modrinth'}.`);
+    if (!isFtb && !modpacks.allowedUrl(v.downloadUrl, isCurse ? modpacks.CURSE_HOSTS : modpacks.MODRINTH_HOSTS)) {
       throw new Error('La dirección de descarga del modpack no es de un sitio permitido.');
     }
 
@@ -1044,7 +1045,9 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     try {
       r = isFtb
         ? await ftbLib.installFtb({ manifest: ftbManifest, root, download, onProgress: onFile })
-        : await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
+        : isCurse
+          ? await modpacks.installCurse({ buffer, root, resolveFiles: (f) => prov.resolveFiles(f), download, onProgress: onFile })
+          : await modpacks.installMrpack({ buffer, root, download, onProgress: onFile });
     } catch (err) {
       if (fs.existsSync(modsBackup)) {
         fs.rmSync(modsDir, { recursive: true, force: true });

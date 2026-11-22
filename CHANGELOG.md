@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.139
+- **CurseForge en Explorar modpacks**: ya puedes buscar e instalar modpacks de CurseForge desde el launcher (junto a Modrinth y FTB). Los mods cuyo autor bloquea las descargas externas se avisan y se omiten.
+
 ## 1.0.138
 - **Mods que chocan en Fabric**: si el juego no abre porque dos mods no son compatibles (por ejemplo Sodium e Iris tras una actualización), el aviso ahora dice cuáles son y qué hacer.
 
