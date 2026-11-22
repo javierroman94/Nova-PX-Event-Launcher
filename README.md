@@ -36,7 +36,7 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 
 ### 🎮 Jugar
 - Sesión con **Microsoft o nick local**, y **varias cuentas** a un clic
-- Loader y versión del evento sin tocar nada (**Vanilla, Fabric, Forge**)
+- Loader y versión del evento sin tocar nada (**Vanilla, Fabric, Quilt, Forge, NeoForge**)
 - **Java automático** si falta
 - Una carpeta por evento, sin choques entre mods
 - **Estado del servidor** y jugadores en línea
@@ -47,7 +47,7 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 ### 📦 Modpacks
 - Biblioteca con **Modrinth**, filtros y grupos
 - **Importa desde Prism, MultiMC, ATLauncher, CurseForge y Modrinth App** con un clic, y modpacks `.zip` de CurseForge, `.mrpack` de Modrinth y el catálogo de FTB
-- **Forge y NeoForge** (1.20.2 en adelante) además de Fabric y Vanilla
+- **Fabric, Quilt, Forge y NeoForge** (NeoForge desde 1.20.2) y Vanilla de la 1.0 a la última, con snapshots aparte; puedes fijar la versión exacta del loader
 - Mods, shaders y texturas: activa, quita y **actualiza** (con aviso)
 - RAM, Java y cuenta **por modpack**; respaldo de mundos
 - Exporta un `.novapx` para compartir
@@ -95,7 +95,8 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 | 🧭 **Asistente de primer uso** | Te guía: cuenta, RAM recomendada según tu equipo y listo. |
 | 🐼 **PX, la mascota** | El panda de NovaPX reacciona al lanzador (saluda, se duerme, comenta cuando abres el juego o terminas un modpack). Se puede apagar en Ajustes. |
 | 🤖 **PX AI (opcional)** | PX puede charlar, bromear y ayudarte con errores del juego. Es opt-in, con límite diario y sin datos personales; el detalle está en [`PRIVACY.md`](PRIVACY.md). |
-| ⚡ **Nova Client** | Los perfiles Nova instalan el mod propio con menú en el juego (Shift derecho) y módulos FPS, CPS, coordenadas, teclas, armadura y zoom. |
+| ⚡ **Nova Client** | Los perfiles Nova instalan el mod propio con menú en el juego (Shift derecho) y módulos FPS, CPS, coordenadas, teclas, armadura y zoom. Disponible en Minecraft 1.15.2 y de la 1.16.5 a la 26.3. |
+| 🎬 **Inicio y acceso** | Animación de inicio con el logo NOVA PX (con sonido opcional) y pantalla de acceso: hasta que inicias sesión o te registras no se muestra el launcher. |
 | 🩺 **Diagnóstico** | Consola con filtros, análisis de cierres inesperados y **Reparar instalación**. |
 | 🪶 **Ligero** | Se minimiza a la bandeja y libera memoria mientras juegas. |
 | 📊 **Estadísticas opcionales** | Contador anónimo gratis en Cloudflare, sin IP; cada jugador puede apagarlo. Ver [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md). |
