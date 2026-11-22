@@ -120,9 +120,12 @@
     "description": "Evento organizado por Nova PX. La serie cerró sus puertas el 15 de diciembre de 2024."
   },
   {
-    "name": "Sylpharos: Lumen Invasion by kityevil",
+    "name": "Sylpharos: Lumen Invasion",
     "date": "2026-02-17",
     "image": "images/sylpharos-lumen-invasion-by-kityevil-mwiodua9.jpg",
-    "description": "Evento organizado por Nova PX."
+    "description": "Evento organizado por Nova PX.",
+    "commissioner": {
+      "name": "kityevil"
+    }
   }
 ]
