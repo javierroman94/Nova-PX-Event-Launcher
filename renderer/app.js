@@ -5533,3 +5533,15 @@ function blockedDialog(entry) {
   document.body.append(dlg);
   dlg.showModal();
 }
+
+// Aviso de zona horaria junto a la fecha de inicio del evento.
+(function () {
+  const hint = document.getElementById('ad-start-tz');
+  if (!hint) return;
+  const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').replace(/_/g, ' ');
+  const off = -new Date().getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  const hh = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+  const mm = String(Math.abs(off) % 60).padStart(2, '0');
+  hint.textContent = `Hora de tu PC (${tz} · UTC${sign}${hh}:${mm}). Cada jugador la ve en su propia hora local.`;
+})();

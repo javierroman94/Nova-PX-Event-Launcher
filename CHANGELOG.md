@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.166
+- Admin: la fecha de inicio del evento muestra la zona horaria de tu PC y avisa que cada jugador la ve en su hora local.
+- Intro: se silencia el tramo donde suena la voz (se conservan los efectos de antes y después).
+
 ## 1.0.165
 - Eventos protegidos: los mods se guardan en disco con nombres neutros (no se ven los nombres reales en la carpeta mods).
 - Eventos protegidos: al cerrar el juego se borran los mods y la config de la carpeta del evento; quedan solo cifrados en una caché y se restauran al abrir (sin descargar ni pedir la clave otra vez).
