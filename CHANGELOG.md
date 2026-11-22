@@ -5,6 +5,8 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 ## 1.0.152
 - Inicio en dos columnas: contenido a la izquierda y jugador, servidor y amigos a la derecha.
 - Modpacks descargados: sus mods, texturas y shaders quedan protegidos y aparte ("Contenido del modpack"); lo que instales va en "Contenido extra" y no los modifica.
+- "Ver contenido" abre una ventana con buscador, orden y filtros (solo lectura).
+- Ajustes de la instancia: ahora es una ventana con menú lateral (General, Instalación, Java y memoria, Ventana, Cuenta), que se abre con el engranaje ⚙️.
 
 ## 1.0.151
 - **Perfil Nova con los mods que usa Lunar Client**: ahora también instala MoreCulling, Ixeris, Mod Menu y Cloth Config (junto a Sodium, Lithium, Iris, FerriteCore, Fabric API y los demás). Lo que no exista para esa versión de Minecraft se salta. Se aplica a los perfiles Nova que crees de ahora en adelante.

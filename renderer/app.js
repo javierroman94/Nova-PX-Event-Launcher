@@ -1360,12 +1360,11 @@ async function playPack(id) {
 /* --- instancia --- */
 function setTab(tab) {
   document.querySelectorAll('[data-mp-tab]').forEach((b) => b.classList.toggle('active', b.dataset.mpTab === tab));
-  ['content', 'worlds', 'shots', 'logs', 'settings'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
+  ['content', 'worlds', 'shots', 'logs'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
   if (tab === 'content') renderContent();
   if (tab === 'worlds') renderWorlds();
   if (tab === 'shots') renderShots();
   if (tab === 'logs') renderPackLog();
-  if (tab === 'settings') renderPackSettings();
 }
 document.querySelectorAll('[data-mp-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.mpTab)));
 
@@ -1527,18 +1526,12 @@ function paintContent(offline) {
     head.append(packIcon(mp.pack));
     const info = el('div', 'mp-base-info');
     info.append(el('strong', '', 'Contenido del modpack'), el('span', 'muted', [`${bc('mod')} mods`, bc('resourcepack') ? `${bc('resourcepack')} texturas` : '', bc('shader') ? `${bc('shader')} shaders` : ''].filter(Boolean).join(' · ')));
-    const toggle = el('button', 'ghost', mp.baseOpen ? 'Ocultar contenido' : 'Ver contenido');
+    const toggle = el('button', 'ghost', 'Ver contenido');
     toggle.type = 'button';
-    toggle.addEventListener('click', () => { mp.baseOpen = !mp.baseOpen; paintContent(offline); });
+    toggle.addEventListener('click', openBaseModal);
     head.append(info, toggle);
     card.append(head, el('div', 'mp-base-lock muted', `🔒 Proporcionado por ${mp.pack.title}. Es el contenido original: no se puede quitar ni cambiar, así no se daña.`));
     list.append(card);
-    if (mp.baseOpen) {
-      const inner = el('div', 'mp-base-list');
-      if (!baseShown.length) inner.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : 'No hay nada de este tipo.'));
-      baseShown.forEach((it) => inner.append(buildRow(it, true)));
-      list.append(inner);
-    }
     list.append(el('h3', 'mp-extra-title', 'Contenido extra (tuyo)'));
     if (!extraAll.length) {
       const empty = el('div', 'mp-extra-empty');
@@ -1924,6 +1917,16 @@ async function renderPackSettings() {
   const s = p.settings || {};
   const own = p.provider === 'custom';
   $('ps-title').value = p.title;
+  $('ps-head-title').textContent = p.title;
+  const hi = $('ps-head-icon'); const cover = packCover(p);
+  hi.hidden = !cover; if (cover) hi.src = cover;
+  const info = $('ps-info'); info.replaceChildren();
+  const irow = (k, v) => { const r = el('div', 'ps-info-row'); r.append(el('span', 'muted', k), el('strong', '', v)); info.append(r); };
+  const LN = { vanilla: 'Vanilla', fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' };
+  irow('Plataforma', LN[(p.loader && p.loader.type) || 'vanilla'] || 'Vanilla');
+  irow('Versión del juego', p.mcVersion);
+  if (p.loader && p.loader.version) irow('Versión del loader', p.loader.version);
+  if (p.provider !== 'custom') irow('Modpack instalado', `${p.title}${p.version ? ' · ' + p.version : ''}`);
   $('ps-emoji').value = p.emoji || '';
   $('ps-notes').value = p.notes || '';
   $('ps-ram').value = s.ramGb || '';
@@ -5224,3 +5227,61 @@ async function autoDiscord(kind, payload) {
     }, 400);
   });
 })();
+
+
+/* --- ventana de ajustes de la instancia --- */
+function psSection(name) {
+  document.querySelectorAll('[data-ps-sec]').forEach((b) => b.classList.toggle('active', b.dataset.psSec === name));
+  document.querySelectorAll('[data-ps-panel]').forEach((x) => { x.hidden = x.dataset.psPanel !== name; });
+}
+document.querySelectorAll('[data-ps-sec]').forEach((b) => b.addEventListener('click', () => psSection(b.dataset.psSec)));
+$('mp-detail-gear').addEventListener('click', async () => {
+  if (!mp.pack) return;
+  psSection('general');
+  await renderPackSettings();
+  $('ps-modal').showModal();
+});
+$('ps-delete').addEventListener('click', () => { $('ps-modal').close(); deletePack(mp.pack); });
+document.querySelectorAll('[data-close-dialog]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+document.querySelectorAll('dialog.big-modal').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
+
+/* --- ventana con el contenido que trae el modpack (solo lectura) --- */
+const bm = { filter: 'all' };
+function paintBaseModal() {
+  const q = $('bm-search').value.trim().toLowerCase();
+  const sort = $('bm-sort').value;
+  const all = mp.items.filter((i) => i.base);
+  let rows = all.filter((i) => (bm.filter === 'all' || i.type === bm.filter) && (!q || i.name.toLowerCase().includes(q) || i.file.toLowerCase().includes(q)));
+  rows = rows.slice().sort((a, b) => (sort === 'size' ? b.size - a.size : sort === 'za' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name)));
+  const list = $('bm-list');
+  list.replaceChildren();
+  if (!rows.length) list.append(el('p', 'muted empty-note', 'Nada coincide.'));
+  rows.forEach((it) => {
+    const row = el('div', `bm-row${it.enabled ? '' : ' mod-off'}`);
+    const proj = el('div', 'bm-proj');
+    proj.append(iconEl(it.icon, it.name), el('span', 'type-chip t-' + it.type, TYPE_NAMES[it.type]), el('strong', '', it.name));
+    const ver = el('div', 'bm-ver');
+    ver.append(el('strong', '', it.version || '—'), el('span', 'muted', it.file.replace(/\.disabled$/i, '')));
+    row.append(proj, ver, el('span', 'type-chip t-lock', '🔒 Del modpack'));
+    list.append(row);
+  });
+  const c = (t) => all.filter((i) => i.type === t).length;
+  $('bm-foot').textContent = `${c('mod')} mods · ${c('shader')} shaders · ${c('resourcepack')} texturas`;
+}
+function openBaseModal() {
+  const cover = packCover(mp.pack);
+  $('bm-icon').hidden = !cover; if (cover) $('bm-icon').src = cover;
+  $('bm-title').textContent = 'Contenido del modpack';
+  $('bm-search').value = ''; bm.filter = 'all';
+  document.querySelectorAll('[data-bm-filter]').forEach((b) => b.classList.toggle('active', b.dataset.bmFilter === 'all'));
+  $('bm-search').placeholder = `Buscar ${mp.items.filter((i) => i.base).length} proyectos…`;
+  paintBaseModal();
+  $('mp-base-modal').showModal();
+}
+$('bm-search').addEventListener('input', paintBaseModal);
+$('bm-sort').addEventListener('change', paintBaseModal);
+document.querySelectorAll('[data-bm-filter]').forEach((b) => b.addEventListener('click', () => {
+  bm.filter = b.dataset.bmFilter;
+  document.querySelectorAll('[data-bm-filter]').forEach((x) => x.classList.toggle('active', x === b));
+  paintBaseModal();
+}));

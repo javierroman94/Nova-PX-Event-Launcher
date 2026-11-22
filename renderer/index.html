@@ -415,6 +415,7 @@
           </div>
           <div class="mp-detail-actions">
             <button id="mp-detail-play" type="button" class="primary">Jugar</button>
+            <button id="mp-detail-gear" type="button" title="Ajustes de la instancia" aria-label="Ajustes de la instancia">⚙️</button>
             <button id="mp-detail-folder" type="button">Carpeta</button>
             <button id="mp-detail-delete" type="button">Eliminar</button>
           </div>
@@ -424,7 +425,6 @@
           <button type="button" data-mp-tab="worlds">🌍 Mundos</button>
           <button type="button" data-mp-tab="shots">📷 Capturas</button>
           <button type="button" data-mp-tab="logs">📜 Registros</button>
-          <button type="button" data-mp-tab="settings">⚙️ Ajustes</button>
         </div>
 
         <div id="mp-tab-content">
@@ -471,10 +471,27 @@
         <div id="mp-tab-logs" hidden>
           <div id="mp-log" class="log" tabindex="0"></div>
         </div>
-        <div id="mp-tab-settings" hidden>
-          <div class="settings">
-            <fieldset>
-              <legend>General</legend>
+      </div>
+
+      <!-- Ajustes de la instancia -->
+      <dialog id="ps-modal" class="big-modal" aria-label="Ajustes de la instancia">
+        <div class="bm-head">
+          <img id="ps-head-icon" class="mod-icon" alt="" hidden />
+          <span id="ps-head-title" class="muted"></span><span class="muted">›</span><strong>Ajustes</strong>
+          <button type="button" class="bm-close" data-close-dialog aria-label="Cerrar">✕</button>
+        </div>
+        <div class="ps-layout">
+          <nav class="ps-nav" aria-label="Secciones">
+            <small>INSTANCIA</small>
+            <button type="button" class="active" data-ps-sec="general">ⓘ General</button>
+            <button type="button" data-ps-sec="install">🔧 Instalación</button>
+            <small>JUEGO</small>
+            <button type="button" data-ps-sec="java">☕ Java y memoria</button>
+            <button type="button" data-ps-sec="window">🖥 Ventana</button>
+            <button type="button" data-ps-sec="account">👤 Cuenta</button>
+          </nav>
+          <div class="ps-body settings-body">
+            <section data-ps-panel="general">
               <div class="field inline">
                 <div><label for="ps-title">Nombre</label><input id="ps-title" type="text" maxlength="60" /></div>
                 <div><label for="ps-emoji">Icono (emoji)</label><input id="ps-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
@@ -483,6 +500,22 @@
                 <button id="ps-icon-pick" type="button">Cambiar imagen…</button>
                 <button id="ps-icon-clear" type="button">Quitar imagen</button>
               </div>
+              <div class="field"><label for="ps-notes">Notas</label><textarea id="ps-notes" rows="3" maxlength="4000" placeholder="Para qué es este modpack, qué mods hay que probar…"></textarea></div>
+              <h4>Duplicar instancia</h4>
+              <div class="mp-actions"><button id="ps-dup" type="button">Duplicar</button></div>
+              <small class="muted">Crea una copia con mundos, ajustes y mods.</small>
+              <h4>Exportar</h4>
+              <small class="muted">El archivo .novapx solo lo abre este launcher. No incluye tus mundos ni tu cuenta.</small>
+              <label class="check"><input id="ps-ex-all" type="checkbox" /> Meter todos los mods dentro del archivo (pesa más, pero no necesita internet)</label>
+              <label class="check"><input id="ps-ex-settings" type="checkbox" checked /> Incluir mis ajustes y notas</label>
+              <div class="mp-actions"><button id="ps-export" type="button">Exportar .novapx</button></div>
+              <h4>Eliminar instancia</h4>
+              <div class="mp-actions"><button id="ps-delete" type="button" class="danger-btn">🗑 Eliminar instancia</button></div>
+              <small class="muted">Borra para siempre la instancia, con sus mundos, configuración y contenido. No se puede deshacer.</small>
+            </section>
+            <section data-ps-panel="install" hidden>
+              <h4>Información de la instalación</h4>
+              <div id="ps-info" class="ps-info"></div>
               <div id="ps-version-box" class="field inline">
                 <div><label for="ps-mc">Versión de Minecraft</label><select id="ps-mc"></select></div>
                 <div><label for="ps-loader">Loader</label>
@@ -490,44 +523,52 @@
                 <div><label for="ps-loader-version">Versión del loader</label><input id="ps-loader-version" type="text" maxlength="40" placeholder="Automática" autocomplete="off" /></div>
               </div>
               <small id="ps-version-note" class="muted"></small>
-              <div class="field"><label for="ps-notes">Notas</label><textarea id="ps-notes" rows="3" maxlength="4000" placeholder="Para qué es este modpack, qué mods hay que probar…"></textarea></div>
-            </fieldset>
-            <fieldset>
-              <legend>Cuenta</legend>
-              <div class="field"><label for="ps-account">Jugar con esta cuenta</label><select id="ps-account"><option value="">La que esté activa</option></select></div>
-              <small class="muted">Al pulsar Jugar, el launcher cambia solo a esa cuenta. Se guarda solo en este modpack (no se exporta).</small>
-            </fieldset>
-            <fieldset>
-              <legend>Rendimiento (solo este modpack)</legend>
+              <div class="mp-actions"><button id="ps-change-version" type="button" hidden>⇄ Cambiar versión del modpack</button></div>
+            </section>
+            <section data-ps-panel="java" hidden>
               <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes.</small>
-              <div class="field inline">
-                <div><label for="ps-ram">Memoria RAM (GB)</label><input id="ps-ram" type="number" min="1" max="32" placeholder="Global" /></div>
-                <div><label for="ps-args">Argumentos de Java</label><input id="ps-args" type="text" placeholder="Global" /></div>
-              </div>
+              <div class="field"><label for="ps-ram">Memoria RAM (GB)</label><input id="ps-ram" type="number" min="1" max="32" placeholder="Global" /></div>
               <div class="field"><label for="ps-java">Ruta de Java</label><input id="ps-java" type="text" placeholder="Automática" /></div>
+              <div class="field"><label for="ps-args">Argumentos de Java</label><input id="ps-args" type="text" placeholder="Global" /></div>
+            </section>
+            <section data-ps-panel="window" hidden>
+              <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes.</small>
+              <label class="check"><input id="ps-full" type="checkbox" /> Pantalla completa al iniciar</label>
               <div class="field inline">
                 <div><label for="ps-w">Ancho de ventana</label><input id="ps-w" type="number" min="320" max="7680" placeholder="Global" /></div>
                 <div><label for="ps-h">Alto de ventana</label><input id="ps-h" type="number" min="240" max="4320" placeholder="Global" /></div>
               </div>
-              <label class="check"><input id="ps-full" type="checkbox" /> Pantalla completa</label>
-              <small class="muted">Marca la casilla solo si quieres fijar pantalla completa en este modpack.</small>
-            </fieldset>
-            <fieldset>
-              <legend>Exportar</legend>
-              <small class="muted">El archivo .novapx solo lo abre este launcher. No incluye tus mundos ni tu cuenta.</small>
-              <label class="check"><input id="ps-ex-all" type="checkbox" /> Meter todos los mods dentro del archivo (pesa más, pero no necesita internet)</label>
-              <label class="check"><input id="ps-ex-settings" type="checkbox" checked /> Incluir mis ajustes y notas</label>
-            </fieldset>
-            <p id="ps-status" class="muted" role="status"></p>
-            <div class="mp-actions">
-              <button id="ps-change-version" type="button" hidden>Cambiar versión del modpack</button>
-              <button id="ps-dup" type="button">Duplicar</button>
-              <button id="ps-export" type="button">Exportar .novapx</button>
-              <button id="ps-save" type="button" class="primary">Guardar ajustes</button>
-            </div>
+            </section>
+            <section data-ps-panel="account" hidden>
+              <div class="field"><label for="ps-account">Jugar con esta cuenta</label><select id="ps-account"><option value="">La que esté activa</option></select></div>
+              <small class="muted">Al pulsar Jugar, el launcher cambia solo a esa cuenta. Se guarda solo en este modpack (no se exporta).</small>
+            </section>
           </div>
         </div>
-      </div>
+        <div class="bm-foot"><p id="ps-status" class="muted" role="status"></p><button id="ps-save" type="button" class="primary">Guardar ajustes</button></div>
+      </dialog>
+
+      <!-- Contenido que trae el modpack -->
+      <dialog id="mp-base-modal" class="big-modal" aria-label="Contenido del modpack">
+        <div class="bm-head">
+          <img id="bm-icon" class="mod-icon" alt="" hidden />
+          <strong id="bm-title">Contenido del modpack</strong>
+          <button type="button" class="bm-close" data-close-dialog aria-label="Cerrar">✕</button>
+        </div>
+        <div class="bm-tools">
+          <input id="bm-search" class="events-search" type="search" placeholder="Buscar proyectos…" autocomplete="off" aria-label="Buscar en el contenido del modpack" />
+          <div class="bm-chips">
+            <select id="bm-sort" aria-label="Ordenar"><option value="az">Nombre (A-Z)</option><option value="za">Nombre (Z-A)</option><option value="size">Tamaño</option></select>
+            <button type="button" class="active" data-bm-filter="all">Todo</button>
+            <button type="button" data-bm-filter="mod">Mods</button>
+            <button type="button" data-bm-filter="resourcepack">Texturas</button>
+            <button type="button" data-bm-filter="shader">Shaders</button>
+          </div>
+        </div>
+        <div class="bm-table-head"><span>Proyecto</span><span>Versión</span><span>Estado</span></div>
+        <div id="bm-list" class="bm-list"></div>
+        <div id="bm-foot" class="bm-foot muted"></div>
+      </dialog>
 
       <!-- Instalar un modpack -->
       <dialog id="mp-modal" class="event-modal" aria-label="Instalar modpack">
