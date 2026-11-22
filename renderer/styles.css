@@ -2916,3 +2916,12 @@ body.auth-gate .acc-saved { max-width: 980px; margin-left: auto; margin-right: a
 html.pet-floor .page.active { padding-bottom: 84px; }
 .vr-side { display: flex; flex-direction: column; }
 .vr-side > * { flex: none; }
+
+/* Aviso de actualización: botón pequeño arriba en vez de la franja verde. */
+.top-update { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.top-update:hover { background: color-mix(in srgb, var(--accent) 26%, var(--surface)); }
+.top-update[hidden] { display: none; }
+/* Logo de la barra lateral: siempre visible, aunque la pantalla sea justa de alto. */
+.sidebar .brand { position: sticky; top: 0; z-index: 3; background: color-mix(in srgb, var(--surface) 96%, var(--accent)); padding-top: 6px; padding-bottom: 6px; margin-top: -6px; }
+@media (max-height: 1100px) { .sidebar { gap: 14px; padding-top: 16px; } }
+@media (max-height: 900px) { .sidebar { gap: 10px; } }

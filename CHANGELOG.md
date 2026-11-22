@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.136
+- **Aviso de actualización discreto**: ya no sale la franja verde grande; ahora es un botón pequeño arriba («Actualizar a …») y también está en Ajustes → Actualizaciones.
+- **Logo de la barra lateral**: ya no se corta en pantallas grandes; queda siempre visible.
+
 ## 1.0.135
 - **Modpacks de Forge que abrían como Vanilla** (ej. RLCraft de CurseForge): ahora se comprueba el instalador de Forge antes de jugar; si está dañado se vuelve a descargar y, si es demasiado viejo, se usa la versión recomendada de Forge para ese Minecraft. Si algo falla, se ve el motivo en la Consola en vez de abrir Vanilla sin avisar.
 

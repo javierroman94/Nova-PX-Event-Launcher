@@ -3198,12 +3198,11 @@ function renderUpdate(s) {
     line.textContent = `Descargando la versión ${s.version || 'nueva'} (${s.percent || 0}%).`;
   } else if (s.state === 'ready') {
     window.Downloads.done('update', true, `Versión ${s.version} lista para instalar`);
-    banner.hidden = false;
-    install.hidden = false;
-    banner.classList.add('ready');
-    $('update-ico').textContent = '✨';
-    $('update-title').textContent = `La versión ${s.version} está lista`;
-    text.textContent = 'Reinicia el launcher para instalarla. Tus ajustes y modpacks no cambian.';
+    banner.hidden = true; // sin franja verde: solo el botón discreto de arriba
+    const tu = $('top-update');
+    if (tu) { tu.hidden = false; $('top-update-text').textContent = `Actualizar a ${s.version}`; }
+    const uc = $('update-check');
+    if (uc) { uc.textContent = 'Reiniciar e instalar'; uc.dataset.ready = '1'; }
     if (!window.__readyToast) {
       window.__readyToast = true;
       toast(`Nueva versión ${s.version} lista para instalar`);
@@ -3211,6 +3210,7 @@ function renderUpdate(s) {
     line.textContent = `La versión ${s.version} está lista para instalar.`;
   } else {
     banner.hidden = true;
+    { const tu = $('top-update'); if (tu) tu.hidden = true; const uc = $('update-check'); if (uc) { uc.textContent = 'Buscar actualizaciones'; delete uc.dataset.ready; } }
     if (s.state === 'error') window.Downloads.done('update', false, 'No se pudo descargar la actualización');
     line.textContent = {
       checking: 'Buscando actualizaciones…',
@@ -3232,8 +3232,13 @@ $('update-install').addEventListener('click', async () => {
   }
 });
 
+$('top-update').addEventListener('click', async () => {
+  try { await window.api.installUpdate(); } catch (err) { toast(cleanError(err)); }
+});
+
 $('update-check').addEventListener('click', async () => {
   const btn = $('update-check');
+  if (btn.dataset.ready) { try { await window.api.installUpdate(); } catch (err) { toast(cleanError(err)); } return; }
   btn.disabled = true;
   try {
     renderUpdate(await window.api.checkUpdates());
