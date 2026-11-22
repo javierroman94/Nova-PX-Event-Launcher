@@ -3253,3 +3253,17 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 /* Nacimiento de la mascota: contenido centrado */
 .pl-birth .event-modal-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 24px 28px; }
 .pl-birth .pl-egg { margin: 0 auto; }
+
+/* Evento próximamente: cuenta atrás grande en lugar del botón apagado */
+.hero.has-soon-panel .hero-play { display: none; }
+.soon-panel { display: flex; align-items: stretch; gap: 22px; flex-wrap: wrap; margin-top: 22px; padding: 18px 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(8, 10, 16, .72); backdrop-filter: blur(8px); }
+.soon-panel[hidden] { display: none; }
+.soon-clock { display: flex; gap: 10px; }
+.soon-cell { display: grid; place-items: center; align-content: center; gap: 2px; min-width: 78px; padding: 12px 10px; border-radius: 12px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .1); }
+.soon-cell b { font-size: 34px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
+.soon-cell span { font-size: 12px; color: rgba(255, 255, 255, .65); }
+.soon-info { display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: 1; min-width: 220px; max-width: 420px; }
+.soon-info strong { font-size: 17px; color: #fff; }
+.soon-info span { font-size: 13.5px; line-height: 1.45; color: rgba(255, 255, 255, .72); }
+.soon-panel.no-date .soon-clock { display: none; }
+@media (max-width: 760px) { .soon-cell { min-width: 64px; } .soon-cell b { font-size: 26px; } }

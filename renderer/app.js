@@ -545,6 +545,25 @@ function startCountdown(iso, state) {
   clearInterval(countdownTimer);
   const box = $('stat-next');
   const label = $('stat-next-label');
+  const panel = $('soon-panel');
+  const heroEl = document.querySelector('.hero');
+  const showPanel = (on) => { if (panel) panel.hidden = !on; if (heroEl) heroEl.classList.toggle('has-soon-panel', !!on); };
+  const isSoon = state !== 'ended' && state !== 'active';
+  showPanel(isSoon);
+  if (isSoon && panel) {
+    const t0 = iso ? Date.parse(iso) : NaN;
+    $('soon-when').textContent = Number.isFinite(t0)
+      ? `Empieza el ${new Date(t0).toLocaleString('es', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`
+      : 'Fecha por anunciar';
+    panel.classList.toggle('no-date', !Number.isFinite(t0));
+  }
+  const paintClock = (left) => {
+    if (!isSoon) return;
+    $('sc-d').textContent = String(Math.floor(left / 86400000));
+    $('sc-h').textContent = String(Math.floor(left / 3600000) % 24).padStart(2, '0');
+    $('sc-m').textContent = String(Math.floor(left / 60000) % 60).padStart(2, '0');
+    $('sc-s').textContent = String(Math.floor(left / 1000) % 60).padStart(2, '0');
+  };
   // Un evento finalizado no cuenta hacia atrás aunque conserve la fecha.
   if (state === 'ended') {
     box.textContent = 'Finalizado';
@@ -553,6 +572,7 @@ function startCountdown(iso, state) {
   }
   const target = iso ? Date.parse(iso) : NaN;
   if (!Number.isFinite(target) || target <= Date.now()) {
+    if (Number.isFinite(target)) showPanel(false);
     box.textContent = Number.isFinite(target) ? '¡Ya empezó!' : 'Por anunciar';
     label.textContent = 'Próximo evento';
     return;
@@ -572,6 +592,7 @@ function startCountdown(iso, state) {
     const mi = String(Math.floor(left / 60000) % 60).padStart(2, '0');
     const se = String(Math.floor(left / 1000) % 60).padStart(2, '0');
     box.textContent = `${d} d ${h}:${mi}:${se}`;
+    paintClock(left);
   };
   tick();
   countdownTimer = setInterval(tick, 1000);
