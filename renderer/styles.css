@@ -724,7 +724,7 @@ button.primary { border-radius: 10px; }
   .tab-ind { left: -10px; }
   .account-chip { justify-content: center; padding: 8px; width: auto; }
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .home-grid, .settings, .account-grid { grid-template-columns: 1fr; }
+  .home-grid, .home-cols, .settings, .account-grid { grid-template-columns: 1fr; }
   .topbar, main { padding-left: 22px; padding-right: 22px; }
   .hero h1 { font-size: 40px; }
 }
@@ -3043,3 +3043,29 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 .mp-stat-txt { display: grid; gap: 1px; min-width: 0; }
 .mp-stat small { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .65; }
 .mp-stat b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- inicio: dos columnas (contenido a la izquierda, jugador a la derecha) ---------- */
+.home-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+.home-main { min-width: 0; }
+.home-news { margin-top: 24px; }
+.home-news h2 { margin: 0 0 12px; }
+.home-side { display: flex; flex-direction: column; gap: 14px; }
+.home-side .friends-card { margin-bottom: 0; order: 3; }
+.home-side .player-card { order: 1; flex-direction: column; text-align: center; }
+.home-side .server-card { order: 2; }
+.home-side .player-info { width: 100%; }
+.home-side .player-card .player-skin { margin: 0 auto; }
+.friends-card p:empty { display: none; }
+.friends-card { align-content: start; }
+
+/* ---------- contenido del modpack (protegido) vs. contenido extra ---------- */
+.mp-base { border: 1px solid var(--line); border-radius: 16px; background: var(--raised); overflow: hidden; margin-bottom: 14px; }
+.mp-base-head { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.mp-base-head .mod-icon, .mp-base-head > :first-child { flex: none; }
+.mp-base-info { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.mp-base-lock { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 13px; }
+.mp-base-list { display: grid; gap: 8px; margin-bottom: 14px; max-height: 420px; overflow: auto; padding-right: 4px; }
+.mod-locked { opacity: .85; }
+.type-chip.t-lock { background: color-mix(in srgb, var(--accent) 14%, var(--raised)); }
+.mp-extra-title { margin: 18px 0 10px; font-size: 16px; }
+.mp-extra-empty { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 30px 16px; border: 1px dashed var(--line); border-radius: 16px; }

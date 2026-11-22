@@ -1422,6 +1422,7 @@ function paintPackChips(p) {
 function openDetail(p) {
   mp.pack = p;
   mp.filter = 'all';
+  mp.baseOpen = false;
   $('mp-content-search').value = '';
   document.querySelectorAll('[data-mp-filter]').forEach((b) => b.classList.toggle('active', b.dataset.mpFilter === 'all'));
   openDetailHeader(p);
@@ -1464,12 +1465,12 @@ function paintContent(offline) {
   $('mp-content-note').textContent = mp.items.length
     ? `${shown.length} de ${mp.items.length} · ${count('mod')} mods · ${count('shader')} shaders · ${count('resourcepack')} texturas${offline ? ' · sin conexión: nombres e iconos pueden faltar' : ''}`
     : 'Este modpack todavía no tiene mods, shaders ni texturas. Usa "Explorar contenido" o "Cargar archivos".';
-  if (!shown.length && mp.items.length) {
+  if (!shown.length && mp.items.length && !mp.items.some((i) => i.base)) {
     const EMPTY = { mod: 'No tienes ningún mod instalado. Explora contenido para buscar uno.', shader: 'No tienes ningún shader instalado. Explora contenido para buscar uno.', resourcepack: 'No tienes ninguna textura instalada. Explora contenido para buscar una.' };
     list.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : EMPTY[mp.filter] || 'No hay nada para mostrar.'));
   }
-  shown.forEach((it) => {
-    const row = el('div', `mod-card${it.enabled ? '' : ' mod-off'}`);
+  const buildRow = (it, locked) => {
+    const row = el('div', `mod-card${it.enabled ? '' : ' mod-off'}${locked ? ' mod-locked' : ''}`);
     row.append(iconEl(it.icon, it.name));
     const body = el('div', 'mod-body');
     const top = el('div', 'mod-top');
@@ -1477,6 +1478,7 @@ function paintContent(offline) {
     if (!it.enabled) top.append(el('span', 'type-chip t-off', 'Desactivado'));
     body.append(top, el('span', 'muted', `${it.version ? it.version + ' · ' : ''}${it.file.replace(/\.disabled$/i, '')} · ${fmtSize(it.size)}`));
     row.append(body);
+    if (locked) { row.append(el('span', 'type-chip t-lock', '🔒 Del modpack')); return row; }
     const sw = el('input', 'switch');
     sw.type = 'checkbox';
     sw.checked = it.enabled;
@@ -1512,11 +1514,46 @@ function paintContent(offline) {
       'sep',
       { icon: '🗑', label: 'Quitar del modpack…', danger: true, onClick: () => del.click() }
     ]);
-    list.append(row);
-  });
+    return row;
+  };
+  const baseAll = mp.items.filter((i) => i.base);
+  const baseShown = shown.filter((i) => i.base);
+  const extraShown = shown.filter((i) => !i.base);
+  const extraAll = mp.items.filter((i) => !i.base);
+  if (baseAll.length) {
+    const bc = (t) => baseAll.filter((i) => i.type === t).length;
+    const card = el('div', 'mp-base');
+    const head = el('div', 'mp-base-head');
+    head.append(packIcon(mp.pack));
+    const info = el('div', 'mp-base-info');
+    info.append(el('strong', '', 'Contenido del modpack'), el('span', 'muted', [`${bc('mod')} mods`, bc('resourcepack') ? `${bc('resourcepack')} texturas` : '', bc('shader') ? `${bc('shader')} shaders` : ''].filter(Boolean).join(' · ')));
+    const toggle = el('button', 'ghost', mp.baseOpen ? 'Ocultar contenido' : 'Ver contenido');
+    toggle.type = 'button';
+    toggle.addEventListener('click', () => { mp.baseOpen = !mp.baseOpen; paintContent(offline); });
+    head.append(info, toggle);
+    card.append(head, el('div', 'mp-base-lock muted', `🔒 Proporcionado por ${mp.pack.title}. Es el contenido original: no se puede quitar ni cambiar, así no se daña.`));
+    list.append(card);
+    if (mp.baseOpen) {
+      const inner = el('div', 'mp-base-list');
+      if (!baseShown.length) inner.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : 'No hay nada de este tipo.'));
+      baseShown.forEach((it) => inner.append(buildRow(it, true)));
+      list.append(inner);
+    }
+    list.append(el('h3', 'mp-extra-title', 'Contenido extra (tuyo)'));
+    if (!extraAll.length) {
+      const empty = el('div', 'mp-extra-empty');
+      empty.append(el('strong', '', 'No hay contenido extra instalado'), el('span', 'muted', 'Lo que añadas aquí queda aparte del modpack. Usa "Explorar contenido" o "Cargar archivos".'));
+      list.append(empty);
+    } else if (!extraShown.length) {
+      list.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : 'No hay contenido extra de este tipo.'));
+    }
+    extraShown.forEach((it) => list.append(buildRow(it, false)));
+    return;
+  }
+  shown.forEach((it) => list.append(buildRow(it, false)));
 }
 async function bulkToggle(enable) {
-  const targets = mp.items.filter((it) => (mp.filter === 'all' || it.type === mp.filter) && it.enabled !== enable);
+  const targets = mp.items.filter((it) => !it.base && (mp.filter === 'all' || it.type === mp.filter) && it.enabled !== enable);
   if (!targets.length) { toast(enable ? 'Todo está activado ya' : 'Todo está desactivado ya'); return; }
   if (!await askConfirm(`¿${enable ? 'Activar' : 'Desactivar'} ${targets.length} elemento${targets.length === 1 ? '' : 's'}${mp.filter === 'all' ? '' : ' de este tipo'}?`)) return;
   let n = 0;

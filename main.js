@@ -1165,6 +1165,8 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     // Los mods anteriores se apartan y vuelven a su sitio si la instalación nueva falla a medias.
     const modsDir = path.join(root, 'mods');
     const modsBackup = path.join(root, 'mods.anterior');
+    const keysBefore = previous ? contentKeys(root) : new Set();
+    if (previous) for (const k of [...keysBefore]) if (k.startsWith('mod:')) keysBefore.delete(k);
     if (previous && fs.existsSync(modsDir)) {
       fs.rmSync(modsBackup, { recursive: true, force: true });
       fs.renameSync(modsDir, modsBackup);
@@ -1186,6 +1188,7 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
       throw err;
     }
     fs.rmSync(modsBackup, { recursive: true, force: true });
+    writeBaseSnapshot(root, keysBefore);
 
     const entry = {
       id, provider: name, projectId: cleanStr(p.id, 40), versionId: v.id, version: cleanStr(v.number || v.name, 80),
@@ -1432,11 +1435,37 @@ ipcMain.handle('instance:openBackups', async (_e, id) => {
 });
 
 // Busca versiones nuevas de mods, shaders y texturas (Modrinth) compatibles con la versión y el loader del modpack.
+
+// Lo que trae un modpack (sus mods, texturas y shaders) se anota aparte: queda protegido y lo que añade el usuario va por separado.
+const BASE_FILE = '.nova-base.json';
+function contentKeys(root) {
+  const out = new Set();
+  for (const type of Object.keys(content.TYPES)) {
+    for (const it of content.listContent(root, type)) out.add(`${type}:${it.file.replace(/\.disabled$/i, '')}`);
+  }
+  return out;
+}
+function writeBaseSnapshot(root, before = new Set()) {
+  try {
+    const files = [...contentKeys(root)].filter((k) => !before.has(k));
+    fs.writeFileSync(path.join(root, BASE_FILE), JSON.stringify({ files }));
+  } catch {}
+}
+function readBase(root) {
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(root, BASE_FILE), 'utf8'));
+    return new Set(Array.isArray(j.files) ? j.files : []);
+  } catch { return new Set(); }
+}
+const isBase = (root, type, file) => readBase(root).has(`${type}:${String(file).replace(/\.disabled$/i, '')}`);
+
 async function planAllUpdates(entry, root) {
   const plan = [];
   for (const type of Object.keys(content.TYPES)) {
     const items = [];
+    const base = readBase(root);
     for (const it of content.listContent(root, type)) {
+      if (base.has(`${type}:${it.file.replace(/\.disabled$/i, '')}`)) continue; // lo del modpack no se toca
       items.push({ ...it, hash: await cachedSha1(path.join(content.contentDir(root, type), it.file)) });
     }
     if (!items.length) continue;
@@ -2373,6 +2402,7 @@ async function importFromPath(src) {
       r = await modpacks.installCurse({ buffer, root, resolveFiles: (f) => cf.resolveFiles(f), download, onProgress: onFile });
     }
     else r = importers.installPrism({ buffer, root });
+    writeBaseSnapshot(root);
     const entry = packEntryFrom(tmpId, r.name, r, extra);
     if (!entry.icon && !entry.emoji) { entry.icon = await lookupModrinthIcon(entry.title); entry.iconTried = true; }
     return entry;
@@ -2507,17 +2537,21 @@ ipcMain.handle('instance:content', async (_e, id) => {
   } catch {
     offline = true;
   }
-  return { items: content.buildContentList(items, byHash, projects), offline };
+  const base = readBase(root);
+  const list = content.buildContentList(items, byHash, projects).map((it) => ({ ...it, base: base.has(`${it.type}:${String(it.file).replace(/\.disabled$/i, '')}`) }));
+  return { items: list, offline };
 });
 
 ipcMain.handle('instance:toggle', (_e, p = {}) => {
   assertEditable();
   const { root } = packRoot(p.id);
+  if (isBase(root, typeOf(p.type), cleanStr(p.file, 200))) throw new Error('Eso viene con el modpack y está protegido. Instala contenido extra aparte si quieres cambiar algo.');
   return content.toggleContent(root, typeOf(p.type), cleanStr(p.file, 200));
 });
 ipcMain.handle('instance:remove', (_e, p = {}) => {
   assertEditable();
   const { root } = packRoot(p.id);
+  if (isBase(root, typeOf(p.type), cleanStr(p.file, 200))) throw new Error('Eso viene con el modpack y está protegido. Instala contenido extra aparte si quieres cambiar algo.');
   content.removeContent(root, typeOf(p.type), cleanStr(p.file, 200));
 });
 ipcMain.handle('instance:addLocal', async (_e, p = {}) => {
