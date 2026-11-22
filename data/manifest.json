@@ -1,10 +1,10 @@
 {
   "event": {
-    "active": false,
+    "active": true,
     "name": "BACKROOMS",
     "tagline": "Mini-Evento Organizado por EzLuiiz donde probaran la experiencia creada por Eufonia Studios de los Backrooms.",
     "startsAt": "2026-11-22T04:41:00.000Z",
-    "status": "soon",
+    "status": "active",
     "image": "images/banner-proximamente-mwrboehp.png",
     "logo": ""
   },
