@@ -34,7 +34,8 @@
       "kind": "host",
       "role": "Servidor hospedado por",
       "name": "HolyHosting",
-      "url": "https://www.holy.gg/"
+      "url": "https://www.holy.gg/",
+      "logo": "images/sponsor-holyhosting-mwrbudz2.png"
     },
     {
       "kind": "sponsor",
