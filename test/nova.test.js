@@ -90,6 +90,15 @@ const packs = require('../lib/packs');
       const r3 = await nova.fixSodiumIris(d3, { listSodium: async () => vs, download: async (u) => bd[u], log: () => {} });
       assert.strictEqual(r3.action, 'sodium');
       assert.deepStrictEqual(fs2.readdirSync(d3).sort(), ['iris.jar', 'sodium-beta.jar']);
+      // Fabric API antigua ("fabric") + Nova Client que pide "fabric-api": se detecta; con la nueva ("fabric-api") no.
+      const d5 = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'nova-api-'));
+      fs2.writeFileSync(path2.join(d5, 'nova-client.jar'), jar({ id: 'nova_client', version: '0.5.1', depends: { 'fabric-api': '*' } }));
+      fs2.writeFileSync(path2.join(d5, 'fabric-api-0.42.0+1.16.jar'), jar({ id: 'fabric', version: '0.42.0' }));
+      let sa = nova.novaClientApiState(d5);
+      assert.deepStrictEqual([sa.client, sa.needs, sa.hasApi, sa.hasLegacy], ['nova-client.jar', 'fabric-api', false, true]);
+      fs2.writeFileSync(path2.join(d5, 'fabric-api-0.42.0+1.16.jar'), jar({ id: 'fabric-api', version: '0.100.0', provides: ['fabric'] }));
+      sa = nova.novaClientApiState(d5);
+      assert.strictEqual(sa.hasApi, true);
       // Si no hay choque, no se toca nada.
       const r4 = await nova.fixSodiumIris(d3, { listSodium: async () => vs, download: async (u) => bd[u], log: () => {} });
       assert.strictEqual(r4.changed, false);

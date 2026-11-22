@@ -539,6 +539,25 @@ async function fixNovaMods(instanceDir, mc) {
       await content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: instanceDir, type: 'mod', projectId: 'fabric-api', mc, loader: 'fabric' });
     }
   } catch (err) { pushLog('launcher', `[Nova] No se pudo instalar Fabric API: ${err.message}`); }
+  // En Minecraft viejo (hasta 1.19.1) la Fabric API se llama «fabric» y un Nova Client que pida «fabric-api» no la encuentra.
+  try {
+    const marker = path.join(instanceDir, '.nova-client-off');
+    const broken = (st) => st.client && st.needs && !st.hasApi && st.hasLegacy;
+    let st = novaLib.novaClientApiState(modsDir);
+    if (broken(st) || (!st.client && fs.existsSync(marker))) {
+      pushLog('launcher', '[Nova] Nova Client no encaja con la Fabric API de esta versión; buscando un Nova Client corregido…');
+      try { await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir: instanceDir, mc }); } catch {}
+      st = novaLib.novaClientApiState(modsDir);
+      if (broken(st)) {
+        fs.renameSync(path.join(modsDir, st.client), path.join(modsDir, `${st.client}.disabled`));
+        fs.writeFileSync(marker, '1');
+        pushLog('launcher', '[Nova] Nova Client se desactivó en este perfil (todavía no hay una versión corregida para esta versión de Minecraft). El juego abre sin él.');
+      } else if (st.client) {
+        fs.rmSync(marker, { force: true });
+        pushLog('launcher', '[Nova] Nova Client actualizado.');
+      }
+    }
+  } catch (err) { pushLog('launcher', `[Nova] No se pudo revisar Nova Client: ${err.message}`); }
 }
 
 /* ---------- Forge nuevo (61.x: Minecraft 1.21.11+) ---------- */
