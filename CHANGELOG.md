@@ -7,6 +7,9 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 - Las versiones previas (beta) se comparan bien con las finales.
 - Modpacks de CurseForge con mods que su autor bloquea: ahora se abre una lista con cada archivo, un botón para bajarlo desde la web y otro para abrir la carpeta de mods.
 - Corregido: Nova Client no abría en Minecraft 1.15.2 a 1.19.1 ("Instala fabric-api"). En esas versiones la Fabric API se llama «fabric» y el mod pedía otro nombre. El launcher lo detecta, busca el Nova Client corregido y, si aún no existe, lo desactiva en ese perfil para que el juego abra.
+- Historial: tarjetas de eventos cuadradas e iguales; el detalle muestra la imagen a todo el ancho; las cabezas de ganadores y participantes ya no tapan el nombre.
+- Equipo: tarjetas centradas fila por fila y con nick, cargo y redes alineados.
+- Mascota: el huevo sale solo después del asistente de bienvenida y, al romperlo, la mascota aparece sin activarla en Ajustes.
 
 ## 1.0.153
 - Ajustes de la instancia completos: Instalación (desvincular y reinstalar el modpack, se conserva tu contenido extra), General (canal Release/Beta/Alpha para actualizaciones, icono grande), Java y memoria (barra de memoria, Detectar Java, variables de entorno, ↺ en cada campo), Ventana, Comandos de inicio (antes de abrir y al cerrar; nunca se exportan) y Sincronización (opciones, servidores, texturas, historial y barras creativas).
