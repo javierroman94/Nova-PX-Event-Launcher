@@ -110,6 +110,10 @@ try {
       const r = await packs.planModUpdates({ request: mk(ty), items: [{ hash: 'h1'.toUpperCase().toLowerCase() === 'h1' ? 'H1' : 'H1', file: 'a.jar', enabled: true }], mc: '1.20.1', loader: 'fabric', channel: ch });
       assert.strictEqual(r.length, n, `${ch}/${ty}`);
     }
+    // Regresión: lanzar el evento (sin modpack) pasa ajustes null y no debe romper.
+    assert.deepStrictEqual(packs.sanitizeSettings(null), {});
+    assert.strictEqual(packs.mergeSettings({ ramGb: 4 }, null).ramGb, 4);
+    assert.strictEqual(packs.mergeSettings({ ramGb: 4 }, undefined).ramGb, 4);
     console.log('packs.test OK');
     fs.rmSync(tmp, { recursive: true, force: true });
   })().catch((e2) => { console.error(e2); process.exit(1); });

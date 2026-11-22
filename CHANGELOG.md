@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.159
+- Corregido: al darle Jugar al evento salía «No se pudo iniciar: Cannot read properties of null (reading 'ramGb')». El evento no tiene ajustes propios y el launcher no lo esperaba.
+- Eventos protegidos: al descargar los mods ya no se muestran sus nombres (solo «Mods 120/129»), ni en los errores.
+
 ## 1.0.158
 - Corregido: con el tema Nova la imagen del evento no se veía en la portada (el borde de colores la tapaba). Ahora se ve igual en todos los temas.
 

@@ -185,6 +185,20 @@ function makeKeyStore() {
     assert.strictEqual(pi.modFileName({ url: 'https://x.com/dir/Mi%20Mod-1.0.jar' }), 'Mi Mod-1.0.jar');
   });
 
+  await test('syncMods protegido: el progreso no revela los nombres de los mods', async () => {
+    const gameDir = tmp();
+    const key = pc.newPackKey();
+    const plain = Buffer.from('SECRETO');
+    const enc = pc.encryptFile(plain, key, 'kotlinx-secreto-1.8.jar');
+    const msgs = [];
+    await pi.syncMods({
+      modsDir: path.join(gameDir, 'mods'), stateFile: path.join(gameDir, '.m.json'), packKey: key,
+      mods: [{ url: 'https://x.com/kotlinx-secreto-1.8.jar', name: 'Kotlinx Secreto', sha1: sha1(plain) }],
+      download: async () => enc, onStatus: (m) => msgs.push(m)
+    });
+    assert.ok(msgs.length && msgs.every((m) => !/kotlinx|secreto/i.test(m)), msgs.join('|'));
+  });
+
   await test('syncMods público: descarga, actualiza solo lo que cambia y limpia lo viejo', async () => {
     const gameDir = tmp();
     const modsDir = path.join(gameDir, 'mods');
