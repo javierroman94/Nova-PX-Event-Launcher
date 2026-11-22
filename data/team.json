@@ -22,7 +22,18 @@
   {
     "nick": "MegaDeker",
     "role": "Co-Founder / Art & Operations Director",
-    "featured": true
+    "featured": true,
+    "links": [
+      {
+        "name": "Twitter",
+        "url": "https://x.com/DekerModMaker"
+      },
+      {
+        "name": "Portafolio",
+        "url": "https://megadeker.carrd.co/"
+      }
+    ],
+    "avatar": "images/megadeker-mwrfaaqr.png"
   },
   {
     "nick": "javierroman94",
