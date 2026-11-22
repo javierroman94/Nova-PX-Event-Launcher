@@ -32,7 +32,7 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
     closed = true;
     clearInterval(tick);
     s.classList.add('hide');
-    setTimeout(() => s.remove(), 600);
+    setTimeout(() => { s.remove(); window.dispatchEvent(new Event('nova-splash-closed')); }, 600);
   }
   function tryClose() { if (ready && minDone) { clearInterval(tick); if (st) st.textContent = steps[steps.length - 1]; s.classList.add('ready'); setTimeout(close, 450); } }
   window.addEventListener('nova-ready', () => { ready = true; tryClose(); });
@@ -42,6 +42,8 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   const vid = document.getElementById('sp-video');
   function playIntro(sound) {
     if (!vid) return;
+    // Los botones de la ventana (minimizar, cerrar) toman el color blanco de la intro; al cerrarse vuelven al tema.
+    setTimeout(() => { if (!closed && window.api.winOverlay) window.api.winOverlay({ color: '#fdfdfd', symbol: '#222222' }).catch(() => {}); }, 200);
     vid.muted = !sound;
     vid.addEventListener('playing', () => { s.classList.add('has-video'); }, { once: true });
     vid.addEventListener('ended', () => { minDone = true; tryClose(); }, { once: true });

@@ -125,5 +125,12 @@
     dlg.showModal();
     ok.focus();
   }
-  window.addEventListener('load', () => setTimeout(announce, 1500));
+  // Espera a que termine la pantalla de inicio: el aviso no debe aparecer encima de la animación.
+  function whenSplashGone(fn) {
+    let n = 0;
+    const t = setInterval(() => {
+      if (!document.getElementById('splash') || ++n > 80) { clearInterval(t); setTimeout(fn, 600); }
+    }, 250);
+  }
+  window.addEventListener('load', () => whenSplashGone(announce));
 })();

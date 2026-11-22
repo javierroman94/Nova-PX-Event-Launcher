@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.140
+- **La ventana de novedades ya no sale encima de la intro**: aparece cuando termina la animación de inicio.
+- **Botones de la ventana durante la intro**: minimizar, maximizar y cerrar se ven sobre el fondo blanco y vuelven a los colores del tema al terminar.
+
 ## 1.0.139
 - **CurseForge en Explorar modpacks**: ya puedes buscar e instalar modpacks de CurseForge desde el launcher (junto a Modrinth y FTB). Los mods cuyo autor bloquea las descargas externas se avisan y se omiten.
 

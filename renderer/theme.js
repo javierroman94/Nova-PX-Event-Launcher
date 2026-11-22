@@ -75,6 +75,7 @@
     if (!m || m.length < 3) return null;
     return '#' + m.slice(0, 3).map((n) => Math.round(Number(n)).toString(16).padStart(2, '0')).join('');
   }
+  window.addEventListener('nova-splash-closed', () => syncTitleBar());
   function syncTitleBar() {
     setTimeout(() => {
       try {
