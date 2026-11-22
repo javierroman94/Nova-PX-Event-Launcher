@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.137
+- **Forge 1.12.2 (RLCraft y otros)**: se descargaba el archivo equivocado de Forge y el juego abría Vanilla. Ahora usa el instalador correcto y abre con Forge y sus mods.
+
 ## 1.0.136
 - **Aviso de actualización discreto**: ya no sale la franja verde grande; ahora es un botón pequeño arriba («Actualizar a …») y también está en Ajustes → Actualizaciones.
 - **Logo de la barra lateral**: ya no se corta en pantallas grandes; queda siempre visible.

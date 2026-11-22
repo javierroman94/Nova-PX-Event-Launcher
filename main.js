@@ -456,7 +456,7 @@ async function ensureQuilt(mcVersion, loaderVersion) {
 function forgeInstallerOk(file) {
   try {
     const z = readZip(fs.readFileSync(file));
-    return z.has('version.json') && z.has('install_profile.json');
+    return z.has('version.json');
   } catch { return false; }
 }
 

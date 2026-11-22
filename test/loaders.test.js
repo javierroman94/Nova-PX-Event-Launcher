@@ -57,12 +57,13 @@ test('Rechaza versiones con caracteres peligrosos (rutas o enlaces manipulados)'
 test('Enlace y nombre del archivo de Forge', () => {
   assert.strictEqual(L.forgeKind('1.20.1'), 'installer');
   assert.strictEqual(L.forgeKind('1.13'), 'installer');
-  assert.strictEqual(L.forgeKind('1.12.2'), 'universal');
+  assert.strictEqual(L.forgeKind('1.12.2'), 'installer'); // el universal de 1.12.2 no trae version.json y el juego caía en Vanilla
+  assert.strictEqual(L.forgeKind('1.11.2'), 'universal');
   assert.strictEqual(
     L.forgeUrl('1.20.1', '47.2.0'),
     'https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.2.0/forge-1.20.1-47.2.0-installer.jar'
   );
-  assert.strictEqual(L.forgeFileName('1.12.2', '14.23.5.2860'), 'forge-1.12.2-14.23.5.2860-universal.jar');
+  assert.strictEqual(L.forgeFileName('1.12.2', '14.23.5.2860'), 'forge-1.12.2-14.23.5.2860-installer.jar');
 });
 
 test('Loaders soportados', () => {
