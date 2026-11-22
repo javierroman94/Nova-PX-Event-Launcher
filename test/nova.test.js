@@ -73,6 +73,27 @@ const packs = require('../lib/packs');
     r1 = await nova.fixSodiumIris(dir2, { listSodium: async () => [okVersions[0]], download: async (u) => bodies[u], log: () => {} });
     assert.strictEqual(r1.action, 'iris-removed');
     assert.deepStrictEqual(fs2.readdirSync(dir2), ['sodium-0.9.3.jar']);
+
+    // Reporte real: Sodium beta ya puesto + Reese's exige Sodium 0.9.3 exacto -> se quita Reese's y Sodium/Iris se quedan.
+    {
+      const d3 = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'nova-si3-'));
+      const irisReal = { id: 'iris', version: '1.11.7+mc26.3', depends: { sodium: '>=0.9.0-beta.3' }, breaks: {} };
+      const reeses = { id: 'reeses-sodium-options', version: '2.2.6+mc26.3', depends: { sodium: '0.9.3+mc26.3' }, breaks: {} };
+      fs2.writeFileSync(path2.join(d3, 'sodium-beta.jar'), jar(sod('0.9.3-beta.3+mc26.3')));
+      fs2.writeFileSync(path2.join(d3, 'iris.jar'), jar(irisReal));
+      fs2.writeFileSync(path2.join(d3, 'reeses.jar'), jar(reeses));
+      const vs = [
+        { version_number: '0.9.3', files: [{ url: 'https://cdn.modrinth.com/s1.jar', filename: 'sodium-stable.jar', primary: true }] },
+        { version_number: '0.9.3-beta.3', files: [{ url: 'https://cdn.modrinth.com/s2.jar', filename: 'sodium-beta.jar', primary: true }] }
+      ];
+      const bd = { 'https://cdn.modrinth.com/s1.jar': jar(sod('0.9.3+mc26.3', '<=1.12.0')), 'https://cdn.modrinth.com/s2.jar': jar(sod('0.9.3-beta.3+mc26.3')) };
+      const r3 = await nova.fixSodiumIris(d3, { listSodium: async () => vs, download: async (u) => bd[u], log: () => {} });
+      assert.strictEqual(r3.action, 'sodium');
+      assert.deepStrictEqual(fs2.readdirSync(d3).sort(), ['iris.jar', 'sodium-beta.jar']);
+      // Si no hay choque, no se toca nada.
+      const r4 = await nova.fixSodiumIris(d3, { listSodium: async () => vs, download: async (u) => bd[u], log: () => {} });
+      assert.strictEqual(r4.changed, false);
+    }
   }
   console.log('nova.test.js OK');
 })().catch((e) => { console.error(e); process.exit(1); });
