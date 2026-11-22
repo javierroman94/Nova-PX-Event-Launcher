@@ -137,6 +137,32 @@ function makeKeyStore() {
     assert.ok(!fs.existsSync(path.join(gameDir, 'mods', 'otro.jar')));
   });
 
+  await test('Evento protegido: al cerrar se borra todo y se restaura desde la caché cifrada sin descargar ni pedir clave', async () => {
+    const a = require('../lib/admin');
+    const built = a.buildProtectedEvent({
+      jars: [{ file: 'secreto.jar', data: Buffer.from('jar secreto') }],
+      extras: [{ rel: 'config/fancymenu/l.txt', data: Buffer.from('layout') }],
+      password: 'frase secreta del evento', baseUrl: 'https://example.com/rel', previous: null
+    });
+    const remote = {};
+    built.assets.forEach((x) => { remote[`https://example.com/rel/${encodeURIComponent(x.name)}`] = x.data; });
+    const gameDir = tmp(); const cacheDir = tmp(); const ks = makeKeyStore();
+    let dl = 0;
+    const download = async (u) => { dl++; return remote[u]; };
+    await pi.installProtected({ prot: built.envelope, password: 'frase secreta del evento', gameDir, download, keyStore: ks, cacheDir });
+    assert.ok(fs.existsSync(path.join(gameDir, 'config/fancymenu/l.txt')));
+    const downloaded = dl;
+    assert.ok(pi.wipeProtected(gameDir) >= 2);
+    assert.deepStrictEqual(fs.readdirSync(path.join(gameDir, 'mods')), []);
+    assert.ok(!fs.existsSync(path.join(gameDir, 'config/fancymenu/l.txt')));
+    assert.strictEqual(pi.canRestoreFromCache({ prot: built.envelope, gameDir, keyStore: ks, cacheDir }), true);
+    const r = await pi.installProtected({ prot: built.envelope, gameDir, download, keyStore: ks, cacheDir });
+    assert.deepStrictEqual(r, { status: 'ready' });
+    assert.strictEqual(dl, downloaded);
+    assert.strictEqual(fs.readdirSync(path.join(gameDir, 'mods')).length, 1);
+    assert.ok(fs.existsSync(path.join(gameDir, 'config/fancymenu/l.txt')));
+  });
+
   await test('Si el jugador borra un mod, vuelve a pedirlo (o usa la clave guardada)', async () => {
     const { prot, remote } = makePack('frase secreta del evento', { 'A.jar': 'contenido A' });
     const gameDir = tmp();

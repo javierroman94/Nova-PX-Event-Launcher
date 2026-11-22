@@ -4,6 +4,7 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 
 ## 1.0.165
 - Eventos protegidos: los mods se guardan en disco con nombres neutros (no se ven los nombres reales en la carpeta mods).
+- Eventos protegidos: al cerrar el juego se borran los mods y la config de la carpeta del evento; quedan solo cifrados en una caché y se restauran al abrir (sin descargar ni pedir la clave otra vez).
 
 ## 1.0.164
 - Seguridad: los modpacks importados (.novapx) ya no pueden traer ruta de Java propia ni argumentos que ejecuten código; se niegan los permisos del navegador interno; la config del evento exige https.

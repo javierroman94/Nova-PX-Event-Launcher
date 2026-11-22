@@ -13,7 +13,7 @@ const mojangArt = require('./lib/mojang-art');
 const pcrypto = require('./lib/pack-crypto');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
-const { instanceDir } = require('./lib/instance');
+const { instanceDir, instanceId } = require('./lib/instance');
 const serversLib = require('./lib/servers');
 const langLib = require('./lib/langpack');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
@@ -330,6 +330,7 @@ function saveProtectedLog(lines) {
   } catch {}
 }
 let protectedRun = false;
+let currentEventDir = null;
 const rawLogBuffer = [];
 const MODLINE = /\.jar\b|\bmods?\b|mixin|fabric-|\bloading \d+|entrypoint|\[[A-Za-z0-9_.$]+\/(?:INFO|WARN|ERROR|DEBUG)\]: *(?:Loading|Found|Initializ|Registering)|modid|\bFML\b|\bforge\b|quilt/i;
 function pushLog(source, raw) {
@@ -399,7 +400,8 @@ async function installMods(manifest, password, gameDir) {
       gameDir,
       download: downloadBuffer,
       keyStore,
-      onStatus
+      onStatus,
+      cacheDir: path.join(app.getPath('userData'), 'pack-cache', instanceId(manifest))
     });
     if (r.status === 'need-password') {
       throw new Error(
@@ -3549,6 +3551,7 @@ ipcMain.handle('event:needsPassword', async () => {
   try {
     const manifest = await loadData('manifest');
     if (!manifest || !manifest.protected || !packInstall.needsInstall(manifest.protected, instanceDir(GAME_DIR, manifest))) return false;
+    if (packInstall.canRestoreFromCache({ prot: manifest.protected, gameDir: instanceDir(GAME_DIR, manifest), keyStore, cacheDir: path.join(app.getPath('userData'), 'pack-cache', instanceId(manifest)) })) return false;
     return true;
   } catch { return false; }
 });
@@ -3627,6 +3630,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     };
     enforceLock();
     protectedRun = !pack && !!manifest.protected && manifest.showMods !== true;
+    currentEventDir = protectedRun ? eventDir : null;
     rawLogBuffer.length = 0;
     if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
     enforceLock();
@@ -3744,6 +3748,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         crashList = [{ id: 'protected', title: 'El juego se cerró con un error', advice: 'Se guardó un informe cifrado del error. Avisa a un administrador para que lo revise.' }];
       }
       pendingClose = { code, crash: crashList };
+      if (protectedRun && currentEventDir) packInstall.wipeProtected(currentEventDir);
       protectedRun = false;
       leaveGameMode();
       if (windowWasOpen) {
