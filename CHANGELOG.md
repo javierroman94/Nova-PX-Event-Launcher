@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.141
+- **Quilt ya se puede jugar**: antes el launcher decía «el loader quilt todavía no está soportado» al pulsar Jugar. Ahora prepara Quilt y abre el juego.
+
 ## 1.0.140
 - **La ventana de novedades ya no sale encima de la intro**: aparece cuando termina la animación de inicio.
 - **Botones de la ventana durante la intro**: minimizar, maximizar y cerrar se ven sobre el fondo blanco y vuelven a los colores del tema al terminar.

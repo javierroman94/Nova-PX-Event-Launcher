@@ -67,7 +67,7 @@ test('Enlace y nombre del archivo de Forge', () => {
 });
 
 test('Loaders soportados', () => {
-  assert.deepStrictEqual(L.SUPPORTED_LOADERS, ['vanilla', 'fabric', 'forge', 'neoforge']);
+  assert.deepStrictEqual(L.SUPPORTED_LOADERS, ['vanilla', 'fabric', 'quilt', 'forge', 'neoforge']);
 });
 
 console.log(`\n${count} pruebas correctas.`);
