@@ -82,7 +82,7 @@
     openPop(btnHelp, (p) => {
       const go = (label, fn) => { const b = mk('button', 'pop-item', label); b.type = 'button'; b.addEventListener('click', () => { closePop(); fn(); }); p.append(b); };
       p.append(mk('h4', '', 'Ayuda'));
-      go('Novedades y soporte', () => goTo('whatsnew'));
+      if (typeof isAdmin !== 'undefined' && isAdmin) go('Novedades y soporte', () => goTo('whatsnew'));
       go('Consola del juego (para resolver errores)', () => goTo('console'));
       go('Buscar en el launcher (Ctrl+K)', () => openSearch());
       go('Versiones y loaders', () => goTo('versions'));

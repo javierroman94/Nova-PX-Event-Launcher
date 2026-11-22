@@ -121,7 +121,7 @@
     if (discord) box.append(card('Únete al Discord', 'Conoce a la comunidad Nova PX y entérate de todo.', () => window.api.openLink(discord.url)));
     const ev = c.event || {};
     if (ev.name) box.append(card(ev.name, 'Mira el evento y sus novedades en el launcher.', () => { hide(); if (window.goTo) window.goTo('event'); }));
-    box.append(card('Novedades de Nova PX', 'Lo nuevo de cada versión del launcher.', () => { hide(); if (window.goTo) window.goTo('whatsnew'); }));
+    if (typeof isAdmin !== 'undefined' && isAdmin) box.append(card('Novedades de Nova PX', 'Lo nuevo de cada versión del launcher.', () => { hide(); if (window.goTo) window.goTo('whatsnew'); }));
   }
 
   function tickTime() {

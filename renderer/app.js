@@ -230,6 +230,7 @@ function goTo(tab) {
   if (tab === 'skins' && window.NovaSkins) window.NovaSkins.show();
   $('top-server').hidden = !(tab === 'event' || tab === 'mods');
   if (tab === 'mods' && !isAdmin) { goTo('event'); return; }
+  if (tab === 'whatsnew' && !isAdmin) { goTo('home'); return; } // Novedades: solo administradores por ahora
   if (tab === 'mods') renderMods();
   if (tab === 'modpacks') openModpacks();
   if (tab === 'admin') { loadAdmin(); if (window.adminEntered) window.adminEntered(); } else if (window.adminLeft) window.adminLeft();
@@ -3661,6 +3662,9 @@ function setAdminUi(on, repo, err, eligible) {
   syncSecretThemes();
   $('adm-fieldset').hidden = !eligible;
   $('nav-admin').hidden = !on;
+  const wnTab = document.querySelector('.tab-btn[data-tab="whatsnew"]');
+  if (wnTab) wnTab.hidden = !on;
+  if (!on && $('page-whatsnew') && $('page-whatsnew').classList.contains('active')) goTo('home');
   if (window.serversRefreshNav) window.serversRefreshNav();
   $('adm-login-box').hidden = on;
   $('adm-logout-box').hidden = !on;

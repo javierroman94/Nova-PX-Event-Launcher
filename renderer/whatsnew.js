@@ -97,6 +97,7 @@
 
   // Tras actualizar, una ventana con lo nuevo (solo si ya había abierto el launcher antes).
   async function announce() {
+    if (typeof isAdmin === 'undefined' || !isAdmin) return; // solo administradores por ahora
     let cfg;
     try { cfg = await window.api.getConfig(); } catch { return; }
     let seen = null;
