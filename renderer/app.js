@@ -37,7 +37,7 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   function tryClose() { if (ready && minDone) { clearInterval(tick); if (st) st.textContent = steps[steps.length - 1]; s.classList.add('ready'); setTimeout(close, 450); } }
   window.addEventListener('nova-ready', () => { ready = true; tryClose(); });
   setTimeout(() => { if (!s.classList.contains('has-video')) { minDone = true; tryClose(); } }, MIN); // con el video, espera a que termine
-  setTimeout(close, 7500);
+  setTimeout(close, 12500); // tope de seguridad (el video dura ~9 s)
   // Animación del logo NOVA PX (video con sonido). Si no se puede reproducir, queda la animación de siempre.
   const vid = document.getElementById('sp-video');
   function playIntro(sound) {

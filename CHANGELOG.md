@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.134
+- **Animación de inicio completa**: el sonido ya no se corta en «Nova»; ahora suena la animación entera (~9 s) y el launcher espera a que termine.
+
 ## 1.0.133
 - **Una sola pantalla de carga**: mientras suena la animación de inicio ya no se ve la animación vieja por detrás; solo vuelve si el video no puede reproducirse.
 - **Panel de Versiones**: se arregló que el título, las etiquetas y la descripción quedaran tapados por la imagen.
