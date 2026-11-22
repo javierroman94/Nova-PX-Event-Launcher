@@ -3031,3 +3031,15 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 .lpanel.is-running .lp-run-top { padding: 12px 16px 12px 20px; }
 .lpanel.is-running .lp-run-body { grid-template-columns: minmax(0, 1fr) 290px; }
 @media (max-width: 900px) { .lpanel.is-running .lp-run { width: 96vw; height: 88vh; } }
+
+/* Cabecera de instancia: banner con la imagen nítida a la derecha y datos en cuadros debajo. */
+.mp-detail-head { min-height: 190px; padding: 26px 28px; gap: 20px; align-items: flex-end; }
+.mp-detail-head.has-img::before { display: block; inset: 0; filter: none; transform: none; opacity: 1; background-image: linear-gradient(90deg, rgba(8, 8, 22, .94) 0%, rgba(8, 8, 22, .78) 42%, rgba(8, 8, 22, .12) 100%), var(--mp-img); background-position: center, right center; background-size: 100% 100%, cover; background-repeat: no-repeat; }
+.mp-detail-head .mp-detail-icon { width: 118px; height: 118px; border-radius: 24px; }
+.mp-detail-head .mp-heading { font-size: 36px; }
+.mp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 12px 0 14px; }
+.mp-stat { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg, #fff) 5%, transparent); }
+.mp-stat-ico { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; font-size: 18px; background: color-mix(in srgb, var(--accent) 18%, transparent); flex: none; }
+.mp-stat-txt { display: grid; gap: 1px; min-width: 0; }
+.mp-stat small { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .65; }
+.mp-stat b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

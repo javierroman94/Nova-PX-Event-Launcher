@@ -217,6 +217,8 @@ function goTo(tab) {
   setTimeout(navButtons, 0);
   const navTab = tab === 'mods' ? 'event' : tab; // los mods del evento cuelgan de la pestaña Evento
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === navTab));
+  // Al entrar a Modpacks desde otra pestaña se ve la biblioteca (no la última instancia abierta).
+  if (tab === 'modpacks' && !$('page-modpacks').classList.contains('active')) { mp.pack = null; showView('library'); }
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
   $(`page-${tab}`).classList.add('active');
   // Al abrir el Equipo se vuelve a pedir lo publicado, para ver al momento lo que cambió otra persona del equipo.
@@ -452,9 +454,10 @@ function renderLaunchpad(packs) {
     // El fondo ya no es el icono ampliado y borroso: es un degradado limpio con el color principal del icono.
     hero.style.removeProperty('--lp-bg');
     hero.style.removeProperty('--lp-tint');
-    if (last.icon) {
-      const ic = el('img'); ic.alt = ''; ic.src = last.icon; artBox.append(ic);
-      const want = last.icon;
+    const lastCover = packCover(last);
+    if (lastCover) {
+      const ic = el('img'); ic.alt = ''; ic.src = lastCover; artBox.append(ic);
+      const want = lastCover;
       iconTint(want).then((c) => { if (c && hero.classList.contains('has-pack') && ic.src === want) hero.style.setProperty('--lp-tint', c); });
     } else artBox.textContent = last.emoji || last.title.slice(0, 1).toUpperCase();
     img.hidden = true;
@@ -1056,7 +1059,7 @@ function loadVersionArt() {
   versionArt.loading = (async () => {
     try { versionArt.map = (await window.api.mojangVersionArt()) || {}; } catch { versionArt.map = {}; }
     try { versionArt.meta = (await window.api.mcVersionMeta()) || null; } catch { versionArt.meta = null; }
-    try { if (typeof renderRecent === 'function' && mp.installed.length) renderRecent(mp.installed); } catch {}
+    try { if (typeof renderRecent === 'function' && mp.installed.length) { renderRecent(mp.installed); renderLaunchpad(mp.installed); } } catch {}
   })();
   return versionArt.loading;
 }
@@ -1086,6 +1089,16 @@ function artForVersion(mc, depth = 0) {
     if (mt >= t && (!best || mt < best.t)) best = { id, t: mt };
   }
   return best ? artForVersion(best.id, 1) : '';
+}
+
+// Imagen de portada de una instancia: la suya, la de Nova Client (perfiles Nova) o la de su versión de Minecraft.
+function packCover(p) {
+  if (!p) return '';
+  if (p.icon) return p.icon;
+  if (p.emoji) return '';
+  const art = p.preset === 'nova' ? 'images/nova-client-cover.jpg' : artForVersion(p.mcVersion);
+  if (!art) loadVersionArt();
+  return art || '';
 }
 
 // Icono de una instancia: imagen del modpack, emoji elegido por el jugador, portada de su versión o la inicial del nombre.
@@ -1357,15 +1370,29 @@ function setTab(tab) {
 document.querySelectorAll('[data-mp-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.mpTab)));
 
 function openDetailHeader(p) {
+  const cover = packCover(p);
   const icon = $('mp-detail-icon');
-  icon.hidden = !p.icon;
-  if (p.icon) icon.src = p.icon;
+  icon.hidden = !cover;
+  if (cover) icon.src = cover;
   $('mp-detail-title').textContent = `${!p.icon && p.emoji ? p.emoji + ' ' : ''}${p.title}`;
   $('mp-detail-meta').textContent = packMeta(p);
   const head = $('mp-view-detail').querySelector('.mp-detail-head');
-  if (p.icon) head.style.setProperty('--mp-img', `url("${String(p.icon).replace(/"/g, '%22')}")`); else head.style.removeProperty('--mp-img');
-  head.classList.toggle('has-img', !!p.icon);
+  if (cover) head.style.setProperty('--mp-img', `url("${String(cover).replace(/"/g, '%22')}")`); else head.style.removeProperty('--mp-img');
+  head.classList.toggle('has-img', !!cover);
   paintPackChips(p);
+  paintPackStats(p);
+}
+// Cuadros de datos bajo la cabecera de la instancia.
+function paintPackStats(p) {
+  let box = $('mp-detail-stats');
+  if (!box) { box = el('div', 'mp-stats'); box.id = 'mp-detail-stats'; $('mp-view-detail').querySelector('.mp-detail-head').after(box); }
+  box.replaceChildren();
+  const tile = (ico, label, value) => { const t = el('div', 'mp-stat'); t.append(el('span', 'mp-stat-ico', ico), el('div', 'mp-stat-txt', null)); t.lastChild.append(el('small', '', label), el('b', '', value)); box.append(t); };
+  const items = mp.pack === p && mp.items ? mp.items : null;
+  tile('🕒', 'Última partida', p.lastPlayedAt ? ago(p.lastPlayedAt) : 'Aún sin jugar');
+  tile('🎮', 'Minecraft', `${p.mcVersion} · ${LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla'}`);
+  tile('🧩', 'Mods', items ? String(items.filter((i) => i.type === 'mod').length) : '…');
+  tile('💾', 'Tamaño', items ? fmtSize(items.reduce((n, i) => n + (i.size || 0), 0)) : '…');
 }
 const SRC_NAMES = { modrinth: 'Modrinth', custom: 'Perfil propio', copy: 'Copia', curseforge: 'CurseForge', ftb: 'FTB' };
 function paintPackChips(p) {
@@ -1419,7 +1446,7 @@ async function renderContent() {
     const r = await window.api.instanceContent(p.id);
     if (mp.pack !== p) return;
     mp.items = r.items;
-    paintPackChips(p);
+    paintPackChips(p); paintPackStats(p);
     paintContent(r.offline);
     if (!r.offline && r.items.length) autoCheckUpdates(p);
   } catch (err) {
