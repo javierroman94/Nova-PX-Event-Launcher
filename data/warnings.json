@@ -1,52 +1,82 @@
 [
   {
-    "id": "mwo9j9c31tdq",
-    "at": "2026-11-20T00:50:19.979Z",
+    "id": "mwratjyovles",
+    "at": "2026-11-22T03:50:02.121Z",
     "status": "open",
     "kind": "missing",
+    "nick": "Espectre321",
+    "where": [
+      "OneBlock 1000 días · ganador"
+    ]
+  },
+  {
+    "id": "mwratjbom4wu",
+    "at": "2026-11-22T03:50:02.121Z",
+    "status": "open",
+    "kind": "missing",
+    "nick": "LAUTRUH",
+    "where": [
+      "OneBlock 1000 días · ganador"
+    ]
+  },
+  {
+    "id": "mwo9j9c31tdq",
+    "at": "2026-11-20T00:50:19.979Z",
+    "kind": "missing",
     "nick": "ricardoyt987",
+    "from": "",
+    "to": "",
     "where": [
       "COBBLEMON PX · participante"
-    ]
+    ],
+    "status": "open"
   },
   {
     "id": "mwo9j4zqlri8",
     "at": "2026-11-20T00:50:19.979Z",
-    "status": "open",
     "kind": "missing",
     "nick": "W4TON",
+    "from": "",
+    "to": "",
     "where": [
       "LA LAVA SUBE · ganador"
-    ]
+    ],
+    "status": "open"
   },
   {
     "id": "mwo9j3p4eqhj",
     "at": "2026-11-20T00:50:19.979Z",
-    "status": "open",
     "kind": "missing",
     "nick": "Dendo_233",
+    "from": "",
+    "to": "",
     "where": [
       "RUBROCRAFT: NATIONS · participante"
-    ]
+    ],
+    "status": "open"
   },
   {
     "id": "mwo9it46m7d0",
     "at": "2026-11-20T00:50:19.979Z",
-    "status": "open",
     "kind": "missing",
     "nick": "GrassyDeHades",
+    "from": "",
+    "to": "",
     "where": [
       "RUBROCRAFT: NATIONS · participante"
-    ]
+    ],
+    "status": "open"
   },
   {
     "id": "mwo9ipa9w4uk",
     "at": "2026-11-20T00:50:19.979Z",
-    "status": "open",
     "kind": "missing",
     "nick": "pkdodios",
+    "from": "",
+    "to": "",
     "where": [
       "RUBROCRAFT: NATIONS · participante"
-    ]
+    ],
+    "status": "open"
   }
 ]
