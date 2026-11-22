@@ -129,7 +129,8 @@
     "description": "Evento organizado por Nova PX.",
     "participants": 30,
     "commissioner": {
-      "name": "kityevil"
+      "name": "kityevil",
+      "nick": "kityevil"
     }
   }
 ]
