@@ -320,8 +320,24 @@ function redact(text) {
   return out;
 }
 
+// Evento protegido: la consola no debe revelar qué mods se cargan. El log real se guarda cifrado (para soporte).
+function saveProtectedLog(lines) {
+  try {
+    const key = crypto.createHash('sha256').update('nova-px-protected-log-v1').digest().toString('base64');
+    const enc = require('./lib/pack-crypto').encryptFile(Buffer.from(lines.join('\n'), 'utf8'), key, 'event-log');
+    fs.writeFileSync(path.join(app.getPath('userData'), 'event-error.enc'), enc);
+  } catch {}
+}
+let protectedRun = false;
+const rawLogBuffer = [];
+const MODLINE = /\.jar\b|\bmods?\b|mixin|fabric-|\bloading \d+|entrypoint|\[[A-Za-z0-9_.$]+\/(?:INFO|WARN|ERROR|DEBUG)\]: *(?:Loading|Found|Initializ|Registering)|modid|\bFML\b|\bforge\b|quilt/i;
 function pushLog(source, raw) {
-  const line = redact(raw);
+  let line = redact(raw);
+  if (protectedRun) {
+    rawLogBuffer.push(`[${source}] ${line}`);
+    if (rawLogBuffer.length > 3000) rawLogBuffer.shift();
+    if (MODLINE.test(line)) return;
+  }
   logBuffer.push(`[${source}] ${line}`);
   if (logBuffer.length > 1500) logBuffer.shift();
   send('game:log', { source, line });
@@ -3571,6 +3587,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       if (removed.length) send('game:status', { text: `Se quitaron ${removed.length} archivo(s) que no son del evento (modpack bloqueado).` });
     };
     enforceLock();
+    protectedRun = !pack && !!manifest.protected && manifest.showMods !== true;
+    rawLogBuffer.length = 0;
     if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
     enforceLock();
     await ensureLocalSkinInGame(eventDir, manifest, loaderType);
@@ -3680,7 +3698,14 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       // Si la ventana estaba cerrada (modo bandeja), se recrea y recibe el aviso cuando termina de cargar.
       const windowWasOpen = !!mainWindow && !mainWindow.isDestroyed();
       if (readSettings().discordRpc) discordIdle();
-      pendingClose = { code, crash: code === 0 ? [] : analyzeCrash(logBuffer) };
+      let crashList = code === 0 ? [] : analyzeCrash(protectedRun ? rawLogBuffer : logBuffer);
+      if (protectedRun && crashList.length) {
+        // El diagnóstico puede nombrar mods: se guarda cifrado y al jugador se le muestra algo genérico.
+        saveProtectedLog(rawLogBuffer);
+        crashList = [{ id: 'protected', title: 'El juego se cerró con un error', advice: 'Se guardó un informe cifrado del error. Avisa a un administrador para que lo revise.' }];
+      }
+      pendingClose = { code, crash: crashList };
+      protectedRun = false;
       leaveGameMode();
       if (windowWasOpen) {
         overlayHide();

@@ -493,7 +493,8 @@ async function renderContinue() {
   ev.type = 'button';
   const evIcon = el('img', 'np-icon');
   evIcon.alt = '';
-  evIcon.src = eventInfo.logo || 'images/logo.png';
+  evIcon.src = eventInfo.image || eventInfo.logo || 'images/logo.png';
+  if (eventInfo.image) evIcon.classList.add('is-art');
   const evBody = el('div', 'mod-body');
   evBody.append(el('span', 'tag', 'Evento'), el('strong', '', eventInfo.name), el('span', 'muted', eventActive ? 'Disponible para jugar' : 'Próximamente'));
   const evGo = el('span', 'cont-when', eventActive ? 'Ver evento →' : 'Ver detalles →');

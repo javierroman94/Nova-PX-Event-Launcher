@@ -3321,3 +3321,5 @@ html.pet-floor .page.active { padding-bottom: 84px; }
     var(--hero-image) center / cover no-repeat padding-box,
     conic-gradient(from var(--ang), var(--accent), var(--violet), #ff4fa8, var(--accent)) border-box;
 }
+
+#page-home .continue-card .np-icon.is-art{width:84px;height:58px;padding:0;background:#000;border-radius:10px;object-fit:cover}
