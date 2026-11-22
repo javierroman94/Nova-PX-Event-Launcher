@@ -1120,12 +1120,12 @@ function artForVersion(mc, depth = 0) {
   return best ? artForVersion(best.id, 1) : '';
 }
 
-// Imagen de portada de una instancia: la suya, la de Nova Client (perfiles Nova) o la de su versión de Minecraft.
+// Imagen de portada de una instancia: la suya o la de su versión de Minecraft (también en perfiles Nova).
 function packCover(p) {
   if (!p) return '';
   if (p.icon) return p.icon;
   if (p.emoji) return '';
-  const art = p.preset === 'nova' ? 'images/nova-client-cover.jpg' : artForVersion(p.mcVersion);
+  const art = artForVersion(p.mcVersion);
   if (!art) loadVersionArt();
   return art || '';
 }
@@ -1134,8 +1134,8 @@ function packCover(p) {
 function packIcon(p, cls = 'mod-icon') {
   if (!p.icon && p.emoji) return el('div', `${cls} mod-icon-empty`, p.emoji);
   if (!p.icon) {
-    // Los perfiles Nova (Fabric + Nova Client) tienen su propia portada original.
-    const art = p.preset === 'nova' ? 'images/nova-client-cover.jpg' : artForVersion(p.mcVersion);
+    // Todos los perfiles (también los Nova) usan la portada vanilla de su versión de Minecraft.
+    const art = artForVersion(p.mcVersion);
     if (art) {
       const img = iconEl(art, p.title, `${cls} mod-icon-art`);
       img.addEventListener('error', () => { img.replaceWith(el('div', `${cls} mod-icon-empty`, (p.title || '?').slice(0, 1).toUpperCase())); }, { once: true });
@@ -1370,7 +1370,7 @@ async function playPack(id) {
     return;
   }
   const p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
-  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: p.icon || (p.preset === 'nova' ? 'images/nova-client-cover.jpg' : ''), preset: p.preset || '' };
+  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: p.icon || '', preset: p.preset || '' };
   setPlaying(true);
   showCrash(null);
   goTo('home');
