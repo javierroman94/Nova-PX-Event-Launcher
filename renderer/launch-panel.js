@@ -61,6 +61,7 @@
       </div>`;
     document.body.append(root);
     $$('lpn-hide').addEventListener('click', hide);
+    root.addEventListener('mousedown', (e) => { if (state.phase === 'running' && e.target.classList.contains('lp-shade')) hide(); }); // clic fuera de la ventana = ocultar
     $$('lpn-hide-load').addEventListener('click', hide);
     $$('lpn-console').addEventListener('click', () => { hide(); if (window.goTo) window.goTo('console'); });
     $$('lpn-follow').addEventListener('click', (e) => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(on)); if (on) scrollEnd(); });

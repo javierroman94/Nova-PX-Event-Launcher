@@ -371,9 +371,8 @@ function nowPlayingSet(on) {
   const t = launchTarget || { kind: 'event', title: eventInfo.name, icon: '' };
   $('np-title').textContent = t.title;
   $('np-icon').src = t.icon || 'images/logo.png';
-  // Solo los perfiles Nova (los que llevan Nova Client) abren la pantalla de carga y el panel de juego.
-  const isNova = t.kind === 'pack' && (t.preset === 'nova' || ((mp.installed || []).find((x) => x.title === t.title) || {}).preset === 'nova');
-  if (P && isNova && !P.isOpen()) { if (logLines.some((l) => l.startsWith('[minecraft]'))) P.resume(t, true); else P.open(t); }
+  // Todos los perfiles (y el evento) abren la pantalla de carga y el panel de juego.
+  if (P && !P.isOpen()) { if (logLines.some((l) => l.startsWith('[minecraft]'))) P.resume(t, true); else P.open(t); }
 }
 
 function ago(iso) {

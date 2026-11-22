@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.149
+- **Panel de juego como ventana**: ya no ocupa toda la pantalla; es una ventana centrada (clic fuera para ocultarla) y ahora se abre con **todos** los perfiles y el evento, no solo con los Nova. La pantalla de carga sigue a pantalla completa.
+- **Nova Client sin Fabric API (error «Instala fabric-api»)**: los perfiles Nova ahora instalan Fabric API, y los que ya tenías la reciben solos antes de jugar.
+
 ## 1.0.148
 - **Sodium e Iris que no se llevan (Minecraft 26.3)**: Sodium 0.9.3 salió declarando que rompe con Iris hasta 1.12.0 y la última Iris estable es la 1.11.7, así que el juego no abría («Incompatible mods found»). En los perfiles Nova, el launcher ahora revisa la pareja al crearlos y antes de jugar: prueba versiones anteriores de Sodium hasta encontrar una compatible y, si no existe ninguna, quita Iris (los shaders) y lo avisa en la consola.
 

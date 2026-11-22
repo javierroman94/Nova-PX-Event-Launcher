@@ -531,6 +531,14 @@ async function fixNovaMods(instanceDir, mc) {
       log: (t) => pushLog('launcher', t)
     });
   } catch (err) { pushLog('launcher', `[Nova] No se pudo revisar Sodium/Iris: ${err.message}`); }
+  // Nova Client (y casi todos los mods Fabric) necesita Fabric API: si falta, se instala.
+  try {
+    const jars = fs.readdirSync(modsDir).filter((f) => /\.jar(\.disabled)?$/i.test(f));
+    if (jars.some((f) => /nova-client/i.test(f)) && !jars.some((f) => /^fabric[-_]?api/i.test(f) && /\.jar$/i.test(f))) {
+      pushLog('launcher', '[Nova] Falta Fabric API (la necesita Nova Client); instalándola…');
+      await content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: instanceDir, type: 'mod', projectId: 'fabric-api', mc, loader: 'fabric' });
+    }
+  } catch (err) { pushLog('launcher', `[Nova] No se pudo instalar Fabric API: ${err.message}`); }
 }
 
 /* ---------- Forge nuevo (61.x: Minecraft 1.21.11+) ---------- */
@@ -1274,11 +1282,11 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
         { onStatus: progress }
       );
       entry.novaSkipped = r.skipped;
-      await fixNovaMods(dir, entry.mcVersion);
       progress('Instalando Nova Client…');
       try {
         entry.novaClient = await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion });
       } catch { entry.novaClient = null; }
+      await fixNovaMods(dir, entry.mcVersion);
     } finally {
       progress('Listo');
     }
