@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.146
+- **NeoForge 1.21.11 y 26.x**: usan el instalador oficial y se lanzan como versión propia, con los argumentos de Java que trae NeoForge (antes fallaban con `NoClassDefFoundError: cpw/mods/modlauncher/Launcher`). Forge y NeoForge dejan en la consola una línea `[Nova]` que dice qué motor se usó.
+
 ## 1.0.145
 - **Actualizaciones más rápidas y automáticas**: el launcher busca nuevas versiones al abrirse, cada 10 minutos (antes 30) y cada vez que vuelves a su ventana. Si hay una, la descarga sola y te avisa con el botón de arriba; ya no hace falta buscarla a mano.
 

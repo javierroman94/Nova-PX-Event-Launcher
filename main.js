@@ -528,11 +528,11 @@ function forgeInstallerInfo(file) {
     const z = readZip(fs.readFileSync(file));
     if (!z.has('version.json')) return null;
     const json = JSON.parse(z.read('version.json').toString('utf8'));
-    return { id: json.id, bootstrap: /net\.minecraftforge\.bootstrap\./.test(String(json.mainClass || '')) };
+    return { id: json.id, mainClass: String(json.mainClass || ''), bootstrap: /net\.minecraftforge\.bootstrap\./.test(String(json.mainClass || '')) };
   } catch { return null; }
 }
 
-async function installForgeClient(installer, info, mcVersion, javaPath) {
+async function installForgeClient(installer, info, mcVersion, javaPath, flag = '--installClient') {
   const id = info.id;
   const jsonFile = path.join(GAME_DIR, 'versions', id, `${id}.json`);
   const done = path.join(GAME_DIR, 'versions', id, '.nova-installed');
@@ -544,10 +544,10 @@ async function installForgeClient(installer, info, mcVersion, javaPath) {
   let java = javaPath || 'java';
   if (/javaw(\.exe)?$/i.test(java)) { const alt = java.replace(/javaw(\.exe)?$/i, 'java$1'); if (fs.existsSync(alt)) java = alt; }
   send('game:status', { text: 'Instalando Forge (la primera vez tarda unos minutos)…' });
-  pushLog('launcher', `[Nova] Instalando Forge ${id} con el instalador oficial…`);
+  pushLog('launcher', `[Nova] Instalando ${id} con el instalador oficial…`);
   const tail = [];
   await new Promise((resolve, reject) => {
-    const child = require('child_process').spawn(java, ['-jar', installer, '--installClient', GAME_DIR], { cwd: GAME_DIR, windowsHide: true });
+    const child = require('child_process').spawn(java, ['-jar', installer, flag, GAME_DIR], { cwd: GAME_DIR, windowsHide: true });
     const timer = setTimeout(() => { try { child.kill(); } catch {} reject(new Error('La instalación de Forge tardó demasiado y se canceló.')); }, 20 * 60 * 1000);
     const onData = (b) => { for (const line of String(b).split(/\r?\n/)) { if (!line.trim()) continue; tail.push(line); if (tail.length > 40) tail.shift(); if (!/^\s+\S+\.class$/.test(line) && !/^\s{2}/.test(line)) pushLog('launcher', `[Forge] ${line}`); } };
     child.stdout.on('data', onData);
@@ -558,6 +558,48 @@ async function installForgeClient(installer, info, mcVersion, javaPath) {
   if (!fs.existsSync(jsonFile)) throw new Error('El instalador de Forge terminó, pero no dejó la versión instalada.');
   fs.writeFileSync(done, new Date().toISOString());
   return id;
+}
+
+// Argumentos de Java que trae la versión instalada por Forge/NeoForge (-p, --add-modules, --add-opens…).
+// El motor del launcher solo lee los argumentos del juego, así que se resuelven aquí.
+function installedJvmArgs(id) {
+  try {
+    const json = JSON.parse(fs.readFileSync(path.join(GAME_DIR, 'versions', id, `${id}.json`), 'utf8'));
+    const list = (json.arguments && json.arguments.jvm) || [];
+    const osName = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'osx' : 'linux';
+    const subst = (v) => String(v)
+      .replace(/\$\{library_directory\}/g, path.join(GAME_DIR, 'libraries'))
+      .replace(/\$\{classpath_separator\}/g, path.delimiter)
+      .replace(/\$\{version_name\}/g, id);
+    const out = [];
+    for (const a of list) {
+      if (typeof a === 'string') { out.push(subst(a)); continue; }
+      if (!a || !a.rules) continue;
+      let ok = false;
+      for (const r of a.rules) {
+        if (r.features) continue;
+        const match = !r.os || !r.os.name || r.os.name === osName;
+        if (match) ok = r.action === 'allow';
+      }
+      if (ok) for (const v of [].concat(a.value || [])) out.push(subst(v));
+    }
+    // Estos los pone el propio launcher: el classpath y la carpeta de nativos.
+    const clean = [];
+    for (let i = 0; i < out.length; i++) {
+      if (out[i] === '-cp' || out[i] === '-classpath') { i++; continue; }
+      if (/\$\{/.test(out[i])) continue;
+      clean.push(out[i]);
+    }
+    return clean;
+  } catch { return []; }
+}
+
+// Minecraft 1.21.11 en adelante (incluye 26.x): NeoForge y Forge cambiaron su arranque y ya no sirven con ForgeWrapper.
+function isNewForgeEra(mc) {
+  const m = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(String(mc));
+  if (!m) return false;
+  const a = +m[1], b = +m[2], c = +(m[3] || 0);
+  return a >= 26 || (a === 1 && (b > 21 || (b === 21 && c >= 11)));
 }
 
 // Minecraft muy viejo (1.10 y anteriores) se cierra si options.txt trae un idioma que no conoce (por ejemplo es_ec de versiones nuevas).
@@ -3381,11 +3423,24 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     } else if (loaderType === 'neoforge') {
       send('game:status', { text: 'Preparando NeoForge…' });
       forgeInstaller = await ensureNeoForge(manifest.minecraftVersion, manifest.loader.version);
+      const ninfo = forgeInstallerInfo(forgeInstaller);
+      if (ninfo && isNewForgeEra(manifest.minecraftVersion)) {
+        try {
+          customId = await installForgeClient(forgeInstaller, ninfo, manifest.minecraftVersion, javaPath, '--installClient');
+        } catch (err) {
+          if (!/unknown|unrecognized|no es una opci/i.test(String(err.message))) throw err;
+          customId = await installForgeClient(forgeInstaller, ninfo, manifest.minecraftVersion, javaPath, '--install-client');
+        }
+        forgeInstaller = null;
+      }
     }
+    if (customId && (loaderType === 'forge' || loaderType === 'neoforge')) pushLog('launcher', `[Nova] ${loaderType === 'forge' ? 'Forge' : 'NeoForge'}: se lanza la versión instalada ${customId}.`);
+    else if (forgeInstaller) pushLog('launcher', `[Nova] ${loaderType === 'forge' ? 'Forge' : 'NeoForge'}: se usa el motor clásico (ForgeWrapper) con ${path.basename(forgeInstaller)}.`);
 
     sanitizeOldOptions(eventDir, manifest.minecraftVersion);
     const userArgs = st.jvmArgs.split(/\s+/).filter(Boolean);
     const customArgs = userArgs.length ? userArgs : jvmDefaults.defaultJvmArgs({ javaMajor: loaders.requiredJavaMajor(manifest.minecraftVersion) });
+    if (customId && (loaderType === 'forge' || loaderType === 'neoforge')) customArgs.push(...installedJvmArgs(customId));
     const launchOpts = {
       authorization: session.auth,
       root: GAME_DIR,
