@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.147
+- **Panel lateral de Versiones al estilo Lunar**: arriba la imagen, el título y la descripción (con «Leer más»); abajo, siempre a la vista, la versión, los loaders como iconos (el nombre sale al pasar el mouse), el estado de tu perfil y una fila con ajustes y el botón grande de jugar.
+
 ## 1.0.146
 - **NeoForge 1.21.11 y 26.x**: usan el instalador oficial y se lanzan como versión propia, con los argumentos de Java que trae NeoForge (antes fallaban con `NoClassDefFoundError: cpw/mods/modlauncher/Launcher`). Forge y NeoForge dejan en la consola una línea `[Nova]` que dice qué motor se usó.
 

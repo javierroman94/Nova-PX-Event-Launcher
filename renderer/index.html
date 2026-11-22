@@ -310,17 +310,23 @@
         </div>
         <aside class="vr-side">
           <div id="vr-art" class="vr-art" aria-hidden="true"></div>
-          <h3 id="vr-title">Minecraft</h3>
-          <div id="vr-badges" class="vr-badges"></div>
-          <p id="vr-desc" class="muted"></p>
-          <div id="vr-body" class="vr-body">
-            <div id="vr-stats" class="vr-stats"></div>
-            <div class="vr-field"><span>Versión</span><select id="vr-ver"></select></div>
-            <div class="vr-field vr-field-col"><span>Loader</span><div id="vr-loaders" class="vr-loaders"></div></div>
-            <small id="vr-note" class="muted"></small>
+          <div class="vr-info">
+            <h3 id="vr-title">Minecraft</h3>
+            <div id="vr-badges" class="vr-badges"></div>
+            <p id="vr-desc" class="muted vr-desc"></p>
+            <button id="vr-more" type="button" class="vr-more" hidden>Leer más</button>
           </div>
-          <button id="vr-play" type="button" class="primary vr-play">▶ Jugar</button>
+          <div id="vr-body" class="vr-body">
+            <div class="vr-field"><span>Versión</span><select id="vr-ver"></select></div>
+            <div class="vr-field"><span>Loader</span><div id="vr-loaders" class="vr-loaders"></div></div>
+            <small id="vr-note" class="muted vr-loader-note"></small>
+            <div id="vr-stats" class="vr-rows"></div>
+          </div>
           <p id="vr-status" class="muted" role="status"></p>
+          <div class="vr-actions">
+            <button id="vr-gear" type="button" class="vr-gear" title="Abrir mi biblioteca de perfiles" aria-label="Abrir mi biblioteca de perfiles">⚙</button>
+            <button id="vr-play" type="button" class="primary vr-play">▶ Jugar</button>
+          </div>
         </aside>
       </div>
     </section>

@@ -206,6 +206,9 @@
     }
     g('vr-title').textContent = name;
     g('vr-desc').textContent = desc;
+    g('vr-desc').classList.add('clamp');
+    g('vr-more').textContent = 'Leer más';
+    g('vr-more').hidden = desc.length < 90;
     paintDetails();
   }
 
@@ -223,21 +226,22 @@
     const stats = g('vr-stats');
     stats.replaceChildren();
     const have = profileFor(ver, loader);
-    stats.append(stat('Lanzamiento', fmtDate(ver)), stat('Java', java ? `Java ${java}` : '—'), stat('Loader', LOADER_INFO[loader].name), stat('Tu perfil', have ? 'Ya creado' : 'Se crea al jugar'));
+    const row = (ico, label, value) => { const r = el('div', 'vr-row'); r.append(el('span', 'vr-row-ico', ico), el('span', 'vr-row-l', label), el('b', '', value)); return r; };
+    stats.append(row('📅', 'Lanzamiento', fmtDate(ver)), row(have ? '✅' : '🆕', 'Tu perfil', have ? 'Ya creado' : 'Se crea al jugar'));
     const box = g('vr-loaders');
     box.replaceChildren();
     LOADER_ORDER.forEach((id) => {
       const ok = testVer ? id === 'vanilla' : okFor(id, ver);
       const b = el('button', 'vr-loader' + (loader === id ? ' on' : '') + (ok ? '' : ' off'));
       b.type = 'button'; b.disabled = !ok;
-      const top = el('span', 'vr-loader-top');
-      top.append(el('span', 'vr-loader-ico', LOADER_INFO[id].icon), el('b', '', LOADER_INFO[id].name));
-      if (LOADER_INFO[id].tag && ok) top.append(el('em', '', LOADER_INFO[id].tag));
-      b.append(top, el('small', '', ok ? LOADER_NOTE[id] : `No disponible en ${ver}.`));
+      b.title = ok ? `${LOADER_INFO[id].name}: ${LOADER_NOTE[id]}` : `${LOADER_INFO[id].name}: no disponible en ${ver}.`;
+      b.setAttribute('aria-label', LOADER_INFO[id].name);
+      b.append(el('span', 'vr-loader-ico', LOADER_INFO[id].icon));
+      if (LOADER_INFO[id].tag && ok) b.append(el('i', 'vr-loader-dot'));
       b.addEventListener('click', () => { loader = id; g('vr-src').value = id; paintGrid(); paintDetails(); });
       box.append(b);
     });
-    g('vr-note').textContent = java ? `Usa Java ${java}; el launcher lo instala si hace falta.` : '';
+    g('vr-note').textContent = `${LOADER_INFO[loader].name}: ${LOADER_NOTE[loader]}`;
     g('vr-play').textContent = have ? '▶ Jugar' : (loader === 'vanilla' ? '▶ Crear y jugar' : '▶ Instalar y jugar');
   }
 
@@ -296,5 +300,7 @@
     g('vr-sort').addEventListener('change', paintGrid);
     g('vr-new').addEventListener('click', () => { goTo('modpacks'); setTimeout(() => g('mp-new-profile').click(), 60); }); // los cuadros de crear viven en la página Modpacks
     g('vr-play').addEventListener('click', play);
+    g('vr-gear').addEventListener('click', () => goTo('modpacks'));
+    g('vr-more').addEventListener('click', () => { const d = g('vr-desc'); const on = d.classList.toggle('clamp'); g('vr-more').textContent = on ? 'Leer más' : 'Leer menos'; });
   });
 })();
