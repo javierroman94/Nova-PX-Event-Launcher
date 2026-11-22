@@ -1224,7 +1224,7 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     const entry = {
       id, provider: name, projectId: cleanStr(p.id, 40), versionId: v.id, version: cleanStr(v.number || v.name, 80),
       title: cleanStr(p.title, 80) || r.name || 'Modpack', icon: /^https:\/\//i.test(p.icon || '') ? cleanStr(p.icon, 300) : '',
-      mcVersion: r.mcVersion, loader: r.loader, installedAt: new Date().toISOString(), skipped: r.skipped || []
+      mcVersion: r.mcVersion, loader: r.loader, installedAt: new Date().toISOString(), skipped: r.skipped || [], blocked: r.blocked || []
     };
     writeModpacks([...list.filter((x) => x.id !== id), entry]);
     progress('Listo');
@@ -2453,7 +2453,7 @@ ipcMain.handle('admin:setEventState', async (_e, state) => {
 function packEntryFrom(id, title, r, extra = {}) {
   return {
     id, provider: 'imported', projectId: '', versionId: '', version: '', title: cleanStr(title, 60) || 'Modpack importado', icon: '',
-    emoji: '', mcVersion: r.mcVersion, loader: r.loader, installedAt: new Date().toISOString(), skipped: r.skipped || [], settings: {}, notes: '', ...extra
+    emoji: '', mcVersion: r.mcVersion, loader: r.loader, installedAt: new Date().toISOString(), skipped: r.skipped || [], blocked: r.blocked || [], settings: {}, notes: '', ...extra
   };
 }
 

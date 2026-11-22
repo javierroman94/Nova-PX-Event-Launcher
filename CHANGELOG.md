@@ -5,6 +5,7 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 ## 1.0.154
 - Corregido: Nova en Minecraft 26.3 no abría ("Incompatible mods"). Al cambiar Sodium para que encaje con Iris, el complemento Reese's Sodium Options pedía otra versión exacta. Ahora se revisan también los mods que dependen de Sodium: si solo falla un complemento de interfaz se quita, y los perfiles ya afectados se arreglan al abrirlos.
 - Las versiones previas (beta) se comparan bien con las finales.
+- Modpacks de CurseForge con mods que su autor bloquea: ahora se abre una lista con cada archivo, un botón para bajarlo desde la web y otro para abrir la carpeta de mods.
 - Corregido: Nova Client no abría en Minecraft 1.15.2 a 1.19.1 ("Instala fabric-api"). En esas versiones la Fabric API se llama «fabric» y el mod pedía otro nombre. El launcher lo detecta, busca el Nova Client corregido y, si aún no existe, lo desactiva en ese perfil para que el juego abra.
 
 ## 1.0.153

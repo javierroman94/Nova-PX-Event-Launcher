@@ -3143,3 +3143,7 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 .mp-files button { text-align: left; padding: 14px 16px; border-radius: 14px; }
 .mp-empty-art { font-size: 56px; opacity: .8; }
 .mp-extra-empty .mp-actions { justify-content: center; }
+
+.mp-blocked { display: grid; gap: 6px; max-height: 280px; overflow: auto; }
+.mp-blocked-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--raised); }
+.mp-blocked-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

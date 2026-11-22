@@ -2396,6 +2396,7 @@ $('mp-install').addEventListener('click', async () => {
     toast(`${entry.title} instalado`);
     if (entry.skipped && entry.skipped.length) {
       toast(`${entry.skipped.length} archivo(s) no se pudieron descargar porque su autor lo bloquea. El modpack puede no funcionar completo.`, 'error');
+      blockedDialog(entry);
     }
     mp.busy = false;
     $('mp-modal').close();
@@ -5430,3 +5431,37 @@ document.querySelectorAll('[data-open-sub]').forEach((b) => b.addEventListener('
 }));
 $('mp-share-export').addEventListener('click', () => $('ps-export').click());
 $('mp-share-opts').addEventListener('click', async () => { await renderPackSettings(); psSection('general'); $('ps-modal').showModal(); });
+
+
+/* --- archivos que su autor no deja descargar desde otros programas (CurseForge) --- */
+function blockedDialog(entry) {
+  const list = (entry.blocked && entry.blocked.length) ? entry.blocked : (entry.skipped || []).map((n) => ({ name: n, projectId: 0, fileId: 0 }));
+  if (!list.length) return;
+  const dlg = el('dialog', 'event-modal');
+  dlg.setAttribute('aria-label', 'Archivos bloqueados por su autor');
+  const body = el('div', 'event-modal-body');
+  body.append(el('h3', '', `${list.length} archivo${list.length === 1 ? '' : 's'} bloqueado${list.length === 1 ? '' : 's'} por su autor`));
+  body.append(el('p', 'muted', 'Los autores de estos mods no permiten bajarlos desde otros programas. El modpack puede fallar sin ellos. Descárgalos tú desde la web y ponlos en la carpeta de mods (botón de abajo, o "Cargar archivos" en el modpack).'));
+  const ul = el('div', 'mp-blocked');
+  list.forEach((b) => {
+    const row = el('div', 'mp-blocked-row');
+    row.append(el('span', '', b.name));
+    if (b.projectId && b.fileId) {
+      const open = el('button', 'ghost', 'Descargar en la web'); open.type = 'button';
+      open.addEventListener('click', () => window.api.openLink(`https://www.curseforge.com/api/v1/mods/${b.projectId}/files/${b.fileId}/download`).catch((e) => toast(cleanError(e), 'error')));
+      row.append(open);
+    }
+    ul.append(row);
+  });
+  body.append(ul);
+  const act = el('div', 'mp-actions');
+  const folder = el('button', '', '📁 Abrir carpeta de mods'); folder.type = 'button';
+  folder.addEventListener('click', () => window.api.instanceOpenSub({ id: entry.id, sub: 'mods' }).catch((e) => toast(cleanError(e), 'error')));
+  const close = el('button', 'primary', 'Cerrar'); close.type = 'button';
+  close.addEventListener('click', () => { dlg.close(); dlg.remove(); });
+  act.append(folder, close);
+  body.append(act);
+  dlg.append(body);
+  document.body.append(dlg);
+  dlg.showModal();
+}
