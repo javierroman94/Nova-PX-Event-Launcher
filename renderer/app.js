@@ -1045,9 +1045,58 @@ function iconEl(src, name, cls = 'mod-icon') {
   return el('div', `${cls} mod-icon-empty`, (name || '?').slice(0, 1).toUpperCase());
 }
 
-// Icono de una instancia: imagen del modpack, emoji elegido por el jugador o la inicial del nombre.
+/* Portada por defecto: si la instancia no tiene imagen propia, usa la imagen oficial de su versión de Minecraft
+   (la misma de la página Versiones). Los snapshots usan la de la versión final a la que pertenecen. */
+const versionArt = { map: null, meta: null, loading: null };
+function loadVersionArt() {
+  if (versionArt.loading) return versionArt.loading;
+  versionArt.loading = (async () => {
+    try { versionArt.map = (await window.api.mojangVersionArt()) || {}; } catch { versionArt.map = {}; }
+    try { versionArt.meta = (await window.api.mcVersionMeta()) || null; } catch { versionArt.meta = null; }
+    try { if (typeof renderRecent === 'function' && mp.installed.length) renderRecent(mp.installed); } catch {}
+  })();
+  return versionArt.loading;
+}
+function artKey(v) {
+  const m = /^(\d+)\.(\d+)/.exec(String(v));
+  return m ? (+m[1] >= 26 ? m[1] : `${m[1]}.${m[2]}`) : null;
+}
+function artForVersion(mc, depth = 0) {
+  const map = versionArt.map;
+  if (!map || !mc) return '';
+  if (map[mc]) return map[mc].image;
+  const k = artKey(mc);
+  if (k) {
+    if (map[k]) return map[k].image;
+    const sib = Object.keys(map).filter((x) => artKey(x) === k).sort().pop();
+    if (sib) return map[sib].image;
+    return '';
+  }
+  // Snapshot / pre-release: la primera versión final publicada después es su serie.
+  const vm = versionArt.meta && versionArt.meta.versions;
+  if (!vm || !vm[mc] || depth) return '';
+  const t = Date.parse(vm[mc].time);
+  let best = null;
+  for (const [id, m] of Object.entries(vm)) {
+    if (m.type !== 'release') continue;
+    const mt = Date.parse(m.time);
+    if (mt >= t && (!best || mt < best.t)) best = { id, t: mt };
+  }
+  return best ? artForVersion(best.id, 1) : '';
+}
+
+// Icono de una instancia: imagen del modpack, emoji elegido por el jugador, portada de su versión o la inicial del nombre.
 function packIcon(p, cls = 'mod-icon') {
   if (!p.icon && p.emoji) return el('div', `${cls} mod-icon-empty`, p.emoji);
+  if (!p.icon) {
+    const art = artForVersion(p.mcVersion);
+    if (art) {
+      const img = iconEl(art, p.title, `${cls} mod-icon-art`);
+      img.addEventListener('error', () => { img.replaceWith(el('div', `${cls} mod-icon-empty`, (p.title || '?').slice(0, 1).toUpperCase())); }, { once: true });
+      return img;
+    }
+    loadVersionArt();
+  }
   return iconEl(p.icon, p.title, cls);
 }
 
@@ -1072,6 +1121,7 @@ async function loadInstalled() {
   } catch {
     mp.installed = [];
   }
+  if (mp.installed.some((p) => !p.icon && !p.emoji)) { try { await Promise.race([loadVersionArt(), new Promise((r) => setTimeout(r, 4000))]); } catch {} }
   return mp.installed;
 }
 

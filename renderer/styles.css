@@ -2945,3 +2945,5 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 .tc-vicesunset { background: linear-gradient(to top, #ff7a3c, #ff3d8b 45%, #1a0733); }
 .tc-vicesunset i { background: #ffb347; }
 .tc-vicesunset b { background: #6a2a8f; }
+/* Portada por defecto de una instancia sin imagen propia: la imagen de su versión, recortada para llenar el cuadro. */
+.mod-icon-art { object-fit: cover; }
