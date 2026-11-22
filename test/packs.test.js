@@ -100,6 +100,16 @@ try {
     assert.strictEqual(packs.sanitizeSettings({ account: 'off:Ana_1' }, true).account, 'off:Ana_1');
     assert.strictEqual(packs.sanitizeSettings({ account: '../x' }, true).account, undefined);
     assert.strictEqual(packs.sanitizeSettings({ account: 'a'.repeat(32) }, true).account, 'a'.repeat(32));
+    // Comandos, variables y sincronización: solo locales (withAccount), nunca al exportar/importar.
+    const hooky = { preLaunch: 'calc.exe', postExit: 'echo hola', env: 'A=1\nmala linea\nB_2=x', sync: { options: true, servers: false, raro: true } };
+    assert.deepStrictEqual(packs.sanitizeSettings(hooky), {});
+    assert.deepStrictEqual(packs.sanitizeSettings(hooky, true), { preLaunch: 'calc.exe', postExit: 'echo hola', env: 'A=1\nB_2=x', sync: { options: true } });
+    // Canal de actualización: release no ofrece beta/alpha; beta no ofrece alpha.
+    const mk = (type) => async () => ({ H1: { version_type: type, version_number: '2', files: [{ primary: true, filename: 'n.jar', url: 'u', hashes: { sha1: 'bb' } }] } });
+    for (const [ch, ty, n] of [['release', 'beta', 0], ['release', 'release', 1], ['beta', 'beta', 1], ['beta', 'alpha', 0], ['alpha', 'alpha', 1]]) {
+      const r = await packs.planModUpdates({ request: mk(ty), items: [{ hash: 'h1'.toUpperCase().toLowerCase() === 'h1' ? 'H1' : 'H1', file: 'a.jar', enabled: true }], mc: '1.20.1', loader: 'fabric', channel: ch });
+      assert.strictEqual(r.length, n, `${ch}/${ty}`);
+    }
     console.log('packs.test OK');
     fs.rmSync(tmp, { recursive: true, force: true });
   })().catch((e2) => { console.error(e2); process.exit(1); });

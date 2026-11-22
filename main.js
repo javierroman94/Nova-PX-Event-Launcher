@@ -1165,6 +1165,8 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     // Los mods anteriores se apartan y vuelven a su sitio si la instalación nueva falla a medias.
     const modsDir = path.join(root, 'mods');
     const modsBackup = path.join(root, 'mods.anterior');
+    const hadSnapshot = !!previous && fs.existsSync(path.join(root, BASE_FILE));
+    const baseBefore = hadSnapshot ? readBase(root) : new Set();
     const keysBefore = previous ? contentKeys(root) : new Set();
     if (previous) for (const k of [...keysBefore]) if (k.startsWith('mod:')) keysBefore.delete(k);
     if (previous && fs.existsSync(modsDir)) {
@@ -1187,8 +1189,18 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
       }
       throw err;
     }
-    fs.rmSync(modsBackup, { recursive: true, force: true });
     writeBaseSnapshot(root, keysBefore);
+    // Los mods que añadió el usuario (no son del modpack) se conservan al reinstalar o cambiar de versión.
+    try {
+      if (hadSnapshot && fs.existsSync(modsBackup)) {
+        for (const f of fs.readdirSync(modsBackup)) {
+          if (!/\.jar(\.disabled)?$/i.test(f) || baseBefore.has(`mod:${f.replace(/\.disabled$/i, '')}`)) continue;
+          const dest = path.join(modsDir, f);
+          if (!fs.existsSync(dest)) { fs.mkdirSync(modsDir, { recursive: true }); fs.copyFileSync(path.join(modsBackup, f), dest); }
+        }
+      }
+    } catch {}
+    fs.rmSync(modsBackup, { recursive: true, force: true });
 
     const entry = {
       id, provider: name, projectId: cleanStr(p.id, 40), versionId: v.id, version: cleanStr(v.number || v.name, 80),
@@ -1320,6 +1332,7 @@ ipcMain.handle('modpacks:update', (_e, p = {}) => {
     entry.title = t;
   }
   if (c.removeIcon === true) { entry.icon = ''; entry.iconTried = true; }
+  if (c.channel !== undefined && ['release', 'beta', 'alpha'].includes(c.channel)) entry.channel = c.channel;
   if (c.emoji !== undefined) entry.emoji = packs.buildCustomEntry({ name: 'x', icon: c.emoji, mcVersion: '1.0' }).emoji;
   if (c.notes !== undefined) entry.notes = packs.cleanNotes(c.notes);
   if (c.settings !== undefined) entry.settings = packs.sanitizeSettings(c.settings, true);
@@ -1409,6 +1422,65 @@ ipcMain.handle('mojang:versionArt', async () => {
   return mojangArtCache;
 });
 
+
+ipcMain.handle('instance:openSub', async (_e, p = {}) => {
+  const { root } = packRoot(p.id);
+  const sub = cleanStr(p.sub, 20);
+  const ok = ['', 'mods', 'resourcepacks', 'shaderpacks', 'saves', 'config', 'screenshots', 'logs'];
+  if (!ok.includes(sub)) throw new Error('Carpeta no permitida.');
+  const dir = sub ? path.join(root, sub) : root;
+  fs.mkdirSync(dir, { recursive: true });
+  const err = await shell.openPath(dir);
+  if (err) throw new Error(err);
+});
+
+// Desvincular: la instancia deja de ser de Modrinth/CurseForge y pasa a ser propia (se puede cambiar el loader y la versión).
+ipcMain.handle('modpacks:unlink', (_e, p = {}) => {
+  if (launching) throw new Error('Cierra Minecraft antes de desvincular.');
+  const list = readModpacks();
+  const entry = list.find((x) => x.id === cleanStr(p.id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  entry.provider = 'custom';
+  entry.projectId = '';
+  entry.versionId = '';
+  entry.version = '';
+  writeModpacks(list);
+  return entry;
+});
+
+// Java: comprobar una ruta y buscar una instalación.
+async function javaCheck(bin) {
+  const out = await readJavaVersionOutput(bin);
+  const major = loaders.parseJavaMajor(out);
+  return { valid: !!major, major: major || 0 };
+}
+ipcMain.handle('java:check', async (_e, p = {}) => {
+  const bin = cleanStr(p.path, 500);
+  if (!bin) return { valid: false, major: 0 };
+  try { return await javaCheck(bin); } catch { return { valid: false, major: 0 }; }
+});
+ipcMain.handle('java:detect', async (_e, p = {}) => {
+  const need = loaders.javaInstallMajor(cleanStr(p.mc, 20)) || 0;
+  const cands = [];
+  const exe = process.platform === 'win32' ? 'javaw.exe' : 'java';
+  const managed = need ? managedJavaPath(need) : null;
+  if (managed) cands.push(managed);
+  if (process.env.JAVA_HOME) cands.push(path.join(process.env.JAVA_HOME, 'bin', exe));
+  if (fs.existsSync(RUNTIME_DIR)) {
+    for (const d of fs.readdirSync(RUNTIME_DIR)) { const b = findJavaBinary(path.join(RUNTIME_DIR, d)); if (b) cands.push(b); }
+  }
+  cands.push('java');
+  const found = [];
+  for (const bin of cands) {
+    try {
+      const r = await javaCheck(bin);
+      if (r.valid) found.push({ path: bin, major: r.major, ok: !need || r.major >= need });
+    } catch {}
+  }
+  const best = found.find((f) => f.ok && f.major === need) || found.find((f) => f.ok) || found[0] || null;
+  return { best, found };
+});
+
 ipcMain.handle('modpacks:duplicate', (_e, p = {}) => {
   if (launching) throw new Error('Cierra Minecraft antes de duplicar.');
   const list = readModpacks();
@@ -1459,6 +1531,35 @@ function readBase(root) {
 }
 const isBase = (root, type, file) => readBase(root).has(`${type}:${String(file).replace(/\.disabled$/i, '')}`);
 
+
+// Sincronización entre instancias (solo lo que el usuario active): se copia de la carpeta común a la instancia al abrir y de vuelta al cerrar.
+const SYNC_ITEMS = { options: 'options.txt', servers: 'servers.dat', resourcepacks: 'resourcepacks', history: 'command_history.txt', hotbars: 'hotbar.nbt' };
+function syncDir() { return path.join(GAME_DIR, 'synced'); }
+function syncCopy(from, to) {
+  if (!fs.existsSync(from)) return;
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.cpSync(from, to, { recursive: true, force: true });
+}
+function syncIn(instDir, flags = {}) {
+  for (const k of Object.keys(SYNC_ITEMS)) if (flags[k]) { try { syncCopy(path.join(syncDir(), SYNC_ITEMS[k]), path.join(instDir, SYNC_ITEMS[k])); } catch {} }
+}
+function syncOut(instDir, flags = {}) {
+  for (const k of Object.keys(SYNC_ITEMS)) if (flags[k]) { try { syncCopy(path.join(instDir, SYNC_ITEMS[k]), path.join(syncDir(), SYNC_ITEMS[k])); } catch {} }
+}
+// Comandos del usuario (antes de abrir y al cerrar). Solo los pone el dueño de la PC en los ajustes de su instancia.
+function runHook(cmd, cwd, env) {
+  return new Promise((resolve) => {
+    require('child_process').exec(cmd, { cwd, env: { ...process.env, ...env }, timeout: 120000, windowsHide: true }, (err, stdout, stderr) => {
+      resolve({ ok: !err, out: `${stdout || ''}${stderr || ''}`.trim(), err });
+    });
+  });
+}
+function parseEnvLines(text) {
+  const out = {};
+  for (const l of String(text || '').split(/\r?\n/)) { const m = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(l.trim()); if (m) out[m[1]] = m[2]; }
+  return out;
+}
+
 async function planAllUpdates(entry, root) {
   const plan = [];
   for (const type of Object.keys(content.TYPES)) {
@@ -1470,7 +1571,7 @@ async function planAllUpdates(entry, root) {
     }
     if (!items.length) continue;
     try {
-      plan.push(...(await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type, type })));
+      plan.push(...(await packs.planModUpdates({ request: apiRequest, items, mc: entry.mcVersion, loader: entry.loader && entry.loader.type, type, channel: entry.channel || 'release' })));
     } catch (e) {
       if (type === 'mod') throw e; // sin conexión: que lo vea el usuario; un shader que falle no debe tapar a los mods
     }
@@ -2545,7 +2646,6 @@ ipcMain.handle('instance:content', async (_e, id) => {
 ipcMain.handle('instance:toggle', (_e, p = {}) => {
   assertEditable();
   const { root } = packRoot(p.id);
-  if (isBase(root, typeOf(p.type), cleanStr(p.file, 200))) throw new Error('Eso viene con el modpack y está protegido. Instala contenido extra aparte si quieres cambiar algo.');
   return content.toggleContent(root, typeOf(p.type), cleanStr(p.file, 200));
 });
 ipcMain.handle('instance:remove', (_e, p = {}) => {
@@ -3523,6 +3623,21 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       launchOpts.server = { host: eventServer.host, port: String(eventServer.port || 25565) };
     }
 
+    // Ajustes locales de la instancia: sincronización, variables y comandos.
+    const own = pack ? packs.sanitizeSettings(pack.settings || {}, true) : {};
+    const hookEnv = {
+      INST_NAME: pack ? pack.title : 'Evento', INST_ID: pack ? pack.id : 'evento', INST_DIR: eventDir, INST_MC_DIR: eventDir,
+      INST_JAVA: javaPath || 'java', INST_JAVA_ARGS: (customArgs || []).join(' ')
+    };
+    syncIn(eventDir, own.sync);
+    if (own.preLaunch) {
+      send('game:status', { text: 'Ejecutando el comando previo…' });
+      pushLog('launcher', `[Nova] Comando previo: ${own.preLaunch}`);
+      const r = await runHook(own.preLaunch, eventDir, hookEnv);
+      if (r.out) pushLog('launcher', r.out);
+      if (!r.ok) throw new Error(`El comando previo falló (${r.err && r.err.message ? r.err.message.split('\n')[0] : 'error'}). Revísalo en Ajustes de la instancia > Launch hooks.`);
+    }
+    const userEnv = parseEnvLines(own.env);
     const launcher = new Client();
     launcher.on('progress', (e) => send('game:progress', { type: e.type, task: e.task, total: e.total }));
     launcher.on('package-extract', () => send('game:status', { text: 'Extrayendo archivos…' }));
@@ -3532,6 +3647,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     launcher.on('close', (code) => {
       launching = false;
       currentTarget = null;
+      try { syncOut(eventDir, own.sync); } catch {}
+      if (own.postExit) { runHook(own.postExit, eventDir, hookEnv).then((r) => pushLog('launcher', `[Nova] Comando al salir ${r.ok ? 'terminado' : 'falló'}${r.out ? ': ' + r.out : ''}`)); }
       // Suma el tiempo de juego a las horas jugadas.
       if (gameStartedAt) {
         const seconds = Math.round((Date.now() - gameStartedAt) / 1000);
@@ -3553,7 +3670,13 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       }
     });
 
-    const child = await launcher.launch(launchOpts);
+    // Variables de entorno de la instancia: el juego las hereda; se restauran justo después de iniciarlo.
+    const envBackup = {};
+    for (const [k, v] of Object.entries(userEnv)) { envBackup[k] = process.env[k]; process.env[k] = v; }
+    let child;
+    try { child = await launcher.launch(launchOpts); } finally {
+      for (const [k, v] of Object.entries(envBackup)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+    }
     if (!child) {
       launching = false;
       throw new Error('No se pudo iniciar Minecraft. Revisa la consola para ver el motivo.');

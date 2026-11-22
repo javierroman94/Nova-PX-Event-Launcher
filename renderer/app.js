@@ -1360,7 +1360,7 @@ async function playPack(id) {
 /* --- instancia --- */
 function setTab(tab) {
   document.querySelectorAll('[data-mp-tab]').forEach((b) => b.classList.toggle('active', b.dataset.mpTab === tab));
-  ['content', 'worlds', 'shots', 'logs'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
+  ['content', 'files', 'worlds', 'shots', 'logs', 'share'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
   if (tab === 'content') renderContent();
   if (tab === 'worlds') renderWorlds();
   if (tab === 'shots') renderShots();
@@ -1448,6 +1448,7 @@ async function renderContent() {
     mp.items = r.items;
     paintPackChips(p); paintPackStats(p);
     paintContent(r.offline);
+    if ($('mp-base-modal').open) paintBaseModal();
     if (!r.offline && r.items.length) autoCheckUpdates(p);
   } catch (err) {
     list.replaceChildren();
@@ -1529,13 +1530,20 @@ function paintContent(offline) {
     const toggle = el('button', 'ghost', 'Ver contenido');
     toggle.type = 'button';
     toggle.addEventListener('click', openBaseModal);
-    head.append(info, toggle);
+    const wrench = el('button', 'ghost', '🔧'); wrench.type = 'button'; wrench.title = 'Instalación del modpack'; wrench.setAttribute('aria-label', 'Instalación del modpack');
+    wrench.addEventListener('click', async () => { await renderPackSettings(); psSection('install'); $('ps-modal').showModal(); });
+    head.append(info, toggle, wrench);
     card.append(head, el('div', 'mp-base-lock muted', `🔒 Proporcionado por ${mp.pack.title}. Es el contenido original: no se puede quitar ni cambiar, así no se daña.`));
     list.append(card);
     list.append(el('h3', 'mp-extra-title', 'Contenido extra (tuyo)'));
     if (!extraAll.length) {
       const empty = el('div', 'mp-extra-empty');
-      empty.append(el('strong', '', 'No hay contenido extra instalado'), el('span', 'muted', 'Lo que añadas aquí queda aparte del modpack. Usa "Explorar contenido" o "Cargar archivos".'));
+      const art = el('div', 'mp-empty-art', '📥');
+      const eb = el('div', 'mp-actions');
+      const up = el('button', '', '📂 Cargar archivos'); up.type = 'button'; up.addEventListener('click', () => $('mp-add-local').click());
+      const br = el('button', 'primary', '🧭 Explorar contenido'); br.type = 'button'; br.addEventListener('click', () => $('mp-add-explore').click());
+      eb.append(up, br);
+      empty.append(art, el('strong', '', 'No hay contenido extra instalado'), el('span', 'muted', 'Añade contenido encima de este modpack: queda aparte y no toca el original.'), eb);
       list.append(empty);
     } else if (!extraShown.length) {
       list.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : 'No hay contenido extra de este tipo.'));
@@ -1939,7 +1947,28 @@ async function renderPackSettings() {
   paintPackAccounts();
   $('ps-status').textContent = '';
   $('ps-version-box').hidden = !own;
+  const linked = ['modrinth', 'curseforge', 'ftb'].includes(p.provider);
+  $('ps-linked').hidden = !linked;
   $('ps-change-version').hidden = p.provider !== 'modrinth';
+  if (linked) {
+    const lc = $('ps-linked-card'); lc.replaceChildren();
+    const lt = el('div', 'mp-base-info');
+    lt.append(el('strong', '', p.title), el('span', 'muted', `${{ modrinth: 'Modrinth', curseforge: 'CurseForge', ftb: 'FTB' }[p.provider]}${p.version ? ' · ' + p.version : ''}`));
+    lc.append(packIcon(p), lt);
+  }
+  psChannel(p.channel || 'release');
+  const big = $('ps-icon-big'); big.replaceChildren(); big.append(packIcon(p, 'ps-icon-img'));
+  $('ps-env').value = s.env || '';
+  $('ps-pre').value = s.preLaunch || '';
+  $('ps-post').value = s.postExit || '';
+  document.querySelectorAll('[data-sync]').forEach((c) => { c.checked = !!(s.sync && s.sync[c.dataset.sync]); });
+  try {
+    const si = await window.api.systemInfo();
+    const max = Math.max(2, Math.min(32, si.totalRamGb || 8));
+    $('ps-ram-range').max = String(max); $('ps-ram-max').textContent = `${max} GB`;
+  } catch {}
+  $('ps-ram-range').value = s.ramGb || 4;
+  psJavaCheck();
   $('ps-version-note').textContent = own
     ? 'Cambiar la versión o el loader no borra tus mods: revisa que sigan siendo compatibles.'
     : `Modpack de ${p.provider === 'modrinth' ? 'Modrinth' : p.provider === 'curseforge' ? 'CurseForge' : 'otro origen'}: su versión de Minecraft y su loader los define el autor.`;
@@ -1957,7 +1986,12 @@ $('ps-save').addEventListener('click', async () => {
   const num = (id) => ($(id).value ? Number($(id).value) : undefined);
   const changes = {
     title: $('ps-title').value, emoji: $('ps-emoji').value, notes: $('ps-notes').value,
-    settings: { account: $('ps-account').value, ramGb: num('ps-ram'), jvmArgs: $('ps-args').value, javaPath: $('ps-java').value, width: num('ps-w'), height: num('ps-h'), ...($('ps-full').checked ? { fullscreen: true } : {}) }
+    channel: psChannelValue,
+    settings: {
+      account: $('ps-account').value, ramGb: num('ps-ram'), jvmArgs: $('ps-args').value, javaPath: $('ps-java').value, width: num('ps-w'), height: num('ps-h'), ...($('ps-full').checked ? { fullscreen: true } : {}),
+      env: $('ps-env').value, preLaunch: $('ps-pre').value, postExit: $('ps-post').value,
+      sync: Object.fromEntries([...document.querySelectorAll('[data-sync]')].map((c) => [c.dataset.sync, c.checked]))
+    }
   };
   if (p.provider === 'custom') { changes.mcVersion = $('ps-mc').value; changes.loader = $('ps-loader').value; changes.loaderVersion = $('ps-loader-version').value.trim(); }
   try {
@@ -5246,33 +5280,75 @@ document.querySelectorAll('[data-close-dialog]').forEach((b) => b.addEventListen
 document.querySelectorAll('dialog.big-modal').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
 
 /* --- ventana con el contenido que trae el modpack (solo lectura) --- */
-const bm = { filter: 'all' };
+const bm = { filter: 'all', sel: new Set() };
+const bmKey = (it) => `${it.type}:${it.file}`;
 function paintBaseModal() {
   const q = $('bm-search').value.trim().toLowerCase();
   const sort = $('bm-sort').value;
+  const state = $('bm-state').value;
   const all = mp.items.filter((i) => i.base);
-  let rows = all.filter((i) => (bm.filter === 'all' || i.type === bm.filter) && (!q || i.name.toLowerCase().includes(q) || i.file.toLowerCase().includes(q)));
+  let rows = all.filter((i) => (bm.filter === 'all' || i.type === bm.filter) && (state === 'all' || (state === 'on') === i.enabled) && (!q || i.name.toLowerCase().includes(q) || i.file.toLowerCase().includes(q)));
   rows = rows.slice().sort((a, b) => (sort === 'size' ? b.size - a.size : sort === 'za' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name)));
+  const valid = new Set(all.map(bmKey));
+  for (const k of [...bm.sel]) if (!valid.has(k)) bm.sel.delete(k);
   const list = $('bm-list');
   list.replaceChildren();
   if (!rows.length) list.append(el('p', 'muted empty-note', 'Nada coincide.'));
   rows.forEach((it) => {
     const row = el('div', `bm-row${it.enabled ? '' : ' mod-off'}`);
+    const chk = el('input'); chk.type = 'checkbox'; chk.checked = bm.sel.has(bmKey(it)); chk.setAttribute('aria-label', `Seleccionar ${it.name}`);
+    chk.addEventListener('change', () => { if (chk.checked) bm.sel.add(bmKey(it)); else bm.sel.delete(bmKey(it)); bmBulk(rows); });
     const proj = el('div', 'bm-proj');
     proj.append(iconEl(it.icon, it.name), el('span', 'type-chip t-' + it.type, TYPE_NAMES[it.type]), el('strong', '', it.name));
     const ver = el('div', 'bm-ver');
     ver.append(el('strong', '', it.version || '—'), el('span', 'muted', it.file.replace(/\.disabled$/i, '')));
-    row.append(proj, ver, el('span', 'type-chip t-lock', '🔒 Del modpack'));
+    const act = el('div', 'bm-act');
+    const sw = el('input', 'switch'); sw.type = 'checkbox'; sw.checked = it.enabled; sw.setAttribute('aria-label', `${it.enabled ? 'Desactivar' : 'Activar'} ${it.name}`);
+    sw.addEventListener('change', async () => {
+      sw.disabled = true;
+      try { await window.api.instanceToggle({ id: mp.pack.id, type: it.type, file: it.file }); await renderContent(); } catch (e) { toast(cleanError(e), 'error'); sw.checked = !sw.checked; sw.disabled = false; }
+    });
+    const lock = el('span', 'bm-lock', '🔒'); lock.title = 'Viene con el modpack: se puede desactivar, pero no quitar';
+    act.append(sw, lock);
+    row.append(chk, proj, ver, act);
+    ctx(row, () => [
+      { title: it.name },
+      { icon: '📋', label: 'Copiar nombre', onClick: () => copyText(it.name, 'Nombre copiado') },
+      { icon: '📋', label: 'Copiar nombre del archivo', onClick: () => copyText(it.file.replace(/\.disabled$/i, ''), 'Archivo copiado') }
+    ]);
     list.append(row);
   });
+  bmBulk(rows);
   const c = (t) => all.filter((i) => i.type === t).length;
   $('bm-foot').textContent = `${c('mod')} mods · ${c('shader')} shaders · ${c('resourcepack')} texturas`;
 }
+function bmBulk(rows) {
+  const n = bm.sel.size;
+  $('bm-bulk').hidden = !n;
+  $('bm-bulk-n').textContent = `${n} seleccionado${n === 1 ? '' : 's'}`;
+  const a = $('bm-all'); const vis = rows.filter((r) => bm.sel.has(bmKey(r))).length;
+  a.checked = !!rows.length && vis === rows.length; a.indeterminate = vis > 0 && vis < rows.length;
+}
+async function bmApply(enable) {
+  const targets = mp.items.filter((i) => i.base && bm.sel.has(bmKey(i)) && i.enabled !== enable);
+  for (const it of targets) { try { await window.api.instanceToggle({ id: mp.pack.id, type: it.type, file: it.file }); } catch {} }
+  bm.sel.clear();
+  await renderContent();
+  toast(`${targets.length} ${enable ? 'activado' : 'desactivado'}${targets.length === 1 ? '' : 's'}`, 'success');
+}
+$('bm-bulk-on').addEventListener('click', () => bmApply(true));
+$('bm-bulk-off').addEventListener('click', () => bmApply(false));
+$('bm-state').addEventListener('change', paintBaseModal);
+$('bm-all').addEventListener('change', () => {
+  const q = $('bm-search').value.trim().toLowerCase(); const state = $('bm-state').value;
+  mp.items.filter((i) => i.base && (bm.filter === 'all' || i.type === bm.filter) && (state === 'all' || (state === 'on') === i.enabled) && (!q || i.name.toLowerCase().includes(q))).forEach((i) => { if ($('bm-all').checked) bm.sel.add(bmKey(i)); else bm.sel.delete(bmKey(i)); });
+  paintBaseModal();
+});
 function openBaseModal() {
   const cover = packCover(mp.pack);
   $('bm-icon').hidden = !cover; if (cover) $('bm-icon').src = cover;
   $('bm-title').textContent = 'Contenido del modpack';
-  $('bm-search').value = ''; bm.filter = 'all';
+  $('bm-search').value = ''; bm.filter = 'all'; bm.sel.clear(); $('bm-state').value = 'all';
   document.querySelectorAll('[data-bm-filter]').forEach((b) => b.classList.toggle('active', b.dataset.bmFilter === 'all'));
   $('bm-search').placeholder = `Buscar ${mp.items.filter((i) => i.base).length} proyectos…`;
   paintBaseModal();
@@ -5285,3 +5361,72 @@ document.querySelectorAll('[data-bm-filter]').forEach((b) => b.addEventListener(
   document.querySelectorAll('[data-bm-filter]').forEach((x) => x.classList.toggle('active', x === b));
   paintBaseModal();
 }));
+
+
+/* --- ajustes: canal, memoria, Java, ↺, desvincular y reinstalar --- */
+let psChannelValue = 'release';
+const CHANNEL_NOTE = { release: 'Solo se ofrecerán versiones estables como actualización.', beta: 'También se ofrecerán versiones beta (pueden tener fallos).', alpha: 'Se ofrecerá cualquier versión, incluidas las alpha (pueden fallar).' };
+function psChannel(v) {
+  psChannelValue = v;
+  document.querySelectorAll('[data-channel]').forEach((b) => { const on = b.dataset.channel === v; b.classList.toggle('active', on); b.textContent = (on ? '✓ ' : '') + b.dataset.channel.charAt(0).toUpperCase() + b.dataset.channel.slice(1); });
+  $('ps-channel-note').textContent = CHANNEL_NOTE[v];
+}
+document.querySelectorAll('[data-channel]').forEach((b) => b.addEventListener('click', () => psChannel(b.dataset.channel)));
+$('ps-ram-range').addEventListener('input', () => { $('ps-ram').value = $('ps-ram-range').value; });
+$('ps-ram').addEventListener('input', () => { if ($('ps-ram').value) $('ps-ram-range').value = $('ps-ram').value; });
+document.querySelectorAll('.ps-reset').forEach((b) => b.addEventListener('click', () => {
+  const t = $(b.dataset.reset);
+  if (t.type === 'checkbox') t.checked = false; else t.value = '';
+  if (b.dataset.reset === 'ps-ram') $('ps-ram-range').value = 4;
+  if (b.dataset.reset === 'ps-java') psJavaCheck();
+}));
+async function psJavaCheck() {
+  const st = $('ps-java-state'); const path = $('ps-java').value.trim();
+  if (!path) { st.textContent = 'Automática: el launcher elige y descarga la que haga falta.'; st.className = 'muted'; return; }
+  st.textContent = 'Comprobando…';
+  try {
+    const r = await window.api.javaCheck({ path });
+    st.textContent = r.valid ? `✓ Válida · Java ${r.major}` : '✕ No se pudo ejecutar esa ruta';
+    st.className = r.valid ? 'ps-ok' : 'ps-bad';
+  } catch { st.textContent = ''; }
+}
+$('ps-java').addEventListener('change', psJavaCheck);
+$('ps-java-detect').addEventListener('click', async () => {
+  const btn = $('ps-java-detect'); btn.disabled = true;
+  try {
+    const r = await window.api.javaDetect({ mc: mp.pack && mp.pack.mcVersion });
+    if (r.best) { $('ps-java').value = r.best.path; await psJavaCheck(); toast(`Java ${r.best.major} encontrada`, 'success'); }
+    else toast('No encontré Java instalada. Déjalo vacío y el launcher la descarga sola.', 'error');
+  } catch (e) { toast(cleanError(e), 'error'); }
+  btn.disabled = false;
+});
+$('ps-unlink').addEventListener('click', async () => {
+  const p = mp.pack;
+  if (!await askConfirm(`¿Desvincular "${p.title}"? Se corta la conexión con el modpack para siempre: podrás cambiar el loader y la versión, pero no recibirás sus actualizaciones.`)) return;
+  try {
+    mp.pack = await window.api.modpackUnlink({ id: p.id });
+    await loadInstalled(); openDetailHeader(mp.pack); await renderPackSettings();
+    toast('Modpack desvinculado', 'success');
+  } catch (e) { toast(cleanError(e), 'error'); }
+});
+$('ps-reinstall').addEventListener('click', async () => {
+  const p = mp.pack;
+  if (!await askConfirm(`¿Reinstalar "${p.title}"? Se vuelven a descargar los archivos del modpack. Tus mundos y el contenido extra se conservan.`)) return;
+  const btn = $('ps-reinstall'); btn.disabled = true; btn.textContent = 'Reinstalando…';
+  try {
+    await window.api.modpackInstall({ provider: p.provider, id: p.projectId, versionId: p.versionId, title: p.title, icon: p.icon });
+    const fresh = (await loadInstalled()).find((x) => x.id === p.id);
+    if (fresh) { mp.pack = fresh; openDetailHeader(fresh); renderContent(); }
+    toast('Modpack reinstalado', 'success');
+  } catch (e) { toast(cleanError(e), 'error'); }
+  btn.disabled = false; btn.textContent = '⭳ Reinstalar modpack';
+});
+
+
+/* --- pestañas Archivos y Compartir --- */
+document.querySelectorAll('[data-open-sub]').forEach((b) => b.addEventListener('click', () => {
+  if (!mp.pack) return;
+  window.api.instanceOpenSub({ id: mp.pack.id, sub: b.dataset.openSub }).catch((e) => toast(cleanError(e), 'error'));
+}));
+$('mp-share-export').addEventListener('click', () => $('ps-export').click());
+$('mp-share-opts').addEventListener('click', async () => { await renderPackSettings(); psSection('general'); $('ps-modal').showModal(); });

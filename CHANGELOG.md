@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.153
+- Ajustes de la instancia completos: Instalación (desvincular y reinstalar el modpack, se conserva tu contenido extra), General (canal Release/Beta/Alpha para actualizaciones, icono grande), Java y memoria (barra de memoria, Detectar Java, variables de entorno, ↺ en cada campo), Ventana, Comandos de inicio (antes de abrir y al cerrar; nunca se exportan) y Sincronización (opciones, servidores, texturas, historial y barras creativas).
+- Contenido del modpack: ventana con casillas, interruptores para activar/desactivar, filtro por estado y acciones en bloque. Lo original se puede desactivar pero no quitar.
+- Pestañas nuevas: Archivos (abrir carpetas de la instancia) y Compartir (exportar).
+- Contenido extra con estado vacío ilustrado y botón 🔧 a la instalación.
+
 ## 1.0.152
 - Inicio en dos columnas: contenido a la izquierda y jugador, servidor y amigos a la derecha.
 - Modpacks descargados: sus mods, texturas y shaders quedan protegidos y aparte ("Contenido del modpack"); lo que instales va en "Contenido extra" y no los modifica.

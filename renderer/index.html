@@ -422,9 +422,11 @@
         </div>
         <div class="seg" id="mp-tabs" role="group" aria-label="Secciones del modpack">
           <button type="button" class="active" data-mp-tab="content">🧩 Contenido</button>
+          <button type="button" data-mp-tab="files">📁 Archivos</button>
           <button type="button" data-mp-tab="worlds">🌍 Mundos</button>
           <button type="button" data-mp-tab="shots">📷 Capturas</button>
           <button type="button" data-mp-tab="logs">📜 Registros</button>
+          <button type="button" data-mp-tab="share">📤 Compartir</button>
         </div>
 
         <div id="mp-tab-content">
@@ -468,6 +470,23 @@
           </div>
           <div id="mp-shots-grid" class="events-grid"></div>
         </div>
+        <div id="mp-tab-files" hidden>
+          <p class="muted">Abre las carpetas de esta instancia para ver o copiar archivos a mano.</p>
+          <div class="mp-files">
+            <button type="button" data-open-sub="">📁 Carpeta de la instancia</button>
+            <button type="button" data-open-sub="mods">🧩 mods</button>
+            <button type="button" data-open-sub="resourcepacks">🎨 resourcepacks</button>
+            <button type="button" data-open-sub="shaderpacks">🕶 shaderpacks</button>
+            <button type="button" data-open-sub="saves">🌍 saves</button>
+            <button type="button" data-open-sub="config">⚙️ config</button>
+            <button type="button" data-open-sub="screenshots">📷 screenshots</button>
+            <button type="button" data-open-sub="logs">📜 logs</button>
+          </div>
+        </div>
+        <div id="mp-tab-share" hidden>
+          <p class="muted">Comparte esta instancia con otra persona: se crea un archivo .novapx que solo abre este launcher. No incluye tus mundos, tu cuenta ni tus comandos.</p>
+          <div class="mp-actions"><button type="button" id="mp-share-export" class="primary">📤 Exportar .novapx</button><button type="button" id="mp-share-opts">Opciones de exportación…</button></div>
+        </div>
         <div id="mp-tab-logs" hidden>
           <div id="mp-log" class="log" tabindex="0"></div>
         </div>
@@ -489,23 +508,35 @@
             <button type="button" data-ps-sec="java">☕ Java y memoria</button>
             <button type="button" data-ps-sec="window">🖥 Ventana</button>
             <button type="button" data-ps-sec="account">👤 Cuenta</button>
+            <button type="button" data-ps-sec="hooks">⌨ Comandos de inicio</button>
+            <button type="button" data-ps-sec="sync">⇄ Sincronización</button>
           </nav>
           <div class="ps-body settings-body">
             <section data-ps-panel="general">
-              <div class="field inline">
-                <div><label for="ps-title">Nombre</label><input id="ps-title" type="text" maxlength="60" /></div>
-                <div><label for="ps-emoji">Icono (emoji)</label><input id="ps-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
-              </div>
-              <div class="mp-actions">
-                <button id="ps-icon-pick" type="button">Cambiar imagen…</button>
-                <button id="ps-icon-clear" type="button">Quitar imagen</button>
+              <div class="ps-top">
+                <div class="ps-top-fields">
+                  <div class="field"><label for="ps-title">Nombre</label><input id="ps-title" type="text" maxlength="60" /></div>
+                  <div class="field"><label for="ps-emoji">Icono (emoji)</label><input id="ps-emoji" type="text" maxlength="4" placeholder="🌲" /></div>
+                  <div class="mp-actions">
+                    <button id="ps-icon-pick" type="button">Cambiar imagen…</button>
+                    <button id="ps-icon-clear" type="button">Quitar imagen</button>
+                  </div>
+                </div>
+                <div id="ps-icon-big" class="ps-icon-big" aria-hidden="true"></div>
               </div>
               <div class="field"><label for="ps-notes">Notas</label><textarea id="ps-notes" rows="3" maxlength="4000" placeholder="Para qué es este modpack, qué mods hay que probar…"></textarea></div>
               <h4>Duplicar instancia</h4>
-              <div class="mp-actions"><button id="ps-dup" type="button">Duplicar</button></div>
+              <div class="mp-actions"><button id="ps-dup" type="button">⧉ Duplicar</button></div>
               <small class="muted">Crea una copia con mundos, ajustes y mods.</small>
+              <h4>Canal de actualización</h4>
+              <div class="ps-chips" id="ps-channel">
+                <button type="button" data-channel="release" class="active">✓ Release</button>
+                <button type="button" data-channel="beta">Beta</button>
+                <button type="button" data-channel="alpha">Alpha</button>
+              </div>
+              <small id="ps-channel-note" class="muted">Solo se ofrecerán versiones estables como actualización.</small>
               <h4>Exportar</h4>
-              <small class="muted">El archivo .novapx solo lo abre este launcher. No incluye tus mundos ni tu cuenta.</small>
+              <small class="muted">El archivo .novapx solo lo abre este launcher. No incluye tus mundos, tu cuenta ni tus comandos.</small>
               <label class="check"><input id="ps-ex-all" type="checkbox" /> Meter todos los mods dentro del archivo (pesa más, pero no necesita internet)</label>
               <label class="check"><input id="ps-ex-settings" type="checkbox" checked /> Incluir mis ajustes y notas</label>
               <div class="mp-actions"><button id="ps-export" type="button">Exportar .novapx</button></div>
@@ -523,25 +554,60 @@
                 <div><label for="ps-loader-version">Versión del loader</label><input id="ps-loader-version" type="text" maxlength="40" placeholder="Automática" autocomplete="off" /></div>
               </div>
               <small id="ps-version-note" class="muted"></small>
-              <div class="mp-actions"><button id="ps-change-version" type="button" hidden>⇄ Cambiar versión del modpack</button></div>
+              <div id="ps-linked" hidden>
+                <h4>Modpack instalado</h4>
+                <div id="ps-linked-card" class="ps-linked-card"></div>
+                <div class="mp-actions"><button id="ps-change-version" type="button">⇄ Cambiar versión</button></div>
+                <h4>Modpack vinculado</h4>
+                <div class="mp-actions"><button id="ps-unlink" type="button" class="warn-btn">⛓ Desvincular modpack</button></div>
+                <small class="muted">Desvincular corta para siempre la conexión con el proyecto: podrás cambiar el loader y la versión de Minecraft, pero ya no recibirás actualizaciones del modpack.</small>
+                <h4>Reinstalar modpack</h4>
+                <div class="mp-actions"><button id="ps-reinstall" type="button" class="danger-btn">⭳ Reinstalar modpack</button></div>
+                <small class="muted">Vuelve a descargar los archivos del modpack y repara problemas. Tus mundos y el contenido extra se conservan.</small>
+              </div>
             </section>
             <section data-ps-panel="java" hidden>
-              <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes.</small>
-              <div class="field"><label for="ps-ram">Memoria RAM (GB)</label><input id="ps-ram" type="number" min="1" max="32" placeholder="Global" /></div>
-              <div class="field"><label for="ps-java">Ruta de Java</label><input id="ps-java" type="text" placeholder="Automática" /></div>
-              <div class="field"><label for="ps-args">Argumentos de Java</label><input id="ps-args" type="text" placeholder="Global" /></div>
+              <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes. El ↺ de cada campo lo vuelve a dejar así.</small>
+              <div class="ps-row"><h4>Memoria asignada</h4><button type="button" class="ps-reset" data-reset="ps-ram" title="Restablecer">↺</button></div>
+              <div class="ps-slider"><span class="muted">1 GB</span><input id="ps-ram-range" type="range" min="1" max="16" step="1" /><span id="ps-ram-max" class="muted">16 GB</span><input id="ps-ram" type="number" min="1" max="32" placeholder="Global" aria-label="Memoria RAM (GB)" /></div>
+              <div class="ps-row"><h4>Instalación de Java</h4><button type="button" class="ps-reset" data-reset="ps-java" title="Restablecer">↺</button></div>
+              <div class="ps-java-box">
+                <input id="ps-java" type="text" placeholder="Automática" aria-label="Ruta de Java" />
+                <div class="ps-java-row"><span id="ps-java-state" class="muted"></span><button id="ps-java-detect" type="button">🔍 Detectar</button></div>
+              </div>
+              <div class="ps-row"><h4>Argumentos de Java</h4><button type="button" class="ps-reset" data-reset="ps-args" title="Restablecer">↺</button></div>
+              <input id="ps-args" type="text" placeholder="Global" aria-label="Argumentos de Java" />
+              <div class="ps-row"><h4>Variables de entorno</h4><button type="button" class="ps-reset" data-reset="ps-env" title="Restablecer">↺</button></div>
+              <textarea id="ps-env" rows="3" placeholder="CLAVE=valor (una por línea)" aria-label="Variables de entorno"></textarea>
             </section>
             <section data-ps-panel="window" hidden>
               <small class="muted">Lo que dejes vacío usa lo que tengas en Ajustes.</small>
-              <label class="check"><input id="ps-full" type="checkbox" /> Pantalla completa al iniciar</label>
-              <div class="field inline">
-                <div><label for="ps-w">Ancho de ventana</label><input id="ps-w" type="number" min="320" max="7680" placeholder="Global" /></div>
-                <div><label for="ps-h">Alto de ventana</label><input id="ps-h" type="number" min="240" max="4320" placeholder="Global" /></div>
-              </div>
+              <div class="ps-row"><div><h4>Pantalla completa</h4><small class="muted">Inicia el juego a pantalla completa.</small></div><div class="ps-row-r"><input id="ps-full" type="checkbox" class="switch" aria-label="Pantalla completa" /><button type="button" class="ps-reset" data-reset="ps-full" title="Restablecer">↺</button></div></div>
+              <div class="ps-row"><div><h4>Ancho</h4><small class="muted">Ancho de la ventana al iniciar.</small></div><div class="ps-row-r"><input id="ps-w" type="number" min="320" max="7680" placeholder="Global" /><button type="button" class="ps-reset" data-reset="ps-w" title="Restablecer">↺</button></div></div>
+              <div class="ps-row"><div><h4>Alto</h4><small class="muted">Alto de la ventana al iniciar.</small></div><div class="ps-row-r"><input id="ps-h" type="number" min="240" max="4320" placeholder="Global" /><button type="button" class="ps-reset" data-reset="ps-h" title="Restablecer">↺</button></div></div>
             </section>
             <section data-ps-panel="account" hidden>
               <div class="field"><label for="ps-account">Jugar con esta cuenta</label><select id="ps-account"><option value="">La que esté activa</option></select></div>
               <small class="muted">Al pulsar Jugar, el launcher cambia solo a esa cuenta. Se guarda solo en este modpack (no se exporta).</small>
+            </section>
+            <section data-ps-panel="hooks" hidden>
+              <small class="muted">Comandos que ejecuta el launcher en esta PC. Solo úsalos si sabes lo que hacen; nunca se exportan con el modpack.</small>
+              <div class="ps-row"><h4>Antes de abrir</h4><button type="button" class="ps-reset" data-reset="ps-pre" title="Restablecer">↺</button></div>
+              <input id="ps-pre" type="text" placeholder="Escribe el comando previo…" />
+              <small class="muted">Se ejecuta antes de abrir la instancia. Si falla, el juego no se abre.</small>
+              <div class="ps-row"><h4>Al cerrar</h4><button type="button" class="ps-reset" data-reset="ps-post" title="Restablecer">↺</button></div>
+              <input id="ps-post" type="text" placeholder="Escribe el comando al salir…" />
+              <small class="muted">Se ejecuta cuando el juego se cierra.</small>
+              <small class="muted">Los comandos corren en la carpeta de la instancia con estas variables:</small>
+              <ul class="muted ps-vars"><li><code>$INST_NAME</code>: nombre de la instancia</li><li><code>$INST_ID</code>: nombre de su carpeta</li><li><code>$INST_DIR</code>: ruta completa de la carpeta</li><li><code>$INST_MC_DIR</code>: igual que $INST_DIR</li><li><code>$INST_JAVA</code>: ruta de Java</li><li><code>$INST_JAVA_ARGS</code>: argumentos de Java</li></ul>
+            </section>
+            <section data-ps-panel="sync" hidden>
+              <small class="muted">Activa lo que quieras compartir con tus otras instancias. Se copia al abrir y al cerrar el juego. Ojo: compartir las opciones entre versiones muy distintas puede dar problemas.</small>
+              <label class="ps-sync"><span><strong>Sincronizar ajustes del juego</strong><small class="muted">options.txt compartido entre instancias.</small></span><input type="checkbox" class="switch" data-sync="options" /></label>
+              <label class="ps-sync"><span><strong>Sincronizar servidores multijugador</strong><small class="muted">La misma lista de servidores en todas.</small></span><input type="checkbox" class="switch" data-sync="servers" /></label>
+              <label class="ps-sync"><span><strong>Sincronizar texturas</strong><small class="muted">La carpeta resourcepacks compartida.</small></span><input type="checkbox" class="switch" data-sync="resourcepacks" /></label>
+              <label class="ps-sync"><span><strong>Sincronizar historial de comandos</strong><small class="muted">Los comandos que escribiste en el chat.</small></span><input type="checkbox" class="switch" data-sync="history" /></label>
+              <label class="ps-sync"><span><strong>Sincronizar barras creativas guardadas</strong><small class="muted">Las barras de objetos del modo creativo.</small></span><input type="checkbox" class="switch" data-sync="hotbars" /></label>
             </section>
           </div>
         </div>
@@ -563,9 +629,11 @@
             <button type="button" data-bm-filter="mod">Mods</button>
             <button type="button" data-bm-filter="resourcepack">Texturas</button>
             <button type="button" data-bm-filter="shader">Shaders</button>
+            <select id="bm-state" aria-label="Filtrar por estado"><option value="all">Todos los estados</option><option value="on">Activados</option><option value="off">Desactivados</option></select>
           </div>
+          <div id="bm-bulk" class="bm-bulk" hidden><span id="bm-bulk-n"></span><button type="button" id="bm-bulk-on">Activar</button><button type="button" id="bm-bulk-off">Desactivar</button></div>
         </div>
-        <div class="bm-table-head"><span>Proyecto</span><span>Versión</span><span>Estado</span></div>
+        <div class="bm-table-head"><input type="checkbox" id="bm-all" aria-label="Seleccionar todo" /><span>Proyecto</span><span>Versión</span><span>Acciones</span></div>
         <div id="bm-list" class="bm-list"></div>
         <div id="bm-foot" class="bm-foot muted"></div>
       </dialog>
