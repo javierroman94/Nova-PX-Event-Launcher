@@ -77,10 +77,13 @@
     "description": "Evento organizado por Nova PX."
   },
   {
-    "name": "InFunaZone by Tutuca",
-    "date": "",
+    "name": "InFunaZone",
+    "date": "2024-01-04",
     "image": "images/infunazone.png",
-    "description": "Evento organizado por Nova PX."
+    "description": "Evento organizado por Nova PX.",
+    "commissioner": {
+      "name": "Tutuca"
+    }
   },
   {
     "name": "OneBlock 1000 días",
