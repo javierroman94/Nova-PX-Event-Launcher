@@ -121,9 +121,10 @@
   },
   {
     "name": "Sylpharos: Lumen Invasion",
-    "date": "2026-02-17",
+    "date": "2024-02-24",
     "image": "images/sylpharos-lumen-invasion-by-kityevil-mwiodua9.jpg",
     "description": "Evento organizado por Nova PX.",
+    "participants": 30,
     "commissioner": {
       "name": "kityevil"
     }
