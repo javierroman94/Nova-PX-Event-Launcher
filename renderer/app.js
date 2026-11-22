@@ -1694,7 +1694,7 @@ async function loadMcVersions(...selects) {
 
 /* --- asistente "Crear instancia" --- */
 const LOADER_INFO = {
-  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris y Nova Client. Máximo rendimiento.' },
+  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris, Mod Menu y Nova Client. Máximo rendimiento.' },
   fabric: { icon: '🧵', name: 'Fabric', tag: '', desc: 'Ligero y rápido. Mods modernos (desde 1.14).' },
   quilt: { icon: '🪡', name: 'Quilt', tag: '', desc: 'Basado en Fabric, usa sus mods y los de Quilt (desde 1.14).' },
   neoforge: { icon: '🦊', name: 'NeoForge', tag: '', desc: 'El Forge moderno, para mods nuevos (desde 1.20.2).' },

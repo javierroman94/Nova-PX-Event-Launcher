@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.151
+- **Perfil Nova con los mods que usa Lunar Client**: ahora también instala MoreCulling, Ixeris, Mod Menu y Cloth Config (junto a Sodium, Lithium, Iris, FerriteCore, Fabric API y los demás). Lo que no exista para esa versión de Minecraft se salta. Se aplica a los perfiles Nova que crees de ahora en adelante.
+- Las pestañas de la instancia llevan iconos.
+
 ## 1.0.150
 - **Inicio con portada**: la tarjeta grande de «Última partida» ya muestra la imagen del perfil (la de Nova Client o la de su versión de Minecraft) en vez de una letra.
 - **Cabecera de instancia más completa**: banner con la imagen del perfil, icono grande y cuatro cuadros de datos (última partida, Minecraft y loader, mods y tamaño).

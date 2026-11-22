@@ -78,7 +78,7 @@
   const fmtDate = (v) => { const t = meta.versions[v] && meta.versions[v].time; if (!t) return '—'; try { return new Date(t).toLocaleDateString('es', { year: 'numeric', month: 'short', day: 'numeric' }); } catch { return '—'; } };
   const testKind = (v) => (/-rc\d+$/i.test(v) ? 'RC' : /-pre\d*$/i.test(v) ? 'Pre-release' : 'Snapshot');
   const LOADER_NOTE = {
-    nova: 'Sodium, Lithium, Iris y el Nova Client con menú y HUD (Shift derecho).',
+    nova: 'Sodium, Lithium, Iris, Mod Menu y el Nova Client con menú y HUD (Shift derecho).',
     fabric: 'Cargador ligero para mods modernos.',
     quilt: 'Basado en Fabric: usa sus mods y los de Quilt.',
     neoforge: 'El Forge moderno para mods nuevos.',
