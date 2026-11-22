@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.168
+- Intro: por ahora va sin audio (solo la animación); se oculta la opción de sonido en Ajustes.
+- Inicio · Comunidad: Discord, X y el sitio web ya no muestran el subtítulo con el dominio; el título queda centrado.
+
 ## 1.0.167
 - Eventos protegidos: si el launcher se cerró a la fuerza, al abrir limpia los mods sueltos del evento (solo si hay copia cifrada para restaurarlos).
 - Seguridad: tope de 1,5 GB por archivo descargado.

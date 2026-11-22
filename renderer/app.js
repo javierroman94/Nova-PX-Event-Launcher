@@ -40,8 +40,11 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   setTimeout(close, 12500); // tope de seguridad (el video dura ~9 s)
   // Animación del logo NOVA PX (video con sonido). Si no se puede reproducir, queda la animación de siempre.
   const vid = document.getElementById('sp-video');
+  // Temporal: la intro va sin audio (solo la animación). Poner en true para volver a permitir el sonido.
+  const INTRO_AUDIO = false;
   function playIntro(sound) {
     if (!vid) return;
+    sound = sound && INTRO_AUDIO;
     // Los botones de la ventana (minimizar, cerrar) toman el color blanco de la intro; al cerrarse vuelven al tema.
     setTimeout(() => { if (!closed && window.api.winOverlay) window.api.winOverlay({ color: '#fdfdfd', symbol: '#222222' }).catch(() => {}); }, 200);
     vid.muted = !sound;
@@ -613,7 +616,10 @@ function renderLinks(links) {
     b.type = 'button';
     b.dataset.tilt = '';
     const host = (() => { try { return new URL(l.url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
-    b.append(linkIcon(l), el('span', 'link-name', String(l.name).slice(0, 30)), el('span', 'link-host muted', host));
+    // En Comunidad (Inicio) solo va el título, sin el subtítulo del dominio; queda centrado junto al icono.
+    b.classList.add('no-sub');
+    if (host) b.title = host;
+    b.append(linkIcon(l), el('span', 'link-name', String(l.name).slice(0, 30)));
     b.addEventListener('click', () => window.api.openLink(l.url).catch(() => {}));
     box.append(b);
   });

@@ -3331,3 +3331,9 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 #pw-form .link-btn:hover{text-decoration:underline}
 #pw-form #pw-forgot-text{font-size:12.5px;line-height:1.5;margin:4px 0 0}
 #pw-modal{z-index:100000}
+
+/* Comunidad (Inicio): tarjetas sin subtítulo, título centrado junto al icono */
+#page-home .link-tile.no-sub { grid-template-rows: auto; }
+#page-home .link-tile.no-sub .link-ico { grid-row: 1; }
+#page-home .link-tile.no-sub .link-name { align-self: center; }
+.check[hidden] { display: none; }
