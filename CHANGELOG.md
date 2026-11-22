@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.158
+- Corregido: con el tema Nova la imagen del evento no se veía en la portada (el borde de colores la tapaba). Ahora se ve igual en todos los temas.
+
 ## 1.0.157
 - Amigos y chat con diseño más limpio: filas con estado en línea/jugando/desconectado, iconos en vez de emojis, botón de quitar que aparece al pasar el cursor; el chat con burbujas más claras, cabecera ordenada y botón de cerrar bien ubicado.
 

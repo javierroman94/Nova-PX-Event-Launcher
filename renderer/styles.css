@@ -3313,3 +3313,11 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 .friend .friend-st[data-on="1"]::before { background: var(--ok); opacity: 1; }
 .chat-dialog { background: var(--surface-solid); }
 .chat-x { top: 15px; transform: none; }
+
+/* Tema Nova: el borde de colores no debe tapar la imagen del evento */
+:root[data-theme="nova"] .hero.has-banner {
+  background:
+    linear-gradient(90deg, rgba(10, 12, 22, .6) 0%, rgba(10, 12, 22, .15) 55%, rgba(10, 12, 22, 0) 100%) padding-box,
+    var(--hero-image) center / cover no-repeat padding-box,
+    conic-gradient(from var(--ang), var(--accent), var(--violet), #ff4fa8, var(--accent)) border-box;
+}
