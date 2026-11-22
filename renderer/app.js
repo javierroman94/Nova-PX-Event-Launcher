@@ -1089,7 +1089,8 @@ function artForVersion(mc, depth = 0) {
 function packIcon(p, cls = 'mod-icon') {
   if (!p.icon && p.emoji) return el('div', `${cls} mod-icon-empty`, p.emoji);
   if (!p.icon) {
-    const art = artForVersion(p.mcVersion);
+    // Los perfiles Nova (Fabric + Nova Client) tienen su propia portada original.
+    const art = p.preset === 'nova' ? 'images/nova-client-cover.jpg' : artForVersion(p.mcVersion);
     if (art) {
       const img = iconEl(art, p.title, `${cls} mod-icon-art`);
       img.addEventListener('error', () => { img.replaceWith(el('div', `${cls} mod-icon-empty`, (p.title || '?').slice(0, 1).toUpperCase())); }, { once: true });
