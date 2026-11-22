@@ -19,6 +19,8 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'novapx-'));
 const sha1 = (b) => crypto.createHash('sha1').update(b).digest('hex');
 
 // Mini "repositorio" con dos mods cifrados y un almacén de claves en memoria.
+// En eventos protegidos el archivo en disco lleva un nombre neutro (huella del contenido).
+const nm = (content) => `${sha1(Buffer.from(content)).slice(0, 16)}.jar`;
 function makePack(password, jars) {
   const salt = pc.newSalt();
   const packKey = pc.newPackKey();
@@ -97,8 +99,8 @@ function makeKeyStore() {
 
     r = await pi.installProtected({ prot, password: 'frase secreta del evento', gameDir, download, keyStore: ks });
     assert.deepStrictEqual(r, { status: 'ready' });
-    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'mods', 'A.jar'), 'utf8'), 'contenido A');
-    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'mods', 'B-1.0.jar'), 'utf8'), 'contenido B');
+    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'mods', nm('contenido A')), 'utf8'), 'contenido A');
+    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'mods', nm('contenido B')), 'utf8'), 'contenido B');
     assert.strictEqual(downloads, 2);
     assert.ok(ks.saved);
   });
@@ -141,10 +143,10 @@ function makeKeyStore() {
     const ks = makeKeyStore();
     const download = async (url) => remote[url];
     await pi.installProtected({ prot, password: 'frase secreta del evento', gameDir, download, keyStore: ks });
-    fs.unlinkSync(path.join(gameDir, 'mods', 'A.jar'));
+    fs.unlinkSync(path.join(gameDir, 'mods', nm('contenido A')));
     const r = await pi.installProtected({ prot, gameDir, download, keyStore: ks });
     assert.deepStrictEqual(r, { status: 'ready' }); // reinstala con la clave guardada, sin preguntar
-    assert.ok(fs.existsSync(path.join(gameDir, 'mods', 'A.jar')));
+    assert.ok(fs.existsSync(path.join(gameDir, 'mods', nm('contenido A'))));
   });
 
   await test('Actualización: usa la clave guardada y quita los mods que ya no están', async () => {
@@ -172,8 +174,8 @@ function makeKeyStore() {
     const r = await pi.installProtected({ prot: v2.prot, gameDir, download: async (u) => v2.remote[u], keyStore: ks });
     assert.deepStrictEqual(r, { status: 'ready' });
     const files = fs.readdirSync(path.join(gameDir, 'mods')).sort();
-    assert.deepStrictEqual(files, ['A.jar', 'C.jar', 'mio.jar']);
-    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'mods', 'A.jar'), 'utf8'), 'a2');
+    assert.deepStrictEqual(files, [nm('a2'), nm('c1'), 'mio.jar'].sort());
+    assert.strictEqual(fs.readFileSync(path.join(gameDir, 'mods', nm('a2')), 'utf8'), 'a2');
   });
 
   await test('Si cambian la contraseña (nueva sal), la clave guardada deja de servir y se pide de nuevo', async () => {
@@ -195,7 +197,7 @@ function makeKeyStore() {
       pi.installProtected({ prot, password: 'frase secreta del evento', gameDir, download: async (u) => remote[u], keyStore: makeKeyStore() }),
       /No se pudo descifrar/
     );
-    assert.ok(!fs.existsSync(path.join(gameDir, 'mods', 'A.jar')));
+    assert.ok(!fs.existsSync(path.join(gameDir, 'mods', nm('contenido A'))));
   });
 
   await test('Mods públicos: solo https y solo .jar con nombre simple', async () => {

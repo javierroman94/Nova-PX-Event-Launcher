@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.165
+- Eventos protegidos: los mods se guardan en disco con nombres neutros (no se ven los nombres reales en la carpeta mods).
+
 ## 1.0.164
 - Seguridad: los modpacks importados (.novapx) ya no pueden traer ruta de Java propia ni argumentos que ejecuten código; se niegan los permisos del navegador interno; la config del evento exige https.
 
