@@ -38,5 +38,41 @@ const packs = require('../lib/packs');
   const got = await nova.installNovaClient({ request: async () => rel, download: async () => Buffer.from('jar'), dir, mc: '1.21.1' });
   assert.strictEqual(got, 'nova-client-0.1.0+mc1.21.1.jar');
   assert.deepStrictEqual(fs.readdirSync(path.join(dir, 'mods')), ['nova-client-0.1.0+mc1.21.1.jar']);
+
+  // Sodium + Iris: elige una pareja que no se rompa.
+  {
+    const zlib = require('zlib');
+    const fs2 = require('fs'), os2 = require('os'), path2 = require('path');
+    const crc = (b) => { let c, t = []; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } let x = 0xffffffff; for (const v of b) x = t[(x ^ v) & 255] ^ (x >>> 8); return (x ^ 0xffffffff) >>> 0; };
+    const jar = (json) => { const name = Buffer.from('fabric.mod.json'); const data = Buffer.from(JSON.stringify(json)); const c = crc(data);
+      const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt32LE(c, 14); lh.writeUInt32LE(data.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(name.length, 26);
+      const cd = Buffer.alloc(46); cd.writeUInt32LE(0x02014b50, 0); cd.writeUInt16LE(20, 4); cd.writeUInt16LE(20, 6); cd.writeUInt32LE(c, 16); cd.writeUInt32LE(data.length, 20); cd.writeUInt32LE(data.length, 24); cd.writeUInt16LE(name.length, 28);
+      const off = lh.length + name.length + data.length; const e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(1, 8); e.writeUInt16LE(1, 10); e.writeUInt32LE(cd.length + name.length, 12); e.writeUInt32LE(off, 16);
+      return Buffer.concat([lh, name, data, cd, name, e]); };
+    assert.ok(nova.matchesRange('1.11.7+mc26.3', ['<=1.12.0']));
+    assert.ok(!nova.matchesRange('1.13.0', '<=1.12.0'));
+    assert.ok(nova.matchesRange('0.9.3', '0.9.x') && !nova.matchesRange('0.10.0', '0.9.x'));
+    const iris = { id: 'iris', version: '1.11.7+mc26.3', depends: { sodium: '0.9.x' }, breaks: {} };
+    const sod = (v, br) => ({ id: 'sodium', version: v, depends: {}, breaks: br ? { iris: br } : {} });
+    assert.ok(nova.sodiumIrisConflict(sod('0.9.3', '<=1.12.0'), iris));
+    assert.strictEqual(nova.sodiumIrisConflict(sod('0.9.2'), iris), null);
+    const dir2 = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'nova-si-'));
+    fs2.writeFileSync(path2.join(dir2, 'sodium-0.9.3.jar'), jar(sod('0.9.3', '<=1.12.0')));
+    fs2.writeFileSync(path2.join(dir2, 'iris.jar'), jar(iris));
+    const okVersions = [
+      { version_number: '0.9.3', files: [{ url: 'https://cdn.modrinth.com/a.jar', filename: 'sodium-0.9.3-new.jar', primary: true }] },
+      { version_number: '0.9.2', files: [{ url: 'https://cdn.modrinth.com/b.jar', filename: 'sodium-0.9.2.jar', primary: true }] }
+    ];
+    const bodies = { 'https://cdn.modrinth.com/a.jar': jar(sod('0.9.3', '<=1.12.0')), 'https://cdn.modrinth.com/b.jar': jar(sod('0.9.2')) };
+    const logs = [];
+    let r1 = await nova.fixSodiumIris(dir2, { listSodium: async () => okVersions, download: async (u) => bodies[u], log: (t) => logs.push(t) });
+    assert.strictEqual(r1.action, 'sodium');
+    assert.deepStrictEqual(fs2.readdirSync(dir2).sort(), ['iris.jar', 'sodium-0.9.2.jar']);
+    // Sin pareja posible: se quita Iris.
+    fs2.rmSync(path2.join(dir2, 'sodium-0.9.2.jar')); fs2.writeFileSync(path2.join(dir2, 'sodium-0.9.3.jar'), jar(sod('0.9.3', '<=1.12.0')));
+    r1 = await nova.fixSodiumIris(dir2, { listSodium: async () => [okVersions[0]], download: async (u) => bodies[u], log: () => {} });
+    assert.strictEqual(r1.action, 'iris-removed');
+    assert.deepStrictEqual(fs2.readdirSync(dir2), ['sodium-0.9.3.jar']);
+  }
   console.log('nova.test.js OK');
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.148
+- **Sodium e Iris que no se llevan (Minecraft 26.3)**: Sodium 0.9.3 salió declarando que rompe con Iris hasta 1.12.0 y la última Iris estable es la 1.11.7, así que el juego no abría («Incompatible mods found»). En los perfiles Nova, el launcher ahora revisa la pareja al crearlos y antes de jugar: prueba versiones anteriores de Sodium hasta encontrar una compatible y, si no existe ninguna, quita Iris (los shaders) y lo avisa en la consola.
+
 ## 1.0.147
 - **Panel lateral de Versiones al estilo Lunar**: arriba la imagen, el título y la descripción (con «Leer más»); abajo, siempre a la vista, la versión, los loaders como iconos (el nombre sale al pasar el mouse), el estado de tu perfil y una fila con ajustes y el botón grande de jugar.
 

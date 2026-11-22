@@ -519,6 +519,20 @@ async function ensureForge(mcVersion, wantedVersion) {
   throw lastErr || new Error('No se pudo preparar Forge.');
 }
 
+
+// Sodium + Iris: si chocan, deja una pareja que funcione (cambia Sodium o quita Iris). Solo perfiles Nova.
+async function fixNovaMods(instanceDir, mc) {
+  const modsDir = path.join(instanceDir, 'mods');
+  if (!fs.existsSync(modsDir)) return;
+  try {
+    await novaLib.fixSodiumIris(modsDir, {
+      listSodium: () => content.compatibleVersions(apiRequest, 'sodium', 'mod', mc, 'fabric'),
+      download: (u) => downloadBuffer(u),
+      log: (t) => pushLog('launcher', t)
+    });
+  } catch (err) { pushLog('launcher', `[Nova] No se pudo revisar Sodium/Iris: ${err.message}`); }
+}
+
 /* ---------- Forge nuevo (61.x: Minecraft 1.21.11+) ---------- */
 
 // Estos Forge arrancan con ForgeBootstrap, que ForgeWrapper (el motor del launcher) no puede iniciar.
@@ -1260,6 +1274,7 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
         { onStatus: progress }
       );
       entry.novaSkipped = r.skipped;
+      await fixNovaMods(dir, entry.mcVersion);
       progress('Instalando Nova Client…');
       try {
         entry.novaClient = await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion });
@@ -3407,6 +3422,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     if (pack && pack.preset === 'optifine' && loaderType === 'vanilla') {
       customId = await ensureOptiFine(pack, javaPath);
     } else if (loaderType === 'fabric') {
+      if (pack && pack.preset === 'nova') await fixNovaMods(eventDir, manifest.minecraftVersion);
       send('game:status', { text: 'Preparando Fabric…' });
       customId = await ensureFabric(manifest.minecraftVersion, manifest.loader.version);
     } else if (loaderType === 'quilt') {
