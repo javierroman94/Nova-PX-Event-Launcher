@@ -2896,9 +2896,9 @@ button.ad-card-banner:hover { transform: translateY(-1px); border-color: var(--a
 
 /* Animación de inicio con el video del logo */
 .sp-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fdfdfd; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
-.splash.has-video { background: #fdfdfd; }
+.splash.has-video, .splash.wants-video { background: #fdfdfd; }
 .splash.has-video .sp-video { opacity: 1; }
-.splash.has-video .splash-content, .splash.has-video .sp-stars { opacity: 0; visibility: hidden; }
+.splash.has-video .splash-content, .splash.has-video .sp-stars, .splash.wants-video .splash-content, .splash.wants-video .sp-stars { opacity: 0; visibility: hidden; }
 
 /* Pantalla de acceso: mientras no hay sesión solo se ve el inicio de sesión / registro */
 body.auth-gate .sidebar, body.auth-gate .topbar, body.auth-gate .season-corner { display: none !important; }
@@ -2914,3 +2914,5 @@ body.auth-gate .acc-saved { max-width: 980px; margin-left: auto; margin-right: a
 
 /* Con las mascotas activas se deja una franja libre abajo para que no tapen el contenido */
 html.pet-floor .page.active { padding-bottom: 84px; }
+.vr-side { display: flex; flex-direction: column; }
+.vr-side > * { flex: none; }

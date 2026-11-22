@@ -72,6 +72,10 @@ El jugador lo instala **una sola vez**. Después, las noticias, los eventos, el 
 
 <table>
 <tr>
+<td width="50%"><img src="docs/img/versiones.png" alt="Versiones de Minecraft con Nova Client" /><br /><sub><b>Versiones</b> · solo lo que funciona con cada loader, con las portadas oficiales</sub></td>
+<td width="50%"><img src="docs/img/versiones-vanilla.png" alt="Versiones Vanilla" /><br /><sub><b>Vanilla</b> · de la 1.0 a la última, con versiones de prueba aparte</sub></td>
+</tr>
+<tr>
 <td width="50%"><img src="docs/img/library.png" alt="Biblioteca de modpacks" /><br /><sub><b>Biblioteca</b> · resumen, filtros y tarjetas grandes</sub></td>
 <td width="50%"><img src="docs/img/nuevo-perfil.png" alt="Nuevo perfil" /><br /><sub><b>Nuevo perfil</b> · crea, instala o importa desde otros launchers</sub></td>
 </tr>

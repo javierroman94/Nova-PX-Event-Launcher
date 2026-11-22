@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.133
+- **Una sola pantalla de carga**: mientras suena la animación de inicio ya no se ve la animación vieja por detrás; solo vuelve si el video no puede reproducirse.
+- **Panel de Versiones**: se arregló que el título, las etiquetas y la descripción quedaran tapados por la imagen.
+
 ## 1.0.132
 - **Pexy y sus amigos ya no tapan el contenido**: con las mascotas activas queda una franja libre abajo para que caminen sin pisar títulos.
 - **Pexy reacciona al internet**: comenta cuando se va y cuando vuelve la conexión.

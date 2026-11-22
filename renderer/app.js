@@ -45,12 +45,13 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
     vid.muted = !sound;
     vid.addEventListener('playing', () => { s.classList.add('has-video'); }, { once: true });
     vid.addEventListener('ended', () => { minDone = true; tryClose(); }, { once: true });
-    vid.addEventListener('error', () => { s.classList.remove('has-video'); }, { once: true });
+    vid.addEventListener('error', () => { s.classList.remove('has-video', 'wants-video'); }, { once: true });
+    setTimeout(() => { if (!s.classList.contains('has-video')) s.classList.remove('wants-video'); }, 3000); // si el video no arranca, vuelve la animación de siempre
     const p = vid.play();
-    if (p && p.catch) p.catch(() => { vid.muted = true; vid.play().catch(() => {}); });
+    if (p && p.catch) p.catch(() => { vid.muted = true; vid.play().catch(() => { s.classList.remove('wants-video'); }); });
   }
   window.api.getSettings().then((st) => {
-    if (st && st.intro === false) { minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
+    if (st && st.intro === false) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
     playIntro(!st || st.introSound !== false);
   }).catch(() => playIntro(true));
   s.addEventListener('click', close);
