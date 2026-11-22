@@ -851,6 +851,9 @@ function createWindow() {
   });
   mainWindow.setMenuBarVisibility(false);
   // La ventana solo muestra la interfaz del launcher: los enlaces https se abren en el navegador y nada más.
+  // El launcher no necesita cámara, micrófono, ubicación ni notificaciones del navegador: se niegan todos los permisos.
+  mainWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+  mainWindow.webContents.session.setPermissionCheckHandler(() => false);
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
     return { action: 'deny' };

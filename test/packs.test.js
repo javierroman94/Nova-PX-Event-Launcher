@@ -114,6 +114,9 @@ try {
     assert.deepStrictEqual(packs.sanitizeSettings(null), {});
     assert.strictEqual(packs.mergeSettings({ ramGb: 4 }, null).ramGb, 4);
     assert.strictEqual(packs.mergeSettings({ ramGb: 4 }, undefined).ramGb, 4);
+    const imp = packs.sanitizeImportedSettings({ javaPath: '\\\\evil\\java.exe', jvmArgs: '-Xmx4G -javaagent:x.jar -XX:OnError=calc @a.txt -XX:+UseG1GC' });
+    assert.strictEqual(imp.javaPath, undefined);
+    assert.strictEqual(imp.jvmArgs, '-Xmx4G -XX:+UseG1GC');
     console.log('packs.test OK');
     fs.rmSync(tmp, { recursive: true, force: true });
   })().catch((e2) => { console.error(e2); process.exit(1); });

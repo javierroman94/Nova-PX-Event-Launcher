@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.164
+- Seguridad: los modpacks importados (.novapx) ya no pueden traer ruta de Java propia ni argumentos que ejecuten código; se niegan los permisos del navegador interno; la config del evento exige https.
+
 ## 1.0.163
 - Novedades y soporte: por ahora solo visible para administradores (pestaña, ayuda, aviso tras actualizar).
 - La ventana de contraseña del evento queda siempre por encima de la pantalla de carga.
