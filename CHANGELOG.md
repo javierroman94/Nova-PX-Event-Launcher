@@ -6,6 +6,7 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 - **Forge 1.21.11 y los Forge nuevos (61.x)**: ya no usan el motor que fallaba con `NoClassDefFoundError: cpw/mods/modlauncher/Launcher`. Ahora se instalan con el instalador oficial de Forge (la primera vez tarda unos minutos) y se lanzan como versión propia.
 - **Minecraft muy viejo (1.10 y anteriores, snapshots viejos)**: si `options.txt` traía un idioma moderno (como `es_ec`), el juego se cerraba con un NullPointerException; ahora se cambia a `en_US` antes de iniciar.
 - Portada original de Nova Client para los perfiles Nova.
+- **Pantalla de carga y panel de juego para Nova Client**: al abrir un perfil Nova aparece una pantalla completa con fondo borroso, logo, estado y barra de progreso; al arrancar Minecraft pasa sola a un panel con la consola en vivo, los datos de la instancia, el tiempo de sesión y promos propias (Discord, evento, novedades). Se oculta con Ocultar o Esc y se puede desactivar en el propio panel.
 
 ## 1.0.143
 - **Portadas por defecto en tus perfiles**: los perfiles que creas (Vanilla, Fabric, Quilt, NeoForge…) sin imagen propia ahora usan la imagen oficial de su versión de Minecraft, igual que en Versiones; los snapshots usan la de su versión final. Los modpacks siguen con su propia imagen. Los perfiles **Nova** (con Nova Client) estrenan una portada original propia.

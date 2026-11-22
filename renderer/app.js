@@ -366,10 +366,14 @@ let launchTarget = null; // { kind: 'event' | 'pack', title, icon }
 function nowPlayingSet(on) {
   const np = $('np');
   np.hidden = !on;
-  if (!on) return;
+  const P = window.NovaLaunchPanel;
+  if (!on) { if (P) P.close(); return; }
   const t = launchTarget || { kind: 'event', title: eventInfo.name, icon: '' };
   $('np-title').textContent = t.title;
   $('np-icon').src = t.icon || 'images/logo.png';
+  // Solo los perfiles Nova (los que llevan Nova Client) abren la pantalla de carga y el panel de juego.
+  const isNova = t.kind === 'pack' && (t.preset === 'nova' || ((mp.installed || []).find((x) => x.title === t.title) || {}).preset === 'nova');
+  if (P && isNova && !P.isOpen()) { if (logLines.some((l) => l.startsWith('[minecraft]'))) P.resume(t, true); else P.open(t); }
 }
 
 function ago(iso) {
@@ -1325,7 +1329,7 @@ async function playPack(id) {
     return;
   }
   const p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
-  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: p.icon || '' };
+  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: p.icon || (p.preset === 'nova' ? 'images/nova-client-cover.jpg' : ''), preset: p.preset || '' };
   setPlaying(true);
   showCrash(null);
   goTo('home');
@@ -2954,6 +2958,7 @@ $('play-btn').addEventListener('click', async () => {
 
 window.api.onStatus((d) => {
   $('np-status').textContent = d.text;
+  if (window.NovaLaunchPanel) window.NovaLaunchPanel.status(d.text);
   if (!launchTarget || launchTarget.kind === 'event') $('status').textContent = d.text;
 });
 
@@ -2970,6 +2975,7 @@ window.api.onProgress((d) => {
   npBar.max = d.total;
   npBar.value = d.task;
   $('np-status').textContent = text;
+  if (window.NovaLaunchPanel) window.NovaLaunchPanel.progress(d.task, d.total, text);
   if (!launchTarget || launchTarget.kind === 'event') {
     const bar = $('progress');
     bar.hidden = false;
@@ -3057,7 +3063,10 @@ function logAdd(line) {
   logFollow();
 }
 
-window.api.onLog((d) => logAdd(`[${d.source}] ${d.line}`));
+window.api.onLog((d) => { logAdd(`[${d.source}] ${d.line}`); if (window.NovaLaunchPanel) window.NovaLaunchPanel.log(d.line, d.source); });
+window.__novaGameCtx = () => ({ target: launchTarget, packs: mp.installed, links: lastEventLinks, event: eventInfo });
+window.goTo = goTo;
+$('np').addEventListener('click', () => { if (window.NovaLaunchPanel && window.NovaLaunchPanel.isOpen()) window.NovaLaunchPanel.reopen(); });
 
 document.querySelectorAll('[data-log-filter]').forEach((b) =>
   b.addEventListener('click', () => {
