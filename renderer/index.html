@@ -1563,7 +1563,12 @@
     <form class="modal-box" id="pw-form">
       <h3 id="pw-title">Contraseña de instalación</h3>
       <p id="pw-text">Este modpack está protegido. Pide la contraseña al equipo del evento. Solo se pregunta una vez: después ya queda instalado.</p>
-      <input id="pw-input" type="password" autocomplete="off" placeholder="Contraseña" aria-label="Contraseña" />
+      <div class="pw-row">
+        <input id="pw-input" type="password" autocomplete="off" placeholder="Contraseña" aria-label="Contraseña" />
+        <button id="pw-eye" type="button" class="pw-eye" aria-label="Mostrar contraseña" title="Mostrar contraseña">Ver</button>
+      </div>
+      <button id="pw-forgot" type="button" class="link-btn">¿Olvidaste la contraseña?</button>
+      <p id="pw-forgot-text" class="muted" hidden>La contraseña la define el equipo del evento y no se puede recuperar desde el launcher, porque el contenido está cifrado con ella. Pídesela a un administrador: te la puede volver a dar, o cambiarla al publicar el evento de nuevo.</p>
       <div id="pw-msg" class="msg error" role="alert"></div>
       <div class="modal-actions">
         <button id="pw-cancel" type="button">Cancelar</button>

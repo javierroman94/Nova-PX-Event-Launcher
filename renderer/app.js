@@ -2999,6 +2999,9 @@ function askPassword(wrong) {
     const modal = $('pw-modal');
     const input = $('pw-input');
     input.value = '';
+    input.type = 'password';
+    $('pw-eye').textContent = 'Ver';
+    $('pw-forgot-text').hidden = true;
     $('pw-msg').textContent = wrong ? 'La contraseña no es correcta. Inténtalo otra vez.' : '';
     modal.hidden = false;
     input.focus();
@@ -3014,6 +3017,14 @@ function askPassword(wrong) {
       if (input.value) done(input.value);
     };
     const onCancel = () => done(null);
+    $('pw-eye').onclick = () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      $('pw-eye').textContent = show ? 'Ocultar' : 'Ver';
+      $('pw-eye').setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      input.focus();
+    };
+    $('pw-forgot').onclick = () => { $('pw-forgot-text').hidden = !$('pw-forgot-text').hidden; };
     $('pw-form').addEventListener('submit', onSubmit);
     $('pw-cancel').addEventListener('click', onCancel);
   });

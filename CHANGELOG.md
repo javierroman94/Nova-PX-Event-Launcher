@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.162
+- Contraseña del evento: botón Ver/Ocultar y aviso de qué hacer si se olvida.
+
 ## 1.0.161
 - Eventos protegidos: la contraseña se pide antes de la pantalla de carga, cada vez que hay que instalar o actualizar el evento.
 
