@@ -1813,11 +1813,12 @@ function paintIcon() {
   else box.textContent = $('mc-emoji').value.trim() || (LOADER_INFO[$('mc-loader').value] || LOADER_INFO.nova).icon;
 }
 
-function wizChip(label, on, onClick, disabled = false, title = '') {
+function wizChip(label, on, onClick, disabled = false, title = '', icon = null) {
   const c = el('button', 'mcw2-chip' + (on ? ' on' : ''));
   c.type = 'button'; c.disabled = disabled; if (title) c.title = title;
   c.setAttribute('role', 'radio'); c.setAttribute('aria-checked', String(!!on));
   c.textContent = (on ? '✓ ' : '') + label;
+  if (icon) c.prepend(icon);
   c.addEventListener('click', onClick);
   return c;
 }
@@ -1848,13 +1849,16 @@ function paintWizard() {
   if (!loaderOk(loader, ver)) { loader = 'forge'; $('mc-loader').value = loader; }
   Object.entries(LOADER_INFO).forEach(([id, info]) => {
     const ok = loaderOk(id, ver);
-    box.append(wizChip(info.name, loader === id, () => { $('mc-loader').value = id; paintWizard(); }, !ok, ok ? '' : `No disponible en Minecraft ${ver} (necesita 1.14 o más).`));
+    box.append(wizChip(info.name, loader === id, () => { $('mc-loader').value = id; paintWizard(); }, !ok, ok ? '' : `No disponible en Minecraft ${ver} (necesita 1.14 o más).`, window.loaderIcon ? window.loaderIcon(id) : null));
   });
   const info = LOADER_INFO[loader];
   desc.textContent = info.desc;
   const java = javaFor(ver);
   const row = el('div', 'mcw-sum-row');
-  row.append(el('span', 'chip', `Minecraft ${ver}`), el('span', 'chip', `${info.icon} ${info.name}`));
+  const loaderChip = el('span', 'chip', info.name);
+  const loaderArt = window.loaderIcon && window.loaderIcon(loader);
+  if (loaderArt) loaderChip.prepend(loaderArt); else loaderChip.textContent = `${info.icon} ${info.name}`;
+  row.append(el('span', 'chip', `Minecraft ${ver}`), loaderChip);
   if (java) row.append(el('span', 'chip', `Java ${java}`));
   sum.append(row);
   const notes = [];

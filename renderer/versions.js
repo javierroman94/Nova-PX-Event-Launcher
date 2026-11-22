@@ -236,7 +236,10 @@
       b.type = 'button'; b.disabled = !ok;
       b.title = ok ? `${LOADER_INFO[id].name}: ${LOADER_NOTE[id]}` : `${LOADER_INFO[id].name}: no disponible en ${ver}.`;
       b.setAttribute('aria-label', LOADER_INFO[id].name);
-      b.append(el('span', 'vr-loader-ico', LOADER_INFO[id].icon));
+      const ico = el('span', 'vr-loader-ico');
+      const art = window.loaderIcon && window.loaderIcon(id);
+      if (art) ico.append(art); else ico.textContent = LOADER_INFO[id].icon;
+      b.append(ico);
       if (LOADER_INFO[id].tag && ok) b.append(el('i', 'vr-loader-dot'));
       b.addEventListener('click', () => { loader = id; g('vr-src').value = id; paintGrid(); paintDetails(); });
       box.append(b);

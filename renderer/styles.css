@@ -3011,6 +3011,7 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 .vr-side .vr-loaders { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 6px; width: 100%; }
 .vr-side .vr-loader { position: relative; display: grid; place-items: center; flex: 1 1 0; min-width: 0; max-width: 46px; height: 44px; padding: 0; border-radius: 12px; }
 .vr-side .vr-loader-ico { font-size: 20px; line-height: 1; }
+.vr-side .vr-loader-ico .loader-ico { width: 22px; height: 22px; }
 .vr-side .vr-loader.on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .vr-side .vr-loader-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--ok, #4ade80); border: 2px solid var(--raised); }
 .vr-loader-note { font-size: 12px; line-height: 1.4; }
@@ -3352,3 +3353,7 @@ main { container-type: inline-size; overflow-x: hidden; }
 #page-home .lp-top:has(#lp-online[hidden]) { display: none; }
 @media (max-width: 760px) { .hc-welcome { left: 20px; font-size: 21px; } .hc-event { right: 20px; } }
 
+
+/* Iconos de los loaders (Nova, Fabric, Forge…) */
+.loader-ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; object-fit: contain; flex: none; }
+.mcw2-chip .loader-ico, .chip .loader-ico { margin-right: 6px; }
