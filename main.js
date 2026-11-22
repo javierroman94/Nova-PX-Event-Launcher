@@ -384,9 +384,14 @@ const keyStore = {
   }
 };
 
+const MAX_DOWNLOAD = 1.5 * 1024 * 1024 * 1024; // tope por archivo: evita llenar la memoria con una descarga enorme
 async function downloadBuffer(url) {
   const res = await fetchWithTimeout(url, 180000);
-  return Buffer.from(await res.arrayBuffer());
+  const len = Number(res.headers && res.headers.get && res.headers.get('content-length'));
+  if (len && len > MAX_DOWNLOAD) throw new Error('El archivo a descargar es demasiado grande.');
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length > MAX_DOWNLOAD) throw new Error('El archivo a descargar es demasiado grande.');
+  return buf;
 }
 
 // Instala o actualiza los mods. Con modpack protegido pide la contraseña solo si hace falta
@@ -1008,6 +1013,17 @@ app.whenReady().then(() => {
   setTimeout(checkRev, 4000).unref();
   setInterval(checkRev, 20 * 1000).unref();
   setTimeout(pingUsage, 3000);
+  // Si el launcher se cerró a la fuerza con un evento protegido abierto, quedaron mods sueltos: se limpian (solo si hay copia cifrada para restaurarlos).
+  setTimeout(async () => {
+    try {
+      if (launching) return;
+      const manifest = await loadData('manifest');
+      if (!manifest || !manifest.protected || manifest.showMods === true) return;
+      const gameDir = instanceDir(GAME_DIR, manifest);
+      const cacheDir = path.join(app.getPath('userData'), 'pack-cache', instanceId(manifest));
+      if (packInstall.canRestoreFromCache({ prot: manifest.protected, gameDir, keyStore, cacheDir }) && !launching) packInstall.wipeProtected(gameDir);
+    } catch {}
+  }, 8000).unref();
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();

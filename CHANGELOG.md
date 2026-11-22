@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.167
+- Eventos protegidos: si el launcher se cerró a la fuerza, al abrir limpia los mods sueltos del evento (solo si hay copia cifrada para restaurarlos).
+- Seguridad: tope de 1,5 GB por archivo descargado.
+
 ## 1.0.166
 - Admin: la fecha de inicio del evento muestra la zona horaria de tu PC y avisa que cada jugador la ve en su hora local.
 - Intro: se silencia el tramo donde suena la voz (se conservan los efectos de antes y después).
