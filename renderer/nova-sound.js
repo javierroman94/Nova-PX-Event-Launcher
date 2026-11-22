@@ -20,13 +20,45 @@
   let ctx = null; let last = 0; let lastBig = null; let prev = -1; let on = true;
   try { const v = localStorage.getItem(KEY); on = v === null ? true : v === 'true'; } catch {}
 
-  const themed = () => document.documentElement.dataset.theme === 'eclipse' && !document.documentElement.classList.contains('no-fx');
+  // Temas con sonido: Nova Eclipse (cósmico y suave) y Vice Sunset (sintetizador retro de los 80).
+  const themeId = () => { const t = document.documentElement.dataset.theme; return (t === 'eclipse' || t === 'vicesunset') && !document.documentElement.classList.contains('no-fx') ? t : ''; };
+  const themed = () => !!themeId();
+  const retro = () => document.documentElement.dataset.theme === 'vicesunset';
+  // Vice Sunset: escala menor pentatónica aguda con "pluck" de sierra, riser de sintetizador y bombo corto.
+  const RETRO = [392, 466.16, 523.25, 587.33, 698.46, 783.99];
+  function rTick() {
+    const a = audio(); if (!a) return;
+    prev = core.pickIndex(prev, Math.random());
+    const t = a.currentTime; const o = a.createOscillator(); const f = a.createBiquadFilter(); const g = a.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(RETRO[prev % RETRO.length] * 2, t); o.frequency.exponentialRampToValueAtTime(RETRO[prev % RETRO.length], t + 0.09);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.03, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    o.connect(f).connect(g).connect(a.destination); o.start(t); o.stop(t + 0.15);
+  }
+  function rRiser() {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime; const o = a.createOscillator(); const o2 = a.createOscillator(); const f = a.createBiquadFilter(); const g = a.createGain();
+    o.type = 'sawtooth'; o2.type = 'square';
+    o.frequency.setValueAtTime(130.81, t); o.frequency.exponentialRampToValueAtTime(523.25, t + 0.34);
+    o2.frequency.setValueAtTime(131.5, t); o2.frequency.exponentialRampToValueAtTime(526, t + 0.34);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(4200, t + 0.34);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.1); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+    o.connect(f); o2.connect(f); f.connect(g).connect(a.destination); o.start(t); o2.start(t); o.stop(t + 0.45); o2.stop(t + 0.45);
+  }
+  function rKick() {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.16);
+    g.gain.setValueAtTime(0.11, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.24);
+  }
   function audio() {
     if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     return ctx.state === 'running' || ctx.state === 'suspended' ? ctx : null;
   }
   function tick() {
+    if (retro()) return rTick();
     const a = audio(); if (!a) return;
     prev = core.pickIndex(prev, Math.random());
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
@@ -35,6 +67,7 @@
     o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.18);
   }
   function whoosh() {
+    if (retro()) return rRiser();
     const a = audio(); if (!a) return;
     const t = a.currentTime; const len = Math.floor(a.sampleRate * 0.5);
     const buf = a.createBuffer(1, len, a.sampleRate); const d = buf.getChannelData(0);
@@ -45,6 +78,7 @@
     src.connect(f).connect(g).connect(a.destination); src.start(t); src.stop(t + 0.5);
   }
   function thud() {
+    if (retro()) return rKick();
     const a = audio(); if (!a) return;
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.14);

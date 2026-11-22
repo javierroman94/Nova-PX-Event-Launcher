@@ -51,6 +51,7 @@
     nether: { shape: 'ember', colors: ['#ff6a2b', '#ffb347', '#ff3b1f'] },
     end: { shape: 'spark', colors: ['#b86bff', '#e0c3ff', '#7a3cd0'] },
     eclipse: { shape: 'spark', colors: ['#e8334a', '#6f93ff', '#ffffff'] },
+    vicesunset: { shape: 'spark', colors: ['#ff3d8b', '#ffb347', '#2de2e6'] },
     oled: { shape: 'dot', colors: null },
     light: { shape: 'dot', colors: null },
     dark: { shape: 'dot', colors: null }
@@ -160,7 +161,7 @@
     ecuador: ['chick', 'fox', 'bunny']
   };
   const THEME_ROSTER = {
-    nova: ['bot', 'bee', 'chick'], cyberpunk: ['bot', 'fox', 'ghost'], synthwave: ['bot', 'bunny', 'bee'], eclipse: ['fox', 'bot', 'bee'],
+    nova: ['bot', 'bee', 'chick'], cyberpunk: ['bot', 'fox', 'ghost'], synthwave: ['bot', 'bunny', 'bee'], eclipse: ['fox', 'bot', 'bee'], vicesunset: ['bot', 'bunny', 'bee'],
     deepdark: ['bot', 'ghost', 'fox'], nether: ['pumpkin', 'fox', 'ghost'], end: ['ghost', 'bot', 'bee'], sakura: ['bunny', 'bee', 'chick']
   };
   const DEFAULT_ROSTER = ['bunny', 'chick', 'fox'];

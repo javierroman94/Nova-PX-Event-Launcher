@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.142
+- **Tema nuevo: Vice Sunset** (Ajustes → Apariencia): atardecer neón en rosa, naranja, morado y turquesa, con sol y palmeras de fondo, cursor propio, estela de chispas y sonidos de sintetizador retro al pasar el cursor (se apagan en Ajustes).
+
 ## 1.0.141
 - **Quilt ya se puede jugar**: antes el launcher decía «el loader quilt todavía no está soportado» al pulsar Jugar. Ahora prepara Quilt y abre el juego.
 
