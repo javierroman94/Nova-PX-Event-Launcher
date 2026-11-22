@@ -451,54 +451,72 @@ async function ensureQuilt(mcVersion, loaderVersion) {
 
 // Descarga el instalador de Forge (o el jar "universal" en Minecraft 1.12.2 y anteriores) y
 // devuelve su ruta. minecraft-launcher-core se encarga de instalarlo al iniciar el juego.
+// ¿El instalador de Forge sirve para arrancar? Debe ser un zip válido con version.json (si no, el motor de
+// lanzamiento cae en Vanilla sin avisar). Los instaladores muy viejos de 1.12.2 no lo traen.
+function forgeInstallerOk(file) {
+  try {
+    const z = readZip(fs.readFileSync(file));
+    return z.has('version.json') && z.has('install_profile.json');
+  } catch { return false; }
+}
+
 async function ensureForge(mcVersion, wantedVersion) {
   if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
 
   const dir = path.join(GAME_DIR, 'installers');
   fs.mkdirSync(dir, { recursive: true });
 
-  let forgeVersion = null;
-  try {
-    const promos = wantedVersion
-      ? null
-      : await fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json');
-    forgeVersion = loaders.pickForgeVersion(promos, mcVersion, wantedVersion);
-  } catch (err) {
+  let promos = null;
+  try { promos = await fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json'); } catch {}
+
+  // Intenta la versión pedida por el modpack; si su instalador no sirve, prueba la recomendada de ese Minecraft.
+  const candidates = [];
+  const wanted = loaders.pickForgeVersion(promos, mcVersion, wantedVersion);
+  if (wantedVersion && !wanted) throw new Error(`La versión de Forge "${wantedVersion}" no es válida.`);
+  if (wanted) candidates.push(wanted);
+  const rec = loaders.pickForgeVersion(promos, mcVersion, '');
+  if (rec && !candidates.includes(rec)) candidates.push(rec);
+
+  if (!candidates.length) {
     // Sin internet: se reutiliza el instalador de Forge que ya se descargó para esta versión.
-    const cached = fs
-      .readdirSync(dir)
-      .filter((f) => f.startsWith(`forge-${mcVersion}-`))
-      .sort()
-      .pop();
+    const cached = fs.readdirSync(dir).filter((f) => f.startsWith(`forge-${mcVersion}-`) && forgeInstallerOk(path.join(dir, f))).sort().pop();
     if (cached) return path.join(dir, cached);
-    throw new Error(`No se pudo consultar las versiones de Forge: ${err.message}`);
-  }
-  if (!forgeVersion) {
-    throw new Error(
-      wantedVersion
-        ? `La versión de Forge "${wantedVersion}" no es válida.`
-        : `Forge no tiene una versión publicada para Minecraft ${mcVersion}.`
-    );
+    throw new Error(promos ? `Forge no tiene una versión publicada para Minecraft ${mcVersion}.` : 'No se pudo consultar las versiones de Forge. Revisa tu conexión.');
   }
 
-  const url = loaders.forgeUrl(mcVersion, forgeVersion);
-  const dest = path.join(dir, loaders.forgeFileName(mcVersion, forgeVersion));
-  if (fs.existsSync(dest)) return dest;
-
-  send('game:status', { text: `Descargando Forge ${forgeVersion}…` });
-  fs.writeFileSync(dest, await downloadBuffer(url));
-
-  // Forge publica el hash sha1 junto a cada archivo: si está disponible, se comprueba.
-  try {
-    const expected = (await (await fetchWithTimeout(`${url}.sha1`)).text()).trim().split(/\s+/)[0].toLowerCase();
-    if (/^[0-9a-f]{40}$/.test(expected) && sha1OfFile(dest).toLowerCase() !== expected) {
-      fs.unlinkSync(dest);
-      throw new Error('El instalador de Forge descargado está dañado (no coincide su sha1). Inténtalo de nuevo.');
+  let lastErr = null;
+  for (let i = 0; i < candidates.length; i++) {
+    const forgeVersion = candidates[i];
+    const url = loaders.forgeUrl(mcVersion, forgeVersion);
+    const dest = path.join(dir, loaders.forgeFileName(mcVersion, forgeVersion));
+    try {
+      if (fs.existsSync(dest) && !forgeInstallerOk(dest)) fs.unlinkSync(dest); // descarga vieja dañada: se baja de nuevo
+      if (!fs.existsSync(dest)) {
+        send('game:status', { text: `Descargando Forge ${forgeVersion}…` });
+        fs.writeFileSync(dest, await downloadBuffer(url));
+        // Forge publica el hash sha1 junto a cada archivo: si está disponible, se comprueba.
+        try {
+          const expected = (await (await fetchWithTimeout(`${url}.sha1`)).text()).trim().split(/\s+/)[0].toLowerCase();
+          if (/^[0-9a-f]{40}$/.test(expected) && sha1OfFile(dest).toLowerCase() !== expected) {
+            fs.unlinkSync(dest);
+            throw new Error('El instalador de Forge descargado está dañado (no coincide su sha1). Inténtalo de nuevo.');
+          }
+        } catch (err) {
+          if (!fs.existsSync(dest)) throw err;
+        }
+      }
+      if (!forgeInstallerOk(dest)) {
+        try { fs.unlinkSync(dest); } catch {}
+        throw new Error(`El instalador de Forge ${forgeVersion} no es compatible con este launcher.`);
+      }
+      if (i > 0) pushLog('launcher', `[Nova] Forge ${candidates[0]} no sirve; se usa Forge ${forgeVersion} para Minecraft ${mcVersion}.`);
+      return dest;
+    } catch (err) {
+      lastErr = err;
+      pushLog('launcher', `[Nova] Forge ${forgeVersion}: ${err.message}`);
     }
-  } catch (err) {
-    if (!fs.existsSync(dest)) throw err;
   }
-  return dest;
+  throw lastErr || new Error('No se pudo preparar Forge.');
 }
 
 /* ---------- OptiFine solo (sin Forge) ---------- */

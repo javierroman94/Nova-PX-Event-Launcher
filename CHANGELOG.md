@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.135
+- **Modpacks de Forge que abrían como Vanilla** (ej. RLCraft de CurseForge): ahora se comprueba el instalador de Forge antes de jugar; si está dañado se vuelve a descargar y, si es demasiado viejo, se usa la versión recomendada de Forge para ese Minecraft. Si algo falla, se ve el motivo en la Consola en vez de abrir Vanilla sin avisar.
+
 ## 1.0.134
 - **Animación de inicio completa**: el sonido ya no se corta en «Nova»; ahora suena la animación entera (~9 s) y el launcher espera a que termine.
 
