@@ -5045,12 +5045,15 @@ async function renderFriends() {
       const name = el('span', 'friend-name pii', f.nick);
       const stTxt = f.playing ? 'Jugando' : f.online ? 'En línea' : f.seen ? `Activo ${agoMs(Date.now() - f.seen)}` : 'Desconectado';
       const st = el('span', 'muted friend-st', stTxt);
-      const chat = el('button', 'ghost friend-chat', '💬');
+      st.dataset.on = f.online || f.playing ? '1' : '0';
+      const chat = el('button', 'ghost friend-chat');
+      chat.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H10l-4.5 3.5V17.5H4A1.5 1.5 0 012.5 16V7A1.5 1.5 0 014 5.5z"/></svg>';
       chat.type = 'button';
       chat.title = `Chatear con ${f.nick}`;
       if (f.unread) chat.append(el('span', 'friend-badge', String(Math.min(f.unread, 9))));
       chat.addEventListener('click', () => openChat(f));
-      const rm = el('button', 'ghost friend-rm', '✕');
+      const rm = el('button', 'ghost friend-rm');
+      rm.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
       rm.type = 'button';
       rm.setAttribute('aria-label', `Quitar a ${f.nick}`);
       rm.addEventListener('click', async () => {
@@ -5101,14 +5104,14 @@ async function chatPoll() {
     if (r.messages && r.messages.length) log.querySelector('.chat-empty')?.remove();
     (r.messages || []).forEach((m) => { log.append(chatBubble(m, r.me)); chatSince = Math.max(chatSince, m.id); });
     if (r.messages && r.messages.length && atEnd) log.scrollTop = log.scrollHeight;
-    $('chat-status').textContent = r.playing ? 'Jugando' : r.online ? 'En línea' : 'Desconectado';
+    $('chat-status').textContent = r.playing ? 'Jugando' : r.online ? 'En línea' : 'Desconectado'; $('chat-status').dataset.on = r.online || r.playing ? '1' : '0';
   } catch (e) { $('chat-status').textContent = cleanError(e); }
 }
 function openChat(f) {
   chatWith = f.nick;
   chatSince = 0;
   $('chat-name').textContent = f.nick;
-  $('chat-status').textContent = f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado';
+  $('chat-status').textContent = f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado'; $('chat-status').dataset.on = f.online || f.playing ? '1' : '0';
   $('chat-face').replaceChildren(head3d({ nick: f.nick }, 40));
   const log = $('chat-log');
   log.replaceChildren(el('p', 'muted chat-empty', 'Aquí empieza la conversación. Los mensajes se guardan unos días en el servidor del launcher.'));

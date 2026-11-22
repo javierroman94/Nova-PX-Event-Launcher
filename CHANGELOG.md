@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.157
+- Amigos y chat con diseño más limpio: filas con estado en línea/jugando/desconectado, iconos en vez de emojis, botón de quitar que aparece al pasar el cursor; el chat con burbujas más claras, cabecera ordenada y botón de cerrar bien ubicado.
+
 ## 1.0.156
 - Diseño más sobrio: barra lateral con grupos en texto normal, selección discreta, línea separadora y cuenta abajo; Inicio con portada limpia (nombre, versión, botón Jugar y evento), títulos de sección simples, listas y tarjetas con bordes finos y sin brillos. El huevo de la mascota queda centrado.
 - Evento próximamente: en lugar del botón apagado, la portada muestra una cuenta atrás grande (días, horas, minutos y segundos), la fecha de inicio y un aviso de que Jugar se activa al empezar.
