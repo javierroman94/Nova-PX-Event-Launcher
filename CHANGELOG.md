@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.145
+- **Actualizaciones más rápidas y automáticas**: el launcher busca nuevas versiones al abrirse, cada 10 minutos (antes 30) y cada vez que vuelves a su ventana. Si hay una, la descarga sola y te avisa con el botón de arriba; ya no hace falta buscarla a mano.
+
 ## 1.0.144
 - **Forge 1.21.11 y los Forge nuevos (61.x)**: ya no usan el motor que fallaba con `NoClassDefFoundError: cpw/mods/modlauncher/Launcher`. Ahora se instalan con el instalador oficial de Forge (la primera vez tarda unos minutos) y se lanzan como versión propia.
 - **Minecraft muy viejo (1.10 y anteriores, snapshots viejos)**: si `options.txt` traía un idioma moderno (como `es_ec`), el juego se cerraba con un NullPointerException; ahora se cambia a `en_US` antes de iniciar.

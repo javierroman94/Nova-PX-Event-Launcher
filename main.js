@@ -859,8 +859,18 @@ function setupUpdater() {
   autoUpdater.on('error', (e) =>
     setUpdate({ state: 'error', reason: classifyNetworkError(e), message: String((e && e.message) || e).slice(0, 200) })
   );
-  checkForUpdates();
-  setInterval(checkForUpdates, 30 * 60 * 1000);
+  // Busca solo: al abrir, cada 10 minutos y cada vez que vuelves a la ventana (con 2 minutos de margen).
+  // Si ya hay una descarga en curso o lista para instalar no vuelve a preguntar (para no borrar el aviso).
+  let lastAuto = 0;
+  const autoCheck = (force) => {
+    if (['checking', 'downloading', 'ready'].includes(updateState.state)) return;
+    if (!force && Date.now() - lastAuto < 2 * 60 * 1000) return;
+    lastAuto = Date.now();
+    checkForUpdates();
+  };
+  autoCheck(true);
+  setInterval(() => autoCheck(true), 10 * 60 * 1000);
+  app.on('browser-window-focus', () => autoCheck(false));
 }
 
 /* ---------- Discord Rich Presence ---------- */
