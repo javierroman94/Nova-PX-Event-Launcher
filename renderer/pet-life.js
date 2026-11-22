@@ -303,7 +303,15 @@
     d.showModal();
   }
   window.NovaPetLife.birth = birth;
-  if (!isBorn()) setTimeout(() => { if (!isBorn() && !document.querySelector('dialog[open]')) birth(); else if (!isBorn()) setTimeout(birth, 15000); }, 4000);
+  // El huevo sale solo cuando el jugador ya terminó el asistente de bienvenida (inicio de sesión y recorrido) y no hay otro cuadro abierto.
+  async function welcomed() { try { const s = await window.api.getSettings(); return !!(s && s.welcomed); } catch { return true; } }
+  async function tryBirth() {
+    if (isBorn() || document.querySelector('.pl-birth')) return;
+    if (document.querySelector('dialog[open]') || !(await welcomed())) { setTimeout(tryBirth, 5000); return; }
+    birth();
+  }
+  window.addEventListener('nova-welcome-done', () => setTimeout(tryBirth, 3000));
+  if (!isBorn()) setTimeout(tryBirth, 6000);
   /* ---------- PX flotante sobre Minecraft (opcional) ---------- */
   const OV = 'px.pet.overlay';
   const ovOn = () => { try { return localStorage.getItem(OV) === '1'; } catch { return false; } };

@@ -3476,6 +3476,7 @@ async function wzFinish() {
   try { await window.api.saveSettings({ welcomed: true }); } catch {}
   if ($('welcome-modal').open) $('welcome-modal').close();
   goTo('home');
+  window.dispatchEvent(new Event('nova-welcome-done'));
 }
 function maybeWelcome(settings, sys) {
   if (settings.welcomed) return;
