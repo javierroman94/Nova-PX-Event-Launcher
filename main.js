@@ -519,6 +519,62 @@ async function ensureForge(mcVersion, wantedVersion) {
   throw lastErr || new Error('No se pudo preparar Forge.');
 }
 
+/* ---------- Forge nuevo (61.x: Minecraft 1.21.11+) ---------- */
+
+// Estos Forge arrancan con ForgeBootstrap, que ForgeWrapper (el motor del launcher) no puede iniciar.
+// Se instalan con el instalador oficial y se lanzan como versión propia, igual que Fabric.
+function forgeInstallerInfo(file) {
+  try {
+    const z = readZip(fs.readFileSync(file));
+    if (!z.has('version.json')) return null;
+    const json = JSON.parse(z.read('version.json').toString('utf8'));
+    return { id: json.id, bootstrap: /net\.minecraftforge\.bootstrap\./.test(String(json.mainClass || '')) };
+  } catch { return null; }
+}
+
+async function installForgeClient(installer, info, mcVersion, javaPath) {
+  const id = info.id;
+  const jsonFile = path.join(GAME_DIR, 'versions', id, `${id}.json`);
+  const done = path.join(GAME_DIR, 'versions', id, '.nova-installed');
+  if (fs.existsSync(jsonFile) && fs.existsSync(done)) return id;
+  await ensureVanillaFiles(mcVersion);
+  const profiles = path.join(GAME_DIR, 'launcher_profiles.json');
+  if (!fs.existsSync(profiles)) fs.writeFileSync(profiles, JSON.stringify({ profiles: {} }));
+  // El instalador es una aplicación de consola: se usa java.exe, no javaw.exe, para poder leer su salida.
+  let java = javaPath || 'java';
+  if (/javaw(\.exe)?$/i.test(java)) { const alt = java.replace(/javaw(\.exe)?$/i, 'java$1'); if (fs.existsSync(alt)) java = alt; }
+  send('game:status', { text: 'Instalando Forge (la primera vez tarda unos minutos)…' });
+  pushLog('launcher', `[Nova] Instalando Forge ${id} con el instalador oficial…`);
+  const tail = [];
+  await new Promise((resolve, reject) => {
+    const child = require('child_process').spawn(java, ['-jar', installer, '--installClient', GAME_DIR], { cwd: GAME_DIR, windowsHide: true });
+    const timer = setTimeout(() => { try { child.kill(); } catch {} reject(new Error('La instalación de Forge tardó demasiado y se canceló.')); }, 20 * 60 * 1000);
+    const onData = (b) => { for (const line of String(b).split(/\r?\n/)) { if (!line.trim()) continue; tail.push(line); if (tail.length > 40) tail.shift(); if (!/^\s+\S+\.class$/.test(line) && !/^\s{2}/.test(line)) pushLog('launcher', `[Forge] ${line}`); } };
+    child.stdout.on('data', onData);
+    child.stderr.on('data', onData);
+    child.on('error', (err) => { clearTimeout(timer); reject(new Error(`No se pudo ejecutar el instalador de Forge: ${err.message}`)); });
+    child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`El instalador de Forge terminó con error (${code}). ${tail.filter((l) => !/^\s/.test(l)).slice(-3).join(' | ')}`)); });
+  });
+  if (!fs.existsSync(jsonFile)) throw new Error('El instalador de Forge terminó, pero no dejó la versión instalada.');
+  fs.writeFileSync(done, new Date().toISOString());
+  return id;
+}
+
+// Minecraft muy viejo (1.10 y anteriores) se cierra si options.txt trae un idioma que no conoce (por ejemplo es_ec de versiones nuevas).
+function sanitizeOldOptions(gameDir, mc) {
+  try {
+    const m = /^1\.(\d+)/.exec(String(mc));
+    const w = /^(\d\d)w\d+/.exec(String(mc));
+    const old = (m && +m[1] <= 10) || (w && +w[1] <= 15);
+    if (!old) return;
+    const file = path.join(gameDir, 'options.txt');
+    if (!fs.existsSync(file)) return;
+    const text = fs.readFileSync(file, 'utf8');
+    const next = text.replace(/^lang:(?!en_US\s*$).*$/m, 'lang:en_US');
+    if (next !== text) { fs.writeFileSync(file, next); pushLog('launcher', `[Nova] options.txt: idioma cambiado a en_US (Minecraft ${mc} no conoce el idioma anterior).`); }
+  } catch {}
+}
+
 /* ---------- OptiFine solo (sin Forge) ---------- */
 
 // Deja el Minecraft vanilla de esa versión en <GAME_DIR>/versions (el instalador de OptiFine lo necesita).
@@ -3307,11 +3363,17 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     } else if (loaderType === 'forge') {
       send('game:status', { text: 'Preparando Forge…' });
       forgeInstaller = await ensureForge(manifest.minecraftVersion, manifest.loader.version);
+      const finfo = forgeInstallerInfo(forgeInstaller);
+      if (finfo && finfo.bootstrap) {
+        customId = await installForgeClient(forgeInstaller, finfo, manifest.minecraftVersion, javaPath);
+        forgeInstaller = null;
+      }
     } else if (loaderType === 'neoforge') {
       send('game:status', { text: 'Preparando NeoForge…' });
       forgeInstaller = await ensureNeoForge(manifest.minecraftVersion, manifest.loader.version);
     }
 
+    sanitizeOldOptions(eventDir, manifest.minecraftVersion);
     const userArgs = st.jvmArgs.split(/\s+/).filter(Boolean);
     const customArgs = userArgs.length ? userArgs : jvmDefaults.defaultJvmArgs({ javaMajor: loaders.requiredJavaMajor(manifest.minecraftVersion) });
     const launchOpts = {
