@@ -439,8 +439,7 @@ function iconTint(url) {
 }
 let lpPackId = null;
 function renderLaunchpad(packs) {
-  const w = $('lp-welcome');
-  w.replaceChildren(document.createTextNode('Bienvenido de nuevo, '), el('span', 'pii', ($('player-name').textContent || '').replace('Sin sesión', 'jugador')));
+  renderCover();
   const last = packs.slice().sort((x, y) => String(y.lastPlayedAt || y.installedAt || '').localeCompare(String(x.lastPlayedAt || x.installedAt || '')))[0];
   lpPackId = last ? last.id : null;
   $('lp-play').disabled = !last;
@@ -451,7 +450,6 @@ function renderLaunchpad(packs) {
   artBox.replaceChildren();
   const hero = $('lp-hero');
   hero.classList.toggle('has-pack', !!last);
-  const evArt = eventInfo.image || eventInfo.logo;
   if (last) {
     $('lp-kicker').textContent = last.lastPlayedAt ? `Última partida · ${ago(last.lastPlayedAt)}` : 'Listo para jugar';
     $('lp-pack-title').textContent = last.title;
@@ -466,11 +464,12 @@ function renderLaunchpad(packs) {
     } else artBox.textContent = last.emoji || last.title.slice(0, 1).toUpperCase();
     img.hidden = true;
   } else {
+    // La imagen del evento ya va en la portada de arriba; aquí no se repite.
     $('lp-kicker').textContent = 'Bienvenido';
     $('lp-pack-title').textContent = 'Crea o instala tu primer modpack';
     artBox.textContent = '🎮';
-    img.hidden = !evArt;
-    if (evArt) { img.src = evArt; hero.style.setProperty('--lp-bg', `url(${JSON.stringify(evArt)})`); }
+    img.hidden = true;
+    hero.style.removeProperty('--lp-bg');
   }
   const chips = $('lp-chips');
   chips.replaceChildren();
@@ -478,9 +477,32 @@ function renderLaunchpad(packs) {
     chips.append(el('span', 'chip', `Minecraft ${last.mcVersion}`), el('span', 'chip', LOADER_NAMES[last.loader && last.loader.type] || 'Vanilla'));
     if (last.preset === 'nova') chips.append(el('span', 'chip', '⚡ Nova'));
   }
+}
+
+// Portada de Inicio: siempre arriba y a todo el ancho; con la imagen del evento o, si no hay, el logo de NovaPX.
+function renderCover() {
+  const w = $('hc-welcome');
+  const nick = ($('player-name').textContent || '').replace('Sin sesión', '').trim();
+  w.replaceChildren(document.createTextNode(nick ? 'Bienvenido, ' : 'Bienvenido'));
+  if (nick) w.append(el('span', 'pii', nick));
+  const art = eventInfo.image || eventInfo.logo || '';
+  const img = $('hc-img');
+  const cover = $('home-cover');
+  cover.classList.toggle('has-img', !!art);
+  if (art) { if (img.getAttribute('src') !== art) img.src = art; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); }
+  $('hc-logo').hidden = !!art;
   $('lp-event').textContent = eventActive ? 'Evento activo →' : 'Próximo evento →';
   $('lp-event').classList.toggle('live', !!eventActive);
 }
+$('hc-img').addEventListener('error', () => { $('hc-img').hidden = true; $('home-cover').classList.remove('has-img'); $('hc-logo').hidden = false; });
+// La portada ocupa el alto visible del área principal; al bajar se va con el resto.
+(() => {
+  const main = document.querySelector('main');
+  if (!main) return;
+  const fit = () => document.documentElement.style.setProperty('--main-h', `${main.clientHeight}px`);
+  fit();
+  try { new ResizeObserver(fit).observe(main); } catch { window.addEventListener('resize', fit); }
+})();
 $('lp-play').addEventListener('click', () => { if (lpPackId) playPack(lpPackId); });
 $('lp-event').addEventListener('click', () => goTo('event'));
 
@@ -1370,7 +1392,8 @@ async function playPack(id) {
     return;
   }
   const p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
-  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: p.icon || '', preset: p.preset || '' };
+  // La pantalla de carga de un modpack usa su propia portada (o la de su versión), no el logo del evento.
+  launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: packCover(p) || '', preset: p.preset || '' };
   setPlaying(true);
   showCrash(null);
   goTo('home');

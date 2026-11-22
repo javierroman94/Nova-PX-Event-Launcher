@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.170
+- Inicio: la portada de NovaPX queda siempre arriba y ocupa todo el ancho y alto visible (desde el menú hasta el borde derecho). Muestra la imagen del evento o, si no hay, el logo de NovaPX; arriba a la izquierda «Bienvenido» y abajo a la derecha «Próximo evento», que lleva a la pestaña Evento. Jugar, Continuar y lo demás quedan debajo y la portada se va al bajar.
+- Modpacks: la pantalla de carga de un modpack muestra su propia portada (o la de su versión de Minecraft) en lugar del logo del evento.
+
 ## 1.0.169
 - Instancias: los perfiles nuevos (también los Nova) usan el fondo vanilla de su versión de Minecraft en lugar del fondo de Nova.
 
