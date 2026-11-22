@@ -2907,3 +2907,7 @@ body.auth-gate #page-account { width: 100%; max-width: 1000px; margin: 0 auto; }
 body.auth-gate #page-account .page-title { text-align: center; font-size: 26px; margin-bottom: 18px; }
 body.auth-gate #logout-btn { display: none; }
 body.auth-gate .acc-saved { max-width: 980px; margin-left: auto; margin-right: auto; }
+
+/* El nombre ya sale en la tarjeta de la barra lateral: arriba solo el avatar */
+.top-acct { padding: 0 6px; }
+.top-acct span { display: none; }

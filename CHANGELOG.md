@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.131
+- La barra superior ya no repite el nombre de usuario (sale en la tarjeta de abajo a la izquierda); arriba queda solo el avatar con su menú.
+
 ## 1.0.130
 - **Quilt y NeoForge**: ya puedes crear perfiles con Quilt (desde 1.14) y NeoForge (desde 1.20.2), en Versiones y en el asistente de perfiles.
 - **Versión del loader**: en los ajustes de un perfil puedes escribir la versión exacta de Fabric, Quilt, Forge o NeoForge; vacía usa la recomendada.
