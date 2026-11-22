@@ -2911,3 +2911,6 @@ body.auth-gate .acc-saved { max-width: 980px; margin-left: auto; margin-right: a
 /* El nombre ya sale en la tarjeta de la barra lateral: arriba solo el avatar */
 .top-acct { padding: 0 6px; }
 .top-acct span { display: none; }
+
+/* Con las mascotas activas se deja una franja libre abajo para que no tapen el contenido */
+html.pet-floor .page.active { padding-bottom: 84px; }

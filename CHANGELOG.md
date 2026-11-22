@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.132
+- **Pexy y sus amigos ya no tapan el contenido**: con las mascotas activas queda una franja libre abajo para que caminen sin pisar títulos.
+- **Pexy reacciona al internet**: comenta cuando se va y cuando vuelve la conexión.
+
 ## 1.0.131
 - La barra superior ya no repite el nombre de usuario (sale en la tarjeta de abajo a la izquierda); arriba queda solo el avatar con su menú.
 

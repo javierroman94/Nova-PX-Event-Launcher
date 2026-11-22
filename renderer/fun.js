@@ -352,6 +352,7 @@
     const s = [root.dataset.theme, root.dataset.season, root.classList.contains('no-fx'), opt.critters].join('|');
     if (s === sig) return;
     sig = s;
+    root.classList.toggle('pet-floor', !!opt.critters && !root.classList.contains('no-fx'));
     makeCritters();
     wake();
   }

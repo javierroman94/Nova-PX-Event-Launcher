@@ -55,6 +55,8 @@
     'pack-done': ['¡Listo! Ya tienes tu modpack instalado. 📦', 'Modpack instalado. ¡Ahora a probarlo!'],
     'theme': ['¡Ese tema te queda bien! 🎨', 'Me gusta cómo se ve así.'],
     'login': ['¡Hola, {name}!'],
+    'offline': ['Uy, se fue el internet. 📡 Lo que ya está instalado sigue funcionando.', 'Sin conexión. Avísame cuando vuelva.'],
+    'online': ['¡Volvió el internet! ✅', 'Conexión recuperada.'],
     'friend-online': ['Tu amigo {friend} está conectado. 👋']
   };
 

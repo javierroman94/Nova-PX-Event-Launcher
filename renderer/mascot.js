@@ -117,6 +117,10 @@
     if (!sleeping && !playing && idle > 20000 && Date.now() - lastSay > 75000 && Math.random() < 0.35) say(Brain.tip(), 6500);
   }, 5000);
 
+  // Reacciona cuando se va o vuelve la conexión.
+  window.addEventListener('offline', () => { const c = ctl(); if (c) c.hop(); react('offline'); });
+  window.addEventListener('online', () => { const c = ctl(); if (c) c.happy(1.6); react('online'); });
+
   /* ---------- API ---------- */
   function notify(type, data) {
     if (!on) return;
