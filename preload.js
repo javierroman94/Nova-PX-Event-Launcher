@@ -96,6 +96,8 @@ contextBridge.exposeInMainWorld('api', {
   // jugar
   petChat: (payload) => ipcRenderer.invoke('pet:chat', payload),
   launch: (opts) => ipcRenderer.invoke('game:launch', opts),
+  eventNeedsPassword: () => ipcRenderer.invoke('event:needsPassword'),
+  eventCheckPassword: (p) => ipcRenderer.invoke('event:checkPassword', p),
 
   // actualizaciones del programa
   getUpdateState: () => ipcRenderer.invoke('update:state'),

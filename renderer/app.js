@@ -3036,8 +3036,8 @@ function showCrash(list) {
   box.hidden = false;
 }
 
-async function startGame() {
-  let password = '';
+async function startGame(preset = '') {
+  let password = preset;
   let wrong = false;
   for (;;) {
     try {
@@ -3065,12 +3065,25 @@ $('play-btn').addEventListener('click', async () => {
     return;
   }
   launchTarget = { kind: 'event', title: eventInfo.name, icon: eventInfo.logo };
+  // La contraseña del evento se pide ANTES de la pantalla de carga.
+  let firstPassword = '';
+  try {
+    if (await window.api.eventNeedsPassword()) {
+      let wrong = false;
+      for (;;) {
+        const typed = await askPassword(wrong);
+        if (typed === null) return;
+        if (await window.api.eventCheckPassword(typed)) { firstPassword = typed; break; }
+        wrong = true;
+      }
+    }
+  } catch {}
   setPlaying(true);
   showCrash(null);
   $('status').textContent = 'Preparando…';
   $('np-status').textContent = 'Preparando…';
   try {
-    await startGame();
+    await startGame(firstPassword);
   } catch (err) {
     $('status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
     $('progress').hidden = true;

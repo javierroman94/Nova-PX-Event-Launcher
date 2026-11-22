@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.161
+- Eventos protegidos: la contraseña se pide antes de la pantalla de carga, cada vez que hay que instalar o actualizar el evento.
+
 ## 1.0.160
 - Inicio: la tarjeta del evento muestra la foto del evento, no el logo.
 - Eventos protegidos: la consola oculta líneas con mods y los errores se guardan cifrados.

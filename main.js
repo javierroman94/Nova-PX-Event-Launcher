@@ -10,6 +10,7 @@ const { execFile } = require('child_process');
 const loaders = require('./lib/loaders');
 const jvmDefaults = require('./lib/jvm-args');
 const mojangArt = require('./lib/mojang-art');
+const pcrypto = require('./lib/pack-crypto');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const { instanceDir } = require('./lib/instance');
@@ -3539,6 +3540,24 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
 });
 
 /* ---------- IPC: jugar ---------- */
+
+// Antes de mostrar la pantalla de carga: ¿hay que pedir la contraseña del evento? (instalación o actualización)
+ipcMain.handle('event:needsPassword', async () => {
+  try {
+    const manifest = await loadData('manifest');
+    if (!manifest || !manifest.protected || !packInstall.needsInstall(manifest.protected, instanceDir(GAME_DIR, manifest))) return false;
+    return true;
+  } catch { return false; }
+});
+ipcMain.handle('event:checkPassword', async (_e, password) => {
+  try {
+    const manifest = await loadData('manifest');
+    const prot = manifest && manifest.protected;
+    if (!prot || typeof password !== 'string' || !password) return false;
+    pcrypto.openEnvelope(prot, pcrypto.deriveKey(password, prot.salt));
+    return true;
+  } catch { return false; }
+});
 
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
   // Si este modpack recuerda una cuenta, se cambia a ella antes de jugar.
