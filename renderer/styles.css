@@ -3330,3 +3330,4 @@ html.pet-floor .page.active { padding-bottom: 84px; }
 #pw-form .link-btn{background:none;border:0;padding:6px 0;color:var(--accent);font-size:12.5px;cursor:pointer;text-align:left;box-shadow:none}
 #pw-form .link-btn:hover{text-decoration:underline}
 #pw-form #pw-forgot-text{font-size:12.5px;line-height:1.5;margin:4px 0 0}
+#pw-modal{z-index:100000}

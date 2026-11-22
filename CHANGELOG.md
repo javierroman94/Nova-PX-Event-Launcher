@@ -4,6 +4,7 @@ Todas las versiones se publican en [Releases](https://github.com/javierroman94/N
 
 ## 1.0.163
 - Novedades y soporte: por ahora solo visible para administradores (pestaña, ayuda, aviso tras actualizar).
+- La ventana de contraseña del evento queda siempre por encima de la pantalla de carga.
 
 ## 1.0.162
 - Contraseña del evento: botón Ver/Ocultar y aviso de qué hacer si se olvida.
