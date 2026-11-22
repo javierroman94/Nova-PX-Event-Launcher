@@ -3953,8 +3953,9 @@ $('ad-publish').addEventListener('click', async () => {
     $('ad-new').checked = false;
     toast('Evento publicado');
     await autoDiscord('event', { title: `${r.name}: evento publicado`, text: $('ad-tag').value, image: imageUrl(adm.evImage) });
-    loadAdmin();
+    try { await loadAdmin(); } catch {}
     window.refreshContent && window.refreshContent();
+    if (state === 'ended') await offerSaveToHistory(r.name || name);
   } catch (e) {
     $('ad-status').textContent = cleanError(e);
   }
@@ -3962,6 +3963,19 @@ $('ad-publish').addEventListener('click', async () => {
   bar.hidden = true;
   paintChecklist();
 });
+
+// Al finalizar un evento, pregunta si se guarda en el apartado Historial (sin duplicarlo).
+async function offerSaveToHistory(evName) {
+  const nm = String(evName || '').trim();
+  if (!nm) return;
+  const list = Array.isArray(adm.events) ? adm.events : [];
+  if (list.some((e) => String(e.name || '').trim().toLowerCase() === nm.toLowerCase())) return;
+  if (!await askConfirm(`El evento "${nm}" quedó FINALIZADO.\n\n¿Quieres guardarlo en el apartado Historial?\nPodrás añadir ganadores, participantes y enlaces editándolo después.`)) return;
+  const img = String(adm.evImage || '');
+  const entry = { name: nm.slice(0, 80), date: new Date().toISOString().slice(0, 10), image: /^(images\/|https:\/\/)/i.test(img) ? img : '', description: String($('ad-tag').value || '').slice(0, 800) };
+  await saveAdminEvents([entry, ...list], false);
+  toast('Evento guardado en Historial');
+}
 
 let usersList = [];
 async function loadUsers() {

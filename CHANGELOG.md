@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.155
+- Administrador: al finalizar un evento, el launcher pregunta si quieres guardarlo en el apartado Historial (no lo duplica si ya está).
+
 ## 1.0.154
 - Corregido: Nova en Minecraft 26.3 no abría ("Incompatible mods"). Al cambiar Sodium para que encaje con Iris, el complemento Reese's Sodium Options pedía otra versión exacta. Ahora se revisan también los mods que dependen de Sodium: si solo falla un complemento de interfaz se quita, y los perfiles ya afectados se arreglan al abrirlos.
 - Las versiones previas (beta) se comparan bien con las finales.
