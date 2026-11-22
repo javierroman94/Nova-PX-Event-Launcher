@@ -292,6 +292,9 @@
       st = { ...st, name: L.sanitize({ name: inp.value }, Date.now()).name, love: 100, xp: st.xp + 5 }; store(st);
       try { localStorage.setItem(BORN, '1'); } catch {}
       try { d.close(); } catch {} d.remove();
+      // Al nacer, la mascota aparece sola: sin tener que activarla en Ajustes.
+      try { if (M.setEnabled) M.setEnabled(true); const pb = document.getElementById('fun-pet'); if (pb) pb.checked = true; } catch {}
+      try { const cb = document.getElementById('fun-critters'); if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); } else if (!cb && window.NovaFun) { window.NovaFun.options.critters = true; try { localStorage.setItem('px.fun.critters', '1'); } catch {} window.NovaFun.refresh(); } } catch {}
       const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(3); if (c.hop) c.hop(); }
       setTimeout(() => M.say(`¡Hola${M.name() ? ' ' + M.name() : ''}! Soy ${st.name} y estoy muy feliz de conocerte 🐼`, 7000), 500);
     };
