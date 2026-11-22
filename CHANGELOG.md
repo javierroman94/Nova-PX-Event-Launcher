@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.138
+- **Mods que chocan en Fabric**: si el juego no abre porque dos mods no son compatibles (por ejemplo Sodium e Iris tras una actualización), el aviso ahora dice cuáles son y qué hacer.
+
 ## 1.0.137
 - **Forge 1.12.2 (RLCraft y otros)**: se descargaba el archivo equivocado de Forge y el juego abría Vanilla. Ahora usa el instalador correcto y abre con Forge y sus mods.
 
