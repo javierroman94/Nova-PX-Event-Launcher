@@ -70,7 +70,6 @@
   const rotX = (p, a) => { const c = Math.cos(a), s = Math.sin(a); return [p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c]; };
   const rotZ = (p, a) => { const c = Math.cos(a), s = Math.sin(a); return [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]]; };
   const rotY = (p, a) => { const c = Math.cos(a), s = Math.sin(a); return [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c]; };
-  const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
 
 
   const texCache = new Map();
@@ -143,7 +142,6 @@
     }
     polys.sort((a, b) => a.depth - b.depth);
     // sombra en el suelo
-    const lift = c.name === 'bat' ? 0 : 0;
     ctx.save(); ctx.globalAlpha = c.name === 'bat' ? 0.18 : 0.28; ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.ellipse(cx, (c.fly ? c.groundY : by) + 1, def.fly ? 9 : (c.name === 'hen' ? 9 : 15), def.fly ? 3 : 5, 0, 0, 7); ctx.fill(); ctx.restore();
     ctx.save(); ctx.lineJoin = 'round'; ctx.imageSmoothingEnabled = false;
