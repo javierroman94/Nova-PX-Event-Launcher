@@ -144,6 +144,7 @@
     if (now - petReset > 1500) petCount = 0;
     petReset = now;
     petCount += 1;
+    if (petCount === 45) { const c = ctl(); if (c) { c.happy(3); if (c.hop) c.hop(); } say(rndLine(['¡Jajaja, cosquillas! 🤣', '¡Para, para, que me río! 😂', 'Jiji, ¡ahí no, ahí no!']), 3600, true); }
     if (petCount === 18) { note('pet'); const c = ctl(); if (c) c.happy(2.4); say(Brain.pet(Math.floor(mem.pets % 8), mem, ex()), 4200, true); }
   });
 

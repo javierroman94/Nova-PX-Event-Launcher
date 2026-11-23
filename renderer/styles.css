@@ -3405,3 +3405,11 @@ main { container-type: inline-size; overflow-x: hidden; }
 .pl-foot { display: flex; justify-content: flex-end; }
 .pl-note:empty { display: none; }
 @media (max-width: 760px) { .pl-cols { grid-template-columns: 1fr; } }
+
+/* Bandeja de Pexy */
+#pet-tray { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 100000; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 18px; background: var(--surface, var(--raised)); border: 1px solid var(--line); box-shadow: 0 14px 40px -12px rgba(0,0,0,.7); }
+.pet-tray-label { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.pet-tray-item { font-size: 26px; line-height: 1; padding: 6px 10px; border-radius: 12px; cursor: grab; touch-action: none; user-select: none; }
+.pet-tray-item:hover { transform: translateY(-3px) scale(1.08); }
+.pet-tray-x { padding: 4px 9px; border-radius: 10px; }
+.pet-tray-ghost { position: fixed; z-index: 100002; font-size: 34px; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 6px 8px rgba(0,0,0,.4)); }

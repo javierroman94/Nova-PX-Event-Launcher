@@ -185,6 +185,9 @@
       });
       care.append(b);
     });
+    const trayBtn = tile(el('button', 'pl-tile'), '🧺 Bandeja: comida y baño'); trayBtn.type = 'button'; trayBtn.title = 'Arrastra la comida o el jabón hasta Pexy';
+    trayBtn.addEventListener('click', () => { done(); showTray(); });
+    care.append(trayBtn);
     const gb = tile(el('button', 'pl-tile'), '⭐ Atrapar estrellas'); gb.type = 'button';
     gb.addEventListener('click', () => {
       if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
@@ -238,6 +241,54 @@
     const cols = el('div', 'pl-cols'); cols.append(left, right);
     body.append(title, cols, foot); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
+  }
+  /* Bandeja: arrastra la comida o el jabón hasta Pexy (como en Talking Tom). Sale flotando sobre la pantalla. */
+  let tray = null;
+  const T_EAT = ['¡Ñam ñam! 😋', '¡Qué rico!', 'Mmm… ¡justo lo que quería!', '¡Gracias! ¡Estaba buenísimo!'];
+  const T_BATH = ['¡Burbujitas! 🫧', '¡Qué limpio quedé!', 'Jiji, ¡me hace cosquillas el jabón!', '¡Splash! Ahora huelo a fresa.'];
+  const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+  function careDrop(kind) {
+    const r = L.act(st, kind === 'bath' ? 'pet' : 'feed', Date.now());
+    if (!r.ok) { M.say(r.tired ? pick('tired') : r.wait ? `Todavía no… espera ${fmtWait(r.wait)} 😅` : 'Ahora no, gracias.', 3500); return false; }
+    st = r.state; store(st);
+    M.say(r.levelUp ? pick('level') : rnd(kind === 'bath' ? T_BATH : T_EAT), 4500);
+    const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2.4); if (c.hop) c.hop(); }
+    return true;
+  }
+  function burst(x, y, emoji) {
+    for (let i = 0; i < 7; i++) {
+      const s = document.createElement('span'); s.textContent = emoji; s.style.cssText = `position:fixed;left:${x}px;top:${y}px;font-size:${16 + Math.random() * 10}px;z-index:100001;pointer-events:none;transition:transform .9s ease-out,opacity .9s ease-out;opacity:1`;
+      document.body.append(s);
+      requestAnimationFrame(() => { s.style.transform = `translate(${(Math.random() - 0.5) * 90}px,${-30 - Math.random() * 70}px) scale(1.2)`; s.style.opacity = '0'; });
+      setTimeout(() => s.remove(), 1000);
+    }
+  }
+  function showTray() {
+    if (tray) return;
+    tray = document.createElement('div'); tray.id = 'pet-tray';
+    const label = el('span', 'pet-tray-label', 'Arrastra hasta Pexy'); tray.append(label);
+    const items = [['🍎', 'food'], ['🍌', 'food'], ['🍇', 'food'], ['🍓', 'food'], ['🧼', 'bath']];
+    const close = () => { if (tray) { tray.remove(); tray = null; } };
+    items.forEach(([emoji, kind]) => {
+      const b = el('button', 'pet-tray-item', emoji); b.type = 'button'; b.title = kind === 'bath' ? 'Bañar a Pexy' : 'Dar de comer'; b.setAttribute('aria-label', b.title);
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const ghost = el('span', 'pet-tray-ghost', emoji); document.body.append(ghost);
+        const mv = (ev) => { ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px'; };
+        mv(e);
+        const up = (ev) => {
+          window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); ghost.remove();
+          const hit = document.getElementById('pet-hit'); const r = hit && hit.getBoundingClientRect();
+          if (r && ev.clientX > r.left - 24 && ev.clientX < r.right + 24 && ev.clientY > r.top - 24 && ev.clientY < r.bottom + 24) {
+            if (careDrop(kind)) burst(ev.clientX, ev.clientY, kind === 'bath' ? '🫧' : emoji);
+          }
+        };
+        window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+      });
+      tray.append(b);
+    });
+    const x = el('button', 'pet-tray-x', '✕'); x.type = 'button'; x.title = 'Guardar la bandeja'; x.addEventListener('click', close); tray.append(x);
+    document.body.append(tray);
   }
   /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
   function playStars(onDone) {
