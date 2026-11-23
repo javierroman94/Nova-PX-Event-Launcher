@@ -42,9 +42,11 @@
   // Devuelve un elemento con el icono del loader (o null si no se conoce).
   window.loaderIcon = function (id, cls) {
     const className = 'loader-ico' + (cls ? ' ' + cls : '');
-    if (id === 'nova') {
+    const FILES = { nova: 'images/logo.png', fabric: 'images/loaders/fabric.png', quilt: 'images/loaders/quilt.png', neoforge: 'images/loaders/neoforge.png', forge: 'images/loaders/forge.png' };
+    if (FILES[id]) {
       const im = document.createElement('img');
-      im.src = 'images/logo.png';
+      im.src = FILES[id];
+      if (id === 'neoforge') im.style.imageRendering = 'pixelated';
       im.alt = '';
       im.className = className;
       im.draggable = false;
