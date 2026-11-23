@@ -33,7 +33,7 @@
     o.type = 'sawtooth'; o.frequency.setValueAtTime(RETRO[prev % RETRO.length] * 2, t); o.frequency.exponentialRampToValueAtTime(RETRO[prev % RETRO.length], t + 0.09);
     f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.12);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.03, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    o.connect(f).connect(g).connect(a.destination); o.start(t); o.stop(t + 0.15);
+    o.connect(f).connect(g).connect(out(a)); o.start(t); o.stop(t + 0.15);
   }
   function rRiser() {
     const a = audio(); if (!a) return;
@@ -43,14 +43,24 @@
     o2.frequency.setValueAtTime(131.5, t); o2.frequency.exponentialRampToValueAtTime(526, t + 0.34);
     f.type = 'lowpass'; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(4200, t + 0.34);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.1); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-    o.connect(f); o2.connect(f); f.connect(g).connect(a.destination); o.start(t); o2.start(t); o.stop(t + 0.45); o2.stop(t + 0.45);
+    o.connect(f); o2.connect(f); f.connect(g).connect(out(a)); o.start(t); o2.start(t); o.stop(t + 0.45); o2.stop(t + 0.45);
   }
   function rKick() {
     const a = audio(); if (!a) return;
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'sine'; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.16);
     g.gain.setValueAtTime(0.11, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.24);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.24);
+  }
+  // Volumen general (0–100). Por defecto bajo (35) para que no moleste.
+  const VKEY = 'px.fun.volume';
+  let vol = 0.35;
+  try { const v = parseFloat(localStorage.getItem(VKEY)); if (Number.isFinite(v)) vol = Math.max(0, Math.min(1, v)); } catch {}
+  let master = null;
+  function out(a) {
+    if (!master || master.context !== a) { master = a.createGain(); master.connect(a.destination); }
+    master.gain.value = vol * vol * 2; // curva suave: 35% ≈ 0.25 (más bajo que antes), 100% = 2×
+    return master;
   }
   function audio() {
     if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
@@ -64,7 +74,7 @@
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'sine'; o.frequency.setValueAtTime(core.note(prev), t);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.18);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.18);
   }
   function whoosh() {
     if (retro()) return rRiser();
@@ -75,7 +85,7 @@
     const src = a.createBufferSource(); src.buffer = buf;
     const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(260, t); f.frequency.exponentialRampToValueAtTime(1400, t + 0.3);
     const g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.48);
-    src.connect(f).connect(g).connect(a.destination); src.start(t); src.stop(t + 0.5);
+    src.connect(f).connect(g).connect(out(a)); src.start(t); src.stop(t + 0.5);
   }
   function thud() {
     if (retro()) return rKick();
@@ -83,7 +93,7 @@
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.14);
     g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.2);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.2);
   }
   document.addEventListener('pointerover', (e) => {
     if (!on || !themed() || !e.target.closest) return;
@@ -97,8 +107,12 @@
 
   window.NovaSound = {
     get enabled() { return on; },
-    set(v) { on = !!v; try { localStorage.setItem(KEY, String(on)); } catch {} }
+    set(v) { on = !!v; try { localStorage.setItem(KEY, String(on)); } catch {} },
+    get volume() { return vol; },
+    setVolume(v) { vol = Math.max(0, Math.min(1, Number(v) || 0)); try { localStorage.setItem(VKEY, String(vol)); } catch {} if (master) master.gain.value = vol * vol * 2; }
   };
+  const vr = document.getElementById('fun-volume');
+  if (vr) { vr.value = String(Math.round(vol * 100)); vr.addEventListener('input', () => window.NovaSound.setVolume(vr.value / 100)); vr.addEventListener('change', () => { try { tick(); } catch {} }); }
   const box = document.getElementById('fun-sound');
   if (box) { box.checked = on; box.addEventListener('change', () => window.NovaSound.set(box.checked)); }
 }());
