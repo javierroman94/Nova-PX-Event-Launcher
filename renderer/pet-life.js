@@ -148,15 +148,18 @@
   }
   function open() {
     if (dlg) return;
-    dlg = document.createElement('dialog'); dlg.className = 'event-modal pl-modal';
+    dlg = document.createElement('dialog'); dlg.className = 'event-modal pl-modal pl-care';
     const body = el('div', 'event-modal-body');
     const title = el('h3'); title.textContent = '🐼 Cuidar a tu mascota';
     const nameRow = el('div', 'pl-name'); const nameIn = el('input'); nameIn.maxLength = 16; nameIn.value = st.name; nameIn.setAttribute('aria-label', 'Nombre de tu mascota');
-    const lvl = el('small', 'muted'); nameRow.append(nameIn, lvl);
+    const lvl = el('small', 'pl-lvl'); nameRow.append(nameIn, lvl);
+    const portrait = el('div', 'pl-portrait'); const pEmo = el('span', 'pl-panda', '🐼'); const pAcc = el('span', 'pl-pacc'); const pMood = el('span', 'pl-pmood'); portrait.append(pAcc, pEmo, pMood);
+    const hero = el('div', 'pl-hero'); const heroInfo = el('div', 'pl-hero-info');
     const xpBar = el('div', 'pl-bar pl-xp'); const xpFill = el('i'); xpBar.append(xpFill);
     const moodEl = el('p', 'pl-mood');
     const b1 = bar('🍖 Hambre'); const b2 = bar('⚡ Energía'); const b3 = bar('💗 Cariño');
-    const btns = el('div', 'mp-actions');
+    const care = el('div', 'pl-tiles'); const games = el('div', 'pl-tiles pl-games'); const foot = el('div', 'pl-foot');
+    const tile = (b, text) => { const i = text.indexOf(' '); b.textContent = ''; b.append(el('span', 'pl-ico', text.slice(0, i)), el('span', 'pl-lbl', text.slice(i + 1))); return b; };
     const defs = [['feed', '🍖 Dar de comer'], ['play', '🎾 Jugar'], ['pet', '🤗 Acariciar'], ['sleep', '😴 Dormir']];
     const note = el('small', 'muted pl-note');
     const refresh = () => {
@@ -166,10 +169,13 @@
       lvl.textContent = `Nivel ${p.level}${st.streak > 1 ? ` · racha de ${st.streak} días 🔥` : ''}`;
       xpFill.style.width = p.pct + '%';
       b1.fill.style.width = st.hunger + '%'; b2.fill.style.width = st.energy + '%'; b3.fill.style.width = st.love + '%';
+      [[b1, st.hunger], [b2, st.energy], [b3, st.love]].forEach(([b, v]) => { b.row.dataset.v = Math.round(v) + '%'; b.row.classList.toggle('low', v < 25); });
+      const mo = L.mood(st); portrait.dataset.mood = mo; pMood.textContent = { feliz: '😄', normal: '🙂', hambre: '😢', sueño: '😪', triste: '🥺' }[mo] || '';
+      const ac = L.ACCESSORIES.find((a) => a.id === st.acc); pAcc.textContent = ac ? ac.emoji : '';
       moodEl.textContent = { feliz: `${st.name} está feliz 😄`, normal: `${st.name} está tranquilo 🙂`, hambre: `${st.name} tiene hambre 😢`, sueño: `${st.name} tiene sueño 😪`, triste: `${st.name} se siente solito 🥺` }[L.mood(st)];
     };
     defs.forEach(([a, t]) => {
-      const b = el('button', '', t); b.type = 'button';
+      const b = tile(el('button', 'pl-tile'), t); b.type = 'button';
       b.addEventListener('click', () => {
         const r = L.act(st, a, Date.now()); st = r.state;
         if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : '', 3500); refresh(); return; }
@@ -177,9 +183,12 @@
         store(st); M.say(r.levelUp ? pick('level') : pick(a), 4500); refresh();
         const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2); if (c.hop) c.hop(); }
       });
-      btns.append(b);
+      care.append(b);
     });
-    const gb = el('button', '', '⭐ Atrapar estrellas'); gb.type = 'button';
+    const trayBtn = tile(el('button', 'pl-tile'), '🧺 Bandeja: comida y baño'); trayBtn.type = 'button'; trayBtn.title = 'Arrastra la comida o el jabón hasta Pexy';
+    trayBtn.addEventListener('click', () => { done(); showTray(); });
+    care.append(trayBtn);
+    const gb = tile(el('button', 'pl-tile'), '⭐ Atrapar estrellas'); gb.type = 'button';
     gb.addEventListener('click', () => {
       if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
       playStars((score) => {
@@ -188,11 +197,23 @@
         note.textContent = `Atrapaste ${score}. Tu récord: ${st.best}.`; refresh();
       });
     });
-    btns.append(gb);
+    games.append(gb);
+    ((window.NovaPetGames && window.NovaPetGames.list) || []).forEach((g) => {
+      const gx = tile(el('button', 'pl-tile'), g.label); gx.type = 'button';
+      gx.addEventListener('click', () => {
+        if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
+        g.run((score) => {
+          const r = L.minigame(st, score, Date.now()); st = r.state; store(st);
+          M.say(r.levelUp ? pick('level') : `${g.label}: ${score} ${g.unit}, ¡qué divertido! 🎉`, 5000);
+          note.textContent = `${g.label}: ${score} ${g.unit}. Tu récord general: ${st.best}.`; refresh();
+        });
+      });
+      games.append(gx);
+    });
     let extra = null;
     const wardrobe = el('div', 'pl-ward');
     const paintWard = () => {
-      wardrobe.replaceChildren(el('small', 'muted', 'Accesorios'));
+      wardrobe.replaceChildren();
       const mk = (id, emoji, label, locked, need) => {
         const b = el('button', 'pl-acc' + (st.acc === id ? ' on' : ''), emoji); b.type = 'button'; b.title = locked ? `${label}: se desbloquea con ${need}` : label; b.disabled = locked;
         if (locked) b.classList.add('locked');
@@ -208,21 +229,76 @@
       cb.addEventListener('change', () => { st = { ...st, skin: cb.checked ? 'shadow' : '' }; store(st); applyAcc(); });
       sk.append(cb, document.createTextNode(' Skin secreta «Sombra» (solo administradores)')); extra = sk;
     }
-    const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; btns.append(close);
+    const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; foot.append(close);
     nameIn.addEventListener('change', () => { st = { ...st, name: L.sanitize({ name: nameIn.value }, Date.now()).name }; nameIn.value = st.name; store(st); refresh(); });
     const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
     close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
-    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, wardrobe, ...(extra ? [extra] : []), note); dlg.append(body); document.body.append(dlg);
+    heroInfo.append(nameRow, xpBar, moodEl); hero.append(portrait, heroInfo);
+    const stats = el('div', 'pl-stats'); stats.append(b1.row, b2.row, b3.row);
+    const sec = (t) => el('h4', 'pl-sec', t);
+    const left = el('div', 'pl-col'); left.append(hero, stats, sec('Armario'), wardrobe, ...(extra ? [extra] : []));
+    const right = el('div', 'pl-col'); right.append(sec('Cuidados'), care, sec('Minijuegos'), games, note);
+    const cols = el('div', 'pl-cols'); cols.append(left, right);
+    body.append(title, cols, foot); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
+  }
+  /* Bandeja: arrastra la comida o el jabón hasta Pexy (como en Talking Tom). Sale flotando sobre la pantalla. */
+  let tray = null;
+  const T_EAT = ['¡Ñam ñam! 😋', '¡Qué rico!', 'Mmm… ¡justo lo que quería!', '¡Gracias! ¡Estaba buenísimo!'];
+  const T_BATH = ['¡Burbujitas! 🫧', '¡Qué limpio quedé!', 'Jiji, ¡me hace cosquillas el jabón!', '¡Splash! Ahora huelo a fresa.'];
+  const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+  function careDrop(kind) {
+    const r = L.act(st, kind === 'bath' ? 'pet' : 'feed', Date.now());
+    if (!r.ok) { M.say(r.tired ? pick('tired') : r.wait ? `Todavía no… espera ${fmtWait(r.wait)} 😅` : 'Ahora no, gracias.', 3500); return false; }
+    st = r.state; store(st);
+    M.say(r.levelUp ? pick('level') : rnd(kind === 'bath' ? T_BATH : T_EAT), 4500);
+    const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2.4); if (c.hop) c.hop(); }
+    return true;
+  }
+  function burst(x, y, emoji) {
+    for (let i = 0; i < 7; i++) {
+      const s = document.createElement('span'); s.textContent = emoji; s.style.cssText = `position:fixed;left:${x}px;top:${y}px;font-size:${16 + Math.random() * 10}px;z-index:100001;pointer-events:none;transition:transform .9s ease-out,opacity .9s ease-out;opacity:1`;
+      document.body.append(s);
+      requestAnimationFrame(() => { s.style.transform = `translate(${(Math.random() - 0.5) * 90}px,${-30 - Math.random() * 70}px) scale(1.2)`; s.style.opacity = '0'; });
+      setTimeout(() => s.remove(), 1000);
+    }
+  }
+  function showTray() {
+    if (tray) return;
+    tray = document.createElement('div'); tray.id = 'pet-tray';
+    const label = el('span', 'pet-tray-label', 'Arrastra hasta Pexy'); tray.append(label);
+    const items = [['🍎', 'food'], ['🍌', 'food'], ['🍇', 'food'], ['🍓', 'food'], ['🧼', 'bath']];
+    const close = () => { if (tray) { tray.remove(); tray = null; } };
+    items.forEach(([emoji, kind]) => {
+      const b = el('button', 'pet-tray-item', emoji); b.type = 'button'; b.title = kind === 'bath' ? 'Bañar a Pexy' : 'Dar de comer'; b.setAttribute('aria-label', b.title);
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const ghost = el('span', 'pet-tray-ghost', emoji); document.body.append(ghost);
+        const mv = (ev) => { ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px'; };
+        mv(e);
+        const up = (ev) => {
+          window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); ghost.remove();
+          const hit = document.getElementById('pet-hit'); const r = hit && hit.getBoundingClientRect();
+          if (r && ev.clientX > r.left - 24 && ev.clientX < r.right + 24 && ev.clientY > r.top - 24 && ev.clientY < r.bottom + 24) {
+            if (careDrop(kind)) burst(ev.clientX, ev.clientY, kind === 'bath' ? '🫧' : emoji);
+          }
+        };
+        window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+      });
+      tray.append(b);
+    });
+    const x = el('button', 'pet-tray-x', '✕'); x.type = 'button'; x.title = 'Guardar la bandeja'; x.addEventListener('click', close); tray.append(x);
+    document.body.append(tray);
   }
   /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
   function playStars(onDone) {
     const W = 360, H = 260, DUR = 20000;
+    const GOOD = ['⭐', '⭐', '🍎', '🍌', '🍇', '🍓', '🍉', '🍒']; // estrellas y frutas (sugerencia de la comunidad)
     const d = document.createElement('dialog'); d.className = 'event-modal pl-modal';
     const b = el('div', 'event-modal-body'); const hud = el('p', 'pl-mood', '⭐ 0 · 20 s');
     const cv = el('canvas', 'crop-canvas'); cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.style.cursor = 'none';
     const x0 = el('button', 'ghost', 'Salir'); x0.type = 'button';
-    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a Pexy y atrapa las estrellas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
+    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a Pexy y atrapa las estrellas y las frutas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
     const x = cv.getContext('2d'); let px = W / 2, score = 0, over = false, last = 0; const t0 = performance.now(); const things = []; let spawn = 0;
     const move = (e) => { const r = cv.getBoundingClientRect(); px = Math.min(W - 22, Math.max(22, (e.clientX - r.left) * (W / r.width))); };
     cv.addEventListener('pointermove', move); cv.addEventListener('pointerdown', move);
@@ -232,12 +308,12 @@
       if (over) return;
       const dt = Math.min(50, now - (last || now)); last = now; const left = DUR - (now - t0);
       if (left <= 0) { end(true); return; }
-      spawn -= dt; if (spawn <= 0) { spawn = 380 + Math.random() * 300; things.push({ x: 16 + Math.random() * (W - 32), y: -12, bad: Math.random() < 0.22, v: 0.09 + Math.random() * 0.07 + (1 - left / DUR) * 0.06 }); }
+      spawn -= dt; if (spawn <= 0) { spawn = 380 + Math.random() * 300; things.push({ x: 16 + Math.random() * (W - 32), y: -12, bad: Math.random() < 0.22, icon: GOOD[Math.floor(Math.random() * GOOD.length)], v: 0.09 + Math.random() * 0.07 + (1 - left / DUR) * 0.06 }); }
       x.fillStyle = '#0c1226'; x.fillRect(0, 0, W, H);
       x.font = '22px serif'; x.textAlign = 'center';
       for (let i = things.length - 1; i >= 0; i--) {
         const t = things[i]; t.y += t.v * dt;
-        x.fillText(t.bad ? '🪨' : '⭐', t.x, t.y);
+        x.fillText(t.bad ? '🪨' : t.icon, t.x, t.y);
         if (t.y > H - 34 && t.y < H - 6 && Math.abs(t.x - px) < 26) { score = Math.max(0, score + (t.bad ? -2 : 1)); things.splice(i, 1); }
         else if (t.y > H + 14) things.splice(i, 1);
       }
@@ -331,6 +407,13 @@
     return prevNotify(type, data);
   };
   document.addEventListener('dblclick', (e) => { if (e.target && e.target.id === 'pet-hit') open(); });
+  const chip = document.getElementById('pet-chip');
+  const paintChip = () => {
+    const n = document.getElementById('pet-chip-name'), s = document.getElementById('pet-chip-sub');
+    if (n) n.textContent = st.name || 'Pexy';
+    if (s) { const mood = L.mood ? L.mood(st) : ''; s.textContent = `Nivel ${L.level(st.xp || 0)}${mood ? ' · ' + mood : ''}`; }
+  };
+  if (chip) { chip.addEventListener('click', open); paintChip(); setInterval(paintChip, 4000); }
   const openBtn = document.getElementById('pet-care-open');
   if (openBtn) openBtn.addEventListener('click', open);
   if (v0.fresh && st.streak > 1) setTimeout(() => M.say(`¡${st.streak} días seguidos juntos! 🔥`, 5500), 12000);

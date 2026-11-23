@@ -21,7 +21,41 @@
   try { const v = localStorage.getItem(KEY); on = v === null ? true : v === 'true'; } catch {}
 
   // Temas con sonido: Nova Eclipse (cósmico y suave) y Vice Sunset (sintetizador retro de los 80).
-  const themeId = () => { const t = document.documentElement.dataset.theme; return (t === 'eclipse' || t === 'vicesunset') && !document.documentElement.classList.contains('no-fx') ? t : ''; };
+  // Perfiles de sonido por tema (los de Eclipse y Vice Sunset tienen su propio sonido de arriba).
+  // wave: forma de onda · notes: notas del "tic" (Hz) · dur: duración · dec: caída del filtro · riser: [inicio, fin] del susurro · kick: [inicio, fin] del golpe
+  const PROFILES = {
+    nether:    { wave: 'sawtooth', notes: [98, 110, 123.47, 146.83, 164.81], dur: 0.2, filt: 900, gain: 0.03, riser: [70, 220], kick: [120, 36] },
+    end:       { wave: 'triangle', notes: [523.25, 659.25, 783.99, 987.77, 1174.66], dur: 0.28, filt: 6000, gain: 0.028, riser: [260, 1500], kick: [200, 80] },
+    sakura:    { wave: 'sine', notes: [659.25, 739.99, 880, 987.77, 1108.73], dur: 0.32, filt: 7000, gain: 0.03, riser: [320, 1700], kick: [260, 120] },
+    cyberpunk: { wave: 'square', notes: [220, 261.63, 329.63, 392, 440], dur: 0.1, filt: 2600, gain: 0.02, riser: [110, 880], kick: [150, 45] },
+    synthwave: { wave: 'sawtooth', notes: [349.23, 415.3, 466.16, 523.25, 622.25], dur: 0.14, filt: 3000, gain: 0.026, riser: [130, 700], kick: [160, 46] }
+  };
+  const PROF = new Set(Object.keys(PROFILES));
+  const profile = () => PROFILES[document.documentElement.dataset.theme] || null;
+  function pTick(p) {
+    const a = audio(); if (!a) return;
+    prev = core.pickIndex(prev, Math.random());
+    const t = a.currentTime; const o = a.createOscillator(); const f = a.createBiquadFilter(); const g = a.createGain();
+    o.type = p.wave; o.frequency.setValueAtTime(p.notes[prev % p.notes.length], t);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(p.filt, t); f.frequency.exponentialRampToValueAtTime(Math.max(200, p.filt / 5), t + p.dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(p.gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + p.dur);
+    o.connect(f).connect(g).connect(out(a)); o.start(t); o.stop(t + p.dur + 0.03);
+  }
+  function pRiser(p) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
+    o.type = p.wave === 'square' ? 'square' : 'sine'; o.frequency.setValueAtTime(p.riser[0], t); o.frequency.exponentialRampToValueAtTime(p.riser[1], t + 0.34);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(p.gain * 1.2, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.45);
+  }
+  function pKick(p) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(p.kick[0], t); o.frequency.exponentialRampToValueAtTime(p.kick[1], t + 0.15);
+    g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.22);
+  }
+  const themeId = () => { const t = document.documentElement.dataset.theme; return (t === 'eclipse' || t === 'vicesunset' || PROF.has(t)) && !document.documentElement.classList.contains('no-fx') ? t : ''; };
   const themed = () => !!themeId();
   const retro = () => document.documentElement.dataset.theme === 'vicesunset';
   // Vice Sunset: escala menor pentatónica aguda con "pluck" de sierra, riser de sintetizador y bombo corto.
@@ -33,7 +67,7 @@
     o.type = 'sawtooth'; o.frequency.setValueAtTime(RETRO[prev % RETRO.length] * 2, t); o.frequency.exponentialRampToValueAtTime(RETRO[prev % RETRO.length], t + 0.09);
     f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.12);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.03, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    o.connect(f).connect(g).connect(a.destination); o.start(t); o.stop(t + 0.15);
+    o.connect(f).connect(g).connect(out(a)); o.start(t); o.stop(t + 0.15);
   }
   function rRiser() {
     const a = audio(); if (!a) return;
@@ -43,14 +77,24 @@
     o2.frequency.setValueAtTime(131.5, t); o2.frequency.exponentialRampToValueAtTime(526, t + 0.34);
     f.type = 'lowpass'; f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(4200, t + 0.34);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.1); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-    o.connect(f); o2.connect(f); f.connect(g).connect(a.destination); o.start(t); o2.start(t); o.stop(t + 0.45); o2.stop(t + 0.45);
+    o.connect(f); o2.connect(f); f.connect(g).connect(out(a)); o.start(t); o2.start(t); o.stop(t + 0.45); o2.stop(t + 0.45);
   }
   function rKick() {
     const a = audio(); if (!a) return;
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'sine'; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.16);
     g.gain.setValueAtTime(0.11, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.24);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.24);
+  }
+  // Volumen general (0–100). Por defecto bajo (35) para que no moleste.
+  const VKEY = 'px.fun.volume';
+  let vol = 0.35;
+  try { const v = parseFloat(localStorage.getItem(VKEY)); if (Number.isFinite(v)) vol = Math.max(0, Math.min(1, v)); } catch {}
+  let master = null;
+  function out(a) {
+    if (!master || master.context !== a) { master = a.createGain(); master.connect(a.destination); }
+    master.gain.value = vol * vol * 2; // curva suave: 35% ≈ 0.25 (más bajo que antes), 100% = 2×
+    return master;
   }
   function audio() {
     if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
@@ -59,15 +103,17 @@
   }
   function tick() {
     if (retro()) return rTick();
+    { const pr = profile(); if (pr) return pTick(pr); }
     const a = audio(); if (!a) return;
     prev = core.pickIndex(prev, Math.random());
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'sine'; o.frequency.setValueAtTime(core.note(prev), t);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.18);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.18);
   }
   function whoosh() {
     if (retro()) return rRiser();
+    { const pr = profile(); if (pr) return pRiser(pr); }
     const a = audio(); if (!a) return;
     const t = a.currentTime; const len = Math.floor(a.sampleRate * 0.5);
     const buf = a.createBuffer(1, len, a.sampleRate); const d = buf.getChannelData(0);
@@ -75,15 +121,16 @@
     const src = a.createBufferSource(); src.buffer = buf;
     const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(260, t); f.frequency.exponentialRampToValueAtTime(1400, t + 0.3);
     const g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.48);
-    src.connect(f).connect(g).connect(a.destination); src.start(t); src.stop(t + 0.5);
+    src.connect(f).connect(g).connect(out(a)); src.start(t); src.stop(t + 0.5);
   }
   function thud() {
     if (retro()) return rKick();
+    { const pr = profile(); if (pr) return pKick(pr); }
     const a = audio(); if (!a) return;
     const t = a.currentTime; const o = a.createOscillator(); const g = a.createGain();
     o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.14);
     g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.2);
+    o.connect(g).connect(out(a)); o.start(t); o.stop(t + 0.2);
   }
   document.addEventListener('pointerover', (e) => {
     if (!on || !themed() || !e.target.closest) return;
@@ -97,8 +144,12 @@
 
   window.NovaSound = {
     get enabled() { return on; },
-    set(v) { on = !!v; try { localStorage.setItem(KEY, String(on)); } catch {} }
+    set(v) { on = !!v; try { localStorage.setItem(KEY, String(on)); } catch {} },
+    get volume() { return vol; },
+    setVolume(v) { vol = Math.max(0, Math.min(1, Number(v) || 0)); try { localStorage.setItem(VKEY, String(vol)); } catch {} if (master) master.gain.value = vol * vol * 2; }
   };
+  const vr = document.getElementById('fun-volume');
+  if (vr) { vr.value = String(Math.round(vol * 100)); vr.addEventListener('input', () => window.NovaSound.setVolume(vr.value / 100)); vr.addEventListener('change', () => { try { tick(); } catch {} }); }
   const box = document.getElementById('fun-sound');
   if (box) { box.checked = on; box.addEventListener('change', () => window.NovaSound.set(box.checked)); }
 }());

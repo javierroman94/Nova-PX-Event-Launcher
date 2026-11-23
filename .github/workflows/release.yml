@@ -89,6 +89,12 @@ jobs:
       - name: Instalar dependencias
         run: npm install
 
+      - name: Revisar el código y correr las pruebas
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          npm run lint
+          npm test
+
       - name: Compilar y publicar
         run: npx electron-builder --publish always
         env:

@@ -2,6 +2,17 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.173
+- Pexy es ahora la mascota oficial: se le puede agarrar y lanzar, tiene reacción a las cosquillas, y una bandeja para darle de comer (frutas) y bañarlo (jabón) arrastrando hasta él.
+- Ventana de Pexy rediseñada, y el perfil de abajo a la izquierda pasa a ser la ventana de la mascota. Control de volumen para los sonidos.
+- 3 minijuegos nuevos con Pexy. Las frutas también cuentan dentro del minijuego.
+- Mobs en 3D que deambulan por el launcher, pacíficos y hostiles. La intro ya no se repite.
+- Sonidos propios para los temas Nether, End, Sakura, Cyberpunk y Synthwave.
+- Versiones / crear instancia: los iconos oficiales de Fabric, Quilt, NeoForge y Forge reemplazan a los dibujos.
+- Mundos: nueva pestaña con buscador, orden, ícono (bloque de pasto si no tiene), versión, modo, peso y última vez jugado. Ahora se pueden importar mundos de otros launchers (Minecraft oficial, Prism, MultiMC, ATLauncher, Modrinth, CurseForge, GDLauncher), de un .zip o de una carpeta.
+- Si el juego se cierra con error o al instante, la Consola muestra lo último que escribió Minecraft.
+- Mejoras internas: revisión automática del código (ESLint), prueba de arranque y código dividido en módulos, sin cambiar lo que hace el launcher.
+
 ## 1.0.172
 - Archivos bloqueados por su autor (CurseForge): el launcher detecta en Descargas los que bajas y los mueve solo a la carpeta de mods.
 

@@ -65,7 +65,8 @@
 
     <div class="sidebar-foot">
       <button id="rail-toggle" type="button" class="ghost rail-toggle" aria-label="Barra lateral compacta" title="Barra lateral compacta">⇤</button>
-      <button class="account-chip" id="account-chip" data-tab="account" aria-label="Cuenta">
+      <button class="account-chip pet-chip" id="pet-chip" type="button" aria-label="Mascota" title="Abrir la ventana de tu mascota"><span class="pet-chip-av" aria-hidden="true">🐼</span><span class="chip-text"><span id="pet-chip-name">Pexy</span><span id="pet-chip-sub" class="chip-mode">Nivel 1</span></span></button>
+      <button class="account-chip" id="account-chip" data-tab="account" aria-label="Cuenta" hidden style="display:none">
         <img id="chip-avatar" alt="" width="36" height="36" hidden />
         <span class="chip-text">
           <span id="chip-name" class="pii">Iniciar sesión</span>
@@ -471,6 +472,16 @@
           <div id="mp-content-list" class="mods-list"></div>
         </div>
         <div id="mp-tab-worlds" hidden>
+          <div class="mp-toolbar mw-toolbar">
+            <input id="mp-worlds-search" class="events-search" type="search" placeholder="Buscar mundos…" aria-label="Buscar mundos" autocomplete="off" />
+            <select id="mp-worlds-sort" aria-label="Ordenar mundos">
+              <option value="recent">Más recientes</option>
+              <option value="az">A-Z</option>
+              <option value="size">Más pesados</option>
+            </select>
+            <button id="mp-worlds-import" class="primary" type="button">⤓ Importar mundos</button>
+            <button id="mp-worlds-folder" type="button" title="Abrir la carpeta de mundos" aria-label="Abrir la carpeta de mundos">📁</button>
+          </div>
           <p id="mp-worlds-note" class="muted"></p>
           <div id="mp-worlds-list" class="mods-list"></div>
           <div class="events-head">
@@ -1419,6 +1430,7 @@
           <label class="check"><input id="fun-trail" type="checkbox" /> Estela del cursor (cambia con cada tema y temporada)</label>
           <label class="check"><input id="fun-critters" type="checkbox" /> Criaturas pixeladas paseando por la pantalla</label>
           <label class="check"><input id="fun-sound" type="checkbox" /> Sonidos al pasar el cursor (solo con los temas Nova Eclipse y Vice Sunset)</label>
+          <label class="check" style="gap:10px">Volumen de los sonidos <input id="fun-volume" type="range" min="0" max="100" step="1" value="35" style="width:180px" /></label>
           <label class="check"><input id="fun-pet" type="checkbox" /> Pexy, la mascota, habla y reacciona (saluda, se duerme, comenta)</label>
           <div class="mp-actions"><button id="pet-care-open" type="button">🐼 Cuidar a Pexy (comer, jugar, nombre, nivel)</button></div>
           <label class="check"><input id="fun-pet-overlay" type="checkbox" /> Pexy te acompaña flotando sobre Minecraft mientras juegas (solo en ventana o ventana sin bordes; los clics pasan al juego)</label>
@@ -1586,11 +1598,13 @@
   <script src="flags.js"></script>
   <script src="seasons.js"></script>
   <script src="theme.js"></script>
+  <script src="mob3d.js"></script>
   <script src="fun.js"></script>
   <script src="nova-sound.js"></script>
   <script src="mascot-brain.js"></script>
   <script src="mascot.js"></script>
   <script src="mascot-chat.js"></script>
+  <script src="pet-games.js"></script>
   <script src="pet-life.js"></script>
   <script src="game-events.js"></script>
   <script src="cropper.js"></script>
@@ -1671,7 +1685,16 @@
   <script src="ctxmenu.js"></script>
   <script src="downloads.js"></script>
   <script src="launch-panel.js"></script>
-  <script src="app.js"></script>
+  <script src="app/01-base.js"></script>
+  <script src="app/02-inicio.js"></script>
+  <script src="app/03-publicidad-mods.js"></script>
+  <script src="app/04-modpacks.js"></script>
+  <script src="app/05-cuenta-jugar.js"></script>
+  <script src="app/06-consola-ajustes.js"></script>
+  <script src="app/07-asistente-arranque.js"></script>
+  <script src="app/08-admin.js"></script>
+  <script src="app/09-ajustes-menu.js"></script>
+  <script src="app/99-iniciar.js"></script>
   <script src="versions.js"></script>
   <script src="topbar.js"></script>
 </body>

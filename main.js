@@ -13,6 +13,7 @@ const mojangArt = require('./lib/mojang-art');
 const pcrypto = require('./lib/pack-crypto');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
+const gameLogs = require('./lib/game-logs');
 const { instanceDir, instanceId } = require('./lib/instance');
 const serversLib = require('./lib/servers');
 const langLib = require('./lib/langpack');
@@ -192,52 +193,9 @@ function writeSettings(s) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(s, null, 2));
 }
 
-/* ---------- utilidades ---------- */
+/* ---------- utilidades: ahora en lib/main/utilidades.js ---------- */
+const { fetchWithTimeout, fetchJson, checkStreamer, justPublished, remember, dataMemo } = require('./lib/main/utilidades')({ streamer, readSettings, execFile, send, ipcMain, bumpRev, fs, DATA_CACHE_DIR, path });
 
-async function fetchWithTimeout(url, ms = 8000) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status} en ${url}`);
-    return res;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchJson(url, ms) {
-  return (await fetchWithTimeout(url, ms)).json();
-}
-
-// Orden de lectura: 1) GitHub (siempre lo más nuevo), 2) última copia descargada (sin internet),
-// 3) copia incluida en el instalador. Así el launcher nunca se queda sin datos.
-// Modo streamer: detecta programas de directo (OBS, Streamlabs…) y avisa a la interfaz.
-let streamDetected = false;
-let streamLast = null;
-const streamerOn = () => streamer.effective(readSettings().streamer, streamDetected);
-async function checkStreamer() {
-  try {
-    if (readSettings().streamer === 'auto') streamDetected = streamer.streamingDetected(await streamer.listProcesses(execFile));
-    else streamDetected = false;
-  } catch { streamDetected = false; }
-  const now = { on: streamerOn(), detected: streamDetected };
-  if (!streamLast || streamLast.on !== now.on || streamLast.detected !== now.detected) { streamLast = now; send('streamer:changed', now); }
-}
-ipcMain.handle('streamer:get', async () => { await checkStreamer(); return streamLast; });
-
-// Lo que el administrador acaba de publicar se ve al instante en su propio launcher (GitHub tarda un poco en servirlo).
-const justPublished = new Map();
-function remember(name, data) {
-  dataMemo.delete(name);
-  bumpRev();
-  justPublished.set(name, { data, until: Date.now() + 5 * 60 * 1000 });
-  try {
-    fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
-    fs.writeFileSync(path.join(DATA_CACHE_DIR, `${name}.json`), JSON.stringify(data));
-  } catch {}
-}
-const dataMemo = new Map();
 /* ---------- aviso de contenido nuevo (rápido, sin esperar al reloj de cada launcher) ---------- */
 const revLib = require('./lib/rev');
 let lastRev = null;
@@ -345,342 +303,20 @@ function pushLog(source, raw) {
   send('game:log', { source, line });
 }
 
-/* ---------- contraseña de instalación y mods ---------- */
+/* ---------- contraseña de instalación y mods: ahora en lib/main/contrasena-de-instalacion-y-mods.js ---------- */
+const { keyStore, downloadBuffer, installMods } = require('./lib/main/contrasena-de-instalacion-y-mods')({ memoryKeys, safeStorage, fs, KEYS_FILE, path, fetchWithTimeout, send, packInstall, app, instanceId });
 
-// La clave derivada de la contraseña se guarda cifrada con el almacén del sistema (DPAPI, Keychain...).
-// Si el sistema no ofrece ese almacén, solo se recuerda mientras el launcher está abierto.
-const keyStore = {
-  load(salt) {
-    if (memoryKeys.has(salt)) return memoryKeys.get(salt);
-    if (!safeStorage.isEncryptionAvailable()) return null;
-    try {
-      const all = JSON.parse(fs.readFileSync(KEYS_FILE, 'utf8'));
-      if (!all[salt]) return null;
-      const key = Buffer.from(safeStorage.decryptString(Buffer.from(all[salt], 'base64')), 'base64');
-      memoryKeys.set(salt, key);
-      return key;
-    } catch {
-      return null;
-    }
-  },
-  save(salt, key) {
-    memoryKeys.set(salt, key);
-    if (!safeStorage.isEncryptionAvailable()) return;
-    try {
-      let all = {};
-      try {
-        all = JSON.parse(fs.readFileSync(KEYS_FILE, 'utf8'));
-      } catch {}
-      all[salt] = safeStorage.encryptString(key.toString('base64')).toString('base64');
-      fs.mkdirSync(path.dirname(KEYS_FILE), { recursive: true });
-      fs.writeFileSync(KEYS_FILE, JSON.stringify(all));
-    } catch {}
-  },
-  clear() {
-    memoryKeys.clear();
-    try {
-      fs.unlinkSync(KEYS_FILE);
-    } catch {}
-  }
-};
+/* ---------- loader (Fabric): ahora en lib/main/loader-fabric.js ---------- */
+const { ensureFabric } = require('./lib/main/loader-fabric')({ loaders, fetchJson, path, GAME_DIR, fs });
 
-const MAX_DOWNLOAD = 1.5 * 1024 * 1024 * 1024; // tope por archivo: evita llenar la memoria con una descarga enorme
-async function downloadBuffer(url) {
-  const res = await fetchWithTimeout(url, 180000);
-  const len = Number(res.headers && res.headers.get && res.headers.get('content-length'));
-  if (len && len > MAX_DOWNLOAD) throw new Error('El archivo a descargar es demasiado grande.');
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length > MAX_DOWNLOAD) throw new Error('El archivo a descargar es demasiado grande.');
-  return buf;
-}
+/* ---------- loader (Quilt): ahora en lib/main/loader-quilt.js ---------- */
+const { ensureQuilt } = require('./lib/main/loader-quilt')({ loaders, fetchJson, path, GAME_DIR, fs });
 
-// Instala o actualiza los mods. Con modpack protegido pide la contraseña solo si hace falta
-// (primera instalación o actualización); quien ya lo tiene instalado juega sin escribirla.
-async function installMods(manifest, password, gameDir) {
-  const onStatus = (text) => send('game:status', { text });
-  if (manifest.protected) {
-    const r = await packInstall.installProtected({
-      prot: manifest.protected,
-      password,
-      gameDir,
-      download: downloadBuffer,
-      keyStore,
-      onStatus,
-      cacheDir: path.join(app.getPath('userData'), 'pack-cache', instanceId(manifest))
-    });
-    if (r.status === 'need-password') {
-      throw new Error(
-        r.wrong
-          ? 'WRONG_PASSWORD: La contraseña no es correcta.'
-          : 'NEEDS_PASSWORD: Este modpack necesita la contraseña de instalación.'
-      );
-    }
-    return;
-  }
-  await packInstall.syncMods({
-    modsDir: path.join(gameDir, 'mods'),
-    stateFile: path.join(gameDir, '.managed-mods.json'),
-    mods: manifest.mods || [],
-    download: downloadBuffer,
-    onStatus
-  });
-}
+/* ---------- loader (Forge): ahora en lib/main/loader-forge.js ---------- */
+const { ensureForge, fixNovaMods } = require('./lib/main/loader-forge')({ readZip, fs, loaders, path, GAME_DIR, fetchJson, send, downloadBuffer, fetchWithTimeout, sha1OfFile, pushLog, instanceDir, novaLib, content, apiRequest });
 
-/* ---------- loader (Fabric) ---------- */
-
-async function ensureFabric(mcVersion, loaderVersion) {
-  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
-  if (loaderVersion && !loaders.isSafeVersion(loaderVersion)) throw new Error(`La versión de Fabric "${loaderVersion}" no es válida.`);
-  if (!loaderVersion) {
-    const list = await fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${mcVersion}`);
-    if (!list.length) throw new Error(`Fabric no soporta Minecraft ${mcVersion}`);
-    const stable = list.find((x) => x.loader.stable) || list[0];
-    loaderVersion = stable.loader.version;
-  }
-  const id = `fabric-loader-${loaderVersion}-${mcVersion}`;
-  const dir = path.join(GAME_DIR, 'versions', id);
-  const file = path.join(dir, `${id}.json`);
-  if (!fs.existsSync(file)) {
-    const profile = await fetchJson(
-      `https://meta.fabricmc.net/v2/versions/loader/${mcVersion}/${loaderVersion}/profile/json`
-    );
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(profile));
-  }
-  return id;
-}
-
-/* ---------- loader (Quilt) ---------- */
-
-async function ensureQuilt(mcVersion, loaderVersion) {
-  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
-  if (loaderVersion && !loaders.isSafeVersion(loaderVersion)) throw new Error(`La versión de Quilt "${loaderVersion}" no es válida.`);
-  if (!loaderVersion) {
-    const list = await fetchJson(`https://meta.quiltmc.org/v3/versions/loader/${mcVersion}`);
-    if (!list.length) throw new Error(`Quilt no soporta Minecraft ${mcVersion}`);
-    loaderVersion = (list.find((x) => x.loader && !/-(beta|pre|rc)/i.test(x.loader.version)) || list[0]).loader.version;
-  }
-  const id = `quilt-loader-${loaderVersion}-${mcVersion}`;
-  const dir = path.join(GAME_DIR, 'versions', id);
-  const file = path.join(dir, `${id}.json`);
-  if (!fs.existsSync(file)) {
-    const profile = await fetchJson(`https://meta.quiltmc.org/v3/versions/loader/${mcVersion}/${loaderVersion}/profile/json`);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(profile));
-  }
-  return id;
-}
-
-/* ---------- loader (Forge) ---------- */
-
-// Descarga el instalador de Forge (o el jar "universal" en Minecraft 1.12.2 y anteriores) y
-// devuelve su ruta. minecraft-launcher-core se encarga de instalarlo al iniciar el juego.
-// ¿El instalador de Forge sirve para arrancar? Debe ser un zip válido con version.json (si no, el motor de
-// lanzamiento cae en Vanilla sin avisar). Los instaladores muy viejos de 1.12.2 no lo traen.
-function forgeInstallerOk(file) {
-  try {
-    const z = readZip(fs.readFileSync(file));
-    return z.has('version.json');
-  } catch { return false; }
-}
-
-async function ensureForge(mcVersion, wantedVersion) {
-  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
-
-  const dir = path.join(GAME_DIR, 'installers');
-  fs.mkdirSync(dir, { recursive: true });
-
-  let promos = null;
-  try { promos = await fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json'); } catch {}
-
-  // Intenta la versión pedida por el modpack; si su instalador no sirve, prueba la recomendada de ese Minecraft.
-  const candidates = [];
-  const wanted = loaders.pickForgeVersion(promos, mcVersion, wantedVersion);
-  if (wantedVersion && !wanted) throw new Error(`La versión de Forge "${wantedVersion}" no es válida.`);
-  if (wanted) candidates.push(wanted);
-  const rec = loaders.pickForgeVersion(promos, mcVersion, '');
-  if (rec && !candidates.includes(rec)) candidates.push(rec);
-
-  if (!candidates.length) {
-    // Sin internet: se reutiliza el instalador de Forge que ya se descargó para esta versión.
-    const cached = fs.readdirSync(dir).filter((f) => f.startsWith(`forge-${mcVersion}-`) && forgeInstallerOk(path.join(dir, f))).sort().pop();
-    if (cached) return path.join(dir, cached);
-    throw new Error(promos ? `Forge no tiene una versión publicada para Minecraft ${mcVersion}.` : 'No se pudo consultar las versiones de Forge. Revisa tu conexión.');
-  }
-
-  let lastErr = null;
-  for (let i = 0; i < candidates.length; i++) {
-    const forgeVersion = candidates[i];
-    const url = loaders.forgeUrl(mcVersion, forgeVersion);
-    const dest = path.join(dir, loaders.forgeFileName(mcVersion, forgeVersion));
-    try {
-      if (fs.existsSync(dest) && !forgeInstallerOk(dest)) fs.unlinkSync(dest); // descarga vieja dañada: se baja de nuevo
-      if (!fs.existsSync(dest)) {
-        send('game:status', { text: `Descargando Forge ${forgeVersion}…` });
-        fs.writeFileSync(dest, await downloadBuffer(url));
-        // Forge publica el hash sha1 junto a cada archivo: si está disponible, se comprueba.
-        try {
-          const expected = (await (await fetchWithTimeout(`${url}.sha1`)).text()).trim().split(/\s+/)[0].toLowerCase();
-          if (/^[0-9a-f]{40}$/.test(expected) && sha1OfFile(dest).toLowerCase() !== expected) {
-            fs.unlinkSync(dest);
-            throw new Error('El instalador de Forge descargado está dañado (no coincide su sha1). Inténtalo de nuevo.');
-          }
-        } catch (err) {
-          if (!fs.existsSync(dest)) throw err;
-        }
-      }
-      if (!forgeInstallerOk(dest)) {
-        try { fs.unlinkSync(dest); } catch {}
-        throw new Error(`El instalador de Forge ${forgeVersion} no es compatible con este launcher.`);
-      }
-      if (i > 0) pushLog('launcher', `[Nova] Forge ${candidates[0]} no sirve; se usa Forge ${forgeVersion} para Minecraft ${mcVersion}.`);
-      return dest;
-    } catch (err) {
-      lastErr = err;
-      pushLog('launcher', `[Nova] Forge ${forgeVersion}: ${err.message}`);
-    }
-  }
-  throw lastErr || new Error('No se pudo preparar Forge.');
-}
-
-
-// Sodium + Iris: si chocan, deja una pareja que funcione (cambia Sodium o quita Iris). Solo perfiles Nova.
-async function fixNovaMods(instanceDir, mc) {
-  const modsDir = path.join(instanceDir, 'mods');
-  if (!fs.existsSync(modsDir)) return;
-  try {
-    await novaLib.fixSodiumIris(modsDir, {
-      listSodium: () => content.compatibleVersions(apiRequest, 'sodium', 'mod', mc, 'fabric'),
-      download: (u) => downloadBuffer(u),
-      log: (t) => pushLog('launcher', t)
-    });
-  } catch (err) { pushLog('launcher', `[Nova] No se pudo revisar Sodium/Iris: ${err.message}`); }
-  // Nova Client (y casi todos los mods Fabric) necesita Fabric API: si falta, se instala.
-  try {
-    const jars = fs.readdirSync(modsDir).filter((f) => /\.jar(\.disabled)?$/i.test(f));
-    if (jars.some((f) => /nova-client/i.test(f)) && !jars.some((f) => /^fabric[-_]?api/i.test(f) && /\.jar$/i.test(f))) {
-      pushLog('launcher', '[Nova] Falta Fabric API (la necesita Nova Client); instalándola…');
-      await content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: instanceDir, type: 'mod', projectId: 'fabric-api', mc, loader: 'fabric' });
-    }
-  } catch (err) { pushLog('launcher', `[Nova] No se pudo instalar Fabric API: ${err.message}`); }
-  // En Minecraft viejo (hasta 1.19.1) la Fabric API se llama «fabric» y un Nova Client que pida «fabric-api» no la encuentra.
-  try {
-    const marker = path.join(instanceDir, '.nova-client-off');
-    const broken = (st) => st.client && st.needs && !st.hasApi && st.hasLegacy;
-    let st = novaLib.novaClientApiState(modsDir);
-    if (broken(st) || (!st.client && fs.existsSync(marker))) {
-      pushLog('launcher', '[Nova] Nova Client no encaja con la Fabric API de esta versión; buscando un Nova Client corregido…');
-      try { await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir: instanceDir, mc }); } catch {}
-      st = novaLib.novaClientApiState(modsDir);
-      if (broken(st)) {
-        fs.renameSync(path.join(modsDir, st.client), path.join(modsDir, `${st.client}.disabled`));
-        fs.writeFileSync(marker, '1');
-        pushLog('launcher', '[Nova] Nova Client se desactivó en este perfil (todavía no hay una versión corregida para esta versión de Minecraft). El juego abre sin él.');
-      } else if (st.client) {
-        fs.rmSync(marker, { force: true });
-        pushLog('launcher', '[Nova] Nova Client actualizado.');
-      }
-    }
-  } catch (err) { pushLog('launcher', `[Nova] No se pudo revisar Nova Client: ${err.message}`); }
-}
-
-/* ---------- Forge nuevo (61.x: Minecraft 1.21.11+) ---------- */
-
-// Estos Forge arrancan con ForgeBootstrap, que ForgeWrapper (el motor del launcher) no puede iniciar.
-// Se instalan con el instalador oficial y se lanzan como versión propia, igual que Fabric.
-function forgeInstallerInfo(file) {
-  try {
-    const z = readZip(fs.readFileSync(file));
-    if (!z.has('version.json')) return null;
-    const json = JSON.parse(z.read('version.json').toString('utf8'));
-    return { id: json.id, mainClass: String(json.mainClass || ''), bootstrap: /net\.minecraftforge\.bootstrap\./.test(String(json.mainClass || '')) };
-  } catch { return null; }
-}
-
-async function installForgeClient(installer, info, mcVersion, javaPath, flag = '--installClient') {
-  const id = info.id;
-  const jsonFile = path.join(GAME_DIR, 'versions', id, `${id}.json`);
-  const done = path.join(GAME_DIR, 'versions', id, '.nova-installed');
-  if (fs.existsSync(jsonFile) && fs.existsSync(done)) return id;
-  await ensureVanillaFiles(mcVersion);
-  const profiles = path.join(GAME_DIR, 'launcher_profiles.json');
-  if (!fs.existsSync(profiles)) fs.writeFileSync(profiles, JSON.stringify({ profiles: {} }));
-  // El instalador es una aplicación de consola: se usa java.exe, no javaw.exe, para poder leer su salida.
-  let java = javaPath || 'java';
-  if (/javaw(\.exe)?$/i.test(java)) { const alt = java.replace(/javaw(\.exe)?$/i, 'java$1'); if (fs.existsSync(alt)) java = alt; }
-  send('game:status', { text: 'Instalando Forge (la primera vez tarda unos minutos)…' });
-  pushLog('launcher', `[Nova] Instalando ${id} con el instalador oficial…`);
-  const tail = [];
-  await new Promise((resolve, reject) => {
-    const child = require('child_process').spawn(java, ['-jar', installer, flag, GAME_DIR], { cwd: GAME_DIR, windowsHide: true });
-    const timer = setTimeout(() => { try { child.kill(); } catch {} reject(new Error('La instalación de Forge tardó demasiado y se canceló.')); }, 20 * 60 * 1000);
-    const onData = (b) => { for (const line of String(b).split(/\r?\n/)) { if (!line.trim()) continue; tail.push(line); if (tail.length > 40) tail.shift(); if (!/^\s+\S+\.class$/.test(line) && !/^\s{2}/.test(line)) pushLog('launcher', `[Forge] ${line}`); } };
-    child.stdout.on('data', onData);
-    child.stderr.on('data', onData);
-    child.on('error', (err) => { clearTimeout(timer); reject(new Error(`No se pudo ejecutar el instalador de Forge: ${err.message}`)); });
-    child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error(`El instalador de Forge terminó con error (${code}). ${tail.filter((l) => !/^\s/.test(l)).slice(-3).join(' | ')}`)); });
-  });
-  if (!fs.existsSync(jsonFile)) throw new Error('El instalador de Forge terminó, pero no dejó la versión instalada.');
-  fs.writeFileSync(done, new Date().toISOString());
-  return id;
-}
-
-// Argumentos de Java que trae la versión instalada por Forge/NeoForge (-p, --add-modules, --add-opens…).
-// El motor del launcher solo lee los argumentos del juego, así que se resuelven aquí.
-function installedJvmArgs(id) {
-  try {
-    const json = JSON.parse(fs.readFileSync(path.join(GAME_DIR, 'versions', id, `${id}.json`), 'utf8'));
-    const list = (json.arguments && json.arguments.jvm) || [];
-    const osName = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'osx' : 'linux';
-    const subst = (v) => String(v)
-      .replace(/\$\{library_directory\}/g, path.join(GAME_DIR, 'libraries'))
-      .replace(/\$\{classpath_separator\}/g, path.delimiter)
-      .replace(/\$\{version_name\}/g, id);
-    const out = [];
-    for (const a of list) {
-      if (typeof a === 'string') { out.push(subst(a)); continue; }
-      if (!a || !a.rules) continue;
-      let ok = false;
-      for (const r of a.rules) {
-        if (r.features) continue;
-        const match = !r.os || !r.os.name || r.os.name === osName;
-        if (match) ok = r.action === 'allow';
-      }
-      if (ok) for (const v of [].concat(a.value || [])) out.push(subst(v));
-    }
-    // Estos los pone el propio launcher: el classpath y la carpeta de nativos.
-    const clean = [];
-    for (let i = 0; i < out.length; i++) {
-      if (out[i] === '-cp' || out[i] === '-classpath') { i++; continue; }
-      if (/\$\{/.test(out[i])) continue;
-      clean.push(out[i]);
-    }
-    return clean;
-  } catch { return []; }
-}
-
-// Minecraft 1.21.11 en adelante (incluye 26.x): NeoForge y Forge cambiaron su arranque y ya no sirven con ForgeWrapper.
-function isNewForgeEra(mc) {
-  const m = /^(\d+)\.(\d+)(?:\.(\d+))?/.exec(String(mc));
-  if (!m) return false;
-  const a = +m[1], b = +m[2], c = +(m[3] || 0);
-  return a >= 26 || (a === 1 && (b > 21 || (b === 21 && c >= 11)));
-}
-
-// Minecraft muy viejo (1.10 y anteriores) se cierra si options.txt trae un idioma que no conoce (por ejemplo es_ec de versiones nuevas).
-function sanitizeOldOptions(gameDir, mc) {
-  try {
-    const m = /^1\.(\d+)/.exec(String(mc));
-    const w = /^(\d\d)w\d+/.exec(String(mc));
-    const old = (m && +m[1] <= 10) || (w && +w[1] <= 15);
-    if (!old) return;
-    const file = path.join(gameDir, 'options.txt');
-    if (!fs.existsSync(file)) return;
-    const text = fs.readFileSync(file, 'utf8');
-    const next = text.replace(/^lang:(?!en_US\s*$).*$/m, 'lang:en_US');
-    if (next !== text) { fs.writeFileSync(file, next); pushLog('launcher', `[Nova] options.txt: idioma cambiado a en_US (Minecraft ${mc} no conoce el idioma anterior).`); }
-  } catch {}
-}
+/* ---------- Forge nuevo (61.x: Minecraft 1.21.11+): ahora en lib/main/forge-nuevo.js ---------- */
+const { forgeInstallerInfo, installForgeClient, installedJvmArgs, isNewForgeEra, sanitizeOldOptions } = require('./lib/main/forge-nuevo')({ readZip, fs, path, GAME_DIR, ensureVanillaFiles, send, pushLog, os });
 
 /* ---------- OptiFine solo (sin Forge) ---------- */
 
@@ -722,120 +358,15 @@ async function ensureOptiFine(pack, javaPath) {
   });
 }
 
-/* ---------- loader (NeoForge) ---------- */
+/* ---------- loader (NeoForge): ahora en lib/main/loader-neoforge.js ---------- */
+const { ensureNeoForge } = require('./lib/main/loader-neoforge')({ loaders, path, GAME_DIR, fs, fetchWithTimeout, send, downloadBuffer, sha1OfFile });
 
-// Igual que Forge: se descarga el instalador oficial y minecraft-launcher-core lo ejecuta al iniciar.
-async function ensureNeoForge(mcVersion, wantedVersion) {
-  if (!loaders.isSafeVersion(mcVersion)) throw new Error(`La versión de Minecraft "${mcVersion}" no es válida.`);
-  if (!loaders.neoforgeMcPrefix(mcVersion) && !wantedVersion) throw new Error(`NeoForge solo está disponible desde Minecraft 1.20.2 (este modpack usa ${mcVersion}).`);
-  const dir = path.join(GAME_DIR, 'installers');
-  fs.mkdirSync(dir, { recursive: true });
-
-  let version = null;
-  try {
-    let versions = [];
-    if (!wantedVersion) {
-      const xml = await (await fetchWithTimeout('https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml')).text();
-      versions = [...xml.matchAll(/<version>([^<]+)<\/version>/g)].map((m) => m[1]);
-    }
-    version = loaders.pickNeoForgeVersion(versions, mcVersion, wantedVersion);
-  } catch (err) {
-    const cached = fs.readdirSync(dir).filter((f) => /^neoforge-.*-installer\.jar$/.test(f)).sort().pop();
-    if (cached && !wantedVersion) return path.join(dir, cached);
-    throw new Error(`No se pudo consultar las versiones de NeoForge: ${err.message}`);
-  }
-  if (!version) throw new Error(wantedVersion ? `La versión de NeoForge "${wantedVersion}" no es válida.` : `NeoForge no tiene una versión publicada para Minecraft ${mcVersion}.`);
-
-  const url = loaders.neoforgeUrl(version);
-  const dest = path.join(dir, loaders.neoforgeFileName(version));
-  if (fs.existsSync(dest)) return dest;
-  send('game:status', { text: `Descargando NeoForge ${version}…` });
-  fs.writeFileSync(dest, await downloadBuffer(url));
-  try {
-    const expected = (await (await fetchWithTimeout(`${url}.sha1`)).text()).trim().split(/\s+/)[0].toLowerCase();
-    if (/^[0-9a-f]{40}$/.test(expected) && sha1OfFile(dest).toLowerCase() !== expected) {
-      fs.unlinkSync(dest);
-      throw new Error('El instalador de NeoForge descargado está dañado (no coincide su sha1). Inténtalo de nuevo.');
-    }
-  } catch (err) {
-    if (!fs.existsSync(dest)) throw err;
-  }
-  return dest;
-}
-
-/* ---------- Java ---------- */
-
-function readJavaVersionOutput(javaBin) {
-  return new Promise((resolve) => {
-    execFile(javaBin, ['-version'], { timeout: 10000, windowsHide: true }, (err, stdout, stderr) => {
-      resolve(err && !stderr ? null : String(stderr || stdout));
-    });
-  });
-}
-
-function managedJavaPath(major) {
-  return findJavaBinary(path.join(RUNTIME_DIR, `java-${major}`));
-}
-
-// Elige el Java correcto para el modpack. Orden: el que el jugador eligió en Ajustes, el que instaló
-// el launcher, el del sistema. Si ninguno sirve, lo descarga (si el jugador no lo desactivó).
-// En Windows, java.exe abre una ventana negra de consola al jugar; javaw.exe es el mismo Java sin esa ventana.
-async function preferJavaw(bin) {
-  if (process.platform !== 'win32') return bin;
-  try {
-    if (bin) {
-      const w = String(bin).replace(/java(\.exe)?$/i, 'javaw.exe');
-      return w !== bin && fs.existsSync(w) ? w : bin;
-    }
-    const found = await new Promise((resolve) => execFile('where', ['javaw'], { timeout: 5000, windowsHide: true }, (err, out) => resolve(err ? '' : String(out).split(/\r?\n/)[0].trim())));
-    return found && fs.existsSync(found) ? found : bin;
-  } catch { return bin; }
-}
-
-// Devuelve la ruta de Java, o undefined para usar el Java del sistema.
-async function resolveJava(manifest, loaderType, st = readSettings()) {
-  const mc = manifest.minecraftVersion;
-  const need = loaders.requiredJavaMajor(mc);
-  const explicit = st.javaPath || config.javaPath || '';
-  if (!need) return explicit || undefined;
-
-  const installMajor = loaders.javaInstallMajor(mc);
-  const candidates = [];
-  if (explicit) candidates.push(explicit);
-  const managed = managedJavaPath(installMajor);
-  if (managed) candidates.push(managed);
-  candidates.push('java');
-
-  let foundMajor = null;
-  for (const bin of candidates) {
-    const major = loaders.parseJavaMajor(await readJavaVersionOutput(bin));
-    if (major && !foundMajor) foundMajor = major;
-    if (loaders.javaIsOk(major, mc, loaderType)) return bin === 'java' ? undefined : bin;
-  }
-
-  if (st.autoJava) {
-    return installJava({
-      rootDir: RUNTIME_DIR,
-      major: installMajor,
-      onStatus: (text) => send('game:status', { text }),
-      onProgress: (percent) => send('game:progress', { type: 'java', task: percent, total: 100 })
-    });
-  }
-
-  if (!foundMajor) {
-    throw new Error(
-      `No encontré Java. Minecraft ${mc} necesita Java ${need} o superior. ` +
-        'Activa "Instalar Java automáticamente" en Ajustes o elige su ruta.'
-    );
-  }
-  throw new Error(
-    `Este evento usa Minecraft ${mc}, que necesita Java ${need}${need === 8 && loaderType === 'forge' ? ' (exactamente)' : ' o superior'}, ` +
-      `y tu Java es el ${foundMajor}. Activa "Instalar Java automáticamente" en Ajustes o elige otro Java.`
-  );
-}
+/* ---------- Java: ahora en lib/main/java.js ---------- */
+const { readJavaVersionOutput, managedJavaPath, preferJavaw, resolveJava } = require('./lib/main/java')({ execFile, findJavaBinary, path, RUNTIME_DIR, fs, readSettings, loaders, config, installJava, send });
 
 /* ---------- ventana y bandeja ---------- */
 
+let windowShownBefore = false;
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1120,
@@ -868,7 +399,9 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith('file://')) e.preventDefault();
   });
-  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // Si la ventana se vuelve a abrir (después de cerrarla con el juego en marcha), no se repite la intro.
+  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'), windowShownBefore ? { query: { resume: '1' } } : undefined);
+  windowShownBefore = true;
   mainWindow.webContents.on('did-finish-load', () => {
     if (pendingImportFile) {
       send('import:open', { path: pendingImportFile });
@@ -2814,15 +2347,30 @@ function ownPackRoot(id) {
 }
 ipcMain.handle('instance:worldDuplicate', (_e, p = {}) => packs.duplicateWorld(ownPackRoot(p.id).root, cleanStr(p.world, 200)));
 ipcMain.handle('instance:worldDelete', (_e, p = {}) => packs.deleteWorld(ownPackRoot(p.id).root, cleanStr(p.world, 200)));
-ipcMain.handle('instance:worlds', (_e, id) => {
-  const { root } = packRoot(id);
-  const dir = path.join(root, 'saves');
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => ({ name: d.name, mtime: fs.statSync(path.join(dir, d.name)).mtimeMs }))
-    .sort((a, b) => b.mtime - a.mtime);
+const worldLib = require('./lib/worlds');
+ipcMain.handle('instance:worlds', (_e, id) => worldLib.listWorlds(path.join(packRoot(id).root, 'saves')).sort((a, b) => b.lastPlayed - a.lastPlayed));
+ipcMain.handle('instance:openSaves', async (_e, id) => {
+  const dir = path.join(packRoot(id).root, 'saves');
+  fs.mkdirSync(dir, { recursive: true });
+  await shell.openPath(dir);
+});
+// Mundos que hay en otros launchers (Minecraft oficial, Prism, MultiMC, Modrinth App, CurseForge App…).
+ipcMain.handle('instance:worldSources', () => worldLib.findSources().slice(0, 300).map((s) => ({ launcher: s.launcher, instance: s.instance, name: s.name, dir: s.dir, lastPlayed: s.lastPlayed, version: s.version, gameMode: s.gameMode })));
+// Importa un mundo detectado (solo si su carpeta está en la lista actual de mundos de otros launchers).
+ipcMain.handle('instance:worldImport', (_e, p = {}) => {
+  const { root } = ownPackRoot(p.id);
+  const dir = path.resolve(cleanStr(p.dir, 1000));
+  if (!worldLib.findSources().some((s) => path.resolve(s.dir) === dir)) throw new Error('Ese mundo ya no está disponible.');
+  return worldLib.importFolder(dir, root);
+});
+// Importa desde un archivo .zip o una carpeta que elige el usuario.
+ipcMain.handle('instance:worldImportPick', async (_e, p = {}) => {
+  const { root } = ownPackRoot(p.id);
+  const res = await dialog.showOpenDialog(mainWindow, p.kind === 'folder'
+    ? { title: 'Elige la carpeta del mundo', properties: ['openDirectory'] }
+    : { title: 'Elige el mundo (.zip)', properties: ['openFile'], filters: [{ name: 'Mundo comprimido', extensions: ['zip'] }] });
+  if (res.canceled || !res.filePaths[0]) return null;
+  return p.kind === 'folder' ? worldLib.importFolder(res.filePaths[0], root) : worldLib.importZip(res.filePaths[0], root);
 });
 // Capturas de pantalla (F2) de la instancia: miniaturas de las 60 más recientes.
 ipcMain.handle('instance:screenshots', (_e, id) => {
@@ -3028,27 +2576,11 @@ ipcMain.handle('server:status', async () => {
   }
 });
 
-/* ---------- IPC: tema y fondo ---------- */
+/* ---------- IPC: tema y fondo: ahora en lib/main/ipc-tema-y-fondo.js ---------- */
+require('./lib/main/ipc-tema-y-fondo')({ fs, BACKGROUND_FILE });
 
-// Los jugadores ya no pueden subir imágenes de fondo: se borra la que quedara de versiones anteriores.
-try { fs.rmSync(BACKGROUND_FILE, { force: true }); } catch {}
-
-/* ---------- IPC: cuentas ---------- */
-
-function makeOfflineSession(name) {
-  // UUID offline estándar de Minecraft (igual al que calcula el servidor).
-  const hash = crypto.createHash('md5').update(`OfflinePlayer:${name}`).digest();
-  hash[6] = (hash[6] & 0x0f) | 0x30;
-  hash[8] = (hash[8] & 0x3f) | 0x80;
-  const hex = hash.toString('hex');
-  const uuid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-  return {
-    mode: 'offline',
-    name,
-    uuid,
-    auth: { access_token: uuid, client_token: uuid, uuid, name, user_properties: '{}', meta: { type: 'mojang', demo: false } }
-  };
-}
+/* ---------- IPC: cuentas: ahora en lib/main/ipc-cuentas.js ---------- */
+const { makeOfflineSession } = require('./lib/main/ipc-cuentas')({ crypto });
 
 /* ---------- sesión guardada (para no iniciar sesión cada vez) ---------- */
 
@@ -3765,6 +3297,17 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     launcher.on('close', (code) => {
       launching = false;
       currentTarget = null;
+      // Cuánto duró la partida: si se cerró casi al instante, el motivo suele estar en los archivos del propio juego.
+      const startedMs = gameStartedAt;
+      const ranSeconds = startedMs ? Math.round((Date.now() - startedMs) / 1000) : 0;
+      const quickExit = ranSeconds < 15;
+      if (!protectedRun && (code !== 0 || quickExit)) {
+        try {
+          const found = gameLogs.collectGameLogs(eventDir, { since: startedMs || Date.now() - 60000 });
+          for (const s of found) { pushLog('launcher', `[Nova] ${s.title}:`); s.lines.forEach((l) => pushLog('minecraft', l)); }
+          if (!found.length && quickExit) pushLog('launcher', '[Nova] El juego se cerró casi al instante y no escribió ningún registro propio (ni logs/latest.log ni informe de fallo).');
+        } catch {}
+      }
       try { syncOut(eventDir, own.sync); } catch {}
       if (own.postExit) { runHook(own.postExit, eventDir, hookEnv).then((r) => pushLog('launcher', `[Nova] Comando al salir ${r.ok ? 'terminado' : 'falló'}${r.out ? ': ' + r.out : ''}`)); }
       // Suma el tiempo de juego a las horas jugadas.
@@ -3780,6 +3323,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       const windowWasOpen = !!mainWindow && !mainWindow.isDestroyed();
       if (readSettings().discordRpc) discordIdle();
       let crashList = code === 0 ? [] : analyzeCrash(protectedRun ? rawLogBuffer : logBuffer);
+      if (!crashList.length && quickExit && !protectedRun) {
+        crashList = [{ id: 'quick-exit', title: 'El juego se cerró casi al instante', advice: 'Abre la pestaña Consola: ahora muestra lo último que escribió Minecraft. Si no hay nada, prueba con otra versión de Java en Ajustes o quita los mods que agregaste a esta instancia.' }];
+      }
       if (protectedRun && crashList.length) {
         // El diagnóstico puede nombrar mods: se guarda cifrado y al jugador se le muestra algo genérico.
         saveProtectedLog(rawLogBuffer);
