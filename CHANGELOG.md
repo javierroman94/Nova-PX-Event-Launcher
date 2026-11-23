@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.172
+- Archivos bloqueados por su autor (CurseForge): el launcher detecta en Descargas los que bajas y los mueve solo a la carpeta de mods.
+
 ## 1.0.171
 - Versiones / crear instancia: cada loader muestra su propio icono (Nova con el logo de NovaPX, Fabric, Quilt, NeoForge, Forge, OptiFine y Vanilla con un bloque de pasto) en lugar de un emoji cualquiera.
 

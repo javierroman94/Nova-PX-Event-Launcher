@@ -1491,6 +1491,28 @@ ipcMain.handle('instance:openSub', async (_e, p = {}) => {
   if (err) throw new Error(err);
 });
 
+// Archivos bloqueados por su autor: mueve de Descargas a la carpeta mods los que el jugador ya bajó (mismo nombre exacto, .jar).
+ipcMain.handle('instance:collectDownloads', (_e, p = {}) => {
+  const { root } = packRoot(p.id);
+  const modsDir = path.join(root, 'mods');
+  const dl = app.getPath('downloads');
+  const moved = [];
+  fs.mkdirSync(modsDir, { recursive: true });
+  for (const raw of Array.isArray(p.names) ? p.names.slice(0, 200) : []) {
+    const name = path.basename(String(raw));
+    if (!/\.jar$/i.test(name) || name !== String(raw)) continue;
+    const from = path.join(dl, name);
+    const to = path.join(modsDir, name);
+    try {
+      if (fs.existsSync(to)) { moved.push(name); continue; }
+      if (!fs.existsSync(from) || !fs.statSync(from).isFile() || fs.statSync(from).size < 1024) continue;
+      try { fs.renameSync(from, to); } catch { fs.copyFileSync(from, to); fs.rmSync(from, { force: true }); }
+      moved.push(name);
+    } catch {}
+  }
+  return moved;
+});
+
 // Desvincular: la instancia deja de ser de Modrinth/CurseForge y pasa a ser propia (se puede cambiar el loader y la versión).
 ipcMain.handle('modpacks:unlink', (_e, p = {}) => {
   if (launching) throw new Error('Cierra Minecraft antes de desvincular.');

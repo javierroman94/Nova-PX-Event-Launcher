@@ -165,6 +165,7 @@ contextBridge.exposeInMainWorld('api', {
   modpackMcVersions: (opts) => ipcRenderer.invoke('modpacks:mcVersions', opts),
   modpackCreate: (p) => ipcRenderer.invoke('modpacks:create', p),
   instanceOpenSub: (p) => ipcRenderer.invoke('instance:openSub', p),
+  instanceCollectDownloads: (p) => ipcRenderer.invoke('instance:collectDownloads', p),
   modpackUnlink: (p) => ipcRenderer.invoke('modpacks:unlink', p),
   javaCheck: (p) => ipcRenderer.invoke('java:check', p),
   javaDetect: (p) => ipcRenderer.invoke('java:detect', p),

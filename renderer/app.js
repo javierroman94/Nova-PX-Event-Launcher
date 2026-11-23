@@ -5542,7 +5542,7 @@ function blockedDialog(entry) {
   dlg.setAttribute('aria-label', 'Archivos bloqueados por su autor');
   const body = el('div', 'event-modal-body');
   body.append(el('h3', '', `${list.length} archivo${list.length === 1 ? '' : 's'} bloqueado${list.length === 1 ? '' : 's'} por su autor`));
-  body.append(el('p', 'muted', 'Los autores de estos mods no permiten bajarlos desde otros programas. El modpack puede fallar sin ellos. Descárgalos tú desde la web y ponlos en la carpeta de mods (botón de abajo, o "Cargar archivos" en el modpack).'));
+  body.append(el('p', 'muted', 'Los autores de estos mods no permiten bajarlos desde otros programas. El modpack puede fallar sin ellos. Descárgalos tú desde la web: el launcher los detecta en tu carpeta Descargas y los pone solo en la carpeta de mods.'));
   const ul = el('div', 'mp-blocked');
   list.forEach((b) => {
     const row = el('div', 'mp-blocked-row');
@@ -5552,14 +5552,30 @@ function blockedDialog(entry) {
       open.addEventListener('click', () => window.api.openLink(`https://www.curseforge.com/api/v1/mods/${b.projectId}/files/${b.fileId}/download`).catch((e) => toast(cleanError(e), 'error')));
       row.append(open);
     }
+    row.dataset.name = b.name;
     ul.append(row);
   });
   body.append(ul);
+  // Cuando el jugador baja el archivo, el launcher lo detecta en Descargas y lo mueve solo a la carpeta de mods.
+  const names = list.map((b) => b.name);
+  const timer = setInterval(async () => {
+    try {
+      const done = await window.api.instanceCollectDownloads({ id: entry.id, names });
+      ul.querySelectorAll('.mp-blocked-row').forEach((row) => {
+        if (done.includes(row.dataset.name) && !row.classList.contains('is-done')) {
+          row.classList.add('is-done');
+          row.replaceChildren(el('span', '', row.dataset.name), el('span', 'muted', '✓ Colocado en mods'));
+        }
+      });
+      if (done.length === names.length) clearInterval(timer);
+    } catch {}
+  }, 2500);
+  dlg.addEventListener('close', () => clearInterval(timer));
   const act = el('div', 'mp-actions');
   const folder = el('button', '', '📁 Abrir carpeta de mods'); folder.type = 'button';
   folder.addEventListener('click', () => window.api.instanceOpenSub({ id: entry.id, sub: 'mods' }).catch((e) => toast(cleanError(e), 'error')));
   const close = el('button', 'primary', 'Cerrar'); close.type = 'button';
-  close.addEventListener('click', () => { dlg.close(); dlg.remove(); });
+  close.addEventListener('click', () => { clearInterval(timer); dlg.close(); dlg.remove(); });
   act.append(folder, close);
   body.append(act);
   dlg.append(body);
