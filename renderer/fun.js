@@ -143,6 +143,10 @@
     // Skin secreta de PX: «Sombra» (encapuchado oscuro con ojos rojos). Solo se activa en modo administrador.
     shadow: { scale: 4, rows: ['..NNNNNNN..', '.NSSNNNSSN.', '.NNNNNNNNN.', 'NNVVVVVVVNN', 'NVVEEVEEVVN', 'NVVEEVEEVVN', 'NVVVVVVVVVN', '.NNVVVVVNN.', '.NNNNNNNNN.', 'XXNNXNXNNXX', 'NSNNNXNNNSN', 'XXNNXNXNNXX', 'NSNZNNNZNSN'], feet: 'X' },
     // Mobs de bloques, minimalistas y de diseño propio (acompañan a Pexy, la mascota oficial).
+    zombie: { mob3d: true, rows: ['.PPPPPPPPP.'], feet: null },
+    skeleton: { mob3d: true, rows: ['.PPPPPPPPP.'], feet: null },
+    spider: { mob3d: true, rows: ['.PPPPPPPPP.'], feet: null },
+    bomb: { mob3d: true, rows: ['.PPPPPPPPP.'], feet: null },
     pig: { mob3d: true, rows: ['.PPPPPPPPP.', '.PPPPPPPPP.', '.PWKPPPWKP.', '.PPPPPPPPP.', '..PpppppP..', '..PpKpKpP..', '..PPPPPPP..'], feet: 'P' },
     sheep: { mob3d: true, rows: ['.WWWWWWWWW.', 'WWWWWWWWWWW', 'WWWeeeeeWWW', 'WWWeKeKeWWW', 'WWWeeeeeWWW', 'WWWWeeeWWWW', '.WWWWWWWWW.'], feet: 'e' },
     hen: { mob3d: true, rows: ['....RR.....', '...WWWWW...', '..WWKWKWW..', '..WWWOWWW..', '..WWWOWWW..', '.WWWWWWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'O' },
@@ -150,12 +154,12 @@
     bat: { mob3d: true, fly: true, rows: ['KK.......KK', 'KKK.....KKK', 'KKKKKKKKKKK', 'KKKEKKKEKKK', '.KKKKKKKKK.', '..K.....K..'], feet: null }
   };
   const ROSTER = {
-    navidad: ['sheep', 'pig'], halloween: ['bat', 'jelly'], anio: ['hen', 'pig'], sanvalentin: ['pig', 'hen'],
-    madres: ['sheep', 'hen'], carnaval: ['jelly', 'pig'], ecuador: ['hen', 'pig']
+    navidad: ['sheep', 'pig'], halloween: ['zombie', 'skeleton'], anio: ['hen', 'pig'], sanvalentin: ['pig', 'hen'],
+    madres: ['sheep', 'hen'], carnaval: ['jelly', 'bomb'], ecuador: ['hen', 'pig']
   };
   const THEME_ROSTER = {
-    nova: ['pig', 'sheep'], cyberpunk: ['jelly', 'bat'], synthwave: ['bat', 'pig'], eclipse: ['bat', 'sheep'], vicesunset: ['pig', 'jelly'],
-    deepdark: ['bat', 'jelly'], nether: ['pig', 'bat'], end: ['bat', 'jelly'], sakura: ['pig', 'sheep']
+    nova: ['pig', 'sheep'], cyberpunk: ['bomb', 'jelly'], synthwave: ['bat', 'pig'], eclipse: ['bat', 'sheep'], vicesunset: ['pig', 'jelly'],
+    deepdark: ['spider', 'zombie'], nether: ['skeleton', 'bomb'], end: ['bat', 'spider'], sakura: ['pig', 'sheep']
   };
   const DEFAULT_ROSTER = ['pig', 'sheep'];
 
