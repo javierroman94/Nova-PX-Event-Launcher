@@ -561,7 +561,7 @@ input[type="range"] { accent-color: var(--accent); }
   border-right: 1px solid var(--line);
   position: relative; z-index: 2;
 }
-.brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 0; }
+.brand { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px 8px; }
 .brand-logo { width: 40px; height: 40px; padding: 3px; border-radius: 11px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent); }
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
 .brand-sub { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: .02em; }

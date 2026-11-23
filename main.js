@@ -758,7 +758,8 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     const hadSnapshot = !!previous && fs.existsSync(path.join(root, BASE_FILE));
     const baseBefore = hadSnapshot ? readBase(root) : new Set();
     const keysBefore = previous ? contentKeys(root) : new Set();
-    if (previous) for (const k of [...keysBefore]) if (k.startsWith('mod:')) keysBefore.delete(k);
+    // Solo cuenta como "del jugador" lo que no venía ya con el modpack; así lo que el modpack vuelve a traer sigue protegido.
+    if (previous) for (const k of [...keysBefore]) if (k.startsWith('mod:') || baseBefore.has(k)) keysBefore.delete(k);
     if (previous && fs.existsSync(modsDir)) {
       fs.rmSync(modsBackup, { recursive: true, force: true });
       fs.renameSync(modsDir, modsBackup);
@@ -783,12 +784,19 @@ ipcMain.handle('modpacks:install', async (_e, p = {}) => {
     // Los mods que añadió el usuario (no son del modpack) se conservan al reinstalar o cambiar de versión.
     try {
       if (hadSnapshot && fs.existsSync(modsBackup)) {
+        const stillBlocked = new Set((r.blocked || []).map((b) => String(b && b.name)));
         for (const f of fs.readdirSync(modsBackup)) {
-          if (!/\.jar(\.disabled)?$/i.test(f) || baseBefore.has(`mod:${f.replace(/\.disabled$/i, '')}`)) continue;
+          if (!/\.jar(\.disabled)?$/i.test(f) || (baseBefore.has(`mod:${f.replace(/\.disabled$/i, '')}`) && !stillBlocked.has(f))) continue;
           const dest = path.join(modsDir, f);
           if (!fs.existsSync(dest)) { fs.mkdirSync(modsDir, { recursive: true }); fs.copyFileSync(path.join(modsBackup, f), dest); }
         }
       }
+    } catch {}
+    // Los mods bloqueados que el jugador ya había bajado (de la versión anterior) vuelven a ser del modpack si la nueva versión también los declara.
+    try {
+      const declared = new Set((r.blocked || []).map((b) => String(b && b.name)));
+      const keep = [...declared].filter((n) => /\.jar$/i.test(n) && fs.existsSync(path.join(modsDir, n))).map((n) => `mod:${n}`);
+      if (keep.length) addToBase(root, keep);
     } catch {}
     fs.rmSync(modsBackup, { recursive: true, force: true });
 
@@ -1043,6 +1051,9 @@ ipcMain.handle('instance:collectDownloads', (_e, p = {}) => {
       moved.push(name);
     } catch {}
   }
+  // Solo lo que el modpack declara como bloqueado cuenta como suyo; cualquier otro .jar sigue siendo contenido del jugador.
+  const declared = new Set(((packRoot(p.id).entry || {}).blocked || []).map((b) => String(b && b.name)));
+  addToBase(root, moved.filter((n) => declared.has(n)).map((n) => `mod:${n}`));
   return moved;
 });
 
@@ -1140,6 +1151,14 @@ function readBase(root) {
     const j = JSON.parse(fs.readFileSync(path.join(root, BASE_FILE), 'utf8'));
     return new Set(Array.isArray(j.files) ? j.files : []);
   } catch { return new Set(); }
+}
+// Anota archivos como parte del modpack (por ejemplo los bloqueados por su autor, que el jugador baja a mano).
+function addToBase(root, keys) {
+  try {
+    const set = readBase(root);
+    keys.forEach((k) => set.add(k));
+    fs.writeFileSync(path.join(root, BASE_FILE), JSON.stringify({ files: [...set] }));
+  } catch {}
 }
 const isBase = (root, type, file) => readBase(root).has(`${type}:${String(file).replace(/\.disabled$/i, '')}`);
 

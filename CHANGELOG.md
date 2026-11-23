@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.174
+- Modpacks: los mods bloqueados por su autor que bajas a mano ya cuentan como parte del modpack (antes aparecían como "contenido extra tuyo", también tras actualizar). Al actualizar, lo que el modpack vuelve a traer sigue protegido y no pasa a ser tuyo.
+- Menú lateral: el logo y el nombre de Nova PX quedan centrados.
+
 ## 1.0.173
 - Pexy es ahora la mascota oficial: se le puede agarrar y lanzar, tiene reacción a las cosquillas, y una bandeja para darle de comer (frutas) y bañarlo (jabón) arrastrando hasta él.
 - Ventana de Pexy rediseñada, y el perfil de abajo a la izquierda pasa a ser la ventana de la mascota. Control de volumen para los sonidos.
