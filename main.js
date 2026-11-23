@@ -13,6 +13,7 @@ const mojangArt = require('./lib/mojang-art');
 const pcrypto = require('./lib/pack-crypto');
 const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
+const gameLogs = require('./lib/game-logs');
 const { instanceDir, instanceId } = require('./lib/instance');
 const serversLib = require('./lib/servers');
 const langLib = require('./lib/langpack');
@@ -3281,6 +3282,17 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     launcher.on('close', (code) => {
       launching = false;
       currentTarget = null;
+      // Cuánto duró la partida: si se cerró casi al instante, el motivo suele estar en los archivos del propio juego.
+      const startedMs = gameStartedAt;
+      const ranSeconds = startedMs ? Math.round((Date.now() - startedMs) / 1000) : 0;
+      const quickExit = ranSeconds < 15;
+      if (!protectedRun && (code !== 0 || quickExit)) {
+        try {
+          const found = gameLogs.collectGameLogs(eventDir, { since: startedMs || Date.now() - 60000 });
+          for (const s of found) { pushLog('launcher', `[Nova] ${s.title}:`); s.lines.forEach((l) => pushLog('minecraft', l)); }
+          if (!found.length && quickExit) pushLog('launcher', '[Nova] El juego se cerró casi al instante y no escribió ningún registro propio (ni logs/latest.log ni informe de fallo).');
+        } catch {}
+      }
       try { syncOut(eventDir, own.sync); } catch {}
       if (own.postExit) { runHook(own.postExit, eventDir, hookEnv).then((r) => pushLog('launcher', `[Nova] Comando al salir ${r.ok ? 'terminado' : 'falló'}${r.out ? ': ' + r.out : ''}`)); }
       // Suma el tiempo de juego a las horas jugadas.
@@ -3296,6 +3308,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       const windowWasOpen = !!mainWindow && !mainWindow.isDestroyed();
       if (readSettings().discordRpc) discordIdle();
       let crashList = code === 0 ? [] : analyzeCrash(protectedRun ? rawLogBuffer : logBuffer);
+      if (!crashList.length && quickExit && !protectedRun) {
+        crashList = [{ id: 'quick-exit', title: 'El juego se cerró casi al instante', advice: 'Abre la pestaña Consola: ahora muestra lo último que escribió Minecraft. Si no hay nada, prueba con otra versión de Java en Ajustes o quita los mods que agregaste a esta instancia.' }];
+      }
       if (protectedRun && crashList.length) {
         // El diagnóstico puede nombrar mods: se guarda cifrado y al jugador se le muestra algo genérico.
         saveProtectedLog(rawLogBuffer);
