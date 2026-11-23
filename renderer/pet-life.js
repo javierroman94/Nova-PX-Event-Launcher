@@ -189,6 +189,18 @@
       });
     });
     btns.append(gb);
+    ((window.NovaPetGames && window.NovaPetGames.list) || []).forEach((g) => {
+      const gx = el('button', '', g.label); gx.type = 'button';
+      gx.addEventListener('click', () => {
+        if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
+        g.run((score) => {
+          const r = L.minigame(st, score, Date.now()); st = r.state; store(st);
+          M.say(r.levelUp ? pick('level') : `${g.label}: ${score} ${g.unit}, ¡qué divertido! 🎉`, 5000);
+          note.textContent = `${g.label}: ${score} ${g.unit}. Tu récord general: ${st.best}.`; refresh();
+        });
+      });
+      btns.append(gx);
+    });
     let extra = null;
     const wardrobe = el('div', 'pl-ward');
     const paintWard = () => {
