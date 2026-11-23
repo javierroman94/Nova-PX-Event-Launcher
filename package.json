@@ -15,7 +15,8 @@
     "dist": "electron-builder",
     "mods": "node tools/generar-mods.js",
     "test": "node test/run-all.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "smoke": "node tools/prueba-arranque.js"
   },
   "dependencies": {
     "electron-updater": "^6.3.9",
