@@ -2347,15 +2347,30 @@ function ownPackRoot(id) {
 }
 ipcMain.handle('instance:worldDuplicate', (_e, p = {}) => packs.duplicateWorld(ownPackRoot(p.id).root, cleanStr(p.world, 200)));
 ipcMain.handle('instance:worldDelete', (_e, p = {}) => packs.deleteWorld(ownPackRoot(p.id).root, cleanStr(p.world, 200)));
-ipcMain.handle('instance:worlds', (_e, id) => {
-  const { root } = packRoot(id);
-  const dir = path.join(root, 'saves');
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => ({ name: d.name, mtime: fs.statSync(path.join(dir, d.name)).mtimeMs }))
-    .sort((a, b) => b.mtime - a.mtime);
+const worldLib = require('./lib/worlds');
+ipcMain.handle('instance:worlds', (_e, id) => worldLib.listWorlds(path.join(packRoot(id).root, 'saves')).sort((a, b) => b.lastPlayed - a.lastPlayed));
+ipcMain.handle('instance:openSaves', async (_e, id) => {
+  const dir = path.join(packRoot(id).root, 'saves');
+  fs.mkdirSync(dir, { recursive: true });
+  await shell.openPath(dir);
+});
+// Mundos que hay en otros launchers (Minecraft oficial, Prism, MultiMC, Modrinth App, CurseForge App…).
+ipcMain.handle('instance:worldSources', () => worldLib.findSources().slice(0, 300).map((s) => ({ launcher: s.launcher, instance: s.instance, name: s.name, dir: s.dir, lastPlayed: s.lastPlayed, version: s.version, gameMode: s.gameMode })));
+// Importa un mundo detectado (solo si su carpeta está en la lista actual de mundos de otros launchers).
+ipcMain.handle('instance:worldImport', (_e, p = {}) => {
+  const { root } = ownPackRoot(p.id);
+  const dir = path.resolve(cleanStr(p.dir, 1000));
+  if (!worldLib.findSources().some((s) => path.resolve(s.dir) === dir)) throw new Error('Ese mundo ya no está disponible.');
+  return worldLib.importFolder(dir, root);
+});
+// Importa desde un archivo .zip o una carpeta que elige el usuario.
+ipcMain.handle('instance:worldImportPick', async (_e, p = {}) => {
+  const { root } = ownPackRoot(p.id);
+  const res = await dialog.showOpenDialog(mainWindow, p.kind === 'folder'
+    ? { title: 'Elige la carpeta del mundo', properties: ['openDirectory'] }
+    : { title: 'Elige el mundo (.zip)', properties: ['openFile'], filters: [{ name: 'Mundo comprimido', extensions: ['zip'] }] });
+  if (res.canceled || !res.filePaths[0]) return null;
+  return p.kind === 'folder' ? worldLib.importFolder(res.filePaths[0], root) : worldLib.importZip(res.filePaths[0], root);
 });
 // Capturas de pantalla (F2) de la instancia: miniaturas de las 60 más recientes.
 ipcMain.handle('instance:screenshots', (_e, id) => {

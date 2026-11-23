@@ -3413,3 +3413,13 @@ main { container-type: inline-size; overflow-x: hidden; }
 .pet-tray-item:hover { transform: translateY(-3px) scale(1.08); }
 .pet-tray-x { padding: 4px 9px; border-radius: 10px; }
 .pet-tray-ghost { position: fixed; z-index: 100002; font-size: 34px; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 6px 8px rgba(0,0,0,.4)); }
+
+/* Pestaña Mundos */
+.mw-toolbar { margin-bottom: 8px; }
+.mw-row { align-items: center; }
+.mw-icon { width: 48px; height: 48px; border-radius: 8px; image-rendering: pixelated; flex: none; object-fit: cover; }
+.mw-import .event-modal-body { display: grid; gap: 10px; min-width: min(560px, 90vw); }
+.mw-found { max-height: 46vh; overflow: auto; }
+.mw-src { width: 100%; text-align: left; cursor: pointer; }
+.mw-src:hover { border-color: var(--accent, var(--line)); }
+#mp-tab-worlds .events-head { margin-top: 18px; }

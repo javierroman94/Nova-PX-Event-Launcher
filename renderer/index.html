@@ -472,6 +472,16 @@
           <div id="mp-content-list" class="mods-list"></div>
         </div>
         <div id="mp-tab-worlds" hidden>
+          <div class="mp-toolbar mw-toolbar">
+            <input id="mp-worlds-search" class="events-search" type="search" placeholder="Buscar mundos…" aria-label="Buscar mundos" autocomplete="off" />
+            <select id="mp-worlds-sort" aria-label="Ordenar mundos">
+              <option value="recent">Más recientes</option>
+              <option value="az">A-Z</option>
+              <option value="size">Más pesados</option>
+            </select>
+            <button id="mp-worlds-import" class="primary" type="button">⤓ Importar mundos</button>
+            <button id="mp-worlds-folder" type="button" title="Abrir la carpeta de mundos" aria-label="Abrir la carpeta de mundos">📁</button>
+          </div>
           <p id="mp-worlds-note" class="muted"></p>
           <div id="mp-worlds-list" class="mods-list"></div>
           <div class="events-head">

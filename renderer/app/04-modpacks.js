@@ -571,54 +571,111 @@ $('mp-add-local').addEventListener('click', async () => {
   }
 });
 
-async function renderWorlds() {
+let worldsData = [];
+const fmtMb = (n) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.max(1, Math.round(n / 1e6))} MB`);
+function paintWorlds() {
   const list = $('mp-worlds-list');
   list.replaceChildren();
-  $('mp-worlds-note').textContent = 'Cargando…';
-  try {
-    const worlds = await window.api.instanceWorlds(mp.pack.id);
-    $('mp-worlds-note').textContent = worlds.length ? `${worlds.length} mundo${worlds.length === 1 ? '' : 's'}` : 'Todavía no hay mundos. Se crean la primera vez que juegues.';
-    worlds.forEach((w) => {
-      const row = el('div', 'mod-card');
-      const body = el('div', 'mod-body');
-      body.append(el('strong', '', w.name), el('span', 'muted', `Última vez: ${new Date(w.mtime).toLocaleString('es')}`));
-      const bk = el('button', '', 'Respaldar');
-      bk.type = 'button';
-      bk.addEventListener('click', async () => {
-        bk.disabled = true;
-        bk.textContent = 'Respaldando…';
-        try {
-          const r = await window.api.instanceBackup({ id: mp.pack.id, world: w.name });
-          toast(`Respaldo creado: ${r.name}`);
-          renderBackups();
-        } catch (e) {
-          toast(cleanError(e), 'error');
-        }
-        bk.disabled = false;
-        bk.textContent = 'Respaldar';
-      });
-      row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), body, bk);
-      ctx(row, () => [
-        { title: w.name },
-        { icon: '💾', label: 'Respaldar este mundo', onClick: () => bk.click() },
-        { icon: '📋', label: 'Copiar nombre', onClick: () => copyText(w.name, 'Nombre copiado') },
-        { icon: '🗂', label: 'Abrir carpeta del modpack', onClick: () => window.api.modpackFolder(mp.pack.id).catch((e) => toast(cleanError(e), 'error')) },
-        ...(isOwnPack(mp.pack) ? [
-          'sep',
-          { icon: '⧉', label: 'Duplicar mundo', onClick: async () => { try { const r = await window.api.instanceWorldDuplicate({ id: mp.pack.id, world: w.name }); toast(`Copia creada: ${r.name}`, 'success'); renderWorlds(); } catch (e) { toast(cleanError(e), 'error'); } } },
-          { icon: '🗑', label: 'Eliminar mundo…', danger: true, onClick: async () => {
-            if (!await askConfirm(`¿Eliminar el mundo "${w.name}"?\n\nAntes se guarda un respaldo en la pestaña Mundos > Respaldos.`, 'Eliminar', 'Cancelar')) return;
-            try { const r = await window.api.instanceWorldDelete({ id: mp.pack.id, world: w.name }); toast(`Mundo eliminado. Respaldo: ${r.backup}`); renderWorlds(); renderBackups(); } catch (e) { toast(cleanError(e), 'error'); }
-          } }
-        ] : [])
-      ]);
-      list.append(row);
+  const q = $('mp-worlds-search').value.trim().toLowerCase();
+  const sort = $('mp-worlds-sort').value;
+  const items = worldsData.filter((w) => !q || w.name.toLowerCase().includes(q)).sort((x, y) => (sort === 'az' ? x.name.localeCompare(y.name, 'es') : sort === 'size' ? y.size - x.size : y.lastPlayed - x.lastPlayed));
+  $('mp-worlds-note').textContent = !worldsData.length ? 'Todavía no hay mundos. Se crean la primera vez que juegues o puedes importarlos de otro launcher.' : items.length ? `${items.length} mundo${items.length === 1 ? '' : 's'}` : 'Ningún mundo coincide con la búsqueda.';
+  items.forEach((w) => {
+    const row = el('div', 'mod-card mw-row');
+    const body = el('div', 'mod-body');
+    const meta = [w.version, w.gameMode, w.hardcore ? 'Extremo' : '', w.size ? fmtMb(w.size) : '', `Última vez: ${new Date(w.lastPlayed).toLocaleString('es')}`].filter(Boolean).join(' · ');
+    body.append(el('strong', '', w.name), el('span', 'muted', meta));
+    const bk = el('button', '', 'Respaldar');
+    bk.type = 'button';
+    bk.addEventListener('click', async () => {
+      bk.disabled = true;
+      bk.textContent = 'Respaldando…';
+      try {
+        const r = await window.api.instanceBackup({ id: mp.pack.id, world: w.name });
+        toast(`Respaldo creado: ${r.name}`);
+        renderBackups();
+      } catch (e) {
+        toast(cleanError(e), 'error');
+      }
+      bk.disabled = false;
+      bk.textContent = 'Respaldar';
     });
+    let ico;
+    if (w.icon && /^data:image\/png;base64,/.test(w.icon)) { ico = el('img', 'mw-icon'); ico.alt = ''; ico.src = w.icon; } else ico = el('div', 'mod-icon mod-icon-empty', '🌍');
+    row.append(ico, body, bk);
+    ctx(row, () => [
+      { title: w.name },
+      { icon: '💾', label: 'Respaldar este mundo', onClick: () => bk.click() },
+      { icon: '📋', label: 'Copiar nombre', onClick: () => copyText(w.name, 'Nombre copiado') },
+      { icon: '🗂', label: 'Abrir carpeta de mundos', onClick: () => window.api.instanceOpenSaves(mp.pack.id).catch((e) => toast(cleanError(e), 'error')) },
+      ...(isOwnPack(mp.pack) ? [
+        'sep',
+        { icon: '⧉', label: 'Duplicar mundo', onClick: async () => { try { const r = await window.api.instanceWorldDuplicate({ id: mp.pack.id, world: w.name }); toast(`Copia creada: ${r.name}`, 'success'); renderWorlds(); } catch (e) { toast(cleanError(e), 'error'); } } },
+        { icon: '🗑', label: 'Eliminar mundo…', danger: true, onClick: async () => {
+          if (!await askConfirm(`¿Eliminar el mundo "${w.name}"?\n\nAntes se guarda un respaldo en la pestaña Mundos > Respaldos.`, 'Eliminar', 'Cancelar')) return;
+          try { const r = await window.api.instanceWorldDelete({ id: mp.pack.id, world: w.name }); toast(`Mundo eliminado. Respaldo: ${r.backup}`); renderWorlds(); renderBackups(); } catch (e) { toast(cleanError(e), 'error'); }
+        } }
+      ] : [])
+    ]);
+    list.append(row);
+  });
+}
+
+async function renderWorlds() {
+  $('mp-worlds-list').replaceChildren();
+  $('mp-worlds-note').textContent = 'Cargando…';
+  $('mp-worlds-import').hidden = !isOwnPack(mp.pack);
+  try {
+    worldsData = await window.api.instanceWorlds(mp.pack.id);
+    paintWorlds();
     renderBackups();
   } catch (e) {
     $('mp-worlds-note').textContent = cleanError(e);
   }
 }
+$('mp-worlds-search').addEventListener('input', paintWorlds);
+$('mp-worlds-sort').addEventListener('change', paintWorlds);
+$('mp-worlds-folder').addEventListener('click', () => window.api.instanceOpenSaves(mp.pack.id).catch((e) => toast(cleanError(e), 'error')));
+
+/* Importar mundos de otros launchers: lista los que encuentra solo, o se elige un .zip / una carpeta. */
+$('mp-worlds-import').addEventListener('click', async () => {
+  const dlg = el('dialog', 'event-modal mw-import');
+  dlg.setAttribute('aria-label', 'Importar mundos');
+  const body = el('div', 'event-modal-body');
+  const close = () => { try { dlg.close(); } catch {} dlg.remove(); };
+  const done = (r) => { toast(`Mundo importado: ${r.name}`, 'success'); close(); renderWorlds(); };
+  const guard = async (fn) => { try { const r = await fn(); if (r) done(r); } catch (e) { toast(cleanError(e), 'error'); } };
+  const pick = el('div', 'mp-actions');
+  const bz = el('button', '', '📦 Elegir archivo .zip'); bz.type = 'button';
+  const bf = el('button', '', '📁 Elegir carpeta'); bf.type = 'button';
+  bz.addEventListener('click', () => guard(() => window.api.instanceWorldImportPick({ id: mp.pack.id, kind: 'zip' })));
+  bf.addEventListener('click', () => guard(() => window.api.instanceWorldImportPick({ id: mp.pack.id, kind: 'folder' })));
+  pick.append(bz, bf);
+  const found = el('div', 'mods-list mw-found');
+  const note = el('p', 'muted', 'Buscando mundos en tus otros launchers…');
+  const x = el('button', 'modal-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Cerrar'); x.addEventListener('click', close);
+  body.append(el('h3', 'mp-heading', 'Importar mundos'), el('p', 'muted', 'Se copian a este modpack; el mundo original no se toca.'), pick, el('h4', 'mp-heading', 'Encontrados en tu computadora'), note, found);
+  dlg.append(x, body);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
+  document.body.append(dlg);
+  dlg.showModal();
+  try {
+    const src = await window.api.instanceWorldSources();
+    note.textContent = src.length ? `${src.length} mundo${src.length === 1 ? '' : 's'} encontrados. Pulsa uno para importarlo.` : 'No encontré mundos en otros launchers. Usa "Elegir archivo .zip" o "Elegir carpeta".';
+    src.forEach((s) => {
+      const row = el('button', 'mod-card mw-src');
+      row.type = 'button';
+      const b = el('div', 'mod-body');
+      b.append(el('strong', '', s.name), el('span', 'muted', [s.launcher, s.instance, s.version, s.gameMode].filter(Boolean).join(' · ')));
+      row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), b);
+      row.addEventListener('click', () => guard(() => window.api.instanceWorldImport({ id: mp.pack.id, dir: s.dir })));
+      found.append(row);
+    });
+  } catch (e) {
+    note.textContent = cleanError(e);
+  }
+});
 
 async function renderShots() {
   const grid = $('mp-shots-grid');
