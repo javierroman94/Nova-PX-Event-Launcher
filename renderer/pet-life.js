@@ -218,11 +218,12 @@
   /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
   function playStars(onDone) {
     const W = 360, H = 260, DUR = 20000;
+    const GOOD = ['⭐', '⭐', '🍎', '🍌', '🍇', '🍓', '🍉', '🍒']; // estrellas y frutas (sugerencia de la comunidad)
     const d = document.createElement('dialog'); d.className = 'event-modal pl-modal';
     const b = el('div', 'event-modal-body'); const hud = el('p', 'pl-mood', '⭐ 0 · 20 s');
     const cv = el('canvas', 'crop-canvas'); cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.style.cursor = 'none';
     const x0 = el('button', 'ghost', 'Salir'); x0.type = 'button';
-    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a Pexy y atrapa las estrellas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
+    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a Pexy y atrapa las estrellas y las frutas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
     const x = cv.getContext('2d'); let px = W / 2, score = 0, over = false, last = 0; const t0 = performance.now(); const things = []; let spawn = 0;
     const move = (e) => { const r = cv.getBoundingClientRect(); px = Math.min(W - 22, Math.max(22, (e.clientX - r.left) * (W / r.width))); };
     cv.addEventListener('pointermove', move); cv.addEventListener('pointerdown', move);
@@ -232,12 +233,12 @@
       if (over) return;
       const dt = Math.min(50, now - (last || now)); last = now; const left = DUR - (now - t0);
       if (left <= 0) { end(true); return; }
-      spawn -= dt; if (spawn <= 0) { spawn = 380 + Math.random() * 300; things.push({ x: 16 + Math.random() * (W - 32), y: -12, bad: Math.random() < 0.22, v: 0.09 + Math.random() * 0.07 + (1 - left / DUR) * 0.06 }); }
+      spawn -= dt; if (spawn <= 0) { spawn = 380 + Math.random() * 300; things.push({ x: 16 + Math.random() * (W - 32), y: -12, bad: Math.random() < 0.22, icon: GOOD[Math.floor(Math.random() * GOOD.length)], v: 0.09 + Math.random() * 0.07 + (1 - left / DUR) * 0.06 }); }
       x.fillStyle = '#0c1226'; x.fillRect(0, 0, W, H);
       x.font = '22px serif'; x.textAlign = 'center';
       for (let i = things.length - 1; i >= 0; i--) {
         const t = things[i]; t.y += t.v * dt;
-        x.fillText(t.bad ? '🪨' : '⭐', t.x, t.y);
+        x.fillText(t.bad ? '🪨' : t.icon, t.x, t.y);
         if (t.y > H - 34 && t.y < H - 6 && Math.abs(t.x - px) < 26) { score = Math.max(0, score + (t.bad ? -2 : 1)); things.splice(i, 1); }
         else if (t.y > H + 14) things.splice(i, 1);
       }
