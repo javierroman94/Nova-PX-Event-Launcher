@@ -5,7 +5,9 @@ const path = require('path');
 const lang = require('../lib/langpack');
 const dir = path.join(__dirname, '..', 'renderer', 'lang');
 const flags = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'flags.js'), 'utf8');
-const app = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'app.js'), 'utf8');
+// app.js se partió en renderer/app/*.js: para las pruebas se juntan en orden.
+const appDir = path.join(__dirname, '..', 'renderer', 'app');
+const app = fs.readdirSync(appDir).filter((f) => f.endsWith('.js')).sort().map((f) => fs.readFileSync(path.join(appDir, f), 'utf8')).join('\n');
 
 const all = lang.loadAll(dir, path.join(__dirname, 'no-existe'));
 const codes = [...all.keys()].sort();
