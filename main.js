@@ -836,6 +836,7 @@ async function resolveJava(manifest, loaderType, st = readSettings()) {
 
 /* ---------- ventana y bandeja ---------- */
 
+let windowShownBefore = false;
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1120,
@@ -868,7 +869,9 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith('file://')) e.preventDefault();
   });
-  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // Si la ventana se vuelve a abrir (después de cerrarla con el juego en marcha), no se repite la intro.
+  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'), windowShownBefore ? { query: { resume: '1' } } : undefined);
+  windowShownBefore = true;
   mainWindow.webContents.on('did-finish-load', () => {
     if (pendingImportFile) {
       send('import:open', { path: pendingImportFile });

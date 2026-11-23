@@ -56,7 +56,8 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
     if (p && p.catch) p.catch(() => { vid.muted = true; vid.play().catch(() => { s.classList.remove('wants-video'); }); });
   }
   window.api.getSettings().then((st) => {
-    if (st && st.intro === false) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
+    const resumed = new URLSearchParams(location.search).get('resume') === '1';
+    if ((st && st.intro === false) || resumed) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
     playIntro(!st || st.introSound !== false);
   }).catch(() => playIntro(true));
   s.addEventListener('click', close);
@@ -2426,7 +2427,7 @@ async function openPackModal(it) {
     if (first >= 0) {
       sel.selectedIndex = first;
       $('mp-install').disabled = false;
-      $('mp-version-info').textContent = 'Se instala en su propia carpeta, sin tocar tu evento ni tus otros modpacks.';
+      $('mp-version-info').textContent = 'Se instala en su propia carpeta, separado de tus otros modpacks.';
     } else {
       $('mp-version-info').textContent = versions.length
         ? 'Ninguna versión se puede instalar desde aquí (loader no soportado o descarga bloqueada por su autor).'
