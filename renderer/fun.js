@@ -213,7 +213,23 @@
   }
 
   // Control externo del panda PX (lo usa mascot.js): dormir, saltar, alegrarse.
-  const petCtl = { skin: '', acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; } };
+  const petCtl = { skin: '', acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; },
+    // Agarrar con el mouse: sigue el cursor; al soltar sale lanzado con la velocidad del gesto.
+    grab(px, py) {
+      const c = crits.find((k) => k.name === 'px'); if (!c) return false;
+      c.held = true; c.vx = 0; c.vy = 0; c.state = 'idle'; c.moving = false; this.move(px, py); wake(); return true;
+    },
+    move(px, py) {
+      const c = crits.find((k) => k.name === 'px'); if (!c || !c.held) return;
+      const sh = sheet(c.name, 0, '#fff').height;
+      const lb = leftBound();
+      c.x = Math.min(w - 24, Math.max(lb, px));
+      c.y = Math.max(-(h - 4 - sh), Math.min(0, py - sh / 2 - (h - 4 - sh))); // el cursor queda en el centro del panda
+    },
+    release(vx, vy) {
+      const c = crits.find((k) => k.name === 'px'); if (!c || !c.held) return;
+      c.held = false; c.vx = Math.max(-900, Math.min(900, vx || 0)); c.vy = Math.max(-1100, Math.min(900, vy || 0)); c.thrown = Math.hypot(c.vx, c.vy) > 220 || c.y < -2;
+    } };
   function getPet() {
     const c = crits.find((k) => k.name === 'px');
     if (!c || !opt.critters || root.classList.contains('no-fx')) return null;
@@ -255,8 +271,24 @@
     const ground = h - 4;
     c.t -= dt; c.ph += dt * 9;
     if (petCtl.joy > 0) { petCtl.joy -= dt; if (!c.vy && c.y === 0) c.vy = -150; }
+    if (c.held) { c.moving = false; c.state = 'idle'; return; }
     const near = Math.abs(mx - c.x) < 150 && my > h - 190;
     c.moving = false;
+    if (c.vx || c.thrown) {
+      // Lanzado: vuela, rebota en los bordes y en el suelo, y se va frenando.
+      const sh2 = sheet(c.name, 0, '#fff').height;
+      c.vy += 900 * dt; c.x += c.vx * dt; c.y += c.vy * dt;
+      if (c.x < lb) { c.x = lb; c.vx = Math.abs(c.vx) * 0.6; } else if (c.x > w - 24) { c.x = w - 24; c.vx = -Math.abs(c.vx) * 0.6; }
+      const top = -(h - 4 - sh2);
+      if (c.y < top) { c.y = top; c.vy = Math.abs(c.vy) * 0.5; }
+      if (c.y >= 0) {
+        c.y = 0;
+        if (c.vy > 260) { c.vy = -c.vy * 0.45; c.vx *= 0.8; if (petCtl.onBounce) petCtl.onBounce(c.vy); }
+        else { c.vy = 0; c.vx *= Math.max(0, 1 - 6 * dt); if (Math.abs(c.vx) < 12) { c.vx = 0; c.thrown = false; c.t = 1; if (petCtl.onLand) petCtl.onLand(); } }
+      }
+      c.dir = c.vx >= 0 ? 1 : -1;
+      return;
+    }
     if (petCtl.sleep) { c.state = 'idle'; }
     else if (near) { c.dir = mx < c.x ? -1 : 1; c.state = 'idle'; }
     else if (c.t <= 0) { c.state = Math.random() < 0.3 ? 'idle' : 'walk'; c.dir = Math.random() < 0.5 ? -1 : 1; c.t = rnd(1.2, 4); }

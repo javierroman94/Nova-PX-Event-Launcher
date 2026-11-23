@@ -31,7 +31,7 @@
   bubble.hidden = true;
   const hit = document.createElement('div');
   hit.id = 'pet-hit';
-  hit.title = 'Pexy 🐼 — haz clic o pásale el cursor';
+  hit.title = 'Pexy 🐼 — haz clic, acarícialo o agárralo y lánzalo';
   hit.hidden = true;
   document.body.append(bubble, hit);
 
@@ -92,7 +92,52 @@
     if (sleeping) wakeUp(true); else lastActive = Date.now();
   }, { passive: true }));
 
-  hit.addEventListener('click', () => { wakeUp(false); hop(); note('pet'); if (clickHook && clickHook()) return; react('click'); });
+  hit.addEventListener('click', () => { if (justDragged) return; wakeUp(false); hop(); note('pet'); if (clickHook && clickHook()) return; react('click'); });
+  // Agarrar y lanzar: se mantiene pulsado el panda, se mueve y se suelta. Un toque corto sigue siendo un clic normal.
+  const T_GRAB = ['¡Eeeh, me levantaste!', '¡Wiii, qué alto!', '¡Bájame con cuidado!', 'Jaja, ¡me haces cosquillas!'];
+  const T_THROW = ['¡Wiiiiii! 🚀', '¡Voooooy!', '¡Otra vez, otra vez!', '¡Ahí va el panda volador!'];
+  const T_LAND = ['¡Auch! Pero qué divertido', 'Uf… ¡otra vez!', '¡Aterricé de pie! (casi)', 'Estoy mareado… ¡me encantó!'];
+  const rndLine = (a) => a[Math.floor(Math.random() * a.length)];
+  let drag = null, justDragged = false;
+  hit.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const c = ctl(); if (!c || !c.grab) return;
+    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, pts: [{ x: e.clientX, y: e.clientY, t: performance.now() }] };
+    try { hit.setPointerCapture(e.pointerId); } catch {}
+  });
+  hit.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const c = ctl(); if (!c) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 8) {
+      drag.moved = true; wakeUp(false); c.grab(e.clientX, e.clientY); hit.classList.add('is-held'); say(rndLine(T_GRAB), 2600, true);
+    }
+    if (drag.moved) {
+      c.move(e.clientX, e.clientY);
+      drag.pts.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (drag.pts.length > 8) drag.pts.shift();
+      place();
+    }
+  });
+  const endDrag = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    try { hit.releasePointerCapture(e.pointerId); } catch {}
+    hit.classList.remove('is-held');
+    if (!d.moved) return;
+    justDragged = true; setTimeout(() => { justDragged = false; }, 60);
+    const c = ctl(); if (!c) return;
+    const a = d.pts[0], b = d.pts[d.pts.length - 1], dt = Math.max(16, b.t - a.t) / 1000;
+    c.release((b.x - a.x) / dt, (b.y - a.y) / dt);
+    note('pet');
+    say(rndLine(T_THROW), 2600, true);
+  };
+  hit.addEventListener('pointerup', endDrag);
+  hit.addEventListener('pointercancel', endDrag);
+  (function wireLand() {
+    const c = ctl(); if (!c) { setTimeout(wireLand, 1500); return; }
+    c.onLand = () => { if (on) say(rndLine(T_LAND), 3200, true); };
+  })();
+
   hit.addEventListener('mouseenter', () => { petCount = 0; });
   hit.addEventListener('mousemove', () => {
     const now = Date.now();

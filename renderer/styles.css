@@ -3357,3 +3357,6 @@ main { container-type: inline-size; overflow-x: hidden; }
 /* Iconos de los loaders (Nova, Fabric, Forge…) */
 .loader-ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; object-fit: contain; flex: none; }
 .mcw2-chip .loader-ico, .chip .loader-ico { margin-right: 6px; }
+
+#pet-hit{touch-action:none;cursor:grab}
+#pet-hit.is-held{cursor:grabbing}
