@@ -136,35 +136,28 @@
   });
 
   /* ---------- criaturas pixeladas (diseños propios) ---------- */
-  const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0', N: '#23232d', S: '#3b3b48', V: '#07070b', E: '#ff3b3b', X: '#e8334a', Z: '#8f1d2c' };
+  const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0', N: '#23232d', p: '#e58aa6', e: '#c9b8a6', J: '#3fa84a', j: '#7ee07a', S: '#3b3b48', V: '#07070b', E: '#ff3b3b', X: '#e8334a', Z: '#8f1d2c' };
   const SPRITES = {
     // Mascota de NovaPX (panda rosa de bloques, diseño de @DekerModMaker). Va siempre en el elenco.
     px: { scale: 4, rows: ['MM.......MM', 'MQM.....MQM', '.MMMMMMMMM.', '.MWWWWWWWM.', '.MQQWWWQQM.', '.MWKWWWKWM.', '.MWWWMWWWM.', '.MWWWWWWWM.', '..MQQQQQM..', 'HM.MWWWWM.MH', 'MM.MWWWWM.MM', 'MQ.MWWWWM.QM', '...MWWWWM...'], legs: ['..MWMQMWM..', '..MWM.MWM..'] },
     // Skin secreta de PX: «Sombra» (encapuchado oscuro con ojos rojos). Solo se activa en modo administrador.
     shadow: { scale: 4, rows: ['..NNNNNNN..', '.NSSNNNSSN.', '.NNNNNNNNN.', 'NNVVVVVVVNN', 'NVVEEVEEVVN', 'NVVEEVEEVVN', 'NVVVVVVVVVN', '.NNVVVVVNN.', '.NNNNNNNNN.', 'XXNNXNXNNXX', 'NSNNNXNNNSN', 'XXNNXNXNNXX', 'NSNZNNNZNSN'], feet: 'X' },
-    bunny: { rows: ['..WW...WW..', '..WP...PW..', '..WP...PW..', '..WWWWWWW..', '.WWWWWWWWW.', '.WWKWWWKWW.', '.WWWWPWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'W' },
-    chick: { rows: ['...YYYYY...', '..YYYYYYY..', '..YKYYYKY..', '..YYYOYYY..', '..YYYOYYY..', '.YYYYYYYYY.', '.YYYYYYYYY.', '..YYYYYYY..'], feet: 'O' },
-    fox: { rows: ['.R.......R.', '.RR.....RR.', '.RRRRRRRRR.', '.RRRRRRRRR.', '.RKRRRRRKR.', '.RRRRKRRRR.', '..RWWWWWR..', '...WWWWW...', '..RRRRRRR..'], feet: 'D' },
-    penguin: { rows: ['...KKKKK...', '..KKKKKKK..', '..KWKKKWK..', '..KKOOOKK..', '.KKWWWWWKK.', '.KKWWWWWKK.', '.KKWWWWWKK.', '..KWWWWWK..'], feet: 'O' },
-    pumpkin: { rows: ['.....GG....', '..OOOGOOO..', '.OOOOOOOOO.', '.OKOOOOOKO.', '.OOOOOOOOO.', '.OOKOKOKOO.', '.OOOKKKOOO.', '..OOOOOOO..'], feet: 'R' },
-    bot: { rows: ['.....A.....', '.....A.....', '..AAAAAAA..', '.ALLLLLLLA.', '.ALKLLLKLA.', '.ALLLLLLLA.', '..AAAAAAA..', '.AAAAAAAAA.', '..AAAAAAA..'], feet: 'A' },
-    ghost: { fly: true, rows: ['..WWWWWWW..', '.WWWWWWWWW.', '.WKKWWWKKW.', '.WKKWWWKKW.', '.WWWWKWWWW.', '.WWWWWWWWW.', '.WWWWWWWWW.', '.WW.WWW.WW.', '..W..W..W..'], feet: null },
-    bee: { fly: true, rows: ['...L...L...', '..LLL.LLL..', '..YYYYYYY..', '.YYKKYKKYY.', '.YYKKYKKYY.', '.YKYYYYYKY.', '..YYYYYYY..', '....KKK....'], feet: null }
+    // Mobs de bloques, minimalistas y de diseño propio (acompañan a Pexy, la mascota oficial).
+    pig: { rows: ['.PPPPPPPPP.', '.PPPPPPPPP.', '.PWKPPPWKP.', '.PPPPPPPPP.', '..PpppppP..', '..PpKpKpP..', '..PPPPPPP..'], feet: 'P' },
+    sheep: { rows: ['.WWWWWWWWW.', 'WWWWWWWWWWW', 'WWWeeeeeWWW', 'WWWeKeKeWWW', 'WWWeeeeeWWW', 'WWWWeeeWWWW', '.WWWWWWWWW.'], feet: 'e' },
+    hen: { rows: ['....RR.....', '...WWWWW...', '..WWKWKWW..', '..WWWOWWW..', '..WWWOWWW..', '.WWWWWWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'O' },
+    jelly: { rows: ['..JJJJJJJ..', '.JjjjjjjjJ.', '.JjKjjjKjJ.', '.JjjjjjjjJ.', '.JjjKKKjjJ.', '.JJJJJJJJJ.'], feet: null, hop: true },
+    bat: { fly: true, rows: ['KK.......KK', 'KKK.....KKK', 'KKKKKKKKKKK', 'KKKEKKKEKKK', '.KKKKKKKKK.', '..K.....K..'], feet: null }
   };
   const ROSTER = {
-    navidad: ['penguin', 'bunny', 'fox'],
-    halloween: ['ghost', 'pumpkin', 'fox'],
-    anio: ['bot', 'chick', 'bunny'],
-    sanvalentin: ['bunny', 'chick', 'bee'],
-    madres: ['bunny', 'bee', 'chick'],
-    carnaval: ['fox', 'bee', 'chick'],
-    ecuador: ['chick', 'fox', 'bunny']
+    navidad: ['sheep', 'pig'], halloween: ['bat', 'jelly'], anio: ['hen', 'pig'], sanvalentin: ['pig', 'hen'],
+    madres: ['sheep', 'hen'], carnaval: ['jelly', 'pig'], ecuador: ['hen', 'pig']
   };
   const THEME_ROSTER = {
-    nova: ['bot', 'bee', 'chick'], cyberpunk: ['bot', 'fox', 'ghost'], synthwave: ['bot', 'bunny', 'bee'], eclipse: ['fox', 'bot', 'bee'], vicesunset: ['bot', 'bunny', 'bee'],
-    deepdark: ['bot', 'ghost', 'fox'], nether: ['pumpkin', 'fox', 'ghost'], end: ['ghost', 'bot', 'bee'], sakura: ['bunny', 'bee', 'chick']
+    nova: ['pig', 'sheep'], cyberpunk: ['jelly', 'bat'], synthwave: ['bat', 'pig'], eclipse: ['bat', 'sheep'], vicesunset: ['pig', 'jelly'],
+    deepdark: ['bat', 'jelly'], nether: ['pig', 'bat'], end: ['bat', 'jelly'], sakura: ['pig', 'sheep']
   };
-  const DEFAULT_ROSTER = ['bunny', 'chick', 'fox'];
+  const DEFAULT_ROSTER = ['pig', 'sheep'];
 
   const spriteCache = new Map();
   function sheet(name, frame, acc) {
@@ -297,6 +290,7 @@
     if (c.x < lb) { c.x = lb; c.dir = 1; } else if (c.x > w - 24) { c.x = w - 24; c.dir = -1; }
     if (c.vy || c.y < 0) { c.vy += 520 * dt; c.y += c.vy * dt; if (c.y >= 0) { c.y = 0; c.vy = 0; } }
     c.moving = speed > 0;
+    if (c.moving && SPRITES[c.name].hop && c.y === 0 && !c.vy) c.vy = -150; // el cubo de gelatina avanza a saltitos
     void ground;
   }
 
