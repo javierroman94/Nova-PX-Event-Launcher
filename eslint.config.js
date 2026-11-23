@@ -39,6 +39,11 @@ module.exports = [
     languageOptions: { globals: Object.fromEntries(SHARED.filter((n) => n !== 'NovaI18n' && n !== 'initRemote').map((n) => [n, 'off'])) }
   },
   {
+    // Esta prueba manda código al navegador (window, document) dentro de page.evaluate.
+    files: ['tools/prueba-arranque.js'],
+    languageOptions: { globals: { ...globals.browser } }
+  },
+  {
     files: ['worker/**/*.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.serviceworker, ...globals.browser } }
   }
