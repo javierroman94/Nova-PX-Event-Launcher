@@ -572,6 +572,27 @@ $('mp-add-local').addEventListener('click', async () => {
 });
 
 let worldsData = [];
+// Ícono por defecto de un mundo sin icon.png: bloque de pasto pixelado (se dibuja una vez).
+let grassIcon = '';
+function defaultWorldIcon() {
+  if (grassIcon) return grassIcon;
+  const c = document.createElement('canvas');
+  c.width = 16; c.height = 16;
+  const g = c.getContext('2d');
+  let s = 7;
+  const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const top = y < 5 || (y < 7 && rnd() < 0.5);
+      const v = 0.85 + rnd() * 0.3;
+      const base = top ? [92, 160, 56] : [134, 96, 67];
+      g.fillStyle = `rgb(${Math.round(base[0] * v)},${Math.round(base[1] * v)},${Math.round(base[2] * v)})`;
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  grassIcon = c.toDataURL('image/png');
+  return grassIcon;
+}
 const fmtMb = (n) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.max(1, Math.round(n / 1e6))} MB`);
 function paintWorlds() {
   const list = $('mp-worlds-list');
@@ -601,7 +622,7 @@ function paintWorlds() {
       bk.textContent = 'Respaldar';
     });
     let ico;
-    if (w.icon && /^data:image\/png;base64,/.test(w.icon)) { ico = el('img', 'mw-icon'); ico.alt = ''; ico.src = w.icon; } else ico = el('div', 'mod-icon mod-icon-empty', '🌍');
+    ico = el('img', 'mw-icon'); ico.alt = ''; ico.src = w.icon && /^data:image\/png;base64,/.test(w.icon) ? w.icon : defaultWorldIcon();
     row.append(ico, body, bk);
     ctx(row, () => [
       { title: w.name },
@@ -668,7 +689,8 @@ $('mp-worlds-import').addEventListener('click', async () => {
       row.type = 'button';
       const b = el('div', 'mod-body');
       b.append(el('strong', '', s.name), el('span', 'muted', [s.launcher, s.instance, s.version, s.gameMode].filter(Boolean).join(' · ')));
-      row.append(el('div', 'mod-icon mod-icon-empty', '🌍'), b);
+      const ic = el('img', 'mw-icon'); ic.alt = ''; ic.src = defaultWorldIcon();
+      row.append(ic, b);
       row.addEventListener('click', () => guard(() => window.api.instanceWorldImport({ id: mp.pack.id, dir: s.dir })));
       found.append(row);
     });
