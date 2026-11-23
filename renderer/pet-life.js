@@ -148,15 +148,18 @@
   }
   function open() {
     if (dlg) return;
-    dlg = document.createElement('dialog'); dlg.className = 'event-modal pl-modal';
+    dlg = document.createElement('dialog'); dlg.className = 'event-modal pl-modal pl-care';
     const body = el('div', 'event-modal-body');
     const title = el('h3'); title.textContent = '🐼 Cuidar a tu mascota';
     const nameRow = el('div', 'pl-name'); const nameIn = el('input'); nameIn.maxLength = 16; nameIn.value = st.name; nameIn.setAttribute('aria-label', 'Nombre de tu mascota');
-    const lvl = el('small', 'muted'); nameRow.append(nameIn, lvl);
+    const lvl = el('small', 'pl-lvl'); nameRow.append(nameIn, lvl);
+    const portrait = el('div', 'pl-portrait'); const pEmo = el('span', 'pl-panda', '🐼'); const pAcc = el('span', 'pl-pacc'); const pMood = el('span', 'pl-pmood'); portrait.append(pAcc, pEmo, pMood);
+    const hero = el('div', 'pl-hero'); const heroInfo = el('div', 'pl-hero-info');
     const xpBar = el('div', 'pl-bar pl-xp'); const xpFill = el('i'); xpBar.append(xpFill);
     const moodEl = el('p', 'pl-mood');
     const b1 = bar('🍖 Hambre'); const b2 = bar('⚡ Energía'); const b3 = bar('💗 Cariño');
-    const btns = el('div', 'mp-actions');
+    const care = el('div', 'pl-tiles'); const games = el('div', 'pl-tiles pl-games'); const foot = el('div', 'pl-foot');
+    const tile = (b, text) => { const i = text.indexOf(' '); b.textContent = ''; b.append(el('span', 'pl-ico', text.slice(0, i)), el('span', 'pl-lbl', text.slice(i + 1))); return b; };
     const defs = [['feed', '🍖 Dar de comer'], ['play', '🎾 Jugar'], ['pet', '🤗 Acariciar'], ['sleep', '😴 Dormir']];
     const note = el('small', 'muted pl-note');
     const refresh = () => {
@@ -166,10 +169,13 @@
       lvl.textContent = `Nivel ${p.level}${st.streak > 1 ? ` · racha de ${st.streak} días 🔥` : ''}`;
       xpFill.style.width = p.pct + '%';
       b1.fill.style.width = st.hunger + '%'; b2.fill.style.width = st.energy + '%'; b3.fill.style.width = st.love + '%';
+      [[b1, st.hunger], [b2, st.energy], [b3, st.love]].forEach(([b, v]) => { b.row.dataset.v = Math.round(v) + '%'; b.row.classList.toggle('low', v < 25); });
+      const mo = L.mood(st); portrait.dataset.mood = mo; pMood.textContent = { feliz: '😄', normal: '🙂', hambre: '😢', sueño: '😪', triste: '🥺' }[mo] || '';
+      const ac = L.ACCESSORIES.find((a) => a.id === st.acc); pAcc.textContent = ac ? ac.emoji : '';
       moodEl.textContent = { feliz: `${st.name} está feliz 😄`, normal: `${st.name} está tranquilo 🙂`, hambre: `${st.name} tiene hambre 😢`, sueño: `${st.name} tiene sueño 😪`, triste: `${st.name} se siente solito 🥺` }[L.mood(st)];
     };
     defs.forEach(([a, t]) => {
-      const b = el('button', '', t); b.type = 'button';
+      const b = tile(el('button', 'pl-tile'), t); b.type = 'button';
       b.addEventListener('click', () => {
         const r = L.act(st, a, Date.now()); st = r.state;
         if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : '', 3500); refresh(); return; }
@@ -177,9 +183,9 @@
         store(st); M.say(r.levelUp ? pick('level') : pick(a), 4500); refresh();
         const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2); if (c.hop) c.hop(); }
       });
-      btns.append(b);
+      care.append(b);
     });
-    const gb = el('button', '', '⭐ Atrapar estrellas'); gb.type = 'button';
+    const gb = tile(el('button', 'pl-tile'), '⭐ Atrapar estrellas'); gb.type = 'button';
     gb.addEventListener('click', () => {
       if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
       playStars((score) => {
@@ -188,9 +194,9 @@
         note.textContent = `Atrapaste ${score}. Tu récord: ${st.best}.`; refresh();
       });
     });
-    btns.append(gb);
+    games.append(gb);
     ((window.NovaPetGames && window.NovaPetGames.list) || []).forEach((g) => {
-      const gx = el('button', '', g.label); gx.type = 'button';
+      const gx = tile(el('button', 'pl-tile'), g.label); gx.type = 'button';
       gx.addEventListener('click', () => {
         if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
         g.run((score) => {
@@ -199,12 +205,12 @@
           note.textContent = `${g.label}: ${score} ${g.unit}. Tu récord general: ${st.best}.`; refresh();
         });
       });
-      btns.append(gx);
+      games.append(gx);
     });
     let extra = null;
     const wardrobe = el('div', 'pl-ward');
     const paintWard = () => {
-      wardrobe.replaceChildren(el('small', 'muted', 'Accesorios'));
+      wardrobe.replaceChildren();
       const mk = (id, emoji, label, locked, need) => {
         const b = el('button', 'pl-acc' + (st.acc === id ? ' on' : ''), emoji); b.type = 'button'; b.title = locked ? `${label}: se desbloquea con ${need}` : label; b.disabled = locked;
         if (locked) b.classList.add('locked');
@@ -220,11 +226,17 @@
       cb.addEventListener('change', () => { st = { ...st, skin: cb.checked ? 'shadow' : '' }; store(st); applyAcc(); });
       sk.append(cb, document.createTextNode(' Skin secreta «Sombra» (solo administradores)')); extra = sk;
     }
-    const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; btns.append(close);
+    const close = el('button', 'ghost', 'Cerrar'); close.type = 'button'; foot.append(close);
     nameIn.addEventListener('change', () => { st = { ...st, name: L.sanitize({ name: nameIn.value }, Date.now()).name }; nameIn.value = st.name; store(st); refresh(); });
     const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
     close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
-    body.append(title, nameRow, xpBar, moodEl, b1.row, b2.row, b3.row, btns, wardrobe, ...(extra ? [extra] : []), note); dlg.append(body); document.body.append(dlg);
+    heroInfo.append(nameRow, xpBar, moodEl); hero.append(portrait, heroInfo);
+    const stats = el('div', 'pl-stats'); stats.append(b1.row, b2.row, b3.row);
+    const sec = (t) => el('h4', 'pl-sec', t);
+    const left = el('div', 'pl-col'); left.append(hero, stats, sec('Armario'), wardrobe, ...(extra ? [extra] : []));
+    const right = el('div', 'pl-col'); right.append(sec('Cuidados'), care, sec('Minijuegos'), games, note);
+    const cols = el('div', 'pl-cols'); cols.append(left, right);
+    body.append(title, cols, foot); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
   }
   /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
