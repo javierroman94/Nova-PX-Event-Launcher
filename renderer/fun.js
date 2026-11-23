@@ -143,11 +143,11 @@
     // Skin secreta de PX: «Sombra» (encapuchado oscuro con ojos rojos). Solo se activa en modo administrador.
     shadow: { scale: 4, rows: ['..NNNNNNN..', '.NSSNNNSSN.', '.NNNNNNNNN.', 'NNVVVVVVVNN', 'NVVEEVEEVVN', 'NVVEEVEEVVN', 'NVVVVVVVVVN', '.NNVVVVVNN.', '.NNNNNNNNN.', 'XXNNXNXNNXX', 'NSNNNXNNNSN', 'XXNNXNXNNXX', 'NSNZNNNZNSN'], feet: 'X' },
     // Mobs de bloques, minimalistas y de diseño propio (acompañan a Pexy, la mascota oficial).
-    pig: { rows: ['.PPPPPPPPP.', '.PPPPPPPPP.', '.PWKPPPWKP.', '.PPPPPPPPP.', '..PpppppP..', '..PpKpKpP..', '..PPPPPPP..'], feet: 'P' },
-    sheep: { rows: ['.WWWWWWWWW.', 'WWWWWWWWWWW', 'WWWeeeeeWWW', 'WWWeKeKeWWW', 'WWWeeeeeWWW', 'WWWWeeeWWWW', '.WWWWWWWWW.'], feet: 'e' },
-    hen: { rows: ['....RR.....', '...WWWWW...', '..WWKWKWW..', '..WWWOWWW..', '..WWWOWWW..', '.WWWWWWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'O' },
-    jelly: { rows: ['..JJJJJJJ..', '.JjjjjjjjJ.', '.JjKjjjKjJ.', '.JjjjjjjjJ.', '.JjjKKKjjJ.', '.JJJJJJJJJ.'], feet: null, hop: true },
-    bat: { fly: true, rows: ['KK.......KK', 'KKK.....KKK', 'KKKKKKKKKKK', 'KKKEKKKEKKK', '.KKKKKKKKK.', '..K.....K..'], feet: null }
+    pig: { mob3d: true, rows: ['.PPPPPPPPP.', '.PPPPPPPPP.', '.PWKPPPWKP.', '.PPPPPPPPP.', '..PpppppP..', '..PpKpKpP..', '..PPPPPPP..'], feet: 'P' },
+    sheep: { mob3d: true, rows: ['.WWWWWWWWW.', 'WWWWWWWWWWW', 'WWWeeeeeWWW', 'WWWeKeKeWWW', 'WWWeeeeeWWW', 'WWWWeeeWWWW', '.WWWWWWWWW.'], feet: 'e' },
+    hen: { mob3d: true, rows: ['....RR.....', '...WWWWW...', '..WWKWKWW..', '..WWWOWWW..', '..WWWOWWW..', '.WWWWWWWWW.', '.WWWWWWWWW.', '..WWWWWWW..'], feet: 'O' },
+    jelly: { mob3d: true, rows: ['..JJJJJJJ..', '.JjjjjjjjJ.', '.JjKjjjKjJ.', '.JjjjjjjjJ.', '.JjjKKKjjJ.', '.JJJJJJJJJ.'], feet: null, hop: true },
+    bat: { mob3d: true, fly: true, rows: ['KK.......KK', 'KKK.....KKK', 'KKKKKKKKKKK', 'KKKEKKKEKKK', '.KKKKKKKKK.', '..K.....K..'], feet: null }
   };
   const ROSTER = {
     navidad: ['sheep', 'pig'], halloween: ['bat', 'jelly'], anio: ['hen', 'pig'], sanvalentin: ['pig', 'hen'],
@@ -316,6 +316,12 @@
   }
 
   function drawCritter(c) {
+    if (SPRITES[c.name] && SPRITES[c.name].mob3d && window.NovaMob3D && window.NovaMob3D.names.includes(c.name)) {
+      c.groundY = h - 4;
+      const by = c.fly ? c.y + Math.sin(c.ph) * 3 : h - 4 + c.y;
+      window.NovaMob3D.draw(ctx, c, Math.round(c.x), Math.round(by));
+      return;
+    }
     const sprite = sheet(c.name, c.fly || !c.moving ? 0 : Math.floor(c.ph / 2) % 2, accent());
     const sh = sprite.height;
     let x = c.x - sprite.width / 2;
