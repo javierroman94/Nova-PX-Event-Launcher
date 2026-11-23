@@ -3360,3 +3360,5 @@ main { container-type: inline-size; overflow-x: hidden; }
 
 #pet-hit{touch-action:none;cursor:grab}
 #pet-hit.is-held{cursor:grabbing}
+
+.pet-chip-av{font-size:26px;line-height:1;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:var(--bg-2,rgba(255,255,255,.06));flex:none}

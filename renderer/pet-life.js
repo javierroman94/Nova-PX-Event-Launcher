@@ -332,6 +332,13 @@
     return prevNotify(type, data);
   };
   document.addEventListener('dblclick', (e) => { if (e.target && e.target.id === 'pet-hit') open(); });
+  const chip = document.getElementById('pet-chip');
+  const paintChip = () => {
+    const n = document.getElementById('pet-chip-name'), s = document.getElementById('pet-chip-sub');
+    if (n) n.textContent = st.name || 'Pexy';
+    if (s) { const mood = L.mood ? L.mood(st) : ''; s.textContent = `Nivel ${L.level(st.xp || 0)}${mood ? ' · ' + mood : ''}`; }
+  };
+  if (chip) { chip.addEventListener('click', open); paintChip(); setInterval(paintChip, 4000); }
   const openBtn = document.getElementById('pet-care-open');
   if (openBtn) openBtn.addEventListener('click', open);
   if (v0.fresh && st.streak > 1) setTimeout(() => M.say(`¡${st.streak} días seguidos juntos! 🔥`, 5500), 12000);
