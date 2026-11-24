@@ -1046,3 +1046,22 @@ $('nav-fwd').addEventListener('click', () => navStep(1));
   if (open && e.button === 3) { try { open.close(); } catch {} return; }
   navStep(e.button === 3 ? -1 : 1);
 }));
+
+/* --- llave de firma de datos --- */
+async function paintSignKey() {
+  const box = $('ad-sign');
+  try {
+    const st = await window.api.adminSignKeyStatus();
+    box.hidden = !st.enabled;
+    $('ad-sign-status').textContent = st.imported
+      ? 'Llave importada: lo que publiques desde aquí sale firmado.'
+      : st.mandatory ? 'Falta la llave: no se podrá publicar hasta importarla.' : 'Aún no importaste la llave: lo que publiques saldrá sin firma.';
+  } catch { box.hidden = true; }
+}
+$('ad-sign-import').addEventListener('click', async () => {
+  try {
+    const r = await window.api.adminSignKeyImport();
+    if (!r.canceled) $('ad-sign-status').textContent = 'Llave importada: lo que publiques desde aquí sale firmado.';
+  } catch (e) { $('ad-sign-status').textContent = cleanError(e); }
+});
+document.querySelector('[data-ad-tab="config"]')?.addEventListener('click', paintSignKey);

@@ -133,6 +133,8 @@ contextBridge.exposeInMainWorld('api', {
   adminStatus: () => ipcRenderer.invoke('admin:status'),
   adminLogin: (t) => ipcRenderer.invoke('admin:login', t),
   adminLogout: () => ipcRenderer.invoke('admin:logout'),
+  adminSignKeyStatus: () => ipcRenderer.invoke('admin:signKeyStatus'),
+  adminSignKeyImport: () => ipcRenderer.invoke('admin:signKeyImport'),
   adminLoad: () => ipcRenderer.invoke('admin:load'),
   adminResolveNick: (n) => ipcRenderer.invoke('admin:resolveNick', n),
   adminSaveAdmins: (l) => ipcRenderer.invoke('admin:saveAdmins', l),

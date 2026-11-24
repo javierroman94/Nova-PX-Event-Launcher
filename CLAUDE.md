@@ -31,7 +31,7 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 - Nunca llaves hardcodeadas. Los eventos protegidos usan una llave derivada de la contraseña (scrypt) con AES-256-GCM; los sobres nuevos usan `KDF_STRONG` y guardan sus parámetros en `kdf`.
 - Los informes de eventos protegidos se sellan con la llave pública de `config/soporte-informes.pub.pem`. La privada no está en el repositorio; se abre con `node tools/abrir-informe.js`.
 - Todo mod o archivo descargado se verifica con su huella (`sha1` obligatorio en `lib/pack-install.js`) y solo se aceptan enlaces `https`. Prefiere SHA-256 en cualquier formato nuevo.
-- Pendiente: firmar los manifests (Ed25519, llave privada fuera del repositorio). Hasta entonces, quien controle el repositorio controla los packs no protegidos. Ver `docs/SEGURIDAD.md`.
+- `manifest`, `plugins`, `recommended` y `launcher` de `data/` se firman con Ed25519 (`lib/firma.js`). La llave privada (`firma-datos.PRIVADA.pem`) nunca va al repositorio. Si editas esos archivos a mano, corre `node tools/firmar-datos.js llave.PRIVADA.pem`; publicando desde el launcher se firman solos. Ver `docs/SEGURIDAD.md`.
 
 ### Electron
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity` activo en **toda** ventana propia.

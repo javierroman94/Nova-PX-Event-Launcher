@@ -240,14 +240,29 @@ async function loadData(name) {
   promise.catch(() => dataMemo.delete(name));
   return promise;
 }
+// Datos críticos (manifest, plugins, recommended, launcher): se comprueba su firma Ed25519 (lib/firma.js).
+const firmaLib = require('./lib/firma');
+let FIRMA_PUB = null;
+try { FIRMA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'firma-datos.pub.pem'), 'utf8'); } catch {}
+async function fetchDataVerified(base, name) {
+  const known = (() => { try { return JSON.parse(fs.readFileSync(path.join(DATA_CACHE_DIR, `${name}.firma.json`), 'utf8')); } catch { return null; } })();
+  return require('./lib/data-firmada').leerFirmado({
+    name,
+    getText: async (file) => (await fetchWithTimeout(`${base}/${file}?t=${Date.now()}`, 4000)).text(),
+    pub: FIRMA_PUB,
+    obligatoria: !!config.firmaObligatoria,
+    known
+  });
+}
 async function loadDataFresh(name) {
   if (config.remoteBase) {
     const cacheFile = path.join(DATA_CACHE_DIR, `${name}.json`);
     try {
-      const remote = await fetchJson(`${config.remoteBase.replace(/\/$/, '')}/${name}.json?t=${Date.now()}`, 4000);
+      const { data: remote, sig } = await fetchDataVerified(config.remoteBase.replace(/\/$/, ''), name);
       try {
         fs.mkdirSync(DATA_CACHE_DIR, { recursive: true });
         fs.writeFileSync(cacheFile, JSON.stringify(remote));
+        if (sig) fs.writeFileSync(path.join(DATA_CACHE_DIR, `${name}.firma.json`), JSON.stringify(sig));
       } catch {}
       return remote;
     } catch (err) {
@@ -1405,8 +1420,37 @@ async function adminEligible() {
 function gh() {
   const token = readAdminToken();
   if (!token) throw new Error('Primero activa el modo administrador en Ajustes.');
-  return new GithubRepo({ ...repoFromConfig(), token, userAgent: `Nova-PX-Event-Launcher/${app.getVersion()}` });
+  const r = new GithubRepo({ ...repoFromConfig(), token, userAgent: `Nova-PX-Event-Launcher/${app.getVersion()}` });
+  r.signer = { privatePem: readSignKey() };
+  r.mustSign = !!(config.firmaObligatoria && FIRMA_PUB);
+  return r;
 }
+// Llave privada de firma de datos: se importa a mano en el modo administrador y se guarda cifrada. No viaja a ningún lado.
+const SIGN_KEY_FILE = path.join(app.getPath('userData'), 'firma-datos.key');
+function readSignKey() {
+  try {
+    return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(fs.readFileSync(SIGN_KEY_FILE)) : null;
+  } catch {
+    return null;
+  }
+}
+ipcMain.handle('admin:signKeyStatus', async () => {
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
+  return { enabled: !!FIRMA_PUB, mandatory: !!config.firmaObligatoria, imported: !!readSignKey() };
+});
+ipcMain.handle('admin:signKeyImport', async () => {
+  if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador.');
+  if (!FIRMA_PUB) throw new Error('Este launcher no trae llave pública de firma.');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no puede guardar la llave de forma cifrada.');
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la llave privada de firma (.pem)', properties: ['openFile'], filters: [{ name: 'Llave PEM', extensions: ['pem'] }] });
+  if (res.canceled || !res.filePaths[0]) return { imported: !!readSignKey(), canceled: true };
+  const stat = fs.statSync(res.filePaths[0]);
+  if (stat.size > 4096) throw new Error('Ese archivo no parece una llave de firma.');
+  const pem = fs.readFileSync(res.filePaths[0], 'utf8');
+  if (!firmaLib.llaveCoincide(pem, FIRMA_PUB)) throw new Error('Esa llave no corresponde a la llave pública de este launcher.');
+  fs.writeFileSync(SIGN_KEY_FILE, safeStorage.encryptString(pem));
+  return { imported: true };
+});
 async function requireAdmin() {
   if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador. Inicia sesión con tu cuenta premium autorizada.');
   const r = gh();
@@ -1696,6 +1740,7 @@ ipcMain.handle('admin:logout', () => {
   fs.rmSync(USERS_KEY_FILE, { force: true });
   adminToken = null;
   fs.rmSync(ADMIN_FILE, { force: true });
+  fs.rmSync(SIGN_KEY_FILE, { force: true });
 });
 ipcMain.handle('admin:load', async () => {
   const r = await requireAdmin();

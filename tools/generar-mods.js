@@ -111,6 +111,7 @@ async function readPassword(prot) {
     }));
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
     console.log(`Listo: ${jars.length} mods escritos en data/manifest.json`);
+    console.log('Ahora firma los datos: node tools/firmar-datos.js ruta/a/firma-datos.PRIVADA.pem');
     jars.forEach((f) => console.log(`  - ${f}`));
     console.log(`\nSube esos mismos .jar a:\n  ${baseUrl}/`);
     return;
@@ -144,6 +145,7 @@ async function readPassword(prot) {
     console.log('Cambiaste la contraseña: los jugadores tendrán que escribir la nueva una vez al actualizar.');
   }
   console.log(`Listo: ${mods.length} mods cifrados. data/manifest.json ya no muestra la lista de mods.`);
+  console.log('Ahora firma los datos: node tools/firmar-datos.js ruta/a/firma-datos.PRIVADA.pem');
   mods.forEach((m) => console.log(`  - ${m.file}.enc`));
   console.log(`\nSube los archivos .enc de mods-evento/cifrados/ a:\n  ${baseUrl}/`);
   console.log('\nNo subas los .jar originales. Guarda bien la contraseña: no se puede recuperar.');
