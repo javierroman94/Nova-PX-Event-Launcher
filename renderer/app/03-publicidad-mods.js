@@ -52,7 +52,7 @@ function paintAds() {
     const showImg = () => { media.replaceChildren(); const u = a.image && imageUrl(a.image); if (u) { const im = el('img'); im.alt = ''; im.src = u; media.append(im); } else media.append(el('span', 'ne-ph', '🖼\nSin imagen')); };
     showImg();
     const pick = el('button', 'ne-pick', a.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
-    pick.addEventListener('click', async () => { try { const r = await pickImageCropped(a.name || 'anuncio', 16 / 9); if (r) { a.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); } } catch (e) { $('ad-ads-status').textContent = cleanError(e); } });
+    pick.addEventListener('click', async () => { try { const r = await pickImageCropped(a.name || 'anuncio', 'anuncio'); if (r) { a.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); } } catch (e) { $('ad-ads-status').textContent = cleanError(e); } });
     const left = el('div', 'ne-left'); left.append(media, pick);
     const f = el('div', 'ne-fields');
     const inp = (ph, key, max, type) => { const i = el('input'); i.type = type || 'text'; i.placeholder = ph; i.maxLength = max || 120; i.value = a[key] || ''; i.addEventListener('input', () => { a[key] = i.value; }); return i; };

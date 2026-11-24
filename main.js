@@ -999,6 +999,31 @@ ipcMain.handle('modpacks:pickIcon', async (_e, p = {}) => {
 });
 
 // Elige una imagen para una instancia que todavía no existe: devuelve un PNG cuadrado de 128 px (data URL).
+// Elige una imagen y la devuelve tal cual (validada) para que el usuario la acomode en el recortador.
+ipcMain.handle('modpacks:pickIconRaw', async () => {
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+  if (res.canceled) return null;
+  const buf = fs.readFileSync(res.filePaths[0]);
+  if (buf.length > adminLib.MAX_IMAGE) throw new Error('La imagen pesa más de 3 MB. Redúcela y vuelve a intentarlo.');
+  const kind = adminLib.imageKind(buf);
+  if (!kind) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
+  return { raw: `data:image/${kind === 'jpg' ? 'jpeg' : kind};base64,${buf.toString('base64')}`, kind };
+});
+// Guarda como icono la imagen ya recortada: se vuelve a leer y a codificar (128x128), nunca se guarda tal cual llega.
+ipcMain.handle('modpacks:setIcon', async (_e, p = {}) => {
+  const list = readModpacks();
+  const entry = list.find((x) => x.id === cleanStr(p.id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(p.data || ''));
+  if (!m || m[2].length > 4 * 1024 * 1024) throw new Error('Esa imagen no es válida.');
+  let img = nativeImage.createFromBuffer(Buffer.from(m[2], 'base64'));
+  if (img.isEmpty()) throw new Error('No pude leer esa imagen.');
+  img = img.resize({ width: 128, height: 128, quality: 'best' });
+  entry.icon = `data:image/png;base64,${img.toPNG().toString('base64')}`;
+  entry.iconTried = true;
+  writeModpacks(list);
+  return entry;
+});
 ipcMain.handle('modpacks:pickIconFile', async () => {
   const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
   if (res.canceled) return null;
