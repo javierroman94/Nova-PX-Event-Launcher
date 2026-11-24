@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.184
+- Eventos guardados: tarjetas rediseñadas, con banner, insignia de estado y una acción principal.
+- Publicar o finalizar un evento se refleja al instante en el panel (antes podía mostrar el estado anterior).
+- Lo que publica otro administrador se ve en menos de un minuto (antes hasta 5 minutos).
+
 ## 1.0.183
 - La vista previa del editor de eventos es una copia de la pestaña Evento (portada, logo, textos, datos y patrocinadores), para acomodar texto e imágenes.
 
