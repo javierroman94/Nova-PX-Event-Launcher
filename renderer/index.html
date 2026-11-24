@@ -49,6 +49,7 @@
       <button class="tab-btn" data-tab="versions"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span class="nav-label">Versiones</span></button>
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
+      <button class="tab-btn" data-tab="shots"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13.5" rx="2.5"/><circle cx="12" cy="12.75" r="3.4"/><path d="M8.6 6l1.3-2.3h4.2L15.4 6"/></svg><span class="nav-label">Capturas</span></button>
       <div id="nav-recent" class="nav-recent" hidden><span class="nav-group">Recientes</span></div>
       <span class="nav-group">Evento</span>
       <button class="tab-btn" data-tab="event"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span class="nav-label">Evento</span></button>
@@ -359,6 +360,7 @@
             <button id="mp-import-file" type="button" hidden>Importar archivo</button>
             <button id="mp-import-folder" type="button" hidden>Importar carpeta</button>
             <button id="mp-import-launchers" type="button">🔎 Importar de otro launcher</button>
+            <button id="mp-use-code" type="button">🔗 Usar código</button>
             <button id="mp-go-create" type="button" hidden>+ Crear instancia</button>
             <button id="mp-new-profile" type="button" class="primary">+ Nuevo perfil</button>
             <button id="mp-go-discover" type="button">Explorar modpacks</button>
@@ -442,6 +444,7 @@
           <button type="button" class="active" data-mp-tab="content">🧩 Contenido</button>
           <button type="button" data-mp-tab="files">📁 Archivos</button>
           <button type="button" data-mp-tab="worlds">🌍 Mundos</button>
+          <button type="button" data-mp-tab="servers">🖧 Servidores</button>
           <button type="button" data-mp-tab="shots">📷 Capturas</button>
           <button type="button" data-mp-tab="logs">📜 Registros</button>
           <button type="button" data-mp-tab="share">📤 Compartir</button>
@@ -466,6 +469,8 @@
             </select>
             <button id="mp-add-local" type="button">Cargar archivos</button>
             <button id="mp-check-updates" type="button">Buscar actualizaciones</button>
+            <button id="mp-update-all" type="button" hidden>Actualizar todo</button>
+            <button id="mp-perf" type="button" title="Instala mods de optimización compatibles y ajusta la RAM a tu PC">⚡ Modo rendimiento</button>
             <button id="mp-add-explore" type="button" class="primary">Explorar contenido</button>
           </div>
           <p id="mp-content-note" class="muted"></p>
@@ -491,6 +496,13 @@
           <p id="mp-backups-note" class="muted"></p>
           <div id="mp-backups-list" class="mods-list"></div>
         </div>
+        <div id="mp-tab-servers" hidden>
+          <div class="events-head">
+            <p id="mp-srv-note" class="muted" aria-live="polite"></p>
+            <button id="mp-srv-refresh" type="button">⟳ Actualizar</button>
+          </div>
+          <div id="mp-srv-list" class="srv-list"></div>
+        </div>
         <div id="mp-tab-shots" hidden>
           <div class="events-head">
             <p id="mp-shots-note" class="muted"></p>
@@ -514,6 +526,11 @@
         <div id="mp-tab-share" hidden>
           <p class="muted">Comparte esta instancia con otra persona: se crea un archivo .novapx que solo abre este launcher. No incluye tus mundos, tu cuenta ni tus comandos.</p>
           <div class="mp-actions"><button type="button" id="mp-share-export" class="primary">📤 Exportar .novapx</button><button type="button" id="mp-share-opts">Opciones de exportación…</button></div>
+          <h4 class="share-code-title">Compartir con un código</h4>
+          <p class="muted">Crea un código corto que tus amigos pegan en «Usar código» de su biblioteca. Lleva solo la lista de mods, texturas y shaders que están en Modrinth (sin mundos ni ajustes) y dura 90 días.</p>
+          <div class="mp-actions"><button type="button" id="mp-share-code">🔗 Crear código</button></div>
+          <div id="mp-share-code-box" class="share-code" hidden><code id="mp-share-code-text"></code><button type="button" id="mp-share-code-copy">Copiar</button></div>
+          <p id="mp-share-code-note" class="muted" aria-live="polite"></p>
         </div>
         <div id="mp-tab-logs" hidden>
           <div id="mp-log" class="log" tabindex="0"></div>
@@ -1283,6 +1300,14 @@
     </section>
 
     <!-- SKINS -->
+    <section class="page" id="page-shots">
+      <div class="shots-head">
+        <select id="shots-filter" aria-label="Mostrar capturas de"><option value="">Todas las instancias</option></select>
+        <p id="shots-note" class="muted" aria-live="polite"></p>
+      </div>
+      <div id="shots-grid" class="shots-grid"></div>
+    </section>
+
     <section class="page" id="page-skins">
       <h2 class="page-title">Skins y capas</h2>
       <div id="skins-notice" class="notice" hidden></div>
@@ -1534,7 +1559,9 @@
         <fieldset>
           <legend>Al jugar</legend>
           <label class="check"><input id="join-server" type="checkbox" /> Entrar directo al servidor del evento</label>
+          <label class="check"><input id="auto-backup" type="checkbox" /> Copiar mis mundos automáticamente al jugar (guarda las 3 últimas copias de cada mundo)</label>
           <label class="check"><input id="share-usage" type="checkbox" /> Contar mi uso para las estadísticas del equipo</label>
+          <label class="check"><input id="share-activity" type="checkbox" /> Mostrar a mis amigos qué estoy jugando y mis horas jugadas</label>
           <small class="muted">Solo se envía un número de instalación al azar, tu nick (si iniciaste sesión), si eres premium, la versión del launcher y tu sistema operativo. Nunca tu IP, tu contraseña ni tus archivos.</small>
           <div class="field">
             <label for="behavior">Launcher mientras juego</label>
@@ -1713,6 +1740,7 @@
   <script src="app/07-asistente-arranque.js"></script>
   <script src="app/08-admin.js"></script>
   <script src="app/09-ajustes-menu.js"></script>
+  <script src="app/10-extras.js"></script>
   <script src="app/99-iniciar.js"></script>
   <script src="versions.js"></script>
   <script src="topbar.js"></script>

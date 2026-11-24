@@ -18,7 +18,7 @@ async function refreshServer() {
     $('stat-players').textContent = '–';
   } else if (s.online) {
     topDot.classList.add('on');
-    topText.textContent = s.players ? `${s.players.online} / ${s.players.max} en línea` : 'Servidor en línea';
+    topText.textContent = `${s.players ? `${s.players.online} / ${s.players.max} en línea` : 'Servidor en línea'}${s.ms ? ` · ${s.ms} ms` : ''}`;
     if (s.players) countUp($('stat-players'), s.players.online);
     else $('stat-players').textContent = 'En línea';
   } else {

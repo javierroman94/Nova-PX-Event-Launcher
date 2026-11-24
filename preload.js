@@ -209,6 +209,23 @@ contextBridge.exposeInMainWorld('api', {
   onModpackProgress: (cb) => ipcRenderer.on('modpack:progress', (_e, d) => cb(d)),
   installUpdate: () => ipcRenderer.invoke('update:install'),
 
+  // 1.0.188: servidores con ping, modo rendimiento, avisos de actualizaciones, galería y códigos para compartir
+  serversList: (id) => ipcRenderer.invoke('servers:list', id),
+  perfInfo: (id) => ipcRenderer.invoke('perf:info', id),
+  perfApply: (id) => ipcRenderer.invoke('perf:apply', id),
+  updatesSummary: () => ipcRenderer.invoke('updates:summary'),
+  updatesRecheck: (id) => ipcRenderer.invoke('updates:recheck', id),
+  onUpdatesSummary: (cb) => ipcRenderer.on('updates:summary', (_e, d) => cb(d)),
+  shotsList: () => ipcRenderer.invoke('shots:list'),
+  shotsThumbs: (list) => ipcRenderer.invoke('shots:thumbs', list),
+  shotsFull: (src, name) => ipcRenderer.invoke('shots:full', src, name),
+  shotsCopy: (src, name) => ipcRenderer.invoke('shots:copy', src, name),
+  shotsSave: (src, name) => ipcRenderer.invoke('shots:save', src, name),
+  shotsDelete: (src, name) => ipcRenderer.invoke('shots:delete', src, name),
+  shotsFolder: (src) => ipcRenderer.invoke('shots:folder', src),
+  shareCreate: (id) => ipcRenderer.invoke('share:create', id),
+  shareImport: (code) => ipcRenderer.invoke('share:import', code),
+
   // eventos
   onUpdate: (cb) => ipcRenderer.on('update:state', (_e, d) => cb(d)),
   onProgress: (cb) => ipcRenderer.on('game:progress', (_e, d) => cb(d)),

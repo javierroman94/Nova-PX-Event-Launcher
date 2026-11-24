@@ -160,6 +160,7 @@ const PAGE_TITLES = {
   events: ['Historial', 'Los eventos anteriores del equipo'],
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
+  shots: ['Capturas', 'Todas tus capturas de pantalla, de todos tus perfiles'],
   mods: ['Mods', 'Lo que lleva instalado el evento'],
   modpacks: ['Modpacks', 'Tus modpacks, los de Modrinth y los de la comunidad'],
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
@@ -268,5 +269,6 @@ function goTo(tab) {
   if (tab === 'whatsnew' && window.whatsnewShow) window.whatsnewShow();
   if (tab === 'servers' && window.serversShow) window.serversShow();
   if (tab === 'versions' && window.versionsShow) window.versionsShow();
+  if (tab === 'shots' && window.shotsShow) window.shotsShow();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));

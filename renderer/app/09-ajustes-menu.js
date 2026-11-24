@@ -447,6 +447,14 @@ async function renderFriends() {
       li.append(dot, friendHead(f.nick), el('span', 'friend-info', ''), chat, rm);
       const info = li.querySelector('.friend-info');
       info.append(name, st);
+      if (f.game) st.textContent = `Jugando: ${f.game}`;
+      // Tocar el nombre abre su tarjeta: skin, qué juega y sus horas.
+      info.tabIndex = 0;
+      info.setAttribute('role', 'button');
+      info.title = `Ver el perfil de ${f.nick}`;
+      const card = () => window.openFriendCard && window.openFriendCard(f);
+      info.addEventListener('click', card);
+      info.addEventListener('keydown', (e) => { if (e.key === 'Enter') card(); });
       list.append(li);
       const prev = lastUnread.get(f.nick) || 0;
       if (!friendsFirst && f.unread > prev && !(chatWith && chatWith.toLowerCase() === f.nick.toLowerCase())) toast(`💬 ${f.nick} te escribió`, 'info');

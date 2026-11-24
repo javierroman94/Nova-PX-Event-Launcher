@@ -26,6 +26,8 @@ const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const gameLogs = require('./lib/game-logs');
 const { instanceDir, instanceId } = require('./lib/instance');
+const pingLib = require('./lib/ping');
+const descargas = require('./lib/descargas');
 const serversLib = require('./lib/servers');
 const langLib = require('./lib/langpack');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
@@ -146,7 +148,10 @@ function defaultSettings() {
     intro: true,
     introSound: true,
     welcomed: false,
-    playSeconds: 0
+    playSeconds: 0,
+    autoBackup: true,
+    backupKeep: 3,
+    shareActivity: true
   };
 }
 
@@ -195,7 +200,10 @@ function cleanSettings(s) {
     intro: s.intro !== false,
     introSound: s.introSound !== false,
     welcomed: s.welcomed === true,
-    playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
+    playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0)),
+    autoBackup: s.autoBackup !== false,
+    backupKeep: Math.round(num(s.backupKeep, 1, 10, d.backupKeep)),
+    shareActivity: s.shareActivity !== false
   };
 }
 
@@ -1270,6 +1278,7 @@ async function planAllUpdates(entry, root) {
 ipcMain.handle('instance:updatesCheck', async (_e, id) => {
   const { entry, root } = packRoot(id);
   const plan = await planAllUpdates(entry, root);
+  try { extras.noteUpdates(entry.id, plan.length); } catch {}
   return plan.map((u) => ({ type: u.type, file: u.file, enabled: u.enabled, newFile: u.newFile, version: u.version }));
 });
 ipcMain.handle('instance:updatesApply', async (_e, arg) => {
@@ -1278,17 +1287,19 @@ ipcMain.handle('instance:updatesApply', async (_e, arg) => {
   const only = arg && Array.isArray(arg.only) ? new Set(arg.only.map((f) => String(f))) : null; // "tipo:archivo" de lo elegido
   const { entry, root } = packRoot(id);
   let plan = await planAllUpdates(entry, root);
+  const pending = plan.length;
   if (only) plan = plan.filter((u) => only.has(`${u.type}:${u.file}`));
   let done = 0;
   const errors = [];
+  // Varias descargas a la vez y con reintentos (antes iban de una en una).
   try {
-    for (const u of plan) {
+    if (plan.length) send('modpack:progress', { text: `Actualizando 0 de ${plan.length}…` });
+    await descargas.pool(plan, async (u) => {
       try {
         const dir = content.contentDir(root, u.type);
         const name = content.safeFileName(u.newFile, u.type);
         if (!name || !modpacks.allowedUrl(u.url, ['cdn.modrinth.com'])) throw new Error('descarga no permitida');
-        send('modpack:progress', { text: `Actualizando ${name} (${done + 1} de ${plan.length})…` });
-        const data = await downloadBuffer(u.url);
+        const data = await descargas.retry(() => downloadBuffer(u.url), { tries: 3, delayMs: 800, shouldRetry: descargas.shouldRetry });
         if (crypto.createHash('sha1').update(data).digest('hex') !== u.sha1) throw new Error('la huella no coincide');
         const dest = path.join(dir, u.enabled ? name : `${name}.disabled`);
         fs.writeFileSync(dest, data);
@@ -1297,8 +1308,9 @@ ipcMain.handle('instance:updatesApply', async (_e, arg) => {
       } catch (err) {
         errors.push(`${u.file}: ${err.message}`);
       }
-    }
+    }, { concurrency: 4, onProgress: (n, total) => send('modpack:progress', { text: `Actualizando ${n} de ${total}…` }) });
   } finally { send('modpack:progress', { text: 'Listo' }); }
+  try { extras.noteUpdates(entry.id, pending - done); } catch {}
   return { updated: done, errors };
 });
 
@@ -1382,10 +1394,17 @@ const FRIEND_ERRORS = {
 };
 const friendFail = (r) => { throw new Error(FRIEND_ERRORS[r.error] || 'No se pudo completar la acción.'); };
 
+// Lo que ven tus amigos en tu tarjeta: qué juegas y tus horas (null si lo apagaste en Ajustes).
+function presenceActivity() {
+  const st = readSettings();
+  if (st.shareActivity === false) return null;
+  const g = launching && currentTarget ? (currentTarget.kind === 'event' ? `Evento: ${currentTarget.title}` : String(currentTarget.title || '')) : '';
+  return { g: g.slice(0, 48), h: Math.floor((st.playSeconds || 0) / 3600) };
+}
 // Latido: dice que sigues conectado (solo con sesión y con "compartir uso" activado).
 function presenceBeat() {
   if (!readSettings().shareUsage) return;
-  presenceCall('sync', { playing: launching });
+  presenceCall('sync', { playing: launching, act: presenceActivity() });
 }
 setInterval(presenceBeat, 60 * 1000).unref();
 setTimeout(presenceBeat, 8000).unref();
@@ -1400,7 +1419,7 @@ ipcMain.handle('friends:list', async () => {
     for (const n of legacy) await presenceCall('request', { to: n });
     friendsLib.save(FRIENDS_FILE, []);
   }
-  const r = await presenceCall('sync', { playing: launching });
+  const r = await presenceCall('sync', { playing: launching, act: presenceActivity() });
   if (!r.ok) return { ...base, reachable: false, error: FRIEND_ERRORS[r.error] || '' };
   const d = r.data;
   return { ...base, friends: d.friends || [], incoming: d.incoming || [], outgoing: d.outgoing || [], now: d.now };
@@ -2702,6 +2721,14 @@ ipcMain.handle('modpacks:serverStatus', async (_e, id) => {
   const srv = serversLib.findPackServer(instanceDir(GAME_DIR, { event: { id: entry.id } }));
   if (!srv) return { found: false };
   const key = `${srv.host}:${srv.port}`;
+  // Perfiles propios: ping directo desde esta PC (latencia real). Los modpacks de terceros se consultan como antes
+  // (mcsrvstat.us), para no avisar al servidor del autor cada vez que alguien abre su biblioteca.
+  if (packs.isOwnPack(entry)) {
+    try {
+      const p = await pingLib.pingCached(srv.host, srv.port, { timeout: 3500 });
+      return { found: true, online: true, players: { online: p.players.online, max: p.players.max }, ms: p.ms };
+    } catch {}
+  }
   const hit = packServerCache.get(key);
   if (hit && Date.now() - hit.at < 60000) return hit.value;
   let value;
@@ -2723,6 +2750,10 @@ ipcMain.handle('server:status', async () => {
     const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
     if (!found) return { configured: false };
     hideHost(found.host);
+    try {
+      const p = await pingLib.pingCached(found.host, found.port, { timeout: 3500 });
+      return { configured: true, online: true, players: { online: p.players.online, max: p.players.max }, version: p.version || null, ms: p.ms };
+    } catch {}
     const target = found.port && Number(found.port) !== 25565 ? `${found.host}:${found.port}` : found.host;
     const data = await fetchJson(`https://api.mcsrvstat.us/3/${encodeURIComponent(target)}`);
     return {
@@ -3295,6 +3326,13 @@ ipcMain.handle('event:checkPassword', async (_e, password) => {
   } catch { return false; }
 });
 
+/* ---------- IPC de la 1.0.188: ahora en lib/main/ipc-extras.js ---------- */
+const extras = require('./lib/main/ipc-extras')({
+  ipcMain, fs, path, app, shell, dialog, clipboard: require('electron').clipboard, nativeImage, GAME_DIR, USAGE_URL,
+  readModpacks, writeModpacks, packRoot, instanceDir, instanceId, loadData, readSettings, send, pushLog,
+  apiRequest, downloadBuffer, cachedSha1, content, planAllUpdates, assertEditable, getMainWindow: () => mainWindow, packEntryFrom
+});
+
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
   // Si este modpack recuerda una cuenta, se cambia a ella antes de jugar.
   if (opts.modpackId && !launching) {
@@ -3351,6 +3389,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     // Cada evento vive en su propia carpeta: los mods de un evento no chocan con los de otro.
     const eventDir = instanceDir(GAME_DIR, manifest);
     fs.mkdirSync(eventDir, { recursive: true });
+    // Copia de los mundos que cambiaron desde la última copia (normalmente ya se hizo al cerrar la partida anterior).
+    await extras.autoBackupFor(eventDir, { onStatus: (w) => send('game:status', { text: `Copiando tu mundo «${String(w).slice(0, 40)}»…` }) });
     // Evento bloqueado (por defecto): los jugadores no pueden añadir ni cambiar mods, texturas ni shaders.
     const lockEvent = !pack && manifest.lockPack !== false;
     const enforceLock = () => {
@@ -3417,7 +3457,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         type: 'release',
         ...(customId ? { custom: customId } : {})
       },
-      overrides: { gameDirectory: eventDir },
+      overrides: { gameDirectory: eventDir, maxSockets: 8 }, // más descargas a la vez al bajar el juego (antes 2)
       memory: { max: `${st.ramGb}G`, min: userArgs.length ? '1G' : `${jvmDefaults.initialMemoryGb(st.ramGb)}G` },
       ...(forgeInstaller ? { forge: forgeInstaller } : {}),
       window: st.fullscreen
@@ -3429,8 +3469,11 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     // Entrar directo al servidor del evento: la IP sale del servers.dat del modpack (nunca del manifest público).
     const eventServer = !pack ? serversLib.findPackServer(eventDir) : null;
     if (eventServer) hideHost(eventServer.host);
-    if (st.joinServer && eventServer) {
-      launchOpts.server = { host: eventServer.host, port: String(eventServer.port || 25565) };
+    if (st.joinServer && eventServer) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, eventServer.host, eventServer.port));
+    // Modpack propio: entrar directo al servidor elegido en la pestaña Servidores (la dirección sale de su servers.dat).
+    if (pack && Number.isInteger(opts.serverIndex) && opts.serverIndex >= 0 && opts.serverIndex < 50) {
+      const target = serversLib.listPackServers(eventDir)[opts.serverIndex];
+      if (target) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, target.host, target.port));
     }
 
     // Ajustes locales de la instancia: sincronización, variables y comandos.
@@ -3469,6 +3512,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         } catch {}
       }
       try { syncOut(eventDir, own.sync); } catch {}
+      // Copia automática de los mundos al cerrar (no hace esperar a nadie; la próxima partida ya la encuentra hecha).
+      setTimeout(() => { if (!launching) extras.autoBackupFor(eventDir); }, 1500);
       if (own.postExit) { runHook(own.postExit, eventDir, hookEnv).then((r) => pushLog('launcher', `[Nova] Comando al salir ${r.ok ? 'terminado' : 'falló'}${r.out ? ': ' + r.out : ''}`)); }
       // Suma el tiempo de juego a las horas jugadas.
       if (gameStartedAt) {

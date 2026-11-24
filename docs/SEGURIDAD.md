@@ -18,6 +18,7 @@ Auditoría hecha sobre el código del repositorio público. Resume qué se revis
 | `scrypt` N=2^15 | Sobres nuevos con N=2^17 y parámetros guardados en `kdf`; los antiguos siguen abriéndose |
 | Mods de packs no protegidos sin hash obligatorio | `sha1` obligatorio y validado en `lib/pack-install.js` |
 | `/ads/track` y `/ping` sin límite; claves inventadas en KV | Límite por IP, solo anuncios que existen en `data/ads.json`, `X-Content-Type-Options` |
+| Códigos para compartir modpacks (`/pack`, 1.0.188) | Solo ids públicos de Modrinth validados (`worker/pack.mjs`), 6 creaciones por hora por IP, 40 lecturas por minuto, caducan a los 90 días; el launcher vuelve a validar lo que recibe y solo baja de `cdn.modrinth.com` con su sha1 |
 | `isAdmin` filtraba la longitud de la clave y no limitaba intentos | Comparación de hashes y bloqueo tras 8 intentos fallidos por IP |
 | `safeStorage` en Linux podía usar `basic_text` (llave fija) | `lib/secure-storage.js` lo trata como "sin almacén seguro" |
 | IPC sin comprobar el origen | `lib/ipc-guard.js`: solo páginas de `renderer/` |

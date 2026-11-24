@@ -5,6 +5,7 @@
 // Opcional: binding "LIMITER" (Rate Limiting de Cloudflare). Sin él se usa el límite en memoria de worker/limit.mjs.
 
 import { createLimiter } from './limit.mjs';
+import { createPack, getPack } from './pack.mjs';
 
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const NICK = /^[A-Za-z0-9_]{0,16}$/;
@@ -138,6 +139,14 @@ const low = (n) => String(n).toLowerCase();
 const pairKey = (a, b) => 'c:' + [low(a), low(b)].sort().join('|');
 const has = (list, n) => list.some((x) => low(x) === low(n));
 const without = (list, n) => list.filter((x) => low(x) !== low(n));
+// Lo que un jugador decide mostrar a sus amigos: qué juega (texto corto) y sus horas jugadas. null = no mostrar nada.
+function cleanAct(a) {
+  if (a === null) return null;
+  if (!a || typeof a !== 'object') return undefined;
+  const g = String(a.g || '').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 48);
+  const h = Number.isInteger(a.h) && a.h >= 0 && a.h <= 1000000 ? a.h : null;
+  return { g, h };
+}
 
 export class Presence {
   constructor(state) { this.st = state.storage; this.cache = new Map(); }
@@ -181,7 +190,10 @@ export class Presence {
     if (op === 'leave') { me.seen = 0; await this.save(me); return json({ ok: true }); }
 
     if (op === 'sync') {
-      if (now - (me.seen || 0) > 30000 || me.playing !== !!b.playing) { me.seen = now; me.playing = !!b.playing; await this.save(me); }
+      const act = cleanAct(b.act);
+      const actChanged = act !== undefined && JSON.stringify(act) !== JSON.stringify(me.a || null);
+      if (actChanged) me.a = act;
+      if (now - (me.seen || 0) > 30000 || me.playing !== !!b.playing || actChanged) { me.seen = now; me.playing = !!b.playing; await this.save(me); }
       const friends = [];
       const keys = me.f.map((n) => pairKey(me.n, n));
       const chats = keys.length ? await this.st.get(keys) : new Map();
@@ -189,7 +201,9 @@ export class Presence {
         const o = await this.user(n);
         const msgs = chats.get(pairKey(me.n, n)) || [];
         const unread = msgs.filter((m) => low(m.f) === low(n) && m.id > ((me.r || {})[low(n)] || 0)).length;
-        friends.push({ nick: o.n, online: this.online(o, now), playing: this.online(o, now) && !!o.playing, seen: o.seen || 0, unread });
+        const on = this.online(o, now);
+        const a = o.a && typeof o.a === 'object' ? o.a : null;
+        friends.push({ nick: o.n, online: on, playing: on && !!o.playing, seen: o.seen || 0, unread, game: on && o.playing && a ? a.g || '' : '', hours: a && Number.isInteger(a.h) ? a.h : null });
       }
       friends.sort((x, y) => (y.online - x.online) || x.nick.localeCompare(y.nick));
       return json({ friends, incoming: me.i, outgoing: me.o, now });
@@ -287,6 +301,9 @@ export default {
     if (request.method === 'GET' && url.pathname === '/rev') { if (!(await allow(request, env, 'rev', 120, 60000))) return tooMany(); return getRev(request, env, ctx); }
     if (request.method === 'POST' && url.pathname === '/ping') { if (!(await allow(request, env, 'ping', 10, 60000))) return tooMany(); return handlePing(request, env); }
     if (request.method === 'POST' && url.pathname.startsWith('/presence/') && OPS.has(url.pathname.slice(10))) { if (!(await allow(request, env, 'presence', 120, 60000))) return tooMany(); return presence(request, env, url.pathname.slice(10)); }
+    // Códigos para compartir modpacks: crear tiene límite estricto (cada uno es una escritura en KV), leer es más libre.
+    if (request.method === 'POST' && url.pathname === '/pack') { if (!(await allow(request, env, 'packpost', 6, 60 * 60 * 1000))) return tooMany(); return createPack(request, env); }
+    if (request.method === 'GET' && url.pathname.startsWith('/pack/')) { if (!(await allow(request, env, 'packget', 40, 60000))) return tooMany(); return getPack(url.pathname.slice(6), env); }
     if (request.method === 'POST' && url.pathname === '/ads/track') {
       if (!(await allow(request, env, 'ads', 20, 60000))) return tooMany();
       let b = null;

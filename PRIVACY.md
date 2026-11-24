@@ -15,6 +15,13 @@ Nova PX Event Launcher is an open-source Minecraft launcher. This page explains 
 
 **Friends and chat**
 - If you use friends or chat, your nickname, friend list and messages are stored on a Nova PX server (Cloudflare) so they can be delivered.
+- Friend profile card: unless you turn off "Mostrar a mis amigos qué estoy jugando y mis horas jugadas" in Settings, your friends can see what you are playing (the event or modpack name) and your total hours played with the launcher. Turning it off removes it from the server.
+
+**Sharing a modpack with a code (only when you press "Crear código")**
+- The modpack name, Minecraft version, loader and the public Modrinth ids of its mods, resource packs and shaders are stored on a Nova PX server (Cloudflare) under a random 7-letter code for 90 days. No files, worlds, settings or account data are included.
+
+**Server list ping**
+- The "Servidores" tab and the server status ask each server in your list directly from your computer (the normal Minecraft "server list ping"), the same way the game's Multiplayer screen does.
 
 **PX, the mascot (optional AI, off by default)**
 - Rule-based PX runs fully on your computer. What it learns (visit counts, a few short facts) stays in this app's local storage and can be wiped with "Olvidar todo" in its chat.

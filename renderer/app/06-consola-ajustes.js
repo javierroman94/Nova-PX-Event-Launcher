@@ -300,6 +300,8 @@ function readSettingsForm() {
     discordRpc: $('discord-rpc').checked,
     notifyEvents: $('notify-events').checked,
     shareUsage: $('share-usage').checked,
+    autoBackup: $('auto-backup').checked,
+    shareActivity: $('share-activity').checked,
     gameBehavior: $('behavior').value
   };
 }
@@ -317,6 +319,8 @@ function fillSettingsForm(s) {
   $('discord-rpc').checked = s.discordRpc;
   $('notify-events').checked = s.notifyEvents;
   $('share-usage').checked = s.shareUsage !== false;
+  $('auto-backup').checked = s.autoBackup !== false;
+  $('share-activity').checked = s.shareActivity !== false;
   $('behavior').value = s.gameBehavior;
   $('res-w').disabled = $('res-h').disabled = s.fullscreen;
 }
