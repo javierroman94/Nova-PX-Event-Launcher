@@ -372,19 +372,21 @@ async function offerSaveToHistory(evName, entryInfo) {
 }
 
 let usersList = [];
+let usersOnlineKnown = false;
 async function loadUsers() {
   const st = $('ad-users-status');
   st.textContent = 'Cargando…';
   try {
     const r = await window.api.adminUsers();
     usersList = r.users;
+    usersOnlineKnown = !!r.onlineKnown;
     $('ad-users-key').hidden = true;
     $('ad-users-body').hidden = false;
     st.textContent = '';
     const s = r.summary;
     const stats = $('ad-users-stats');
     stats.replaceChildren();
-    [[s.total, 'Instalaciones'], [s.day, 'Activas hoy'], [s.week, 'Últimos 7 días'], [s.month, 'Últimos 30 días'], [s.premium, 'Premium']].forEach(([n, l]) => {
+    [[usersOnlineKnown ? s.onlineNow : '–', 'En línea ahora'], [s.total, 'Instalaciones'], [s.day, 'Activas hoy'], [s.week, 'Últimos 7 días'], [s.month, 'Últimos 30 días'], [s.premium, 'Premium']].forEach(([n, l]) => {
       const c = el('div', 'ad-stat');
       c.append(el('strong', '', String(n)), el('span', 'muted', l));
       stats.append(c);
@@ -404,12 +406,18 @@ function paintUsers() {
   const q = $('ad-users-search').value.trim().toLowerCase();
   const box = $('ad-users-list');
   box.replaceChildren();
-  const list = usersList.filter((u) => !q || u.nick.toLowerCase().includes(q)).sort((a, b) => b.last - a.last).slice(0, 200);
-  $('ad-users-note').textContent = `${list.length} de ${usersList.length} · ordenados por última vez visto`;
-  list.forEach((u) => {
+  const all = usersList.filter((u) => !q || u.nick.toLowerCase().includes(q)).sort((a, b) => b.last - a.last);
+  const on = all.filter((u) => u.online);
+  const off = all.filter((u) => !u.online);
+  $('ad-users-note').textContent = usersOnlineKnown
+    ? `${on.length} en línea · ${off.length} desconectados`
+    : 'No se pudo saber quién está en línea (el Worker de Cloudflare debe estar actualizado). Ordenados por última vez visto.';
+  const card = (u) => {
     const row = el('div', 'mod-card');
     const body = el('div', 'mod-body');
-    body.append(el('strong', '', u.nick || 'Sin sesión iniciada'), el('span', 'muted', `v${u.version} · ${u.os === 'win32' ? 'Windows' : u.os === 'darwin' ? 'macOS' : 'Linux'} · visto ${new Date(u.last).toLocaleString('es')} · ${u.count} aperturas`));
+    const name = el('strong', '', u.nick || 'Sin sesión iniciada');
+    if (u.online) name.prepend(el('span', 'user-dot on'));
+    body.append(name, el('span', 'muted', `v${u.version} · ${u.os === 'win32' ? 'Windows' : u.os === 'darwin' ? 'macOS' : 'Linux'} · ${u.online ? (u.playing ? 'jugando ahora' : 'en línea ahora') : `visto ${new Date(u.last).toLocaleString('es')}`} · ${u.count} aperturas`));
     row.append(body, el('span', `ad-chip${u.premium ? ' ok' : ''}`, u.premium ? 'Premium' : u.nick ? 'No premium' : 'Anónimo'));
     const del = el('button', '', 'Quitar');
     del.type = 'button';
@@ -418,8 +426,18 @@ function paintUsers() {
       try { await window.api.adminUserDelete(u.id); usersList = usersList.filter((x) => x.id !== u.id); paintUsers(); } catch (e) { $('ad-users-status').textContent = cleanError(e); }
     });
     row.append(del);
-    box.append(row);
-  });
+    return row;
+  };
+  const group = (title, list, empty, note) => {
+    const h = el('div', 'users-group-head');
+    h.append(el('strong', '', title), el('span', 'ad-chip', String(list.length)));
+    if (note) h.append(el('small', 'muted', note));
+    box.append(h);
+    if (!list.length) box.append(el('p', 'muted users-empty', empty));
+    list.slice(0, 200).forEach((u) => box.append(card(u)));
+  };
+  if (usersOnlineKnown) group('Usuarios en línea', on, 'Nadie está conectado ahora mismo.', 'Se actualiza al pulsar Actualizar. Quien no ha iniciado sesión no se puede ver en línea.');
+  group('Usuarios desconectados', off, 'No hay usuarios desconectados.', '');
 }
 $('ad-users-search').addEventListener('input', paintUsers);
 $('ad-users-refresh').addEventListener('click', loadUsers);
