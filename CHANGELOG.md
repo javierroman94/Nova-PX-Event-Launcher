@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.178
+- Administrador: la pestaña Eventos ahora es una biblioteca con una tarjeta por evento. Cada una guarda información, fecha, banner, logo, patrocinadores y modpack, y se puede crear, editar, duplicar, eliminar y publicar.
+- Administrador: roles y permisos por persona (Dueño, Administrador y Moderador, más casillas sueltas). Cada acción del panel comprueba el permiso y las pestañas sin permiso se ocultan.
+- Administrador: se quita el selector rápido de estado del encabezado; el estado se cambia en los datos del evento. La pestaña de eventos pasados se llama Historial.
+- Un evento finalizado deja de verse en Inicio y en la pestaña Evento (queda en el Historial).
+- Seguridad: la lista de administradores ahora va firmada.
+
 ## 1.0.177
 - Seguridad: los tokens ya no aparecen en la consola ni en los informes, y los informes de eventos protegidos se sellan con una llave pública.
 - Seguridad: los datos de eventos, plugins, modpacks recomendados y ajustes van firmados; el launcher rechaza lo que no esté firmado por el administrador. Para publicar, el administrador importa su llave de firma en Ajustes.
