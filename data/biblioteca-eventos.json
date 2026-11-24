@@ -1,0 +1,29 @@
+[
+  {
+    "id": "backrooms-mwu4eguh",
+    "name": "BACKROOMS",
+    "tagline": "Mini-Evento Organizado por EzLuiiz donde probaran la experiencia creada por Eufonia Studios de los Backrooms.",
+    "startsAt": "2026-11-22T06:20:00.000Z",
+    "status": "ended",
+    "image": "images/banner-proximamente-mwrboehp.png",
+    "logo": "",
+    "sponsors": [
+      {
+        "kind": "host",
+        "role": "Servidor hospedado por",
+        "name": "HolyHosting",
+        "url": "https://www.holy.gg/",
+        "logo": "images/sponsor-holyhosting-mwrbudz2.png"
+      },
+      {
+        "kind": "sponsor",
+        "role": "Evento patrocinado por",
+        "name": "EzLuiiz",
+        "url": "https://www.twitch.tv/ezluiiz"
+      }
+    ],
+    "lockPack": true,
+    "instanceId": "mp-rubrocraft-nations",
+    "updatedAt": "2026-11-24T03:13:47.232Z"
+  }
+]
