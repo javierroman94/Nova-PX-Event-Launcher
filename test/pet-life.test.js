@@ -10,12 +10,15 @@ let t = L.tick(s, T + 2 * H);
 assert.ok(t.hunger < s.hunger && t.energy < s.energy && t.love < s.love);
 const long = L.tick(s, T + 100 * H);
 assert.strictEqual(long.hunger, L.tick(s, T + 12 * H).hunger);
-// Dar de comer sube el hambre y da xp; pedirlo otra vez pronto falla con tiempo de espera.
+// Dar de comer sube el hambre y da xp; sin esperas, pero con la barra llena ya no quiere más (como Talking Tom).
 let r = L.act({ ...s, hunger: 30 }, 'feed', T);
 assert.ok(r.ok && r.state.hunger >= 60 && r.state.xp > 0);
-const r2 = L.act(r.state, 'feed', T + 1000);
-assert.ok(!r2.ok && r2.wait > 0);
-assert.ok(L.act(r.state, 'feed', T + L.CD.feed + 1).ok);
+const r2 = L.act({ ...r.state, hunger: 98 }, 'feed', T + 1000);
+assert.ok(!r2.ok && r2.full && r2.state.xp === r.state.xp);
+assert.ok(L.act({ ...r.state, hunger: 50 }, 'feed', T + 1000).ok);
+assert.ok(!L.act({ ...s, energy: 95 }, 'sleep', T).ok && L.act({ ...s, energy: 40 }, 'sleep', T).ok);
+// Acariciar sin parar sube cariño pero no da xp de más cuando ya está al máximo.
+assert.strictEqual(L.act({ ...s, love: 100 }, 'pet', T).state.xp, s.xp);
 // Jugar cansa; muy cansado no juega.
 assert.ok(!L.act({ ...s, energy: 5 }, 'play', T).ok);
 assert.ok(L.act(s, 'play', T).state.energy < s.energy);

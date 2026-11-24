@@ -9,7 +9,7 @@
   const clamp = (v, a = 0, b = 100) => Math.min(b, Math.max(a, Number.isFinite(+v) ? +v : a));
   // Puntos por hora que se pierden. Con el launcher cerrado se pierde menos (tope de 12 h) para que nadie vuelva a una mascota "perdida".
   const DECAY = { hunger: 5, energy: 3, love: 2.5 };
-  const CD = { feed: 20 * 60000, play: 8 * 60000, pet: 60000, sleep: 30 * 60000, game: 0 };
+  const CD = { feed: 0, play: 0, pet: 0, sleep: 0, game: 0 }; // sin esperas, como Talking Tom: lo que limita es la barra (lleno = no quiere más)
   const LEVELS = [0, 30, 80, 160, 280, 450, 700, 1000, 1400, 1900];
 
   const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -60,12 +60,14 @@
   const EFFECT = {
     feed: (s) => ({ ...s, hunger: clamp(s.hunger + 35), love: clamp(s.love + 3), xp: s.xp + 4 }),
     play: (s) => ({ ...s, love: clamp(s.love + 12), energy: clamp(s.energy - 12), hunger: clamp(s.hunger - 6), xp: s.xp + 8, played: s.played + 1 }),
-    pet: (s) => ({ ...s, love: clamp(s.love + 6), xp: s.xp + 2 }),
+    pet: (s) => ({ ...s, love: clamp(s.love + 6), xp: s.xp + (s.love >= 95 ? 0 : 2) }),
     sleep: (s) => ({ ...s, energy: clamp(s.energy + 40), xp: s.xp + 3 })
   };
   function act(s0, action, now) {
     const s = tick(s0, now);
     if (!EFFECT[action]) return { state: s, ok: false, wait: 0 };
+    // Si la barra ya está llena, Pexy no quiere más: no suma nada (así no se puede abusar sin esperas).
+    if ((action === 'feed' && s.hunger >= 95) || (action === 'sleep' && s.energy >= 90)) return { state: s, ok: false, wait: 0, full: true };
     const until = s.cd[action] || 0;
     if (now < until) return { state: s, ok: false, wait: until - now };
     if (action === 'play' && s.energy < 10) return { state: s, ok: false, wait: 0, tired: true };
@@ -136,6 +138,7 @@
     triste: ['Me siento solito… ¿jugamos?'],
     level: ['¡Subí de nivel! 🎉']
   };
+  const FULL = { feed: 'No tengo hambre, ¡estoy lleno! 😅', sleep: 'No tengo sueño, ¡estoy lleno de energía! ⚡' };
   const pick = (k) => { const a = LINES[k]; return a[Math.floor(Math.random() * a.length)]; };
   const fmtWait = (ms) => { const m = Math.ceil(ms / 60000); return m <= 1 ? 'un minuto' : `${m} minutos`; };
 
@@ -193,7 +196,7 @@
       const b = tile(el('button', 'pl-tile'), t, SUBS[a]); b.type = 'button'; tiles[a] = b;
       b.addEventListener('click', () => {
         const r = L.act(st, a, Date.now()); st = r.state;
-        if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : '', 3500); refresh(); return; }
+        if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.full ? FULL[a] : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : r.full ? FULL[a] : '', 3500); refresh(); return; }
         note.textContent = '';
         store(st); M.say(r.levelUp ? pick('level') : pick(a), 4500); refresh();
         const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2); if (c.hop) c.hop(); }
@@ -295,7 +298,7 @@
   const rnd = (a) => a[Math.floor(Math.random() * a.length)];
   function careDrop(kind) {
     const r = L.act(st, kind === 'bath' || kind === 'pet-touch' ? 'pet' : 'feed', Date.now());
-    if (!r.ok) { M.say(r.tired ? pick('tired') : r.wait ? `Todavía no… espera ${fmtWait(r.wait)} 😅` : 'Ahora no, gracias.', 3500); return false; }
+    if (!r.ok) { M.say(r.tired ? pick('tired') : r.full ? FULL.feed : r.wait ? `Todavía no… espera ${fmtWait(r.wait)} 😅` : 'Ahora no, gracias.', 3500); return false; }
     st = r.state; store(st);
     M.say(r.levelUp ? pick('level') : kind === 'pet-touch' ? pick('pet') : rnd(kind === 'bath' ? T_BATH : T_EAT), 4500);
     const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2.4); if (c.hop) c.hop(); }
