@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.181
+- Las fotos de Hosting, Patrocinadores y Créditos salen redondas, y el recortador las acomoda con un círculo.
+- La portada de Inicio es siempre la imagen fija de NovaPX a pantalla completa.
+- Texto del evento: la descripción admite 220 caracteres y el nombre 60, en una sola línea, con contadores en el editor. La cabecera recorta lo que sobre y deja espacio sobre el panel de Jugar.
+
 ## 1.0.180
 - Ajustes se abre como ventana superpuesta sobre la pantalla actual (se cierra con Cerrar, Esc o pulsando fuera).
 - Administrador: permisos rediseñados, con rol en dos opciones e interruptores por permiso. Al elegir Moderador se aplican sus permisos, y si falla el guardado (por ejemplo sin llave de firma) sale un aviso visible.
