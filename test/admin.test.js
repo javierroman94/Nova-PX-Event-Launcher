@@ -144,6 +144,23 @@ const { GithubRepo, GithubError } = require('../lib/github');
   } });
   assert.strictEqual((await ro2.check()).canPush, false);
   assert.ok(!roCalls.includes('DELETE'));
+  // Limpieza de ramas temporales que quedaron de comprobaciones anteriores: solo las viejas y solo novapx-check-<ms>.
+  const NOW = 1800000000000;
+  const swept = [];
+  const sw = new GithubRepo({ owner: 'o', repo: 'r', token: 'T', retryDelayMs: 0, fetchImpl: async (url, o) => {
+    const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
+    if (url.includes('/git/matching-refs/heads/novapx-check-')) {
+      return json(200, [
+        { ref: `refs/heads/novapx-check-${NOW - 3600000}` },
+        { ref: `refs/heads/novapx-check-${NOW - 60000}` },
+        { ref: 'refs/heads/novapx-check-otra' }
+      ]);
+    }
+    if (o.method === 'DELETE') { swept.push(url.split('/heads/')[1]); return json(204, {}); }
+    return json(500, { message: 'inesperado ' + url });
+  } });
+  assert.strictEqual(await sw.sweepCheckBranches(10 * 60000, NOW), 1);
+  assert.deepStrictEqual(swept, [`novapx-check-${NOW - 3600000}`], 'no toca ramas recientes ni con otro nombre');
   assert.throws(() => new GithubRepo({ owner: '../x', repo: 'r', token: 't' }), /Repositorio/);
   console.log('admin.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });
