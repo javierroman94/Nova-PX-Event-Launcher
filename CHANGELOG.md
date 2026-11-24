@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.182
+- Ajustes se abre como una capa sobre toda la ventana, también encima del menú lateral.
+- La portada de Inicio se reduce al 60 % y usa la imagen de mayor calidad.
+- Eventos guardados se pueden ver como lista o como tarjetas.
+- Panel de administrador: Usuarios separa en línea y desconectados, con contador (requiere el Worker actualizado).
+
 ## 1.0.181
 - Las fotos de Hosting, Patrocinadores y Créditos salen redondas, y el recortador las acomoda con un círculo.
 - La portada de Inicio es siempre la imagen fija de NovaPX a pantalla completa.
