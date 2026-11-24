@@ -671,49 +671,89 @@ function paintPerms() {
   owners.forEach((o) => {
     const c = el('div', 'perm-card owner');
     c.append(head3d({ nick: o }, 46));
-    const b = el('div', 'perm-body'); b.append(el('strong', '', o), el('span', 'perm-role owner', '👑 Dueño'), el('small', 'muted', 'Siempre tiene acceso'));
+    const b = el('div', 'perm-body'); b.append(el('strong', '', o), el('span', 'perm-role owner', 'Dueño'), el('small', 'muted', 'Siempre tiene acceso'));
     c.append(b); box.append(c);
   });
-  const saveAdmins = async (list) => {
-    try { adm.admins = await window.api.adminSaveAdmins(list); paintPerms(); } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
+  const saveAdmins = async (list, card) => {
+    if (card) { card.classList.add('busy'); card.querySelectorAll('button, input').forEach((x) => { x.disabled = true; }); }
+    $('ad-perm-status').textContent = 'Guardando…';
+    try {
+      adm.admins = await window.api.adminSaveAdmins(list);
+      $('ad-perm-status').textContent = 'Cambios guardados.';
+    } catch (e) {
+      const msg = cleanError(e);
+      $('ad-perm-status').textContent = msg;
+      toast(msg, 'error'); // el aviso se ve aunque la lista sea larga
+    }
+    paintPerms();
+  };
+  const ROL_TXT = { administrador: ['Administrador', 'Gestiona el contenido del launcher'], moderador: ['Moderador', 'Modera nicks, usuarios y noticias'] };
+  const PERM_DESC = {
+    eventos: 'Crear, editar y publicar eventos con su modpack',
+    noticias: 'Escribir y publicar las noticias de Inicio',
+    contenido: 'Equipo, créditos y publicidad',
+    plugins: 'Subir, bloquear y quitar plugins',
+    moderacion: 'Revisar y resolver advertencias de nicks',
+    usuarios: 'Ver el contador y borrar usuarios',
+    ajustes: 'Apariencia, Discord, estado y ajustes'
   };
   admins.forEach((a, idx) => {
     const c = el('div', 'perm-card perm-editable');
-    c.append(head3d({ nick: a.nick }, 46));
     const rol = a.rol === 'moderador' ? 'moderador' : 'administrador';
-    const mine = Array.isArray(a.permisos) ? a.permisos : AD_ROLES[rol];
-    const b = el('div', 'perm-body');
-    const sel = el('select', 'perm-rol');
-    [['administrador', '🛡 Administrador'], ['moderador', '🔧 Moderador']].forEach(([v, t]) => { const o = el('option', '', t); o.value = v; sel.append(o); });
-    sel.value = rol;
-    sel.setAttribute('aria-label', `Rol de ${a.nick}`);
-    sel.addEventListener('change', () => { const next = adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(sel.value === 'moderador' ? { rol: 'moderador' } : {}) } : x)); saveAdmins(next); });
     const custom = Array.isArray(a.permisos);
-    b.append(el('strong', '', a.nick), sel, el('small', 'muted', custom ? 'Permisos personalizados' : 'Permisos del rol'));
+    const mine = custom ? a.permisos : AD_ROLES[rol];
+    c.append(head3d({ nick: a.nick }, 46));
+    const b = el('div', 'perm-body');
+
+    const top = el('div', 'perm-top');
+    const who = el('div', 'perm-who');
+    who.append(el('strong', '', a.nick), el('small', 'muted', `${mine.length} de ${Object.keys(AD_PERMS).length} permisos${custom ? ' · personalizado' : ''}`));
+    const del = el('button', 'perm-del ghost', 'Quitar acceso');
+    del.type = 'button';
+    del.addEventListener('click', async () => {
+      if (!await askConfirm(`¿Quitar el acceso de ${a.nick} al modo administrador?`)) return;
+      saveAdmins(adm.admins.filter((_, i) => i !== idx), c);
+    });
+    top.append(who, del);
+
+    // Rol: dos opciones visibles a la vez; elegir una restablece los permisos de ese rol.
+    const seg = el('div', 'perm-seg');
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', `Rol de ${a.nick}`);
+    Object.entries(ROL_TXT).forEach(([v, [t, d]]) => {
+      const bt = el('button', 'perm-seg-btn'); bt.type = 'button';
+      bt.append(el('strong', '', t), el('small', '', d));
+      bt.setAttribute('aria-pressed', String(v === rol));
+      if (v === rol) bt.classList.add('on');
+      bt.addEventListener('click', () => {
+        if (v === rol && !custom) return;
+        saveAdmins(adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(v === 'moderador' ? { rol: 'moderador' } : {}) } : x)), c);
+      });
+      seg.append(bt);
+    });
+
     const grid = el('div', 'perm-checks');
     Object.entries(AD_PERMS).forEach(([key, label]) => {
-      const lab = el('label', 'perm-check');
+      const lab = el('label', 'perm-switch');
       const cb = el('input'); cb.type = 'checkbox'; cb.checked = mine.includes(key);
+      cb.setAttribute('aria-label', label);
       cb.addEventListener('change', () => {
         const list = Object.keys(AD_PERMS).filter((k) => (k === key ? cb.checked : mine.includes(k)));
-        saveAdmins(adm.admins.map((x, i) => (i === idx ? { ...x, permisos: list } : x)));
+        saveAdmins(adm.admins.map((x, i) => (i === idx ? { ...x, permisos: list } : x)), c);
       });
-      lab.append(cb, document.createTextNode(` ${label}`));
+      const txt = el('span', 'perm-switch-text');
+      txt.append(el('strong', '', label), el('small', 'muted', PERM_DESC[key] || ''));
+      lab.append(txt, cb, el('span', 'perm-track'));
       grid.append(lab);
     });
-    b.append(grid);
+
+    b.append(top, seg, grid);
     if (custom) {
-      const reset = el('button', 'ghost', 'Volver al rol'); reset.type = 'button';
-      reset.addEventListener('click', () => saveAdmins(adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(rol === 'moderador' ? { rol } : {}) } : x))));
+      const reset = el('button', 'ghost perm-reset', `Restablecer a ${ROL_TXT[rol][0]}`); reset.type = 'button';
+      reset.addEventListener('click', () => saveAdmins(adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(rol === 'moderador' ? { rol } : {}) } : x)), c));
       b.append(reset);
     }
-    const del = el('button', 'perm-del ghost', 'Quitar');
-    del.type = 'button'; del.title = 'Quitar permiso';
-    del.addEventListener('click', async () => {
-      if (!await askConfirm(`¿Quitar el permiso a ${a.nick}?`)) return;
-      saveAdmins(adm.admins.filter((_, i) => i !== idx));
-    });
-    c.append(b, del); box.append(c);
+    c.append(b); box.append(c);
   });
   if (!owners.length && !admins.length) box.append(el('p', 'muted', 'Aún no hay nadie con acceso.'));
 }
