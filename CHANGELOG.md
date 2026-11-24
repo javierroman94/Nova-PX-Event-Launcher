@@ -2,6 +2,50 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.186
+- Editar el evento publicado (nombre, descripción, imágenes o patrocinadores) y guardar ahora actualiza también la pestaña Evento.
+
+## 1.0.185
+- Eventos guardados: tarjetas rediseñadas, con banner, insignia de estado y una acción principal.
+- Publicar o finalizar un evento se refleja al instante en el panel (antes podía mostrar el estado anterior).
+- Lo que publica otro administrador se ve en menos de un minuto (antes hasta 5 minutos).
+
+## 1.0.184
+- Inicio: la portada de NovaPX ocupa todo el ancho y cerca del 65 % del alto visible, se ve completa en cualquier resolución y se va al bajar.
+- Modpacks: textos más generales al instalar y en los ajustes de Java, sin detalles internos.
+
+## 1.0.183
+- La vista previa del editor de eventos es una copia de la pestaña Evento (portada, logo, textos, datos y patrocinadores), para acomodar texto e imágenes.
+
+## 1.0.182
+- Ajustes se abre como una capa sobre toda la ventana, también encima del menú lateral.
+- La portada de Inicio se reduce al 60 % y usa la imagen de mayor calidad.
+- Eventos guardados se pueden ver como lista o como tarjetas.
+- Panel de administrador: Usuarios separa en línea y desconectados, con contador (requiere el Worker actualizado).
+
+## 1.0.181
+- Las fotos de Hosting, Patrocinadores y Créditos salen redondas, y el recortador las acomoda con un círculo.
+- La portada de Inicio es siempre la imagen fija de NovaPX a pantalla completa.
+- Texto del evento: la descripción admite 220 caracteres y el nombre 60, en una sola línea, con contadores en el editor. La cabecera recorta lo que sobre y deja espacio sobre el panel de Jugar.
+
+## 1.0.180
+- Ajustes se abre como ventana superpuesta sobre la pantalla actual (se cierra con Cerrar, Esc o pulsando fuera).
+- Administrador: permisos rediseñados, con rol en dos opciones e interruptores por permiso. Al elegir Moderador se aplican sus permisos, y si falla el guardado (por ejemplo sin llave de firma) sale un aviso visible.
+- Inicio: nueva portada de bienvenida cuando no hay imagen de evento.
+- Al jugar, todos los loaders abren la consola en vivo; la pantalla de carga queda solo para Nova Client.
+- El recortador de imágenes muestra la imagen entera con un marco de la proporción real de cada sitio, y guías de otros sitios donde sale la misma imagen. El icono de modpack también se acomoda.
+
+## 1.0.179
+- Administrador: Eventos se rehace en tres pantallas. Lista con el banner de cada evento de fondo, insignia ACTIVO y botón Publicar; configuración con vista previa para los jugadores.
+- Publicar un evento ahora o programarlo para una fecha: los jugadores lo ven como Próximamente con cuenta atrás y se abre solo a la hora.
+
+## 1.0.178
+- Administrador: la pestaña Eventos ahora es una biblioteca con una tarjeta por evento. Cada una guarda información, fecha, banner, logo, patrocinadores y modpack, y se puede crear, editar, duplicar, eliminar y publicar.
+- Administrador: roles y permisos por persona (Dueño, Administrador y Moderador, más casillas sueltas). Cada acción del panel comprueba el permiso y las pestañas sin permiso se ocultan.
+- Administrador: se quita el selector rápido de estado del encabezado; el estado se cambia en los datos del evento. La pestaña de eventos pasados se llama Historial.
+- Un evento finalizado deja de verse en Inicio y en la pestaña Evento (queda en el Historial).
+- Seguridad: la lista de administradores ahora va firmada.
+
 ## 1.0.177
 - Seguridad: los tokens ya no aparecen en la consola ni en los informes, y los informes de eventos protegidos se sellan con una llave pública.
 - Seguridad: los datos de eventos, plugins, modpacks recomendados y ajustes van firmados; el launcher rechaza lo que no esté firmado por el administrador. Para publicar, el administrador importa su llave de firma en Ajustes.

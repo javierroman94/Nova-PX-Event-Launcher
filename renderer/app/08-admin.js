@@ -18,9 +18,22 @@ function setAdminUi(on, repo, err, eligible) {
   $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
   moveIndicator();
 }
+// Permiso que pide cada pestaña (igual que lib/permisos.js; el programa vuelve a comprobarlo en cada acción).
+const AD_TAB_PERM = { event: 'eventos', events: 'eventos', reco: 'eventos', news: 'noticias', team: 'contenido', ads: 'contenido', plugins: 'plugins', warnings: 'moderacion', users: 'usuarios', look: 'ajustes', config: 'ajustes', control: 'ajustes', status: 'ajustes', perms: 'permisos' };
+const AD_PERMS = { eventos: 'Eventos y modpack del evento', noticias: 'Noticias', contenido: 'Equipo y publicidad', plugins: 'Plugins', moderacion: 'Advertencias de nicks', usuarios: 'Usuarios (contador)', ajustes: 'Ajustes, apariencia, Discord y estado' };
+const AD_ROLES = { administrador: Object.keys(AD_PERMS), moderador: ['moderacion', 'usuarios', 'noticias'] };
+let adPerms = new Set();
+function applyAdminTabs(perms) {
+  adPerms = new Set(perms || []);
+  const tabs = [...document.querySelectorAll('[data-ad-tab]')];
+  tabs.forEach((b) => { b.hidden = !adPerms.has(AD_TAB_PERM[b.dataset.adTab]); });
+  const current = tabs.find((b) => b.classList.contains('active'));
+  if (current && current.hidden) { const first = tabs.find((b) => !b.hidden); if (first) first.click(); }
+}
 function refreshAdmin() {
   window.api.adminStatus().then((r) => {
     setAdminUi(r.admin, r.repo, r.error, r.eligible);
+    if (r.admin) applyAdminTabs(r.permisos);
     if (!r.admin && $('page-admin').classList.contains('active')) goTo('home');
   }).catch(() => {});
 }
@@ -31,6 +44,7 @@ $('adm-login').addEventListener('click', async () => {
     const r = await window.api.adminLogin($('adm-token').value);
     $('adm-token').value = '';
     setAdminUi(true, r.repo, undefined, true);
+    refreshAdmin();
     toast('Modo administrador activado');
   } catch (e) {
     $('adm-state').textContent = cleanError(e);
@@ -40,7 +54,7 @@ $('adm-login').addEventListener('click', async () => {
 $('adm-logout').addEventListener('click', async () => {
   await window.api.adminLogout();
   setAdminUi(false, undefined, undefined, true);
-  if ($('page-admin').classList.contains('active')) goTo('settings');
+  if ($('page-admin').classList.contains('active')) { goTo('home'); goTo('settings'); }
 });
 
 const adm = { sponsors: [], team: [], news: [], reco: [], launcher: null, manifest: {}, summary: null };
@@ -130,7 +144,7 @@ function sponsorsEditor() {
         const showLogo = () => { lg.replaceChildren(); const u = x.logo && imageUrl(x.logo); if (u) { const im = el('img'); im.alt = ''; im.src = u; lg.append(im); } else lg.append(el('span', '', '＋ Logo')); };
         showLogo();
         lg.addEventListener('click', async () => {
-          try { const a = await pickImageCropped(`sponsor-${x.name || 'logo'}`, 2); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
+          try { const a = await pickImageCropped(`sponsor-${x.name || 'logo'}`, 'sponsor'); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
         });
         const fields = el('div', 'brand-fields');
         const r = el('input'); r.type = 'text'; r.maxLength = 60; r.value = x.role || g.roles[0]; r.setAttribute('list', `ad-roles-${g.kind}`); r.placeholder = 'Rol';
@@ -172,20 +186,21 @@ function sponsorsEditor() {
 
 function paintArtState() {
   $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con logo' : 'sin logo'}`;
+  paintEvPreview();
 }
 /* Elige una imagen, deja acomodarla en un cuadro (como Instagram o X) y solo entonces la sube. Devuelve {path, preview} o null. */
-async function pickImageCropped(label, aspect) {
+async function pickImageCropped(label, slot) {
   const r = await window.api.adminPickImage(label, { crop: true });
   if (!r) return null;
   if (!window.NovaCrop) return window.api.adminUploadImage(label, r.raw);
-  const out = await window.NovaCrop.open(r.raw, aspect, r.kind);
+  const out = await window.NovaCrop.open(r.raw, slot, r.kind);
   if (out === null) return null;
   return window.api.adminUploadImage(label, out === 'orig' ? r.raw : out);
 }
 async function pickEventArt(kind) {
   $('ad-status').textContent = 'Eligiendo imagen…';
   try {
-    const r = await pickImageCropped(`${kind}-${$('ad-name').value || 'evento'}`, kind === 'banner' ? 16 / 9 : 1);
+    const r = await pickImageCropped(`${kind}-${$('ad-name').value || 'evento'}`, kind === 'banner' ? 'banner' : 'logo');
     if (!r) { $('ad-status').textContent = ''; return; }
     if (kind === 'banner') adm.evImage = r.path; else adm.evLogo = r.path;
     paintArtState();
@@ -196,27 +211,20 @@ $('ad-banner-pick').addEventListener('click', () => pickEventArt('banner'));
 $('ad-logo-pick').addEventListener('click', () => pickEventArt('logo'));
 $('ad-art-clear').addEventListener('click', () => { adm.evImage = ''; adm.evLogo = ''; paintArtState(); });
 
+function paintLiveHeader() {
+  const m = adm.manifest || {};
+  const ev = m.event || {};
+  $('ad-live-name').textContent = ev.name || 'Sin evento';
+  $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
+}
 async function loadAdmin() {
   if (!isAdmin) return;
   try {
     const d = await window.api.adminLoad();
     const m = d.manifest;
     adm.manifest = m;
-    const ev = m.event || {};
-    $('ad-live-name').textContent = ev.name || 'Sin evento';
-    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
-    $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
-    $('ad-state-quick').querySelectorAll('button').forEach((x) => x.classList.toggle('active', x.dataset.st === $('ad-state').value));
-    adm.evImage = ev.image || '';
-    adm.evLogo = ev.logo || '';
-    adm.sponsors = (m.sponsors || []).map((x) => ({ ...x }));
-    sponsorsEditor();
-    paintArtState();
-    $('ad-name').value = ev.name || '';
-    $('ad-tag').value = ev.tagline || '';
-    $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
-    $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
-    $('ad-new').checked = false;
+    paintLiveHeader();
+    loadEvLib().catch(() => {});
     adm.team = d.team;
     adm.news = d.news;
     adm.ads = d.ads || [];
@@ -291,7 +299,6 @@ function paintChecklist() {
     ul.append(li);
     if (!ok && !soft) ready = false;
   });
-  $('ad-publish').disabled = !ready;
   $('ad-pass').closest('.field').hidden = !hasPack;
 }
 ['ad-name', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
@@ -356,93 +363,34 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-$('ad-state-quick').addEventListener('click', async (e) => {
-  const b = e.target.closest('button[data-st]');
-  if (!b) return;
-  const btns = [...$('ad-state-quick').querySelectorAll('button')];
-  btns.forEach((x) => { x.disabled = true; });
-  try {
-    await window.api.adminSetEventState(b.dataset.st);
-    toast(`Estado del evento: ${b.textContent}`, 'success');
-    const evn = (adm.manifest && adm.manifest.event) || {};
-    await autoDiscord('event', { title: `${evn.name || 'Evento'}: ${b.textContent}`, text: evn.tagline || '', image: imageUrl(evn.image) });
-    await loadAdmin();
-    await renderHero();
-  } catch (err) {
-    toast(cleanError(err), 'error');
-  } finally {
-    btns.forEach((x) => { x.disabled = false; });
-  }
-});
-$('ad-finish').addEventListener('click', () => { $('ad-state').value = 'ended'; $('ad-publish').click(); });
-$('ad-publish').addEventListener('click', async () => {
-  const id = $('ad-pack').value;
-  const name = $('ad-name').value.trim();
-  const state = $('ad-state').value;
-  const active = state === 'active';
-  const msg = `¿Publicar "${name}"?\n\n${active ? 'El evento queda ACTIVO: los jugadores podrán entrar.' : state === 'ended' ? 'El evento queda FINALIZADO.' : 'El evento queda como próximamente.'}${id && adm.summary ? `\nSe publican ${adm.summary.mods} mods cifrados.` : ''}`;
-  if (!await askConfirm(msg)) return;
-  const btn = $('ad-publish');
-  btn.disabled = true;
-  const bar = $('ad-progress');
-  bar.hidden = false;
-  bar.removeAttribute('value');
-  adminProgress = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } $('ad-status').textContent = d.text || ''; };
-  try {
-    const start = $('ad-start').value;
-    const r = await window.api.adminPublishEvent({
-      id: id || undefined, password: $('ad-pass').value,
-      form: {
-        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked
-      }
-    });
-    $('ad-status').textContent = r.mods
-      ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'} Los jugadores lo ven en unos minutos.`
-      : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`;
-    try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: $('ad-pass').value }); } catch (e) { toast(cleanError(e), 'error'); }
-    if (!$('ad-pass-remember').checked) $('ad-pass').value = '';
-    $('ad-pass').type = 'password';
-    $('ad-new').checked = false;
-    toast('Evento publicado');
-    await autoDiscord('event', { title: `${r.name}: evento publicado`, text: $('ad-tag').value, image: imageUrl(adm.evImage) });
-    try { await loadAdmin(); } catch {}
-    window.refreshContent && window.refreshContent();
-    if (state === 'ended') await offerSaveToHistory(r.name || name);
-  } catch (e) {
-    $('ad-status').textContent = cleanError(e);
-  }
-  adminProgress = null;
-  bar.hidden = true;
-  paintChecklist();
-});
-
-// Al finalizar un evento, pregunta si se guarda en el apartado Historial (sin duplicarlo).
-async function offerSaveToHistory(evName) {
+async function offerSaveToHistory(evName, entryInfo) {
   const nm = String(evName || '').trim();
   if (!nm) return;
   const list = Array.isArray(adm.events) ? adm.events : [];
   if (list.some((e) => String(e.name || '').trim().toLowerCase() === nm.toLowerCase())) return;
   if (!await askConfirm(`El evento "${nm}" quedó FINALIZADO.\n\n¿Quieres guardarlo en el apartado Historial?\nPodrás añadir ganadores, participantes y enlaces editándolo después.`)) return;
-  const img = String(adm.evImage || '');
-  const entry = { name: nm.slice(0, 80), date: new Date().toISOString().slice(0, 10), image: /^(images\/|https:\/\/)/i.test(img) ? img : '', description: String($('ad-tag').value || '').slice(0, 800) };
+  const img = String((entryInfo && entryInfo.image) || adm.evImage || '');
+  const entry = { name: nm.slice(0, 80), date: new Date().toISOString().slice(0, 10), image: /^(images\/|https:\/\/)/i.test(img) ? img : '', description: String((entryInfo && entryInfo.tagline) || $('ad-tag').value || '').slice(0, 800) };
   await saveAdminEvents([entry, ...list], false);
   toast('Evento guardado en Historial');
 }
 
 let usersList = [];
+let usersOnlineKnown = false;
 async function loadUsers() {
   const st = $('ad-users-status');
   st.textContent = 'Cargando…';
   try {
     const r = await window.api.adminUsers();
     usersList = r.users;
+    usersOnlineKnown = !!r.onlineKnown;
     $('ad-users-key').hidden = true;
     $('ad-users-body').hidden = false;
     st.textContent = '';
     const s = r.summary;
     const stats = $('ad-users-stats');
     stats.replaceChildren();
-    [[s.total, 'Instalaciones'], [s.day, 'Activas hoy'], [s.week, 'Últimos 7 días'], [s.month, 'Últimos 30 días'], [s.premium, 'Premium']].forEach(([n, l]) => {
+    [[usersOnlineKnown ? s.onlineNow : '–', 'En línea ahora'], [s.total, 'Instalaciones'], [s.day, 'Activas hoy'], [s.week, 'Últimos 7 días'], [s.month, 'Últimos 30 días'], [s.premium, 'Premium']].forEach(([n, l]) => {
       const c = el('div', 'ad-stat');
       c.append(el('strong', '', String(n)), el('span', 'muted', l));
       stats.append(c);
@@ -462,12 +410,18 @@ function paintUsers() {
   const q = $('ad-users-search').value.trim().toLowerCase();
   const box = $('ad-users-list');
   box.replaceChildren();
-  const list = usersList.filter((u) => !q || u.nick.toLowerCase().includes(q)).sort((a, b) => b.last - a.last).slice(0, 200);
-  $('ad-users-note').textContent = `${list.length} de ${usersList.length} · ordenados por última vez visto`;
-  list.forEach((u) => {
+  const all = usersList.filter((u) => !q || u.nick.toLowerCase().includes(q)).sort((a, b) => b.last - a.last);
+  const on = all.filter((u) => u.online);
+  const off = all.filter((u) => !u.online);
+  $('ad-users-note').textContent = usersOnlineKnown
+    ? `${on.length} en línea · ${off.length} desconectados`
+    : 'No se pudo saber quién está en línea (el Worker de Cloudflare debe estar actualizado). Ordenados por última vez visto.';
+  const card = (u) => {
     const row = el('div', 'mod-card');
     const body = el('div', 'mod-body');
-    body.append(el('strong', '', u.nick || 'Sin sesión iniciada'), el('span', 'muted', `v${u.version} · ${u.os === 'win32' ? 'Windows' : u.os === 'darwin' ? 'macOS' : 'Linux'} · visto ${new Date(u.last).toLocaleString('es')} · ${u.count} aperturas`));
+    const name = el('strong', '', u.nick || 'Sin sesión iniciada');
+    if (u.online) name.prepend(el('span', 'user-dot on'));
+    body.append(name, el('span', 'muted', `v${u.version} · ${u.os === 'win32' ? 'Windows' : u.os === 'darwin' ? 'macOS' : 'Linux'} · ${u.online ? (u.playing ? 'jugando ahora' : 'en línea ahora') : `visto ${new Date(u.last).toLocaleString('es')}`} · ${u.count} aperturas`));
     row.append(body, el('span', `ad-chip${u.premium ? ' ok' : ''}`, u.premium ? 'Premium' : u.nick ? 'No premium' : 'Anónimo'));
     const del = el('button', '', 'Quitar');
     del.type = 'button';
@@ -476,8 +430,18 @@ function paintUsers() {
       try { await window.api.adminUserDelete(u.id); usersList = usersList.filter((x) => x.id !== u.id); paintUsers(); } catch (e) { $('ad-users-status').textContent = cleanError(e); }
     });
     row.append(del);
-    box.append(row);
-  });
+    return row;
+  };
+  const group = (title, list, empty, note) => {
+    const h = el('div', 'users-group-head');
+    h.append(el('strong', '', title), el('span', 'ad-chip', String(list.length)));
+    if (note) h.append(el('small', 'muted', note));
+    box.append(h);
+    if (!list.length) box.append(el('p', 'muted users-empty', empty));
+    list.slice(0, 200).forEach((u) => box.append(card(u)));
+  };
+  if (usersOnlineKnown) group('Usuarios en línea', on, 'Nadie está conectado ahora mismo.', 'Se actualiza al pulsar Actualizar. Quien no ha iniciado sesión no se puede ver en línea.');
+  group('Usuarios desconectados', off, 'No hay usuarios desconectados.', '');
 }
 $('ad-users-search').addEventListener('input', paintUsers);
 $('ad-users-refresh').addEventListener('click', loadUsers);
@@ -660,7 +624,7 @@ $('ade-clear').addEventListener('click', () => { ade.draft.image = ''; ade.previ
 $('ade-pick').addEventListener('click', async () => {
   $('ade-status').textContent = 'Eligiendo imagen…';
   try {
-    const r = await pickImageCropped($('ade-name').value, 4 / 3);
+    const r = await pickImageCropped($('ade-name').value, 'historial');
     if (!r) { $('ade-status').textContent = ''; return; }
     ade.draft.image = r.path;
     ade.preview = r.preview;
@@ -672,7 +636,7 @@ $('ade-bg-clear').addEventListener('click', () => { delete ade.draft.background;
 $('ade-bg-pick').addEventListener('click', async () => {
   $('ade-status').textContent = 'Eligiendo fondo…';
   try {
-    const r = await pickImageCropped(`fondo-${$('ade-name').value}`, 16 / 9);
+    const r = await pickImageCropped(`fondo-${$('ade-name').value}`, 'historial-fondo');
     if (!r) { $('ade-status').textContent = ''; return; }
     ade.draft.background = r.path;
     $('ade-bg-state').textContent = 'Con fondo';
@@ -722,30 +686,96 @@ function paintPerms() {
   const stats = $('ad-perm-stats');
   if (stats) {
     stats.replaceChildren();
-    [[owners.length, 'Dueños'], [admins.length, 'Administradores'], [owners.length + admins.length, 'Con acceso al panel']].forEach(([n, l]) => {
+    [[owners.length, 'Dueños'], [admins.filter((x) => x.rol !== 'moderador').length, 'Administradores'], [admins.filter((x) => x.rol === 'moderador').length, 'Moderadores'], [owners.length + admins.length, 'Con acceso al panel']].forEach(([n, l]) => {
       const t = el('div', 'ad-stat'); t.append(el('strong', '', String(n)), el('span', 'muted', l)); stats.append(t);
     });
   }
   owners.forEach((o) => {
     const c = el('div', 'perm-card owner');
     c.append(head3d({ nick: o }, 46));
-    const b = el('div', 'perm-body'); b.append(el('strong', '', o), el('span', 'perm-role owner', '👑 Dueño'), el('small', 'muted', 'Siempre tiene acceso'));
+    const b = el('div', 'perm-body'); b.append(el('strong', '', o), el('span', 'perm-role owner', 'Dueño'), el('small', 'muted', 'Siempre tiene acceso'));
     c.append(b); box.append(c);
   });
+  const saveAdmins = async (list, card) => {
+    if (card) { card.classList.add('busy'); card.querySelectorAll('button, input').forEach((x) => { x.disabled = true; }); }
+    $('ad-perm-status').textContent = 'Guardando…';
+    try {
+      adm.admins = await window.api.adminSaveAdmins(list);
+      $('ad-perm-status').textContent = 'Cambios guardados.';
+    } catch (e) {
+      const msg = cleanError(e);
+      $('ad-perm-status').textContent = msg;
+      toast(msg, 'error'); // el aviso se ve aunque la lista sea larga
+    }
+    paintPerms();
+  };
+  const ROL_TXT = { administrador: ['Administrador', 'Gestiona el contenido del launcher'], moderador: ['Moderador', 'Modera nicks, usuarios y noticias'] };
+  const PERM_DESC = {
+    eventos: 'Crear, editar y publicar eventos con su modpack',
+    noticias: 'Escribir y publicar las noticias de Inicio',
+    contenido: 'Equipo, créditos y publicidad',
+    plugins: 'Subir, bloquear y quitar plugins',
+    moderacion: 'Revisar y resolver advertencias de nicks',
+    usuarios: 'Ver el contador y borrar usuarios',
+    ajustes: 'Apariencia, Discord, estado y ajustes'
+  };
   admins.forEach((a, idx) => {
-    const c = el('div', 'perm-card');
+    const c = el('div', 'perm-card perm-editable');
+    const rol = a.rol === 'moderador' ? 'moderador' : 'administrador';
+    const custom = Array.isArray(a.permisos);
+    const mine = custom ? a.permisos : AD_ROLES[rol];
     c.append(head3d({ nick: a.nick }, 46));
-    const b = el('div', 'perm-body'); b.append(el('strong', '', a.nick), el('span', 'perm-role', '🛡 Administrador'), el('small', 'muted', 'Puede ver el panel'));
-    const del = el('button', 'perm-del ghost', 'Quitar');
-    del.type = 'button'; del.title = 'Quitar permiso';
+    const b = el('div', 'perm-body');
+
+    const top = el('div', 'perm-top');
+    const who = el('div', 'perm-who');
+    who.append(el('strong', '', a.nick), el('small', 'muted', `${mine.length} de ${Object.keys(AD_PERMS).length} permisos${custom ? ' · personalizado' : ''}`));
+    const del = el('button', 'perm-del ghost', 'Quitar acceso');
+    del.type = 'button';
     del.addEventListener('click', async () => {
-      if (!await askConfirm(`¿Quitar el permiso a ${a.nick}?`)) return;
-      try {
-        adm.admins = await window.api.adminSaveAdmins(adm.admins.filter((_, i) => i !== idx));
-        paintPerms();
-      } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
+      if (!await askConfirm(`¿Quitar el acceso de ${a.nick} al modo administrador?`)) return;
+      saveAdmins(adm.admins.filter((_, i) => i !== idx), c);
     });
-    c.append(b, del); box.append(c);
+    top.append(who, del);
+
+    // Rol: dos opciones visibles a la vez; elegir una restablece los permisos de ese rol.
+    const seg = el('div', 'perm-seg');
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', `Rol de ${a.nick}`);
+    Object.entries(ROL_TXT).forEach(([v, [t, d]]) => {
+      const bt = el('button', 'perm-seg-btn'); bt.type = 'button';
+      bt.append(el('strong', '', t), el('small', '', d));
+      bt.setAttribute('aria-pressed', String(v === rol));
+      if (v === rol) bt.classList.add('on');
+      bt.addEventListener('click', () => {
+        if (v === rol && !custom) return;
+        saveAdmins(adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(v === 'moderador' ? { rol: 'moderador' } : {}) } : x)), c);
+      });
+      seg.append(bt);
+    });
+
+    const grid = el('div', 'perm-checks');
+    Object.entries(AD_PERMS).forEach(([key, label]) => {
+      const lab = el('label', 'perm-switch');
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = mine.includes(key);
+      cb.setAttribute('aria-label', label);
+      cb.addEventListener('change', () => {
+        const list = Object.keys(AD_PERMS).filter((k) => (k === key ? cb.checked : mine.includes(k)));
+        saveAdmins(adm.admins.map((x, i) => (i === idx ? { ...x, permisos: list } : x)), c);
+      });
+      const txt = el('span', 'perm-switch-text');
+      txt.append(el('strong', '', label), el('small', 'muted', PERM_DESC[key] || ''));
+      lab.append(txt, cb, el('span', 'perm-track'));
+      grid.append(lab);
+    });
+
+    b.append(top, seg, grid);
+    if (custom) {
+      const reset = el('button', 'ghost perm-reset', `Restablecer a ${ROL_TXT[rol][0]}`); reset.type = 'button';
+      reset.addEventListener('click', () => saveAdmins(adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(rol === 'moderador' ? { rol } : {}) } : x)), c));
+      b.append(reset);
+    }
+    c.append(b); box.append(c);
   });
   if (!owners.length && !admins.length) box.append(el('p', 'muted', 'Aún no hay nadie con acceso.'));
 }
@@ -885,7 +915,7 @@ function paintTeam() {
     const avPick = el('button', '', m.avatar ? 'Cambiar foto' : 'Subir foto'); avPick.type = 'button';
     avPick.addEventListener('click', async () => {
       try {
-        const r = await pickImageCropped(m.nick || 'perfil', 1);
+        const r = await pickImageCropped(m.nick || 'perfil', 'perfil');
         if (r) { m.avatar = r.path; if (r.preview) avatarPreviews.set(m, r.preview); avPick.textContent = 'Cambiar foto'; paintPh(); paintAv(); sync(); }
       } catch (e) { $('ad-team-status').textContent = cleanError(e); }
     });
@@ -968,7 +998,7 @@ function paintNews() {
     showImg();
     const pick = el('button', 'ne-pick', n.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
     pick.addEventListener('click', async () => {
-      try { const r = await pickImageCropped(n.title || 'noticia', 16 / 9); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
+      try { const r = await pickImageCropped(n.title || 'noticia', 'noticia'); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
     });
     const clr = el('button', 'ne-clr ghost', 'Quitar'); clr.type = 'button';
     clr.addEventListener('click', () => { delete n.image; pick.textContent = '+ Imagen'; showImg(); prev(); });
@@ -1065,3 +1095,316 @@ $('ad-sign-import').addEventListener('click', async () => {
   } catch (e) { $('ad-sign-status').textContent = cleanError(e); }
 });
 document.querySelector('[data-ad-tab="config"]')?.addEventListener('click', paintSignKey);
+
+
+/* --- eventos: lista, configurar y publicar --- */
+let evLib = [];
+let evEditKey = null; // id de la tarjeta que se está configurando (null = ninguna)
+let evImporting = false;
+const evSlug = (name) => `${String(name || 'evento').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'evento'}-${Date.now().toString(36)}`.slice(0, 40);
+const evWhen = (iso) => new Date(iso).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+function readEditorEvent() {
+  return {
+    name: $('ad-name').value.trim(), tagline: $('ad-tag').value, image: adm.evImage || '', logo: adm.evLogo || '',
+    sponsors: (adm.sponsors || []).map((x) => ({ ...x })), lockPack: $('ad-lock').checked, instanceId: $('ad-pack').value || ''
+  };
+}
+function fillEditorEvent(e) {
+  adm.evImage = e.image || '';
+  adm.evLogo = e.logo || '';
+  adm.sponsors = (e.sponsors || []).map((x) => ({ ...x }));
+  sponsorsEditor();
+  $('ad-name').value = e.name || '';
+  $('ad-tag').value = e.tagline || '';
+  $('ad-lock').checked = e.lockPack !== false;
+  const has = e.instanceId && [...$('ad-pack').options].some((o) => o.value === e.instanceId);
+  $('ad-pack').value = has ? e.instanceId : '';
+  $('ad-pack').dispatchEvent(new Event('change'));
+  paintArtState();
+  paintEvCounts();
+}
+// Vista previa: una copia real de la pestaña Evento (misma portada, mismos estilos y el mismo código de patrocinadores).
+let evPrevMeta = null;
+async function evPreviewMeta() {
+  if (!evPrevMeta) { try { evPrevMeta = await window.api.getData('manifest'); } catch { evPrevMeta = {}; } }
+  return evPrevMeta;
+}
+let evPrevTimer = 0;
+function paintEvPreview() {
+  clearTimeout(evPrevTimer);
+  evPrevTimer = setTimeout(paintEvPreviewNow, 120);
+}
+async function paintEvPreviewNow() {
+  const box = $('ev-preview');
+  const page = $('page-event');
+  if (!box || !page) return;
+  const m = await evPreviewMeta();
+  const hero = page.querySelector('.hero').cloneNode(true);
+  const stats = $('stats').cloneNode(true);
+  for (const n of [hero, stats]) { n.removeAttribute('id'); n.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); }
+  hero.classList.remove('soon', 'ended', 'has-soon-panel');
+  hero.querySelectorAll('.soon-panel, .soon-art').forEach((x) => x.remove());
+  const q = (sel) => hero.querySelector(sel);
+  q('.hero-badge span:last-child').textContent = 'Evento actual';
+  q('.hero h1').textContent = $('ad-name').value.trim() || 'Nombre del evento';
+  q('.hero-tagline').textContent = $('ad-tag').value;
+  const loaderNames = { vanilla: 'Vanilla', fabric: 'Fabric', forge: 'Forge' };
+  const loader = String((m.loader && m.loader.type) || 'vanilla').toLowerCase();
+  const chips = q('.chips');
+  chips.replaceChildren();
+  if (m.minecraftVersion) chips.append(el('span', 'chip', `Minecraft ${m.minecraftVersion}`), el('span', 'chip', loaderNames[loader] || loader));
+  if (m.protected) chips.append(el('span', 'chip', 'Protegido'));
+  const art = q('.hero-art:not(.soon-art)');
+  const logo = imageUrl(adm.evLogo || '');
+  if (art) { art.hidden = !logo; if (logo) art.src = logo; }
+  const banner = imageUrl(adm.evImage || '');
+  hero.classList.toggle('has-banner', !!banner);
+  if (banner) hero.style.setProperty('--hero-image', `url(${JSON.stringify(banner)})`);
+  else hero.style.removeProperty('--hero-image');
+  q('.play-status span').textContent = 'Listo para jugar';
+  const vals = stats.querySelectorAll('.stat-val');
+  if (vals[1]) vals[1].textContent = '¡Ya empezó!';
+  if (vals[2]) vals[2].textContent = '0 min';
+  if (vals[3]) vals[3].textContent = m.minecraftVersion || '–';
+  const lbl = stats.querySelectorAll('.stat-label');
+  if (lbl[1]) lbl[1].textContent = 'Próximo evento';
+  if (lbl[3]) lbl[3].textContent = loaderNames[loader] || loader;
+  const sec = el('section', 'sponsors');
+  const wrap = el('div', 'sponsors-wrap');
+  sec.append(wrap);
+  paintSponsors((adm.sponsors || []).filter((x) => x && (x.name || x.logo || x.nick)), wrap);
+  box.replaceChildren(hero, stats, sec);
+  box.inert = true; // solo se mira: los botones de la copia no hacen nada
+}
+// Los cambios en patrocinadores también se reflejan en la vista previa.
+['input', 'change', 'click'].forEach((t) => $('ad-sponsors').addEventListener(t, paintEvPreview));
+// Límites del texto (los mismos que aplica lib/admin.js): una sola línea, nombre de 60 y descripción de 220 caracteres.
+function paintEvCounts() {
+  const n = $('ad-name').value.length; const t = $('ad-tag').value.length;
+  $('ad-name-count').textContent = `${n}/60`;
+  $('ad-tag-count').textContent = `${t}/220 · una sola línea`;
+  $('ad-tag-count').classList.toggle('over', t >= 220);
+}
+$('ad-tag').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); }); // sin saltos de línea
+$('ad-tag').addEventListener('input', () => { const v = $('ad-tag').value.replace(/\s*[\r\n]+\s*/g, ' '); if (v !== $('ad-tag').value) $('ad-tag').value = v; });
+['ad-name', 'ad-tag'].forEach((id) => { $(id).addEventListener('input', paintEvPreview); $(id).addEventListener('input', paintEvCounts); });
+
+function showEvScreen(edit) {
+  $('ev-screen-list').hidden = edit;
+  $('ev-screen-edit').hidden = !edit;
+}
+function openEvEditor(key, entry) {
+  evEditKey = key;
+  fillEditorEvent(entry);
+  $('ad-editing-title').textContent = entry.name ? `Configurar: ${entry.name}` : 'Evento nuevo';
+  $('ad-status').textContent = '';
+  paintChecklist();
+  showEvScreen(true);
+}
+
+// El evento que ven los jugadores ahora, según data/manifest.json.
+function liveInfo() {
+  const m = adm.manifest || {};
+  const ev = m.event || {};
+  if (!ev.name) return null;
+  let status = ev.status || (ev.active ? 'active' : 'soon');
+  if (status === 'soon' && ev.autoStart && Date.parse(ev.startsAt || '') <= Date.now()) status = 'active';
+  return { id: ev.id || '', name: ev.name, status, startsAt: ev.startsAt || '', autoStart: !!ev.autoStart };
+}
+function isLiveEntry(e, live) {
+  if (!live) return false;
+  if (e.publishedId) return e.publishedId === live.id;
+  return String(e.name || '').trim().toLowerCase() === live.name.trim().toLowerCase();
+}
+
+let evLibSeq = 0; // una lectura de la lista que llega tarde no puede pisar un guardado más nuevo
+async function loadEvLib() {
+  const mySeq = ++evLibSeq;
+  const loaded = await window.api.adminEvLibList();
+  if (mySeq !== evLibSeq) return;
+  evLib = loaded;
+  const live = liveInfo();
+  // El evento que ya está publicado se guarda solo en la lista la primera vez.
+  if (live && !evImporting && !evLib.some((e) => isLiveEntry(e, live))) {
+    evImporting = true;
+    const m = adm.manifest || {};
+    const ev = m.event || {};
+    try {
+      evLib = await window.api.adminEvLibSave([...evLib, { id: evSlug(ev.name), name: ev.name, tagline: ev.tagline || '', startsAt: ev.startsAt || '', status: ev.status || (ev.active ? 'active' : 'soon'), image: ev.image || '', logo: ev.logo || '', sponsors: m.sponsors || [], lockPack: m.lockPack !== false, instanceId: '', publishedId: ev.id || '' }]);
+    } catch {}
+    evImporting = false;
+  }
+  paintEvLib();
+}
+async function saveEvLib(list, okText) {
+  const st = $('ad-evlib-status');
+  evLibSeq++; // cancela lecturas que sigan en vuelo
+  try {
+    evLib = await window.api.adminEvLibSave(list);
+    st.textContent = okText || '';
+    paintEvLib();
+    return true;
+  } catch (e) { st.textContent = cleanError(e); return false; }
+}
+const upsertEv = (e, id) => (evLib.some((x) => x.id === id) ? evLib.map((x) => (x.id === id ? { ...x, ...e, id } : x)) : [...evLib, { ...e, id }]);
+
+// Vista de la lista de eventos: "lista" (filas) o "tarjetas" (cuadrícula con el banner arriba). Se recuerda en este equipo.
+const EV_VIEW_KEY = 'px.evlib.view';
+function evView() { try { return localStorage.getItem(EV_VIEW_KEY) === 'tarjetas' ? 'tarjetas' : 'lista'; } catch { return 'lista'; } }
+function setEvView(v) { try { localStorage.setItem(EV_VIEW_KEY, v); } catch {} paintEvLib(); }
+document.querySelectorAll('#ad-evlib-view [data-view]').forEach((b) => b.addEventListener('click', () => setEvView(b.dataset.view)));
+function paintEvLib() {
+  const box = $('ad-evlib-cards');
+  if (!box) return;
+  box.replaceChildren();
+  const cards = evView() === 'tarjetas';
+  box.className = cards ? 'evlib-cards' : 'evlib-list';
+  document.querySelectorAll('#ad-evlib-view [data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === (cards ? 'tarjetas' : 'lista'))));
+  if (!evLib.length) { box.append(el('p', 'evlib-empty', 'Sin eventos guardados')); return; }
+  const live = liveInfo();
+  evLib.forEach((e) => {
+    const row = el('div', cards ? 'evlib-card' : 'evlib-row');
+    const img = imageUrl(e.image || '');
+    if (img && !cards) { row.classList.add('has-banner'); row.style.backgroundImage = `linear-gradient(90deg, rgba(10,10,14,.92) 8%, rgba(10,10,14,.35)), url(${JSON.stringify(img)})`; }
+    const mine = isLiveEntry(e, live);
+    const badge = mine && live.status === 'active' ? el('span', 'evlib-badge on', 'ACTIVO')
+      : mine && live.status === 'soon' ? el('span', 'evlib-badge soon', live.autoStart && live.startsAt ? `PROGRAMADO · ${evWhen(live.startsAt)}` : 'PRÓXIMAMENTE')
+      : mine && live.status === 'ended' ? el('span', 'evlib-badge', 'FINALIZADO') : null;
+    if (cards) {
+      row.classList.toggle('live', !!(mine && live.status !== 'ended'));
+      const art = el('div', 'evlib-art');
+      if (img) art.style.backgroundImage = `url(${JSON.stringify(img)})`; else art.append(el('span', 'evlib-initial', e.name.slice(0, 1).toUpperCase()));
+      if (badge) art.append(badge);
+      row.append(art);
+    }
+    const main = el('div', 'evlib-main');
+    main.append(el('strong', '', e.name));
+    if (cards) main.append(el('p', 'evlib-tagline', e.tagline || 'Sin descripción'));
+    const acts = el('div', 'evlib-actions');
+    const btn = (text, fn, cls, into) => { const b = el('button', cls || '', text); b.type = 'button'; b.addEventListener('click', fn); (into || acts).append(b); return b; };
+    const remove = async () => {
+      if (!await askConfirm(`¿Eliminar "${e.name}" de tus eventos?${mine && live.status !== 'ended' ? '\n\nSigue publicado: los jugadores lo seguirán viendo hasta que lo finalices.' : ''}`)) return;
+      await saveEvLib(evLib.filter((x) => x.id !== e.id), 'Evento eliminado.');
+    };
+    const duplicate = async () => { await saveEvLib([...evLib, { ...e, id: evSlug(e.name), name: `${e.name} (copia)`.slice(0, 80), publishedId: '' }], 'Evento duplicado.'); };
+    const canFinish = mine && live.status !== 'ended';
+    if (cards) {
+      // Tarjeta: una acción principal grande, Editar al lado y Duplicar / Eliminar discretos abajo.
+      const top = el('div', 'evlib-main-actions');
+      if (canFinish) btn('Finalizar', () => finishEvent(e), 'evlib-cta', top); else btn('Publicar', () => togglePublishPanel(row, e), 'primary evlib-cta', top);
+      btn('Editar', () => openEvEditor(e.id, e), 'ghost', top);
+      const low = el('div', 'evlib-low-actions');
+      btn('Duplicar', duplicate, 'evlib-link', low);
+      btn('Eliminar', remove, 'evlib-link danger', low);
+      const body = el('div', 'evlib-card-body');
+      body.append(main, top, low);
+      row.append(body);
+    } else {
+      if (badge) acts.append(badge);
+      btn('Editar', () => openEvEditor(e.id, e), 'ghost');
+      if (canFinish) btn('Finalizar', () => finishEvent(e), 'ghost');
+      if (!mine || live.status === 'ended') btn('Publicar', () => togglePublishPanel(row, e), 'primary');
+      btn('Duplicar', duplicate, 'ghost');
+      btn('Eliminar', remove, 'ghost');
+      row.append(main, acts);
+    }
+    box.append(row);
+  });
+}
+
+// Panel que se abre bajo la fila: publicar ahora o programar para una fecha.
+function togglePublishPanel(row, e) {
+  const open = row.querySelector('.evlib-publish');
+  if (open) { open.remove(); return; }
+  const panel = el('div', 'evlib-publish');
+  const now = el('button', 'primary', 'Publicar ahora'); now.type = 'button';
+  const when = el('input'); when.type = 'datetime-local';
+  const d = new Date(Date.now() + 24 * 3600 * 1000); d.setMinutes(0, 0, 0);
+  when.value = toLocalInput(d.toISOString());
+  const sched = el('button', '', 'Programar'); sched.type = 'button';
+  const note = el('small', 'muted', 'Programado: los jugadores lo ven como «Próximamente» con cuenta atrás y se abre solo a esa hora.');
+  now.addEventListener('click', () => publishEntry(e, ''));
+  sched.addEventListener('click', () => {
+    const t = when.value ? new Date(when.value) : null;
+    if (!t || Number.isNaN(t.getTime()) || t.getTime() <= Date.now()) { $('ad-evlib-status').textContent = 'Elige una fecha y hora futuras.'; return; }
+    publishEntry(e, t.toISOString());
+  });
+  panel.append(now, el('span', 'muted', 'o el'), when, sched, note);
+  row.append(panel);
+}
+
+async function publishEntry(e, whenIso) {
+  const st = $('ad-evlib-status');
+  const bar = $('ad-evpub-progress');
+  const hasPack = !!e.instanceId;
+  const pw = $('ad-pass').value;
+  if (!e.name) { st.textContent = 'El evento necesita un nombre.'; return; }
+  if (hasPack && !(await window.api.modpackInstalled()).some((p) => p.id === e.instanceId)) { st.textContent = 'La instancia de este evento no está en este equipo. Ábrelo y elige otra.'; return; }
+  if (hasPack && pw.length < 10) { st.textContent = 'Falta la clave de acceso: abre el evento («Editar») y escríbela en «Clave de acceso».'; return; }
+  const live = liveInfo();
+  if (!await askConfirm(`¿Publicar "${e.name}"?\n\n${whenIso ? `Los jugadores lo verán como próximamente y se abrirá solo el ${evWhen(whenIso)}.` : 'Queda ACTIVO: los jugadores podrán entrar ya.'}${live && !isLiveEntry(e, live) && live.status !== 'ended' ? `\n\nReemplaza al evento publicado ahora ("${live.name}").` : ''}`)) return;
+  document.querySelectorAll('#ad-evlib-cards button').forEach((b) => { b.disabled = true; });
+  bar.hidden = false;
+  bar.removeAttribute('value');
+  adminProgress = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } st.textContent = d.text || ''; };
+  try {
+    const r = await window.api.adminPublishEvent({
+      id: hasPack ? e.instanceId : undefined, password: pw,
+      form: { status: whenIso ? 'soon' : 'active', active: !whenIso, autoStart: !!whenIso, sponsors: e.sponsors || [], image: e.image || '', logo: e.logo || '', name: e.name, tagline: e.tagline || '', startsAt: whenIso || new Date().toISOString(), newEvent: !(live && isLiveEntry(e, live)), lockPack: e.lockPack !== false }
+    });
+    if (hasPack) { try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: pw }); } catch (err) { toast(cleanError(err), 'error'); } }
+    if (!$('ad-pass-remember').checked) { $('ad-pass').value = ''; $('ad-pass').type = 'password'; }
+    if (r && r.manifest) { adm.manifest = r.manifest; paintLiveHeader(); }
+    const ev = (adm.manifest && adm.manifest.event) || {};
+    await saveEvLib(upsertEv({ ...e, publishedId: ev.id || '', status: whenIso ? 'soon' : 'active', startsAt: whenIso || '' }, e.id), r.mods ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'}` : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`);
+    toast(whenIso ? 'Evento programado' : 'Evento publicado');
+    await autoDiscord('event', { title: `${r.name}: ${whenIso ? 'evento programado' : 'evento publicado'}`, text: e.tagline || '', image: imageUrl(e.image) });
+    window.refreshContent && window.refreshContent();
+  } catch (err) {
+    st.textContent = cleanError(err);
+  }
+  adminProgress = null;
+  bar.hidden = true;
+  paintEvLib();
+}
+
+async function finishEvent(e) {
+  if (!await askConfirm(`¿Finalizar "${e.name}"?\n\nDeja de verse en Inicio y en la pestaña Evento, y los jugadores ya no podrán entrar.`)) return;
+  try {
+    const done = await window.api.adminSetEventState('ended');
+    // Se usa lo que se acaba de guardar (no se vuelve a leer de GitHub, que a veces aún devuelve la copia vieja).
+    if (done && done.manifest) { adm.manifest = done.manifest; paintLiveHeader(); }
+    await saveEvLib(upsertEv({ ...e, status: 'ended' }, e.id), 'Evento finalizado.');
+    window.refreshContent && window.refreshContent();
+    await offerSaveToHistory(e.name, e);
+  } catch (err) { $('ad-evlib-status').textContent = cleanError(err); }
+}
+
+$('ad-evlib-new').addEventListener('click', () => {
+  openEvEditor(evSlug('evento'), { name: '', tagline: '', image: '', logo: '', sponsors: [], lockPack: true, instanceId: '' });
+  $('ad-name').focus();
+});
+$('ad-editing-close').addEventListener('click', () => { evEditKey = null; showEvScreen(false); paintEvLib(); });
+$('ad-editing-save').addEventListener('click', async () => {
+  const e = readEditorEvent();
+  if (!e.name) { $('ad-status').textContent = 'Ponle un nombre al evento.'; return; }
+  const id = evEditKey || evSlug(e.name);
+  const prev = evLib.find((x) => x.id === id) || { ...e, id };
+  const live = liveInfo();
+  const isLive = !!(live && live.status !== 'ended' && isLiveEntry(prev, live));
+  if (!await saveEvLib(upsertEv(e, id), 'Cambios guardados.')) return;
+  // Si es el evento publicado, los textos e imágenes también se actualizan en la pestaña Evento (sin tocar mods ni estado).
+  if (isLive) {
+    try {
+      $('ad-status').textContent = 'Actualizando el evento publicado…';
+      const r = await window.api.adminPublishEvent({ form: { name: e.name, tagline: e.tagline || '', image: e.image || '', logo: e.logo || '', sponsors: e.sponsors || [] } });
+      if (r && r.manifest) { adm.manifest = r.manifest; paintLiveHeader(); }
+      window.refreshContent && window.refreshContent();
+    } catch (err) {
+      $('ad-status').textContent = `Guardado, pero no se pudo actualizar el evento publicado: ${cleanError(err)}`;
+      return;
+    }
+  }
+  evEditKey = null; showEvScreen(false); toast(isLive ? 'Evento guardado y actualizado' : 'Evento guardado');
+});

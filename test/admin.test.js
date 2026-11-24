@@ -71,7 +71,7 @@ const { GithubRepo, GithubError } = require('../lib/github');
   // GitHub (fetch falso)
   const calls = [];
   const fake = async (url, o) => {
-    calls.push([o.method || 'GET', url, o.headers.Authorization]);
+    calls.push([o.method || 'GET', url, o.headers.Authorization]); if (url.includes('/contents/') && !o.method) assert.strictEqual(o.headers['Cache-Control'], 'no-cache', 'las lecturas de contenido no usan caché');
     const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
     if (url.endsWith('/repos/o/r')) return json(200, { full_name: 'o/r', permissions: { push: true } });
     if (url.includes('/git/ref/heads/main')) return json(200, { object: { sha: 'H1' } });
@@ -97,6 +97,9 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual((await ro.check()).canPush, false, 'un token de solo lectura no debe pasar');
   assert.deepStrictEqual((await gh.getJson('data/x.json')).data, { a: 1 });
   assert.strictEqual(await gh.getJson('data/nuevo.json'), null);
+  // Las lecturas piden la copia fresca: justo tras publicar, el panel no debe ver el estado viejo.
+  const lastGet = calls.filter((c) => c[0] === 'GET' && c[1].includes('/contents/data/x.json')).length;
+  assert.ok(lastGet >= 1);
   await gh.putJson('data/x.json', { a: 2 }, 'msg');
   await gh.putFile('data/x.json', Buffer.from('bin'), 'img');
   const rel = await gh.ensureRelease('evento-x');
@@ -289,4 +292,20 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(sp[0].nick, 'EzLuiiz'); assert.strictEqual(sp[0].skin, 'images/skin-ez.png'); assert.strictEqual(sp[0].slim, true);
   assert.strictEqual(sp[1].nick, undefined); assert.strictEqual(sp[1].skin, undefined);
   console.log('ok skin en patrocinadores');
+}
+
+{
+  // Editar el evento publicado: solo cambian textos e imágenes; modpack, estado e id se conservan.
+  const cur = { event: { id: 'ev-1', name: 'Viejo', tagline: 'a', status: 'active', active: true, startsAt: '2026-11-01T00:00:00Z' }, protected: { v: 1 }, mods: [], minecraftVersion: '1.21.1', lockPack: true };
+  const out = a.mergeManifest(cur, { name: 'Nuevo', tagline: 'Texto nuevo', image: '', logo: '', sponsors: [] });
+  assert.strictEqual(out.event.name, 'Nuevo');
+  assert.strictEqual(out.event.tagline, 'Texto nuevo');
+  assert.strictEqual(out.event.id, 'ev-1');
+  assert.strictEqual(out.event.status, 'active');
+  assert.strictEqual(out.event.startsAt, '2026-11-01T00:00:00Z');
+  assert.deepStrictEqual(out.protected, { v: 1 });
+  assert.strictEqual(out.lockPack, true);
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'renderer', 'app', '08-admin.js'), 'utf8');
+  assert.ok(/ad-editing-save[\s\S]*isLiveEntry\(prev, live\)[\s\S]*adminPublishEvent\(\{ form:/.test(src), 'guardar el evento publicado actualiza la pestaña Evento');
+  console.log('ok editar evento publicado');
 }

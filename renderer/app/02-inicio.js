@@ -12,8 +12,8 @@ function spKind(x) {
   const r = String((x && x.role) || '').toLowerCase();
   return /hospedad|hosting|servidor/.test(r) ? 'host' : /patrocin|presenta/.test(r) ? 'sponsor' : 'credit';
 }
-function paintSponsors(list) {
-  const box = $('sponsors-list');
+function paintSponsors(list, target) {
+  const box = target || $('sponsors-list'); // target: la vista previa del editor de eventos usa la misma función
   box.replaceChildren();
   const items = Array.isArray(list) ? list : [];
   const open = (url) => window.api.openLink(url).catch(() => {});
@@ -55,7 +55,7 @@ function paintSponsors(list) {
     credits.forEach((x) => row.append(make(x, 'sponsor sponsor-credit', SP_ROLE.credit)));
     g.append(row); box.append(g);
   }
-  if (!sponsors.length) {
+  if (!sponsors.length && eventState !== 'ended') {
     const g = el('div', 'sp-group');
     const c = el('div', 'sponsor sponsor-empty');
     c.append(el('span', 'sponsor-role', 'Tu marca aquí'), el('strong', '', 'Patrocina un evento de Nova PX'), el('span', 'muted', 'Haz que miles de jugadores conozcan tu marca. Habla con el equipo de Nova PX.'));
@@ -79,25 +79,31 @@ async function paintCommunity() {
 async function renderHero() {
   try {
     const m = await window.api.getData('manifest');
-    const evState = (m.event && m.event.status) || (m.event && m.event.active === false ? 'soon' : 'active');
+    let evState = (m.event && m.event.status) || (m.event && m.event.active === false ? 'soon' : 'active');
+    // Un evento programado se abre solo a la hora de inicio (misma regla que lib/evento-estado.js).
+    if (evState === 'soon' && m.event && m.event.autoStart === true && Date.parse(m.event.startsAt || '') <= Date.now()) evState = 'active';
     eventState = evState;
     eventActive = evState === 'active';
     const heroBox = document.querySelector('.hero');
     heroBox.classList.toggle('soon', !eventActive);
     heroBox.classList.toggle('ended', evState === 'ended');
     $('hero-badge-text').textContent = evState === 'ended' ? 'Evento finalizado' : eventActive ? 'Evento actual' : 'Próximamente';
-    $('soon-art').hidden = eventActive || !!(m.event && (m.event.logo || m.event.image));
+    $('soon-art').hidden = eventActive || (!(evState === 'ended') && !!(m.event && (m.event.logo || m.event.image)));
     setPlaying(playing);
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
     eventInfo = { name: (m.event && m.event.name) || 'Evento', image: imageUrl(m.event && m.event.image), logo: imageUrl(m.event && m.event.logo), mc: m.minecraftVersion, loader: String((m.loader && m.loader.type) || 'vanilla') };
+    const ended = evState === 'ended'; // un evento finalizado deja de mostrarse (queda en el Historial)
+    if (ended) eventInfo = { ...eventInfo, name: 'Sin evento activo', image: '', logo: '' };
     renderContinue();
-    $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
+    if (ended) $('hero-title').textContent = 'Sin evento activo';
+    $('hero-tagline').textContent = ended ? 'El último evento ya terminó. Mira cómo fue en el Historial y espera el próximo.' : (m.event && m.event.tagline) || '';
+    $('hero-tagline').title = $('hero-tagline').textContent; // el texto completo al pasar el ratón, por si se recorta
     // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
     const art = $('hero-art');
-    const artUrl = imageUrl(m.event && m.event.logo);
+    const artUrl = ended ? '' : imageUrl(m.event && m.event.logo);
     art.hidden = !artUrl;
     if (artUrl) art.src = artUrl;
-    const heroImg = imageUrl(m.event && m.event.image);
+    const heroImg = ended ? '' : imageUrl(m.event && m.event.image);
     const hero = document.querySelector('.hero');
     hero.classList.toggle('has-banner', !!heroImg);
     if (heroImg) hero.style.setProperty('--hero-image', `url(${JSON.stringify(heroImg)})`);
@@ -115,7 +121,7 @@ async function renderHero() {
     $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
     startCountdown(m.event && m.event.startsAt, evState);
     lastEventLinks = m.links;
-    paintSponsors(m.sponsors);
+    paintSponsors(ended ? [] : m.sponsors);
     paintCommunity();
     window.refreshLinks();
   } catch {
@@ -134,7 +140,7 @@ function nowPlayingSet(on) {
   const t = launchTarget || { kind: 'event', title: eventInfo.name, icon: '' };
   $('np-title').textContent = t.title;
   $('np-icon').src = t.icon || 'images/logo.png';
-  // Todos los perfiles (y el evento) abren la pantalla de carga y el panel de juego.
+  // Todos los perfiles (y el evento) abren el panel de juego con la consola; la pantalla de carga es solo de Nova Client.
   if (P && !P.isOpen()) { if (logLines.some((l) => l.startsWith('[minecraft]'))) P.resume(t, true); else P.open(t); }
 }
 
@@ -242,16 +248,19 @@ function renderCover() {
   const nick = ($('player-name').textContent || '').replace('Sin sesión', '').trim();
   w.replaceChildren(document.createTextNode(nick ? 'Bienvenido, ' : 'Bienvenido'));
   if (nick) w.append(el('span', 'pii', nick));
-  const art = eventInfo.image || eventInfo.logo || '';
+  // La portada de Inicio es siempre la imagen fija de NovaPX (que ya trae el logo); la imagen del evento se ve en la pestaña Evento.
   const img = $('hc-img');
   const cover = $('home-cover');
-  cover.classList.toggle('has-img', !!art);
-  if (art) { if (img.getAttribute('src') !== art) img.src = art; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); }
-  $('hc-logo').hidden = !!art;
+  cover.classList.remove('has-img');
+  cover.classList.add('default-cover');
+  const shown = 'images/portada-bienvenida.png';
+  if (img.getAttribute('src') !== shown) img.src = shown;
+  img.hidden = false;
+  $('hc-logo').hidden = true;
   $('lp-event').textContent = eventActive ? 'Evento activo →' : 'Próximo evento →';
   $('lp-event').classList.toggle('live', !!eventActive);
 }
-$('hc-img').addEventListener('error', () => { $('hc-img').hidden = true; $('home-cover').classList.remove('has-img'); $('hc-logo').hidden = false; });
+$('hc-img').addEventListener('error', () => { $('hc-img').hidden = true; $('home-cover').classList.remove('has-img', 'default-cover'); $('hc-logo').hidden = false; });
 // La portada ocupa el alto visible del área principal; al bajar se va con el resto.
 (() => {
   const main = document.querySelector('main');
@@ -311,7 +320,7 @@ async function renderContinue() {
       card.append(body, when, play, more);
       box.append(card);
     });
-  if (!eventActive) box.append(ev);
+  if (!eventActive && eventState !== 'ended') box.append(ev);
   if (!packs.length) {
     const hint = el('div', 'continue-card empty');
     hint.append(el('span', 'muted', 'Aún no tienes modpacks. Instala uno en la pestaña Modpacks y aparecerá aquí.'));
@@ -369,6 +378,7 @@ function startCountdown(iso, state) {
       clearInterval(countdownTimer);
       box.textContent = '¡Ya empezó!';
       label.textContent = 'Próximo evento';
+      renderHero(); // si estaba programado, se abre solo
       return;
     }
     const d = Math.floor(left / 86400000);

@@ -138,6 +138,7 @@
       build();
       state.open = true;
       state.lines = 0;
+      state.started = false;
       state.startedAt = Date.now();
       state.target = target || null;
       $$('lpn-log').replaceChildren();
@@ -155,17 +156,21 @@
       state.tipTimer = setInterval(() => { i = (i + 1) % TIPS.length; $$('lpn-tip').textContent = `Consejo: ${TIPS[i]}`; }, 6000);
       clearInterval(state.timer);
       state.timer = setInterval(tickTime, 1000);
-      setPhase('loading');
+      // La pantalla de carga es exclusiva de Nova Client; los demás loaders van directo a la consola en vivo.
+      state.nova = !!(target && target.preset === 'nova');
+      if (state.nova) setPhase('loading');
+      else { $$('lpn-run-state').textContent = 'Preparando el juego…'; setPhase('running'); }
       if (auto()) show(); else { state.hidden = true; root.hidden = true; }
     },
     // Si el launcher se abre con el juego ya en marcha, se pasa directo al panel.
     resume(target, hasLog) {
       api.open(target);
-      if (hasLog) { $$('lpn-bar').classList.remove('indeterminate'); setPhase('running'); }
+      if (hasLog) { state.started = true; $$('lpn-bar').classList.remove('indeterminate'); $$('lpn-run-state').textContent = 'Minecraft en ejecución'; setPhase('running'); }
     },
     status(text) {
       if (!state.open || !root) return;
       if (state.phase === 'loading') $$('lpn-status').textContent = text;
+      else if (!state.nova && !state.started) $$('lpn-run-state').textContent = text;
     },
     progress(task, total, text) {
       if (!state.open || !root || state.phase !== 'loading') return;
@@ -177,6 +182,7 @@
     log(line, source) {
       if (!state.open || !root) return;
       state.lines++;
+      if (source === 'minecraft' && !state.started) { state.started = true; $$('lpn-run-state').textContent = 'Minecraft en ejecución'; }
       if (source === 'minecraft' && state.phase === 'loading') {
         $$('lpn-status').textContent = 'Iniciando Minecraft…';
         $$('lpn-fill').style.width = '100%';

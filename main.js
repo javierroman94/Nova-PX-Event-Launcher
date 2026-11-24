@@ -7,6 +7,9 @@ const { makeSecureStorage } = require('./lib/secure-storage');
 const { guardIpc, isTrustedUrl } = require('./lib/ipc-guard');
 const safeStorage = makeSecureStorage(electronSafeStorage);
 guardIpc(ipcMain, path.join(__dirname, 'renderer'));
+const permisosLib = require('./lib/permisos');
+// Cada acción del panel de administración pide su permiso (lib/permisos.js). `adminPerms` se define más abajo.
+permisosLib.gatePermisos(ipcMain, () => adminPerms());
 const crypto = require('crypto');
 const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
@@ -225,6 +228,8 @@ async function checkRev() {
     const was = lastRev; lastRev = next;
     if (!revLib.changed(was, next)) return;
     dataMemo.clear();
+    // Lo que otro administrador publicó después manda sobre lo que este launcher publicó hace rato (antes tardaba hasta 5 min en verse).
+    for (const [k, v] of justPublished) if (Date.now() - (v.at || 0) > 15 * 1000) justPublished.delete(k);
     await refreshRemote();
     send('content:changed', { at: Date.now() });
   } catch {}
@@ -996,6 +1001,31 @@ ipcMain.handle('modpacks:pickIcon', async (_e, p = {}) => {
 });
 
 // Elige una imagen para una instancia que todavía no existe: devuelve un PNG cuadrado de 128 px (data URL).
+// Elige una imagen y la devuelve tal cual (validada) para que el usuario la acomode en el recortador.
+ipcMain.handle('modpacks:pickIconRaw', async () => {
+  const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+  if (res.canceled) return null;
+  const buf = fs.readFileSync(res.filePaths[0]);
+  if (buf.length > adminLib.MAX_IMAGE) throw new Error('La imagen pesa más de 3 MB. Redúcela y vuelve a intentarlo.');
+  const kind = adminLib.imageKind(buf);
+  if (!kind) throw new Error('Ese archivo no es una imagen PNG, JPG o WEBP válida.');
+  return { raw: `data:image/${kind === 'jpg' ? 'jpeg' : kind};base64,${buf.toString('base64')}`, kind };
+});
+// Guarda como icono la imagen ya recortada: se vuelve a leer y a codificar (128x128), nunca se guarda tal cual llega.
+ipcMain.handle('modpacks:setIcon', async (_e, p = {}) => {
+  const list = readModpacks();
+  const entry = list.find((x) => x.id === cleanStr(p.id, 60));
+  if (!entry) throw new Error('Ese modpack ya no está instalado.');
+  const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(p.data || ''));
+  if (!m || m[2].length > 4 * 1024 * 1024) throw new Error('Esa imagen no es válida.');
+  let img = nativeImage.createFromBuffer(Buffer.from(m[2], 'base64'));
+  if (img.isEmpty()) throw new Error('No pude leer esa imagen.');
+  img = img.resize({ width: 128, height: 128, quality: 'best' });
+  entry.icon = `data:image/png;base64,${img.toPNG().toString('base64')}`;
+  entry.iconTried = true;
+  writeModpacks(list);
+  return entry;
+});
 ipcMain.handle('modpacks:pickIconFile', async () => {
   const res = await dialog.showOpenDialog(mainWindow, { title: 'Elige la imagen', properties: ['openFile'], filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
   if (res.canceled) return null;
@@ -1417,6 +1447,16 @@ async function adminEligible() {
   } catch {}
   return adminLib.isAllowedAdmin(session, config.adminOwners || [], admins);
 }
+// Rol y permisos de la sesión actual (null si no es administrador).
+async function adminPerms() {
+  let admins = [];
+  try { admins = await loadData('admins'); } catch {}
+  return permisosLib.permisosDeSesion(session, config.adminOwners || [], admins);
+}
+async function needFilePerm(name) {
+  const info = await adminPerms();
+  if (!info || !permisosLib.permite(info.permisos, permisosLib.ARCHIVOS[name] || 'permisos')) throw new Error('Tu rol no tiene permiso para esto.');
+}
 function gh() {
   const token = readAdminToken();
   if (!token) throw new Error('Primero activa el modo administrador en Ajustes.');
@@ -1702,7 +1742,8 @@ ipcMain.handle('admin:status', async () => {
   try {
     const c = await checkAdminCached(gh());
     adminChecked = c.canPush;
-    return { admin: c.canPush, eligible: true, repo: c.fullName };
+    const info = await adminPerms();
+    return { admin: c.canPush, eligible: true, repo: c.fullName, rol: info ? info.rol : null, permisos: info ? [...info.permisos] : [] };
   } catch (err) {
     return { admin: false, eligible: true, error: err.message };
   }
@@ -1748,7 +1789,11 @@ ipcMain.handle('admin:usersKey', async (_e, key) => {
 ipcMain.handle('admin:users', async () => {
   const r = await usersCall('GET', '/users');
   const users = (r.users || []).map((u) => ({ id: String(u.id), nick: String(u.nick || ''), premium: !!u.premium, version: String(u.version || ''), os: String(u.os || ''), first: Number(u.first) || 0, last: Number(u.last) || 0, count: Number(u.count) || 0 }));
-  return { users, summary: telemetry.summarize(users) };
+  // Quién está en línea ahora (el Worker lo sabe por el latido de cada launcher). Si el Worker no lo ofrece, queda en null.
+  let online = null;
+  try { const o = await usersCall('GET', '/online'); if (Array.isArray(o.online)) online = o.online.slice(0, 500).map((x) => ({ nick: String(x.nick || '').slice(0, 16), playing: !!x.playing })); } catch {}
+  const marked = online ? telemetry.markOnline(users, online) : users.map((u) => ({ ...u, online: false, playing: false }));
+  return { users: marked, summary: { ...telemetry.summarize(users), onlineNow: online ? marked.filter((u) => u.online).length : null }, onlineKnown: !!online };
 });
 ipcMain.handle('admin:userDelete', async (_e, id) => {
   if (!/^[0-9a-f-]{36}$/.test(String(id))) throw new Error('Id no válido.');
@@ -1790,16 +1835,29 @@ const restorable = (name) => {
 };
 ipcMain.handle('admin:history', async (_e, name) => {
   const r = await requireAdmin();
+  await needFilePerm(name);
   return r.history(restorable(name), 15);
 });
 ipcMain.handle('admin:restore', async (_e, name, sha) => {
   const r = await requireAdmin();
+  await needFilePerm(name);
   const file = restorable(name);
   const old = await r.jsonAt(file, sha);
   const clean = { launcher: remote.sanitize, recommended: remote.sanitizeRecommended, news: adminLib.sanitizeNews, events: adminLib.sanitizeEvents, team: adminLib.sanitizeTeam, ads: adminLib.sanitizeAds }[name](old);
   await r.putJson(file, clean, `Restaurado ${name} a la versión ${String(sha).slice(0, 7)} (desde el launcher)`);
   remember(name === 'recommended' ? 'recommended' : name, clean);
   if (name === 'launcher') { remoteCfg = clean; send('remote:changed', remoteCfg); }
+  return clean;
+});
+// Biblioteca de eventos del panel (borradores y eventos pasados). No la leen los jugadores.
+ipcMain.handle('admin:evlibList', async () => {
+  const r = await requireAdmin();
+  return adminLib.sanitizeEventLibrary((await r.getJson('data/biblioteca-eventos.json') || {}).data);
+});
+ipcMain.handle('admin:evlibSave', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeEventLibrary(list);
+  await r.putJson('data/biblioteca-eventos.json', clean, 'Biblioteca de eventos actualizada (desde el launcher)');
   return clean;
 });
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
@@ -2134,7 +2192,7 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
     await r.putJson('data/manifest.json', merged, `Evento: ${merged.event.name}${pack ? `, ${result.mods} mods` : ''} (desde el launcher)`);
     remember('manifest', merged);
     progress('Listo');
-    return { ...result, name: merged.event.name, active: !!merged.event.active };
+    return { ...result, name: merged.event.name, active: !!merged.event.active, manifest: merged };
   } finally {
     publishing = false;
   }
@@ -2172,7 +2230,7 @@ ipcMain.handle('admin:setEventState', async (_e, state) => {
   const merged = adminLib.mergeManifest(cur, { status: st });
   await r.putJson('data/manifest.json', merged, `Estado del evento: ${st} (desde el launcher)`);
   remember('manifest', merged);
-  return { status: st, name: (merged.event && merged.event.name) || '' };
+  return { status: st, name: (merged.event && merged.event.name) || '', manifest: merged };
 });
 
 /* ---------- importar de otros launchers y exportar .novapx ---------- */
@@ -3291,7 +3349,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     } else {
       send('game:status', { text: 'Leyendo configuración del evento…' });
       manifest = await loadData('manifest');
-      if (manifest.event && manifest.event.active === false) {
+      if (manifest.event && require('./lib/evento-estado').estadoEfectivo(manifest.event) !== 'active') {
         throw new Error('Todavía no hay un evento activo. ¡Pronto habrá novedades!');
       }
     }

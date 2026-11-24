@@ -31,13 +31,14 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 - Nunca llaves hardcodeadas. Los eventos protegidos usan una llave derivada de la contraseña (scrypt) con AES-256-GCM; los sobres nuevos usan `KDF_STRONG` y guardan sus parámetros en `kdf`.
 - Los informes de eventos protegidos se sellan con la llave pública de `config/soporte-informes.pub.pem`. La privada no está en el repositorio; se abre con `node tools/abrir-informe.js`.
 - Todo mod o archivo descargado se verifica con su huella (`sha1` obligatorio en `lib/pack-install.js`) y solo se aceptan enlaces `https`. Prefiere SHA-256 en cualquier formato nuevo.
-- `manifest`, `plugins`, `recommended` y `launcher` de `data/` se firman con Ed25519 (`lib/firma.js`). La llave privada (`firma-datos.PRIVADA.pem`) nunca va al repositorio. Si editas esos archivos a mano, corre `node tools/firmar-datos.js llave.PRIVADA.pem`; publicando desde el launcher se firman solos. Ver `docs/SEGURIDAD.md`.
+- `manifest`, `plugins`, `recommended`, `launcher` y `admins` de `data/` se firman con Ed25519 (`lib/firma.js`). La llave privada (`firma-datos.PRIVADA.pem`) nunca va al repositorio. Si editas esos archivos a mano, corre `node tools/firmar-datos.js llave.PRIVADA.pem`; publicando desde el launcher se firman solos. Ver `docs/SEGURIDAD.md`.
 
 ### Electron
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity` activo en **toda** ventana propia.
 - La CSP de `renderer/index.html` no admite `unsafe-inline` ni `unsafe-eval` en scripts. No agregues scripts ni estilos en línea.
 - Toda ventana propia pasa por `lockWindow()` en `main.js` (sin navegación fuera de `renderer/`, sin `<webview>`). Los enlaces externos solo se abren si son `https` (`link:open`, `setWindowOpenHandler`).
 - Los canales IPC se registran con `ipcMain.handle`, que ya filtra por origen (`lib/ipc-guard.js`). **Valida todos los parámetros** en el handler: tipos, longitudes, formato de ids y rutas. Nunca construyas una ruta con un valor del renderer sin comprobar que queda dentro de su carpeta.
+- El modo administrador tiene permisos por rol (`lib/permisos.js`): dueño, administrador y moderador, más casillas por persona. Toda acción nueva del panel debe tener su permiso en `CANALES` y su pestaña en `PESTANAS`; si no, solo pide ser administrador. `data/admins.json` va firmado, así que cambiar roles requiere la llave de firma del dueño.
 - Lo que viene de internet (manifests, nombres de mods, textos) se trata como no confiable: se sanea al leer. En el renderer usa `textContent`; evita `innerHTML` con datos externos.
 - Los comandos previos y posteriores (`preLaunch`, `postExit`) son solo de este equipo: nunca viajan en un modpack exportado ni importado.
 

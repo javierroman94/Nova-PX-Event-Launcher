@@ -298,7 +298,7 @@
     g('ct-an-imgpick').addEventListener('click', async () => {
       try {
         setStatus('Eligiendo imagen…');
-        const r = await (async () => { const q = await window.api.adminPickImage('anuncio', { crop: true }); if (!q) return null; const o = window.NovaCrop ? await window.NovaCrop.open(q.raw, 16 / 9, q.kind) : 'orig'; if (o === null) return null; return window.api.adminUploadImage('anuncio', o === 'orig' ? q.raw : o); })();
+        const r = await (async () => { const q = await window.api.adminPickImage('anuncio', { crop: true }); if (!q) return null; const o = window.NovaCrop ? await window.NovaCrop.open(q.raw, 'anuncio', q.kind) : 'orig'; if (o === null) return null; return window.api.adminUploadImage('anuncio', o === 'orig' ? q.raw : o); })();
         if (r) { g(F.anImg).value = r.path; onFormChange(); } else setStatus('');
       } catch (err) { setStatus(String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
     });

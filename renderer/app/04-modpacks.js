@@ -511,7 +511,7 @@ function paintContent(offline) {
       const up = el('button', '', '📂 Cargar archivos'); up.type = 'button'; up.addEventListener('click', () => $('mp-add-local').click());
       const br = el('button', 'primary', '🧭 Explorar contenido'); br.type = 'button'; br.addEventListener('click', () => $('mp-add-explore').click());
       eb.append(up, br);
-      empty.append(art, el('strong', '', 'No hay contenido extra instalado'), el('span', 'muted', 'Añade contenido encima de este modpack: queda aparte y no toca el original.'), eb);
+      empty.append(art, el('strong', '', 'No hay contenido extra instalado'), el('span', 'muted', 'Añade mods, texturas o shaders a este modpack.'), eb);
       list.append(empty);
     } else if (!extraShown.length) {
       list.append(el('p', 'muted empty-note', q ? 'Nada coincide con tu búsqueda.' : 'No hay contenido extra de este tipo.'));
@@ -926,7 +926,7 @@ $('mp-go-create').addEventListener('click', async () => {
 });
 $('mcw-mode').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b && b.dataset.mode !== mcw.mode) setWizardMode(b.dataset.mode); });
 $('mcw-upload').addEventListener('click', async () => {
-  try { const d = await window.api.modpackPickIconFile(); if (d) { mcw.iconData = d; paintIcon(); } } catch (e) { toast(cleanError(e), 'error'); }
+  try { const r = await window.api.modpackPickIconRaw(); const d = r && await window.NovaCrop.openSized(r.raw, 'modpack', r.kind, 128); if (d) { mcw.iconData = d; paintIcon(); } } catch (e) { toast(cleanError(e), 'error'); }
 });
 $('mcw-random').addEventListener('click', () => {
   mcw.iconData = '';
@@ -1057,8 +1057,10 @@ $('ps-save').addEventListener('click', async () => {
 
 $('ps-icon-pick').addEventListener('click', async () => {
   try {
-    const e = await window.api.modpackPickIcon({ id: mp.pack.id });
-    if (!e) return;
+    const r = await window.api.modpackPickIconRaw();
+    const d = r && await window.NovaCrop.openSized(r.raw, 'modpack', r.kind, 128);
+    if (!d) return;
+    const e = await window.api.modpackSetIcon({ id: mp.pack.id, data: d });
     mp.pack = e;
     openDetailHeader(e);
     await loadInstalled();
@@ -1421,7 +1423,7 @@ async function openPackModal(it) {
     if (first >= 0) {
       sel.selectedIndex = first;
       $('mp-install').disabled = false;
-      $('mp-version-info').textContent = 'Se instala en su propia carpeta, separado de tus otros modpacks.';
+      $('mp-version-info').textContent = 'Se instala en su propia carpeta.';
     } else {
       $('mp-version-info').textContent = versions.length
         ? 'Ninguna versión se puede instalar desde aquí (loader no soportado o descarga bloqueada por su autor).'
