@@ -173,6 +173,7 @@ function toast(text, kind) {
   const box = $('toasts');
   const t = el('div', kind === 'error' ? 'toast error' : 'toast', maskNick(text));
   box.append(t);
+  try { if (window.NovaSound) window.NovaSound.event(kind === 'error' ? 'error' : kind === 'info' ? 'info' : 'ok'); } catch {}
   setTimeout(() => {
     t.classList.add('out');
     setTimeout(() => t.remove(), 320);

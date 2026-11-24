@@ -67,7 +67,7 @@ module.exports = [
   ...rendererConfigs(),
   {
     // Esta prueba manda código al navegador (window, document) dentro de page.evaluate.
-    files: ['tools/prueba-arranque.js'],
+    files: ['tools/prueba-arranque.js', 'tools/capturas.js'],
     languageOptions: { globals: { ...globals.browser } }
   },
   {

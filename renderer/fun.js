@@ -52,6 +52,8 @@
     end: { shape: 'spark', colors: ['#b86bff', '#e0c3ff', '#7a3cd0'] },
     eclipse: { shape: 'spark', colors: ['#e8334a', '#6f93ff', '#ffffff'] },
     vicesunset: { shape: 'spark', colors: ['#ff3d8b', '#ffb347', '#2de2e6'] },
+    xp: { shape: 'dot', colors: ['#245edb', '#3c9a3c', '#ffffff'] },
+    win7: { shape: 'ring', colors: ['#3b9be0', '#bfe6ff', '#ffffff'] },
     oled: { shape: 'dot', colors: null },
     light: { shape: 'dot', colors: null },
     dark: { shape: 'dot', colors: null }
@@ -158,7 +160,7 @@
     madres: ['sheep', 'hen'], carnaval: ['jelly', 'bomb'], ecuador: ['hen', 'pig']
   };
   const THEME_ROSTER = {
-    nova: ['pig', 'sheep'], cyberpunk: ['bomb', 'jelly'], synthwave: ['bat', 'pig'], eclipse: ['bat', 'sheep'], vicesunset: ['pig', 'jelly'],
+    nova: ['pig', 'sheep'], cyberpunk: ['bomb', 'jelly'], synthwave: ['bat', 'pig'], eclipse: ['bat', 'sheep'], vicesunset: ['pig', 'jelly'], xp: ['sheep', 'pig'], win7: ['jelly', 'sheep'],
     deepdark: ['spider', 'zombie'], nether: ['skeleton', 'bomb'], end: ['bat', 'spider'], sakura: ['pig', 'sheep']
   };
   const DEFAULT_ROSTER = ['pig', 'sheep'];
