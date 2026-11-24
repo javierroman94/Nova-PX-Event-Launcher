@@ -157,10 +157,21 @@
     const hero = el('div', 'pl-hero'); const heroInfo = el('div', 'pl-hero-info');
     const xpBar = el('div', 'pl-bar pl-xp'); const xpFill = el('i'); xpBar.append(xpFill);
     const moodEl = el('p', 'pl-mood');
+    const coach = el('p', 'pl-coach'); coach.setAttribute('role', 'status');
     const b1 = bar('🍖 Hambre'); const b2 = bar('⚡ Energía'); const b3 = bar('💗 Cariño');
     const care = el('div', 'pl-tiles'); const games = el('div', 'pl-tiles pl-games'); const foot = el('div', 'pl-foot');
-    const tile = (b, text) => { const i = text.indexOf(' '); b.textContent = ''; b.append(el('span', 'pl-ico', text.slice(0, i)), el('span', 'pl-lbl', text.slice(i + 1))); return b; };
-    const defs = [['feed', '🍖 Dar de comer'], ['play', '🎾 Jugar'], ['pet', '🤗 Acariciar'], ['sleep', '😴 Dormir']];
+    const tile = (b, text, sub) => { const i = text.indexOf(' '); b.textContent = ''; const t = el('span', 'pl-txt'); t.append(el('span', 'pl-lbl', text.slice(i + 1))); if (sub) { const s = el('span', 'pl-sub', sub); t.append(s); b._sub = s; b._subText = sub; } b.append(el('span', 'pl-ico', text.slice(0, i)), t); return b; };
+    const defs = [['feed', '🍖 Dar de comer', 'Sube el hambre'], ['play', '🎾 Jugar', 'Sube cariño, gasta energía'], ['pet', '🤗 Acariciar', 'Sube el cariño'], ['sleep', '😴 Dormir', 'Recarga la energía']];
+    const tiles = {};
+    // Lo que Pexy necesita ahora y qué botón tocar (para que se entienda sin leer nada más).
+    const need = () => {
+      const n = st.name;
+      if (st.hunger < 35) return { hint: 'feed', text: `${n} tiene hambre 🍖. Arrastra una fruta de la mesa hasta él, o toca «Dar de comer».` };
+      if (st.energy < 30) return { hint: 'sleep', text: `${n} tiene sueño 😪. Toca «Dormir» para que recargue la energía.` };
+      if (st.love < 35) return { hint: 'pet', text: `${n} se siente solito 🥺. Tócalo a él o pulsa «Acariciar»; también puedes jugar.` };
+      const lock = L.ACCESSORIES.find((a) => !a.ok(st));
+      return { hint: '', text: `${n} está bien 😊. Juega un minijuego para ganar XP${lock ? ` y desbloquear ${lock.emoji} ${lock.name} (${lock.need})` : ''}.` };
+    };
     const note = el('small', 'muted pl-note');
     const refresh = () => {
       st = L.tick(st, Date.now());
@@ -170,12 +181,16 @@
       xpFill.style.width = p.pct + '%';
       b1.fill.style.width = st.hunger + '%'; b2.fill.style.width = st.energy + '%'; b3.fill.style.width = st.love + '%';
       [[b1, st.hunger], [b2, st.energy], [b3, st.love]].forEach(([b, v]) => { b.row.dataset.v = Math.round(v) + '%'; b.row.classList.toggle('low', v < 25); });
+      const nd = need(); coach.textContent = nd.text;
+      Object.keys(tiles).forEach((a) => { const b = tiles[a]; const wait = Math.max(0, ((st.cd || {})[a] || 0) - Date.now()); b.classList.toggle('pl-hint', nd.hint === a && !wait); b.classList.toggle('pl-wait', wait > 0); if (b._sub) b._sub.textContent = wait > 0 ? `Listo en ${fmtWait(wait)}` : b._subText; });
+      [[b1, 'Hambre: baja con el tiempo. Dale de comer para subirla.'], [b2, 'Energía: se gasta al jugar. Déjalo dormir para recargarla.'], [b3, 'Cariño: sube al acariciarlo y jugar.']].forEach(([b, t]) => { b.row.title = t; });
       const mo = L.mood(st); portrait.dataset.mood = mo; pMood.textContent = { feliz: '😄', normal: '🙂', hambre: '😢', sueño: '😪', triste: '🥺' }[mo] || '';
       const ac = L.ACCESSORIES.find((a) => a.id === st.acc); pAcc.textContent = ac ? ac.emoji : '';
       moodEl.textContent = { feliz: `${st.name} está feliz 😄`, normal: `${st.name} está tranquilo 🙂`, hambre: `${st.name} tiene hambre 😢`, sueño: `${st.name} tiene sueño 😪`, triste: `${st.name} se siente solito 🥺` }[L.mood(st)];
     };
+    const SUBS = Object.fromEntries(defs.map(([a, , s]) => [a, s]));
     defs.forEach(([a, t]) => {
-      const b = tile(el('button', 'pl-tile'), t); b.type = 'button';
+      const b = tile(el('button', 'pl-tile'), t, SUBS[a]); b.type = 'button'; tiles[a] = b;
       b.addEventListener('click', () => {
         const r = L.act(st, a, Date.now()); st = r.state;
         if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : '', 3500); refresh(); return; }
@@ -185,7 +200,7 @@
       });
       care.append(b);
     });
-    const trayBtn = tile(el('button', 'pl-tile'), '🧺 Bandeja: comida y baño'); trayBtn.type = 'button'; trayBtn.title = 'Arrastra la comida o el jabón hasta Pexy';
+    const trayBtn = tile(el('button', 'pl-tile'), '🧺 Bandeja', 'Sácala para usarla fuera de aquí'); trayBtn.type = 'button'; trayBtn.title = 'Arrastra la comida o el jabón hasta Pexy';
     trayBtn.addEventListener('click', () => { done(); showTray(); });
     care.append(trayBtn);
     const gb = tile(el('button', 'pl-tile'), '⭐ Atrapar estrellas'); gb.type = 'button';
@@ -234,12 +249,43 @@
     const done = () => { clearInterval(timer); try { dlg.close(); } catch {} dlg.remove(); dlg = null; };
     close.addEventListener('click', done); dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(); });
     heroInfo.append(nameRow, xpBar, moodEl); hero.append(portrait, heroInfo);
+    // Mesa: arrastra la comida o el jabón hasta Pexy, igual que en Talking Tom.
+    const table = el('div', 'pl-table'); table.append(el('span', 'pl-table-lbl', 'Arrastra hasta Pexy:'));
+    [['🍎', 'food'], ['🍌', 'food'], ['🍇', 'food'], ['🍓', 'food'], ['🧼', 'bath']].forEach(([emoji, kind]) => {
+      const it = el('button', 'pl-item', emoji); it.type = 'button'; it.title = kind === 'bath' ? 'Bañar a Pexy' : 'Dar de comer'; it.setAttribute('aria-label', it.title);
+      it.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const ghost = el('span', 'pet-tray-ghost', emoji); dlg.append(ghost);
+        const mv = (ev) => { ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px'; portrait.classList.toggle('pl-over', over(ev)); };
+        const over = (ev) => { const r = portrait.getBoundingClientRect(); return ev.clientX > r.left - 20 && ev.clientX < r.right + 20 && ev.clientY > r.top - 20 && ev.clientY < r.bottom + 20; };
+        const up = (ev) => {
+          window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); ghost.remove(); portrait.classList.remove('pl-over');
+          if (over(ev) && careDrop(kind)) { burst(ev.clientX, ev.clientY, kind === 'bath' ? '🫧' : emoji, dlg); portrait.classList.add('pl-bounce'); setTimeout(() => portrait.classList.remove('pl-bounce'), 600); refresh(); }
+          else if (over(ev)) refresh();
+        };
+        mv(e); window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+      });
+      table.append(it);
+    });
+    // Tocar a Pexy también lo acaricia.
+    portrait.title = 'Tócalo para acariciarlo'; portrait.addEventListener('click', () => { if (careDrop('pet-touch')) { portrait.classList.add('pl-bounce'); setTimeout(() => portrait.classList.remove('pl-bounce'), 600); } refresh(); });
+    // Mini guía (la primera vez, y con el botón ?)
+    const tour = el('div', 'pl-tour');
+    const tourOl = el('ol'); ['Mira sus barras: si una está baja, Pexy te lo dice abajo y el botón que toca se ilumina.', 'Arrastra una fruta de la mesa hasta Pexy para darle de comer. El jabón lo baña.', 'Tócalo para acariciarlo y juega minijuegos para ganar XP y desbloquear accesorios.'].forEach((t) => tourOl.append(el('li', '', t)));
+    const tourOk = el('button', '', 'Entendido'); tourOk.type = 'button';
+    tour.append(el('strong', '', '¿Cómo se cuida a Pexy?'), tourOl, tourOk);
+    const seen = () => { try { return localStorage.getItem('px.pet.tour') === '1'; } catch { return true; } };
+    tour.hidden = seen();
+    tourOk.addEventListener('click', () => { tour.hidden = true; try { localStorage.setItem('px.pet.tour', '1'); } catch {} });
+    const help = el('button', 'pl-help', '?'); help.type = 'button'; help.title = '¿Cómo se juega?'; help.setAttribute('aria-label', '¿Cómo se juega?');
+    help.addEventListener('click', () => { tour.hidden = !tour.hidden; });
+    title.append(help);
     const stats = el('div', 'pl-stats'); stats.append(b1.row, b2.row, b3.row);
     const sec = (t) => el('h4', 'pl-sec', t);
-    const left = el('div', 'pl-col'); left.append(hero, stats, sec('Armario'), wardrobe, ...(extra ? [extra] : []));
+    const left = el('div', 'pl-col'); left.append(hero, coach, table, stats, sec('Armario'), wardrobe, ...(extra ? [extra] : []));
     const right = el('div', 'pl-col'); right.append(sec('Cuidados'), care, sec('Minijuegos'), games, note);
     const cols = el('div', 'pl-cols'); cols.append(left, right);
-    body.append(title, cols, foot); dlg.append(body); document.body.append(dlg);
+    body.append(title, tour, cols, foot); dlg.append(body); document.body.append(dlg);
     refresh(); timer = setInterval(refresh, 15000); dlg.showModal();
   }
   /* Bandeja: arrastra la comida o el jabón hasta Pexy (como en Talking Tom). Sale flotando sobre la pantalla. */
@@ -248,17 +294,17 @@
   const T_BATH = ['¡Burbujitas! 🫧', '¡Qué limpio quedé!', 'Jiji, ¡me hace cosquillas el jabón!', '¡Splash! Ahora huelo a fresa.'];
   const rnd = (a) => a[Math.floor(Math.random() * a.length)];
   function careDrop(kind) {
-    const r = L.act(st, kind === 'bath' ? 'pet' : 'feed', Date.now());
+    const r = L.act(st, kind === 'bath' || kind === 'pet-touch' ? 'pet' : 'feed', Date.now());
     if (!r.ok) { M.say(r.tired ? pick('tired') : r.wait ? `Todavía no… espera ${fmtWait(r.wait)} 😅` : 'Ahora no, gracias.', 3500); return false; }
     st = r.state; store(st);
-    M.say(r.levelUp ? pick('level') : rnd(kind === 'bath' ? T_BATH : T_EAT), 4500);
+    M.say(r.levelUp ? pick('level') : kind === 'pet-touch' ? pick('pet') : rnd(kind === 'bath' ? T_BATH : T_EAT), 4500);
     const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2.4); if (c.hop) c.hop(); }
     return true;
   }
-  function burst(x, y, emoji) {
+  function burst(x, y, emoji, host) {
     for (let i = 0; i < 7; i++) {
       const s = document.createElement('span'); s.textContent = emoji; s.style.cssText = `position:fixed;left:${x}px;top:${y}px;font-size:${16 + Math.random() * 10}px;z-index:100001;pointer-events:none;transition:transform .9s ease-out,opacity .9s ease-out;opacity:1`;
-      document.body.append(s);
+      (host || document.body).append(s);
       requestAnimationFrame(() => { s.style.transform = `translate(${(Math.random() - 0.5) * 90}px,${-30 - Math.random() * 70}px) scale(1.2)`; s.style.opacity = '0'; });
       setTimeout(() => s.remove(), 1000);
     }

@@ -3431,3 +3431,24 @@ main { container-type: inline-size; overflow-x: hidden; }
 .pass-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
 .pass-actions .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 #ad-pass-msg.ok { color: #6fd08c; } #ad-pass-msg.warn { color: #f2a65a; }
+
+/* Ventana de Pexy más guiada */
+.pl-coach { margin: 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 14%, var(--raised)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); font-size: 13.5px; line-height: 1.4; }
+.pl-table { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 12px; background: var(--raised); border: 1px dashed var(--line); }
+.pl-table-lbl { font-size: 12px; color: var(--muted); margin-right: 4px; }
+.pl-item { font-size: 24px; line-height: 1; padding: 5px 9px; border-radius: 10px; cursor: grab; touch-action: none; user-select: none; }
+.pl-item:hover { transform: translateY(-3px) scale(1.08); }
+.pl-portrait { cursor: pointer; }
+.pl-portrait.pl-over { box-shadow: 0 0 0 3px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 60%, transparent); }
+.pl-portrait.pl-bounce { animation: pl-bounce .55s ease; }
+@keyframes pl-bounce { 0%, 100% { transform: translateY(0) } 30% { transform: translateY(-12px) scale(1.04) } 60% { transform: translateY(0) scale(.97) } }
+.pl-txt { display: flex; flex-direction: column; text-align: left; gap: 1px; }
+.pl-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+.pl-tile.pl-hint { box-shadow: 0 0 0 2px var(--accent); animation: pl-pulse 1.4s ease-in-out infinite; }
+@keyframes pl-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 35%, transparent); } }
+.pl-tile.pl-wait { opacity: .6; }
+.pl-tour { margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; background: var(--raised); border: 1px solid var(--line); display: grid; gap: 6px; font-size: 13px; }
+.pl-tour ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.pl-tour button { justify-self: end; }
+.pl-help { margin-left: 10px; width: 24px; height: 24px; padding: 0; border-radius: 50%; font-size: 13px; vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) { .pl-tile.pl-hint, .pl-portrait.pl-bounce { animation: none; } }
