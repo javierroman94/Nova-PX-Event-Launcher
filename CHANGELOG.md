@@ -2,10 +2,14 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
-## 1.0.184
+## 1.0.185
 - Eventos guardados: tarjetas rediseñadas, con banner, insignia de estado y una acción principal.
 - Publicar o finalizar un evento se refleja al instante en el panel (antes podía mostrar el estado anterior).
 - Lo que publica otro administrador se ve en menos de un minuto (antes hasta 5 minutos).
+
+## 1.0.184
+- Inicio: la portada de NovaPX ocupa todo el ancho y cerca del 65 % del alto visible, se ve completa en cualquier resolución y se va al bajar.
+- Modpacks: textos más generales al instalar y en los ajustes de Java, sin detalles internos.
 
 ## 1.0.183
 - La vista previa del editor de eventos es una copia de la pestaña Evento (portada, logo, textos, datos y patrocinadores), para acomodar texto e imágenes.

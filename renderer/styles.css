@@ -3610,3 +3610,6 @@ main { container-type: inline-size; overflow-x: hidden; }
 .evlib-link:hover { color: #fff; text-decoration: underline; }
 .evlib-link.danger:hover { color: #ff7d7d; }
 .evlib-card .evlib-publish { margin: 0; padding: 14px 18px; border-top: 1px dashed var(--line); background: rgba(0, 0, 0, .2); }
+/* Portada de Inicio: todo el ancho del área principal y ~65 % del alto visible; el banner se ve completo en cualquier resolución */
+.home-cover, .home-cover.default-cover { width: calc(100cqw + 64px); height: max(240px, calc(var(--main-h, 80vh) * .65)); margin: -8px 0 28px calc(50% - 50cqw - 32px); border-radius: 0; border: 0; }
+.default-cover .hc-img { object-fit: contain; object-position: center; }
