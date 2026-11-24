@@ -2,6 +2,12 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.187
+- Inicio rediseñado: portada enmarcada con brillo del tema, saludo y botón de evento sobre la imagen.
+- Pulido general de la interfaz: barras finas, foco visible, botones con brillo y entrada suave de pestañas.
+- Dos temas nuevos en Ajustes → Apariencia: Windows XP y Windows 7 Aero.
+- Sonidos renovados (más limpios y con eco suave), avisos ok/info/error en todos los temas y sonidos clásicos propios para XP y Windows 7.
+
 ## 1.0.186
 - Editar el evento publicado (nombre, descripción, imágenes o patrocinadores) y guardar ahora actualiza también la pestaña Evento.
 
