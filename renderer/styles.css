@@ -3587,3 +3587,6 @@ main { container-type: inline-size; overflow-x: hidden; }
 .ev-preview-live { display: grid; gap: 16px; padding: 14px; border-radius: 18px; border: 1px dashed var(--line); background: rgba(0, 0, 0, .18); pointer-events: none; user-select: none; }
 .ev-preview-live .hero { margin: 0; }
 .ev-preview-live .sponsors { margin: 0; }
+/* Portada de Inicio: todo el ancho del área principal y ~65 % del alto visible; el banner se ve completo en cualquier resolución */
+.home-cover, .home-cover.default-cover { width: calc(100cqw + 64px); height: max(240px, calc(var(--main-h, 80vh) * .65)); margin: -8px 0 28px calc(50% - 50cqw - 32px); border-radius: 0; border: 0; }
+.default-cover .hc-img { object-fit: contain; object-position: center; }
