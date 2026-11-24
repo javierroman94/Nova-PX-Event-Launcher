@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.176
+- Administrador: los patrocinadores y los créditos ahora pueden llevar skin de Minecraft (usuario premium o skin PNG). Si no tienen logo, se muestra su cabeza 3D.
+
 ## 1.0.175
 - Administrador: la contraseña de instalación ahora se puede ver (ojo), comprobar contra la del evento publicado, generar una nueva segura, copiar y, si quieres, recordar cifrada en este equipo.
 - Pexy más didáctico: dice qué necesita y el botón que toca se ilumina, cada botón explica su efecto, la comida y el jabón se arrastran directo sobre Pexy dentro de la ventana, tocarlo lo acaricia y hay una mini guía con el botón ?.
