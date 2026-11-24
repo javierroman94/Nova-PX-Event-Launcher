@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.179
+- Administrador: Eventos se rehace en tres pantallas. Lista con el banner de cada evento de fondo, insignia ACTIVO y botón Publicar; configuración con vista previa para los jugadores.
+- Publicar un evento ahora o programarlo para una fecha: los jugadores lo ven como Próximamente con cuenta atrás y se abre solo a la hora.
+
 ## 1.0.178
 - Administrador: la pestaña Eventos ahora es una biblioteca con una tarjeta por evento. Cada una guarda información, fecha, banner, logo, patrocinadores y modpack, y se puede crear, editar, duplicar, eliminar y publicar.
 - Administrador: roles y permisos por persona (Dueño, Administrador y Moderador, más casillas sueltas). Cada acción del panel comprueba el permiso y las pestañas sin permiso se ocultan.
