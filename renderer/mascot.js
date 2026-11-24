@@ -67,7 +67,7 @@
       bubble.style.top = Math.round(Math.max(8, g.top - (bubble.offsetHeight || 40) - 8)) + 'px';
     }
   }
-  setInterval(() => { if (!document.hidden) place(); }, 90);
+  setInterval(() => { if (!document.hidden && document.hasFocus()) place(); }, 90);
 
   async function react(event, extra) {
     if (!on) return;

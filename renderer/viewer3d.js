@@ -346,9 +346,12 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
     let onscreen = true;
     if (window.IntersectionObserver) new IntersectionObserver((e) => { onscreen = e[0].isIntersecting; if (onscreen) requestDraw(); }).observe(canvas);
 
+    // Si la ventana no tiene el foco (por ejemplo, mientras juegas a Minecraft) el muñeco se queda quieto y no gasta.
     function visible() {
-      return alive && onscreen && !document.hidden && canvas.offsetParent !== null;
+      return alive && onscreen && !document.hidden && canvas.offsetParent !== null && (dragging || !document.hasFocus || document.hasFocus());
     }
+    window.addEventListener('focus', () => requestDraw());
+    let lastDraw = 0;
 
     let W = 1;
     let H = 1;
@@ -474,6 +477,9 @@ void main(){vec4 c=texture2D(tex,v_uv);if(c.a<cut)discard;gl_FragColor=vec4(c.rg
       raf = 0;
       if (!alive) return;
       if (!visible()) { lastT = 0; raf = -1; setTimeout(() => { raf = 0; requestDraw(); }, 400); return; }
+      // Sin interacción, 30 cuadros por segundo bastan (antes dibujaba a 60 y copiaba la imagen cada vez).
+      if (!dragging && !override && !particles.length && lastDraw && now - lastDraw < 32) { raf = requestAnimationFrame(frame); return; }
+      lastDraw = now;
       const dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
       lastT = now;
       clock += dt;

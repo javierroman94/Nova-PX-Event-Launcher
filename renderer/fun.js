@@ -358,7 +358,7 @@
 
   /* ---------- bucle (solo corre cuando hay algo que dibujar) ---------- */
   let raf = 0, last = 0;
-  function active() { return !root.classList.contains('no-fx') && !document.hidden && (parts.length > 0 || (opt.critters && crits.length > 0)); }
+  function active() { return !root.classList.contains('no-fx') && !document.hidden && document.hasFocus() && (parts.length > 0 || (opt.critters && crits.length > 0)); }
   function frame(t) {
     if (!active()) { raf = 0; ctx.clearRect(0, 0, w, h); return; }
     raf = requestAnimationFrame(frame);
@@ -384,6 +384,7 @@
   }
   function wake() { if (!raf && active()) { last = 0; raf = requestAnimationFrame(frame); } }
   document.addEventListener('visibilitychange', wake);
+  window.addEventListener('focus', wake);
 
   // Cuando cambia el tema, la temporada o los efectos, se reparte otro elenco.
   let sig = '';

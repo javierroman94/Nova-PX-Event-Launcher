@@ -11,9 +11,12 @@ const permisosLib = require('./lib/permisos');
 // Cada acción del panel de administración pide su permiso (lib/permisos.js). `adminPerms` se define más abajo.
 permisosLib.gatePermisos(ipcMain, () => adminPerms());
 const crypto = require('crypto');
-const { Client } = require('minecraft-launcher-core');
+// Librerías pesadas: se cargan la primera vez que se usan, no al abrir (arranque ~0,4 s más rápido).
+let mclcCache = null;
+const mclc = () => mclcCache || (mclcCache = require('minecraft-launcher-core'));
 const { Auth } = require('msmc');
-const { autoUpdater } = require('electron-updater');
+let updaterCache = null;
+const updater = () => updaterCache || (updaterCache = require('electron-updater').autoUpdater);
 const { execFile } = require('child_process');
 const loaders = require('./lib/loaders');
 const jvmDefaults = require('./lib/jvm-args');
@@ -507,7 +510,7 @@ const FROM_STORE = !!process.windowsStore;
 
 function checkForUpdates() {
   if (!app.isPackaged || FROM_STORE) return Promise.resolve();
-  return autoUpdater.checkForUpdates().catch(() => {});
+  return updater().checkForUpdates().catch(() => {});
 }
 
 // Solo funciona en la versión instalada (npm run dist), que consulta los Releases de GitHub.
@@ -520,16 +523,16 @@ function setupUpdater() {
     setUpdate({ state: 'dev' });
     return;
   }
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.on('checking-for-update', () => setUpdate({ state: 'checking' }));
-  autoUpdater.on('update-available', (i) => setUpdate({ state: 'downloading', version: i.version, percent: 0 }));
-  autoUpdater.on('download-progress', (p) =>
+  updater().autoDownload = true;
+  updater().autoInstallOnAppQuit = true;
+  updater().on('checking-for-update', () => setUpdate({ state: 'checking' }));
+  updater().on('update-available', (i) => setUpdate({ state: 'downloading', version: i.version, percent: 0 }));
+  updater().on('download-progress', (p) =>
     setUpdate({ state: 'downloading', version: updateState.version, percent: Math.round(p.percent) })
   );
-  autoUpdater.on('update-downloaded', (i) => setUpdate({ state: 'ready', version: i.version }));
-  autoUpdater.on('update-not-available', () => setUpdate({ state: 'none' }));
-  autoUpdater.on('error', (e) =>
+  updater().on('update-downloaded', (i) => setUpdate({ state: 'ready', version: i.version }));
+  updater().on('update-not-available', () => setUpdate({ state: 'none' }));
+  updater().on('error', (e) =>
     setUpdate({ state: 'error', reason: classifyNetworkError(e), message: String((e && e.message) || e).slice(0, 200) })
   );
   // Busca solo: al abrir, cada 10 minutos y cada vez que vuelves a la ventana (con 2 minutos de margen).
@@ -590,7 +593,7 @@ app.whenReady().then(() => {
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
-  setupUpdater();
+  setTimeout(setupUpdater, 5000); // busca actualizaciones cuando la ventana ya está abierta
   setTimeout(checkEventNotifications, 15000);
   setInterval(checkEventNotifications, 60000);
 });
@@ -616,7 +619,7 @@ ipcMain.handle('update:check', async () => {
 ipcMain.handle('update:install', () => {
   if (updateState.state !== 'ready') throw new Error('Todavía no hay una actualización descargada.');
   if (launching) throw new Error('Cierra Minecraft antes de actualizar el launcher.');
-  autoUpdater.quitAndInstall();
+  updater().quitAndInstall();
 });
 
 // Reinstala los mods del evento actual la próxima vez que se juegue. No toca ajustes, cuenta ni mundos.
@@ -3445,7 +3448,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       if (!r.ok) throw new Error(`El comando previo falló (${r.err && r.err.message ? r.err.message.split('\n')[0] : 'error'}). Revísalo en Ajustes de la instancia > Launch hooks.`);
     }
     const userEnv = parseEnvLines(own.env);
-    const launcher = new Client();
+    const launcher = new (mclc().Client)();
     launcher.on('progress', (e) => send('game:progress', { type: e.type, task: e.task, total: e.total }));
     launcher.on('package-extract', () => send('game:status', { text: 'Extrayendo archivos…' }));
     launcher.on('arguments', () => send('game:status', { text: 'Iniciando Minecraft…' }));

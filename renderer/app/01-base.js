@@ -22,7 +22,7 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   let closed = false;
   let ready = !!window.__novaReady;
   let minDone = false;
-  const MIN = 3200;
+  const MIN = 1200; // tiempo mínimo de la animación corta (antes 3,2 s)
   const steps = ['Iniciando…', 'Cargando tu perfil…', 'Buscando eventos…', 'Preparando el launcher…', '¡Listo!'];
   const st = document.getElementById('sp-status');
   let si = 0;
@@ -57,7 +57,10 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   }
   window.api.getSettings().then((st) => {
     const resumed = new URLSearchParams(location.search).get('resume') === '1';
-    if ((st && st.intro === false) || resumed) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
+    // La intro completa (unos 9 s) sale la primera vez de cada día; las demás veces el launcher abre al instante.
+    let seenToday = false;
+    try { const day = new Date().toDateString(); seenToday = localStorage.getItem('px.intro.day') === day; if (!seenToday) localStorage.setItem('px.intro.day', day); } catch {}
+    if ((st && st.intro === false) || resumed || seenToday) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
     playIntro(!st || st.introSound !== false);
   }).catch(() => playIntro(true));
   s.addEventListener('click', close);
