@@ -3559,3 +3559,19 @@ main { container-type: inline-size; overflow-x: hidden; }
 .ev-preview-body p { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .field-count { justify-self: end; font-variant-numeric: tabular-nums; }
 .field-count.over { color: var(--bad, #ff6b6b); }
+
+/* Eventos guardados: cambiar entre lista y tarjetas */
+.view-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); margin-left: auto; margin-right: 12px; }
+.view-switch button { padding: 6px 14px; border-radius: 9px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.view-switch button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--text); }
+.view-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.evlib-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; align-content: start; min-height: 220px; }
+.evlib-card .evlib-art { height: 130px; font-size: 34px; font-weight: 800; color: var(--accent); }
+.evlib-card-body { display: grid; gap: 10px; padding: 0 14px; }
+.evlib-card .evlib-main strong { white-space: normal; }
+.evlib-card .evlib-actions { gap: 6px; }
+.evlib-card .evlib-actions button { padding: 6px 12px; font-size: 13px; }
+.evlib-card .evlib-publish { flex-basis: auto; margin: 0 14px; }
+
+/* Portada de Inicio al 60 % del ancho y del alto del área principal, centrada */
+.home-cover, .home-cover.default-cover { width: 60cqw; height: max(260px, calc(var(--main-h, 80vh) * .6)); margin: 8px auto 28px; border-radius: 22px; border: 1px solid var(--line); }

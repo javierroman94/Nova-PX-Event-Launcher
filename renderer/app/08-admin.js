@@ -1179,16 +1179,25 @@ async function saveEvLib(list, okText) {
 }
 const upsertEv = (e, id) => (evLib.some((x) => x.id === id) ? evLib.map((x) => (x.id === id ? { ...x, ...e, id } : x)) : [...evLib, { ...e, id }]);
 
+// Vista de la lista de eventos: "lista" (filas) o "tarjetas" (cuadrícula con el banner arriba). Se recuerda en este equipo.
+const EV_VIEW_KEY = 'px.evlib.view';
+function evView() { try { return localStorage.getItem(EV_VIEW_KEY) === 'tarjetas' ? 'tarjetas' : 'lista'; } catch { return 'lista'; } }
+function setEvView(v) { try { localStorage.setItem(EV_VIEW_KEY, v); } catch {} paintEvLib(); }
+document.querySelectorAll('#ad-evlib-view [data-view]').forEach((b) => b.addEventListener('click', () => setEvView(b.dataset.view)));
 function paintEvLib() {
   const box = $('ad-evlib-cards');
   if (!box) return;
   box.replaceChildren();
+  const cards = evView() === 'tarjetas';
+  box.className = cards ? 'evlib-cards' : 'evlib-list';
+  document.querySelectorAll('#ad-evlib-view [data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === (cards ? 'tarjetas' : 'lista'))));
   if (!evLib.length) { box.append(el('p', 'evlib-empty', 'Sin eventos guardados')); return; }
   const live = liveInfo();
   evLib.forEach((e) => {
-    const row = el('div', 'evlib-row');
+    const row = el('div', cards ? 'evlib-card' : 'evlib-row');
     const img = imageUrl(e.image || '');
-    if (img) { row.classList.add('has-banner'); row.style.backgroundImage = `linear-gradient(90deg, rgba(10,10,14,.92) 8%, rgba(10,10,14,.35)), url(${JSON.stringify(img)})`; }
+    if (img && !cards) { row.classList.add('has-banner'); row.style.backgroundImage = `linear-gradient(90deg, rgba(10,10,14,.92) 8%, rgba(10,10,14,.35)), url(${JSON.stringify(img)})`; }
+    if (cards) { const art = el('div', 'evlib-art'); if (img) art.style.backgroundImage = `url(${JSON.stringify(img)})`; else art.textContent = e.name.slice(0, 1).toUpperCase(); row.append(art); }
     const main = el('div', 'evlib-main');
     const mine = isLiveEntry(e, live);
     main.append(el('strong', '', e.name));
@@ -1205,7 +1214,7 @@ function paintEvLib() {
       if (!await askConfirm(`¿Eliminar "${e.name}" de tus eventos?${mine && live.status !== 'ended' ? '\n\nSigue publicado: los jugadores lo seguirán viendo hasta que lo finalices.' : ''}`)) return;
       await saveEvLib(evLib.filter((x) => x.id !== e.id), 'Evento eliminado.');
     }, 'ghost');
-    row.append(main, acts);
+    if (cards) { const body = el('div', 'evlib-card-body'); body.append(main, acts); row.append(body); } else row.append(main, acts);
     box.append(row);
   });
 }
