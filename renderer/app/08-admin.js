@@ -144,7 +144,7 @@ function sponsorsEditor() {
         const showLogo = () => { lg.replaceChildren(); const u = x.logo && imageUrl(x.logo); if (u) { const im = el('img'); im.alt = ''; im.src = u; lg.append(im); } else lg.append(el('span', '', '＋ Logo')); };
         showLogo();
         lg.addEventListener('click', async () => {
-          try { const a = await pickImageCropped(`sponsor-${x.name || 'logo'}`, 2); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
+          try { const a = await pickImageCropped(`sponsor-${x.name || 'logo'}`, 'sponsor'); if (a) { x.logo = a.path; showLogo(); } } catch (e) { toast(cleanError(e), 'error'); }
         });
         const fields = el('div', 'brand-fields');
         const r = el('input'); r.type = 'text'; r.maxLength = 60; r.value = x.role || g.roles[0]; r.setAttribute('list', `ad-roles-${g.kind}`); r.placeholder = 'Rol';
@@ -189,18 +189,18 @@ function paintArtState() {
   paintEvPreview();
 }
 /* Elige una imagen, deja acomodarla en un cuadro (como Instagram o X) y solo entonces la sube. Devuelve {path, preview} o null. */
-async function pickImageCropped(label, aspect) {
+async function pickImageCropped(label, slot) {
   const r = await window.api.adminPickImage(label, { crop: true });
   if (!r) return null;
   if (!window.NovaCrop) return window.api.adminUploadImage(label, r.raw);
-  const out = await window.NovaCrop.open(r.raw, aspect, r.kind);
+  const out = await window.NovaCrop.open(r.raw, slot, r.kind);
   if (out === null) return null;
   return window.api.adminUploadImage(label, out === 'orig' ? r.raw : out);
 }
 async function pickEventArt(kind) {
   $('ad-status').textContent = 'Eligiendo imagen…';
   try {
-    const r = await pickImageCropped(`${kind}-${$('ad-name').value || 'evento'}`, kind === 'banner' ? 16 / 9 : 1);
+    const r = await pickImageCropped(`${kind}-${$('ad-name').value || 'evento'}`, kind === 'banner' ? 'banner' : 'logo');
     if (!r) { $('ad-status').textContent = ''; return; }
     if (kind === 'banner') adm.evImage = r.path; else adm.evLogo = r.path;
     paintArtState();
@@ -602,7 +602,7 @@ $('ade-clear').addEventListener('click', () => { ade.draft.image = ''; ade.previ
 $('ade-pick').addEventListener('click', async () => {
   $('ade-status').textContent = 'Eligiendo imagen…';
   try {
-    const r = await pickImageCropped($('ade-name').value, 4 / 3);
+    const r = await pickImageCropped($('ade-name').value, 'historial');
     if (!r) { $('ade-status').textContent = ''; return; }
     ade.draft.image = r.path;
     ade.preview = r.preview;
@@ -614,7 +614,7 @@ $('ade-bg-clear').addEventListener('click', () => { delete ade.draft.background;
 $('ade-bg-pick').addEventListener('click', async () => {
   $('ade-status').textContent = 'Eligiendo fondo…';
   try {
-    const r = await pickImageCropped(`fondo-${$('ade-name').value}`, 16 / 9);
+    const r = await pickImageCropped(`fondo-${$('ade-name').value}`, 'historial-fondo');
     if (!r) { $('ade-status').textContent = ''; return; }
     ade.draft.background = r.path;
     $('ade-bg-state').textContent = 'Con fondo';
@@ -853,7 +853,7 @@ function paintTeam() {
     const avPick = el('button', '', m.avatar ? 'Cambiar foto' : 'Subir foto'); avPick.type = 'button';
     avPick.addEventListener('click', async () => {
       try {
-        const r = await pickImageCropped(m.nick || 'perfil', 1);
+        const r = await pickImageCropped(m.nick || 'perfil', 'perfil');
         if (r) { m.avatar = r.path; if (r.preview) avatarPreviews.set(m, r.preview); avPick.textContent = 'Cambiar foto'; paintPh(); paintAv(); sync(); }
       } catch (e) { $('ad-team-status').textContent = cleanError(e); }
     });
@@ -936,7 +936,7 @@ function paintNews() {
     showImg();
     const pick = el('button', 'ne-pick', n.image ? 'Cambiar imagen' : '+ Imagen'); pick.type = 'button';
     pick.addEventListener('click', async () => {
-      try { const r = await pickImageCropped(n.title || 'noticia', 16 / 9); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
+      try { const r = await pickImageCropped(n.title || 'noticia', 'noticia'); if (r) { n.image = r.path; pick.textContent = 'Cambiar imagen'; showImg(); prev(); } } catch (e) { $('ad-news-status').textContent = cleanError(e); }
     });
     const clr = el('button', 'ne-clr ghost', 'Quitar'); clr.type = 'button';
     clr.addEventListener('click', () => { delete n.image; pick.textContent = '+ Imagen'; showImg(); prev(); });

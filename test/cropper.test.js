@@ -23,4 +23,20 @@ assert.strictEqual(C.geometry({ iw: 100, ih: 100, fw: 50, fh: 50, zoom: 99, ox: 
 // Tamaño de salida con proporción y tope.
 assert.deepStrictEqual(C.outputSize(5000, 16 / 9), { w: 1600, h: 900 });
 assert.deepStrictEqual(C.outputSize(400, 1), { w: 400, h: 400 });
+// Retícula: misma proporción que el sitio donde se muestra, dentro del escenario.
+const r1 = C.reticle(640, 380, 4);
+assert.ok(Math.abs(r1.w / r1.h - 4) < 0.05 && r1.w <= 640 * 0.9 + 1);
+const r2 = C.reticle(640, 380, 1);
+assert.strictEqual(r2.w, r2.h);
+assert.ok(r2.h <= 380 * 0.9 + 1);
+// Cada espacio de imagen tiene su proporción: portada ancha, logo y perfil cuadrados, patrocinador 2:1.
+assert.strictEqual(C.slotSpec('logo').aspect, 1);
+assert.strictEqual(C.slotSpec('perfil').aspect, 1);
+assert.strictEqual(C.slotSpec('sponsor').aspect, 2);
+assert.ok(C.slotSpec('banner', 1000, 600).aspect > 1.5);
+assert.ok(C.slotSpec('banner').guides.length >= 2);
+assert.strictEqual(C.slotSpec('no-existe'), null);
+// La portada sigue el tamaño real del área principal y se mantiene en un rango razonable.
+assert.ok(C.slotSpec('banner', 4000, 300).aspect <= 3.2);
+assert.ok(C.slotSpec('banner', 300, 4000).aspect >= 1.2);
 console.log('cropper.test OK');

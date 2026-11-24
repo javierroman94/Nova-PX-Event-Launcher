@@ -182,6 +182,8 @@ contextBridge.exposeInMainWorld('api', {
   mojangVersionArt: () => ipcRenderer.invoke('mojang:versionArt'),
   mcVersionMeta: () => ipcRenderer.invoke('mc:versionMeta'),
   modpackPickIconFile: () => ipcRenderer.invoke('modpacks:pickIconFile'),
+  modpackPickIconRaw: () => ipcRenderer.invoke('modpacks:pickIconRaw'),
+  modpackSetIcon: (p) => ipcRenderer.invoke('modpacks:setIcon', p),
   onModpacksChanged: (cb) => ipcRenderer.on('modpacks:changed', () => cb()),
   modpackDuplicate: (p) => ipcRenderer.invoke('modpacks:duplicate', p),
   instanceWorldDuplicate: (p) => ipcRenderer.invoke('instance:worldDuplicate', p),

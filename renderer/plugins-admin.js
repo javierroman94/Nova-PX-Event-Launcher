@@ -109,7 +109,7 @@
     } catch (e) { toast(cleanError(e), 'error'); }
   });
   g('pl-img').addEventListener('click', async () => {
-    try { const r = await pickImageCropped(val('pl-name') || 'plugin', 16 / 9); if (r) { imagePath = r.path; showImage(); } } catch (e) { toast(cleanError(e), 'error'); }
+    try { const r = await pickImageCropped(val('pl-name') || 'plugin', 'plugin'); if (r) { imagePath = r.path; showImage(); } } catch (e) { toast(cleanError(e), 'error'); }
   });
   g('pl-img-clear').addEventListener('click', () => { imagePath = ''; showImage(); });
   g('pl-cancel').addEventListener('click', clearForm);

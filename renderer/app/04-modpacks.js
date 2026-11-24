@@ -926,7 +926,7 @@ $('mp-go-create').addEventListener('click', async () => {
 });
 $('mcw-mode').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b && b.dataset.mode !== mcw.mode) setWizardMode(b.dataset.mode); });
 $('mcw-upload').addEventListener('click', async () => {
-  try { const d = await window.api.modpackPickIconFile(); if (d) { mcw.iconData = d; paintIcon(); } } catch (e) { toast(cleanError(e), 'error'); }
+  try { const r = await window.api.modpackPickIconRaw(); const d = r && await window.NovaCrop.openSized(r.raw, 'modpack', r.kind, 128); if (d) { mcw.iconData = d; paintIcon(); } } catch (e) { toast(cleanError(e), 'error'); }
 });
 $('mcw-random').addEventListener('click', () => {
   mcw.iconData = '';
@@ -1057,8 +1057,10 @@ $('ps-save').addEventListener('click', async () => {
 
 $('ps-icon-pick').addEventListener('click', async () => {
   try {
-    const e = await window.api.modpackPickIcon({ id: mp.pack.id });
-    if (!e) return;
+    const r = await window.api.modpackPickIconRaw();
+    const d = r && await window.NovaCrop.openSized(r.raw, 'modpack', r.kind, 128);
+    if (!d) return;
+    const e = await window.api.modpackSetIcon({ id: mp.pack.id, data: d });
     mp.pack = e;
     openDetailHeader(e);
     await loadInstalled();
