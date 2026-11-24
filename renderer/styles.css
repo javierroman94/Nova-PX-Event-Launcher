@@ -3549,3 +3549,5 @@ main { container-type: inline-size; overflow-x: hidden; }
 .sponsor-paid .sponsor-logo { border-radius: 50%; }
 .brand-logo-pick { width: 76px; height: 76px; min-height: 76px; padding: 0; border-radius: 50%; overflow: hidden; }
 .brand-logo-pick img { object-fit: cover; border-radius: 50%; }
+/* Portada fija de Inicio: la imagen llena toda la portada (sin bandas vacías alrededor) */
+.default-cover .hc-img { object-fit: cover; object-position: center; }
