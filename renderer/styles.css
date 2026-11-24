@@ -4000,3 +4000,9 @@ main { animation: px-page-in .28s ease-out; }
 @media (max-width: 980px) { .fr-layout { grid-template-columns: 1fr; } .fr-side { position: static; } }
 #fr-note:empty { display: none; }
 .fr-add button { flex: none; }
+
+/* 1.0.190: barra del loader Nova en el detalle del perfil */
+.nova-bar { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 10px 14px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+.nova-bar[hidden] { display: none; }
+.nova-bar-mark { font-size: 18px; }
+.nova-bar #mp-nova-text { flex: 1; font-size: 13px; }

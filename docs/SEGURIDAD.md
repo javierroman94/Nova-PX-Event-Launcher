@@ -26,6 +26,10 @@ Auditoría hecha sobre el código del repositorio público. Resume qué se revis
 | `will-navigate` aceptaba cualquier `file://`; overlay sin bloqueo | `lockWindow()` en las dos ventanas |
 | CSP sin `object-src`, `base-uri` ni `form-action` | Agregados en `index.html` y `overlay.html` |
 
+## Loader Nova (1.0.190)
+- `data/nova-loader.json` lo arma una tarea de GitHub (`tools/nova-loader.js`) y no va firmado: el launcher solo acepta enlaces `https://cdn.modrinth.com/data/…`, nombres de archivo seguros y huella SHA-512 de cada `.jar`. Es el mismo nivel de confianza que bajar lo último de Modrinth, con la ventaja de que la versión queda fija.
+- Si la huella no coincide no se instala nada. Al actualizar solo se tocan los archivos que puso Nova (y otras copias de esos mismos mods).
+
 ## Permisos por rol
 El panel de administración tiene tres roles: Dueño (todo), Administrador (todo menos Permisos y la llave de firma) y Moderador (advertencias, usuarios y noticias), más casillas por persona. Se comprueban en el programa en cada acción y ocultan las pestañas que no corresponden. Límite: quien tenga un token de GitHub con escritura puede escribir en el repositorio sin pasar por el launcher. Lo protege la firma: `manifest`, `plugins`, `recommended`, `launcher` y `admins` solo son válidos si los firma el dueño. `news`, `ads`, `team`, `events` y `nicks` no están firmados.
 

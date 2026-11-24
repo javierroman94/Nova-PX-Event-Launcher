@@ -377,7 +377,7 @@ function paintPackChips(p) {
   box.replaceChildren();
   const add = (cls, text) => box.append(el('span', `mp-chip ${cls || ''}`, text));
   add('mc', `Minecraft ${p.mcVersion}`);
-  add('loader', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla');
+  add('loader', p.preset === 'nova' ? '⚡ Nova' : LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla');
   if (p.provider) add('', SRC_NAMES[p.provider] || p.provider);
   if (p.lastPlayedAt) add('', `Jugado ${ago(p.lastPlayedAt)}`); else add('', 'Sin jugar');
   if (mp.items && mp.pack === p && mp.items.length) {
@@ -401,6 +401,7 @@ function openDetail(p) {
   openDetailHeader(p);
   showView('detail');
   setTab('content');
+  if (window.paintNovaBar) window.paintNovaBar(p);
 }
 
 $('mp-detail-play').addEventListener('click', () => mp.pack && playPack(mp.pack.id));
@@ -792,7 +793,7 @@ async function loadMcVersions(...selects) {
 
 /* --- asistente "Crear instancia" --- */
 const LOADER_INFO = {
-  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris, Mod Menu y Nova Client. Máximo rendimiento.' },
+  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Loader Nova: mods de rendimiento probados entre sí, Nova Client y gráficos ajustados a tu PC.' },
   fabric: { icon: '🧵', name: 'Fabric', tag: '', desc: 'Ligero y rápido. Mods modernos (desde 1.14).' },
   quilt: { icon: '🪡', name: 'Quilt', tag: '', desc: 'Basado en Fabric, usa sus mods y los de Quilt (desde 1.14).' },
   neoforge: { icon: '🦊', name: 'NeoForge', tag: '', desc: 'El Forge moderno, para mods nuevos (desde 1.20.2).' },

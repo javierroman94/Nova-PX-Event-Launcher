@@ -393,3 +393,41 @@ function openFriendCard(f) {
   m.open();
 }
 window.openFriendCard = openFriendCard;
+
+/* ---------- loader Nova: versión del perfil y "Actualizar Nova" (1.0.190) ---------- */
+async function paintNovaBar(p) {
+  const bar = $('mp-nova-bar');
+  const btn = $('mp-nova-update');
+  bar.hidden = true;
+  btn.hidden = true;
+  if (!p || p.preset !== 'nova' || p.protected) return;
+  let st;
+  try { st = await window.api.novaStatus(p.id); } catch { return; }
+  if (mp.pack !== p) return;
+  const text = $('mp-nova-text');
+  if (st.update) {
+    text.textContent = st.update.from
+      ? `Nova ${st.update.from} → hay Nova ${st.update.to} con mods probados más nuevos.`
+      : `Este perfil Nova es anterior al loader Nova. Pásalo a Nova ${st.update.to}: mods probados entre sí.`;
+    btn.hidden = false;
+  } else if (st.version) {
+    text.textContent = `Loader Nova ${st.version}: mods de rendimiento probados entre sí. Estás al día.`;
+  } else return;
+  bar.hidden = false;
+}
+$('mp-nova-update').addEventListener('click', async () => {
+  const p = mp.pack;
+  if (!p) return;
+  const btn = $('mp-nova-update');
+  if (!(await askConfirm('Se cambian solo los mods que puso Nova (los que agregaste tú se quedan). Antes de jugar con la versión nueva, conviene una copia del mundo si es importante.', 'Actualizar', 'Cancelar'))) return;
+  btn.disabled = true;
+  try {
+    const r = await window.api.novaUpdate(p.id);
+    toast(`⚡ Perfil actualizado a Nova ${r.version}.`, 'success');
+    if (window.renderContent) renderContent();
+    paintNovaBar(p);
+  } catch (e) {
+    toast(cleanError(e), 'error');
+  } finally { btn.disabled = false; }
+});
+window.paintNovaBar = paintNovaBar;

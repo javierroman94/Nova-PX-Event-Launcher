@@ -937,11 +937,19 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
   if (entry.preset === 'nova') {
     const progress = (text) => send('modpack:progress', { text });
     try {
-      const r = await novaLib.installNovaMods(
-        (slug) => content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: dir, type: 'mod', projectId: slug, mc: entry.mcVersion, loader: 'fabric' }),
-        { onStatus: progress }
-      );
-      entry.novaSkipped = r.skipped;
+      // Loader Nova: lista fija de mods probados entre sí. Si no hay lista para esa versión, se usa lo último de Modrinth.
+      let novaVer = null;
+      try { novaVer = await nova.installNova(dir, entry.mcVersion); } catch (err) { pushLog('launcher', `[Nova] ${err.message}`); }
+      if (novaVer) {
+        entry.novaLoader = novaVer;
+        entry.novaSkipped = [];
+      } else {
+        const r = await novaLib.installNovaMods(
+          (slug) => content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: dir, type: 'mod', projectId: slug, mc: entry.mcVersion, loader: 'fabric' }),
+          { onStatus: progress }
+        );
+        entry.novaSkipped = r.skipped;
+      }
       progress('Instalando Nova Client…');
       try {
         entry.novaClient = await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion });
@@ -3360,6 +3368,11 @@ const extras = require('./lib/main/ipc-extras')({
   apiRequest, downloadBuffer, cachedSha1, content, planAllUpdates, assertEditable, getMainWindow: () => mainWindow, packEntryFrom
 });
 
+// Loader Nova: lista fija de mods, "Actualizar Nova" y gráficos según la PC (lib/main/ipc-nova.js).
+const nova = require('./lib/main/ipc-nova')({
+  ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
+});
+
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
   // Si este modpack recuerda una cuenta, se cambia a ella antes de jugar.
   if (opts.modpackId && !launching) {
@@ -3441,7 +3454,10 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     if (pack && pack.preset === 'optifine' && loaderType === 'vanilla') {
       customId = await ensureOptiFine(pack, javaPath);
     } else if (loaderType === 'fabric') {
-      if (pack && pack.preset === 'nova') await fixNovaMods(eventDir, manifest.minecraftVersion);
+      if (pack && pack.preset === 'nova') {
+        await fixNovaMods(eventDir, manifest.minecraftVersion);
+        try { await nova.autoGraphics(eventDir, manifest.minecraftVersion); } catch (err) { pushLog('launcher', `[Nova] No se pudieron ajustar los gráficos: ${err.message}`); }
+      }
       send('game:status', { text: 'Preparando Fabric…' });
       customId = await ensureFabric(manifest.minecraftVersion, manifest.loader.version);
     } else if (loaderType === 'quilt') {

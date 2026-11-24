@@ -235,6 +235,8 @@ contextBridge.exposeInMainWorld('api', {
   friendsJoin: (inv) => ipcRenderer.invoke('friends:join', inv),
   friendsParty: (action, arg) => ipcRenderer.invoke('friends:party', action, arg),
   friendsVerify: () => ipcRenderer.invoke('friends:verify'),
+  novaStatus: (id) => ipcRenderer.invoke('nova:status', id),
+  novaUpdate: (id) => ipcRenderer.invoke('nova:update', id),
   chatTyping: (to) => ipcRenderer.invoke('chat:typing', to),
   onFriendsEvent: (cb) => ipcRenderer.on('friends:event', (_e, d) => cb(d)),
   onFriendsOpen: (cb) => ipcRenderer.on('friends:open', (_e, d) => cb(d)),
