@@ -25,6 +25,28 @@
     "lockPack": true,
     "publishedId": "",
     "instanceId": "",
-    "updatedAt": "2026-11-24T03:23:18.147Z"
+    "updatedAt": "2026-11-24T03:37:32.226Z"
+  },
+  {
+    "id": "evento-mwu4xi5v",
+    "name": "Murder Mistery",
+    "tagline": "Evento organizado por EzLuiiz con el mod de \"Sweet Vacations\" donde 15 jugadores tendran que descubrir quien es el asesino en un yate en medio del oceano.",
+    "startsAt": "",
+    "status": "soon",
+    "image": "images/banner-murder-mistery-mwu50mg8.png",
+    "logo": "",
+    "sponsors": [
+      {
+        "kind": "sponsor",
+        "role": "Evento organizado por",
+        "name": "EzLuiiz",
+        "url": "https://www.twitch.tv/ezluiiz",
+        "logo": "images/sponsor-ezluiiz-mwu585uw.png"
+      }
+    ],
+    "lockPack": true,
+    "publishedId": "",
+    "instanceId": "mp-murder-mistery",
+    "updatedAt": "2026-11-24T03:37:32.227Z"
   }
 ]
