@@ -18,9 +18,22 @@ function setAdminUi(on, repo, err, eligible) {
   $('adm-state').textContent = on ? `Activo: puedes publicar en ${repo}.` : err ? `Desactivado (${err})` : 'Desactivado.';
   moveIndicator();
 }
+// Permiso que pide cada pestaña (igual que lib/permisos.js; el programa vuelve a comprobarlo en cada acción).
+const AD_TAB_PERM = { event: 'eventos', events: 'eventos', reco: 'eventos', news: 'noticias', team: 'contenido', ads: 'contenido', plugins: 'plugins', warnings: 'moderacion', users: 'usuarios', look: 'ajustes', config: 'ajustes', control: 'ajustes', status: 'ajustes', perms: 'permisos' };
+const AD_PERMS = { eventos: 'Eventos y modpack del evento', noticias: 'Noticias', contenido: 'Equipo y publicidad', plugins: 'Plugins', moderacion: 'Advertencias de nicks', usuarios: 'Usuarios (contador)', ajustes: 'Ajustes, apariencia, Discord y estado' };
+const AD_ROLES = { administrador: Object.keys(AD_PERMS), moderador: ['moderacion', 'usuarios', 'noticias'] };
+let adPerms = new Set();
+function applyAdminTabs(perms) {
+  adPerms = new Set(perms || []);
+  const tabs = [...document.querySelectorAll('[data-ad-tab]')];
+  tabs.forEach((b) => { b.hidden = !adPerms.has(AD_TAB_PERM[b.dataset.adTab]); });
+  const current = tabs.find((b) => b.classList.contains('active'));
+  if (current && current.hidden) { const first = tabs.find((b) => !b.hidden); if (first) first.click(); }
+}
 function refreshAdmin() {
   window.api.adminStatus().then((r) => {
     setAdminUi(r.admin, r.repo, r.error, r.eligible);
+    if (r.admin) applyAdminTabs(r.permisos);
     if (!r.admin && $('page-admin').classList.contains('active')) goTo('home');
   }).catch(() => {});
 }
@@ -31,6 +44,7 @@ $('adm-login').addEventListener('click', async () => {
     const r = await window.api.adminLogin($('adm-token').value);
     $('adm-token').value = '';
     setAdminUi(true, r.repo, undefined, true);
+    refreshAdmin();
     toast('Modo administrador activado');
   } catch (e) {
     $('adm-state').textContent = cleanError(e);
@@ -703,7 +717,7 @@ function paintPerms() {
   const stats = $('ad-perm-stats');
   if (stats) {
     stats.replaceChildren();
-    [[owners.length, 'Dueños'], [admins.length, 'Administradores'], [owners.length + admins.length, 'Con acceso al panel']].forEach(([n, l]) => {
+    [[owners.length, 'Dueños'], [admins.filter((x) => x.rol !== 'moderador').length, 'Administradores'], [admins.filter((x) => x.rol === 'moderador').length, 'Moderadores'], [owners.length + admins.length, 'Con acceso al panel']].forEach(([n, l]) => {
       const t = el('div', 'ad-stat'); t.append(el('strong', '', String(n)), el('span', 'muted', l)); stats.append(t);
     });
   }
@@ -713,18 +727,44 @@ function paintPerms() {
     const b = el('div', 'perm-body'); b.append(el('strong', '', o), el('span', 'perm-role owner', '👑 Dueño'), el('small', 'muted', 'Siempre tiene acceso'));
     c.append(b); box.append(c);
   });
+  const saveAdmins = async (list) => {
+    try { adm.admins = await window.api.adminSaveAdmins(list); paintPerms(); } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
+  };
   admins.forEach((a, idx) => {
-    const c = el('div', 'perm-card');
+    const c = el('div', 'perm-card perm-editable');
     c.append(head3d({ nick: a.nick }, 46));
-    const b = el('div', 'perm-body'); b.append(el('strong', '', a.nick), el('span', 'perm-role', '🛡 Administrador'), el('small', 'muted', 'Puede ver el panel'));
+    const rol = a.rol === 'moderador' ? 'moderador' : 'administrador';
+    const mine = Array.isArray(a.permisos) ? a.permisos : AD_ROLES[rol];
+    const b = el('div', 'perm-body');
+    const sel = el('select', 'perm-rol');
+    [['administrador', '🛡 Administrador'], ['moderador', '🔧 Moderador']].forEach(([v, t]) => { const o = el('option', '', t); o.value = v; sel.append(o); });
+    sel.value = rol;
+    sel.setAttribute('aria-label', `Rol de ${a.nick}`);
+    sel.addEventListener('change', () => { const next = adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(sel.value === 'moderador' ? { rol: 'moderador' } : {}) } : x)); saveAdmins(next); });
+    const custom = Array.isArray(a.permisos);
+    b.append(el('strong', '', a.nick), sel, el('small', 'muted', custom ? 'Permisos personalizados' : 'Permisos del rol'));
+    const grid = el('div', 'perm-checks');
+    Object.entries(AD_PERMS).forEach(([key, label]) => {
+      const lab = el('label', 'perm-check');
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = mine.includes(key);
+      cb.addEventListener('change', () => {
+        const list = Object.keys(AD_PERMS).filter((k) => (k === key ? cb.checked : mine.includes(k)));
+        saveAdmins(adm.admins.map((x, i) => (i === idx ? { ...x, permisos: list } : x)));
+      });
+      lab.append(cb, document.createTextNode(` ${label}`));
+      grid.append(lab);
+    });
+    b.append(grid);
+    if (custom) {
+      const reset = el('button', 'ghost', 'Volver al rol'); reset.type = 'button';
+      reset.addEventListener('click', () => saveAdmins(adm.admins.map((x, i) => (i === idx ? { nick: x.nick, uuid: x.uuid, ...(rol === 'moderador' ? { rol } : {}) } : x))));
+      b.append(reset);
+    }
     const del = el('button', 'perm-del ghost', 'Quitar');
     del.type = 'button'; del.title = 'Quitar permiso';
     del.addEventListener('click', async () => {
       if (!await askConfirm(`¿Quitar el permiso a ${a.nick}?`)) return;
-      try {
-        adm.admins = await window.api.adminSaveAdmins(adm.admins.filter((_, i) => i !== idx));
-        paintPerms();
-      } catch (e) { $('ad-perm-status').textContent = cleanError(e); }
+      saveAdmins(adm.admins.filter((_, i) => i !== idx));
     });
     c.append(b, del); box.append(c);
   });

@@ -7,6 +7,9 @@ const { makeSecureStorage } = require('./lib/secure-storage');
 const { guardIpc, isTrustedUrl } = require('./lib/ipc-guard');
 const safeStorage = makeSecureStorage(electronSafeStorage);
 guardIpc(ipcMain, path.join(__dirname, 'renderer'));
+const permisosLib = require('./lib/permisos');
+// Cada acción del panel de administración pide su permiso (lib/permisos.js). `adminPerms` se define más abajo.
+permisosLib.gatePermisos(ipcMain, () => adminPerms());
 const crypto = require('crypto');
 const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
@@ -1417,6 +1420,16 @@ async function adminEligible() {
   } catch {}
   return adminLib.isAllowedAdmin(session, config.adminOwners || [], admins);
 }
+// Rol y permisos de la sesión actual (null si no es administrador).
+async function adminPerms() {
+  let admins = [];
+  try { admins = await loadData('admins'); } catch {}
+  return permisosLib.permisosDeSesion(session, config.adminOwners || [], admins);
+}
+async function needFilePerm(name) {
+  const info = await adminPerms();
+  if (!info || !permisosLib.permite(info.permisos, permisosLib.ARCHIVOS[name] || 'permisos')) throw new Error('Tu rol no tiene permiso para esto.');
+}
 function gh() {
   const token = readAdminToken();
   if (!token) throw new Error('Primero activa el modo administrador en Ajustes.');
@@ -1684,7 +1697,8 @@ ipcMain.handle('admin:status', async () => {
   try {
     const c = await gh().check();
     adminChecked = c.canPush;
-    return { admin: c.canPush, eligible: true, repo: c.fullName };
+    const info = await adminPerms();
+    return { admin: c.canPush, eligible: true, repo: c.fullName, rol: info ? info.rol : null, permisos: info ? [...info.permisos] : [] };
   } catch (err) {
     return { admin: false, eligible: true, error: err.message };
   }
@@ -1772,10 +1786,12 @@ const restorable = (name) => {
 };
 ipcMain.handle('admin:history', async (_e, name) => {
   const r = await requireAdmin();
+  await needFilePerm(name);
   return r.history(restorable(name), 15);
 });
 ipcMain.handle('admin:restore', async (_e, name, sha) => {
   const r = await requireAdmin();
+  await needFilePerm(name);
   const file = restorable(name);
   const old = await r.jsonAt(file, sha);
   const clean = { launcher: remote.sanitize, recommended: remote.sanitizeRecommended, news: adminLib.sanitizeNews, events: adminLib.sanitizeEvents, team: adminLib.sanitizeTeam, ads: adminLib.sanitizeAds }[name](old);
