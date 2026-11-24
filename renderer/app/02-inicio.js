@@ -139,7 +139,7 @@ function nowPlayingSet(on) {
   const t = launchTarget || { kind: 'event', title: eventInfo.name, icon: '' };
   $('np-title').textContent = t.title;
   $('np-icon').src = t.icon || 'images/logo.png';
-  // Todos los perfiles (y el evento) abren la pantalla de carga y el panel de juego.
+  // Todos los perfiles (y el evento) abren el panel de juego con la consola; la pantalla de carga es solo de Nova Client.
   if (P && !P.isOpen()) { if (logLines.some((l) => l.startsWith('[minecraft]'))) P.resume(t, true); else P.open(t); }
 }
 
