@@ -1390,5 +1390,21 @@ $('ad-editing-save').addEventListener('click', async () => {
   const e = readEditorEvent();
   if (!e.name) { $('ad-status').textContent = 'Ponle un nombre al evento.'; return; }
   const id = evEditKey || evSlug(e.name);
-  if (await saveEvLib(upsertEv(e, id), 'Cambios guardados.')) { evEditKey = null; showEvScreen(false); toast('Evento guardado'); }
+  const prev = evLib.find((x) => x.id === id) || { ...e, id };
+  const live = liveInfo();
+  const isLive = !!(live && live.status !== 'ended' && isLiveEntry(prev, live));
+  if (!await saveEvLib(upsertEv(e, id), 'Cambios guardados.')) return;
+  // Si es el evento publicado, los textos e imágenes también se actualizan en la pestaña Evento (sin tocar mods ni estado).
+  if (isLive) {
+    try {
+      $('ad-status').textContent = 'Actualizando el evento publicado…';
+      const r = await window.api.adminPublishEvent({ form: { name: e.name, tagline: e.tagline || '', image: e.image || '', logo: e.logo || '', sponsors: e.sponsors || [] } });
+      if (r && r.manifest) { adm.manifest = r.manifest; paintLiveHeader(); }
+      window.refreshContent && window.refreshContent();
+    } catch (err) {
+      $('ad-status').textContent = `Guardado, pero no se pudo actualizar el evento publicado: ${cleanError(err)}`;
+      return;
+    }
+  }
+  evEditKey = null; showEvScreen(false); toast(isLive ? 'Evento guardado y actualizado' : 'Evento guardado');
 });
