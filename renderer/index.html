@@ -1327,8 +1327,12 @@
     </section>
 
     <!-- AJUSTES -->
-    <section class="page" id="page-settings">
-      <h2 class="page-title">Ajustes</h2>
+    <section class="page settings-overlay" id="page-settings" role="dialog" aria-modal="true" aria-labelledby="so-title">
+     <div class="so-panel">
+      <header class="so-head">
+        <h2 id="so-title">Ajustes</h2>
+        <button id="so-close" class="so-close ghost" type="button" aria-label="Cerrar ajustes">Cerrar</button>
+      </header>
       <div class="settings">
         <fieldset>
           <legend>Mi cuenta</legend>
@@ -1519,6 +1523,7 @@
         <button id="save-settings" class="primary">Guardar ajustes</button>
         <span id="settings-msg" class="msg" role="status"></span>
       </div>
+     </div>
     </section>
 
     <!-- CONSOLA -->
