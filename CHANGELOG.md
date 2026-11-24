@@ -2,6 +2,11 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.175
+- Administrador: la contraseña de instalación ahora se puede ver (ojo), comprobar contra la del evento publicado, generar una nueva segura, copiar y, si quieres, recordar cifrada en este equipo.
+- Pexy más didáctico: dice qué necesita y el botón que toca se ilumina, cada botón explica su efecto, la comida y el jabón se arrastran directo sobre Pexy dentro de la ventana, tocarlo lo acaricia y hay una mini guía con el botón ?.
+- Pexy sin tiempos de espera, como Talking Tom: si la barra está llena ya no quiere más y no suma puntos.
+
 ## 1.0.174
 - Modpacks: los mods bloqueados por su autor que bajas a mano ya cuentan como parte del modpack (antes aparecían como "contenido extra tuyo", también tras actualizar). Al actualizar, lo que el modpack vuelve a traer sigue protegido y no pasa a ser tuyo.
 - Menú lateral: el logo y el nombre de Nova PX quedan centrados.
