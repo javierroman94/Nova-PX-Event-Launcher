@@ -1326,7 +1326,64 @@
       </div>
     </section>
 
-    <!-- AJUSTES -->
+    <!-- CONSOLA -->
+    <section class="page" id="page-console">
+      <div class="console-head">
+        <h2 class="page-title">Consola</h2>
+        <div class="console-actions">
+          <button id="log-copy" type="button">Copiar</button>
+          <button id="log-report" type="button" title="Copia un resumen corto (versión, cuenta, modpack y últimas líneas) listo para pegar en el canal de comentarios">Copiar reporte</button>
+          <button id="log-save" type="button">Guardar</button>
+          <button id="log-clear" type="button">Limpiar</button>
+        </div>
+      </div>
+      <div class="console-tools">
+        <div class="seg" role="group" aria-label="Filtrar el registro">
+          <button type="button" class="seg-btn active" data-log-filter="all">Todo</button>
+          <button type="button" class="seg-btn" data-log-filter="warn">Avisos</button>
+          <button type="button" class="seg-btn" data-log-filter="error">Errores</button>
+        </div>
+        <input id="log-search" class="events-search" type="search" placeholder="Buscar en el registro…" aria-label="Buscar en el registro" autocomplete="off" />
+        <label class="check"><input id="log-follow" type="checkbox" checked /> Seguir el final</label>
+        <span id="log-count" class="muted"></span>
+      </div>
+      <div id="log" class="log" tabindex="0" aria-live="off"><p class="log-empty">Aquí aparecerá el registro cuando inicies el juego.</p></div>
+    </section>
+
+    <!-- CUENTA -->
+    <section class="page" id="page-account">
+      <h2 class="page-title">Cuenta</h2>
+      <section class="card acc-saved" id="acc-saved" hidden>
+        <header class="acc-head"><h3>Tus cuentas</h3><small class="muted">Cambia con un clic. Cada cuenta conserva su skin, amigos y tiempo de juego.</small></header>
+        <div id="acc-list" class="acc-list"></div>
+      </section>
+      <div class="login-split">
+        <div class="login-art" aria-hidden="true">
+          <img src="images/logo.png" alt="" width="96" height="96" />
+          <h3>Nova PX</h3>
+          <p>Eventos, modpacks y skins en un solo lugar.</p>
+        </div>
+        <div class="login-panel">
+          <ul class="login-feats">
+            <li><b>Eventos de la comunidad</b><span>Únete con un clic al modpack del evento actual.</span></li>
+            <li><b>Tus propios modpacks</b><span>Crea, importa y exporta perfiles con Modrinth.</span></li>
+            <li><b>Skins en 3D</b><span>Guarda tus skins y capas, también sin cuenta premium.</span></li>
+          </ul>
+          <button id="login-ms" class="primary login-big">Añadir cuenta de Microsoft</button>
+          <div class="card" id="card-offline">
+            <h3>Añadir cuenta sin premium</h3>
+            <p>Elige un nick de 3 a 16 caracteres (letras, números o guion bajo). Usa siempre el mismo para conservar tu progreso.</p>
+            <input id="offline-nick" class="pii" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
+            <button id="login-offline">Entrar con este nick</button>
+          </div>
+        </div>
+      </div>
+      <div id="account-msg" class="msg" role="status"></div>
+      <button id="logout-btn" class="ghost" hidden>Cerrar sesión</button>
+    </section>
+  </main>
+
+  <!-- Ajustes es una ventana superpuesta: va fuera de <main> (que contiene a sus hijos fijos) para cubrir toda la ventana, barra lateral incluida. -->
     <section class="page settings-overlay" id="page-settings" role="dialog" aria-modal="true" aria-labelledby="so-title">
      <div class="so-panel">
       <header class="so-head">
@@ -1526,62 +1583,6 @@
      </div>
     </section>
 
-    <!-- CONSOLA -->
-    <section class="page" id="page-console">
-      <div class="console-head">
-        <h2 class="page-title">Consola</h2>
-        <div class="console-actions">
-          <button id="log-copy" type="button">Copiar</button>
-          <button id="log-report" type="button" title="Copia un resumen corto (versión, cuenta, modpack y últimas líneas) listo para pegar en el canal de comentarios">Copiar reporte</button>
-          <button id="log-save" type="button">Guardar</button>
-          <button id="log-clear" type="button">Limpiar</button>
-        </div>
-      </div>
-      <div class="console-tools">
-        <div class="seg" role="group" aria-label="Filtrar el registro">
-          <button type="button" class="seg-btn active" data-log-filter="all">Todo</button>
-          <button type="button" class="seg-btn" data-log-filter="warn">Avisos</button>
-          <button type="button" class="seg-btn" data-log-filter="error">Errores</button>
-        </div>
-        <input id="log-search" class="events-search" type="search" placeholder="Buscar en el registro…" aria-label="Buscar en el registro" autocomplete="off" />
-        <label class="check"><input id="log-follow" type="checkbox" checked /> Seguir el final</label>
-        <span id="log-count" class="muted"></span>
-      </div>
-      <div id="log" class="log" tabindex="0" aria-live="off"><p class="log-empty">Aquí aparecerá el registro cuando inicies el juego.</p></div>
-    </section>
-
-    <!-- CUENTA -->
-    <section class="page" id="page-account">
-      <h2 class="page-title">Cuenta</h2>
-      <section class="card acc-saved" id="acc-saved" hidden>
-        <header class="acc-head"><h3>Tus cuentas</h3><small class="muted">Cambia con un clic. Cada cuenta conserva su skin, amigos y tiempo de juego.</small></header>
-        <div id="acc-list" class="acc-list"></div>
-      </section>
-      <div class="login-split">
-        <div class="login-art" aria-hidden="true">
-          <img src="images/logo.png" alt="" width="96" height="96" />
-          <h3>Nova PX</h3>
-          <p>Eventos, modpacks y skins en un solo lugar.</p>
-        </div>
-        <div class="login-panel">
-          <ul class="login-feats">
-            <li><b>Eventos de la comunidad</b><span>Únete con un clic al modpack del evento actual.</span></li>
-            <li><b>Tus propios modpacks</b><span>Crea, importa y exporta perfiles con Modrinth.</span></li>
-            <li><b>Skins en 3D</b><span>Guarda tus skins y capas, también sin cuenta premium.</span></li>
-          </ul>
-          <button id="login-ms" class="primary login-big">Añadir cuenta de Microsoft</button>
-          <div class="card" id="card-offline">
-            <h3>Añadir cuenta sin premium</h3>
-            <p>Elige un nick de 3 a 16 caracteres (letras, números o guion bajo). Usa siempre el mismo para conservar tu progreso.</p>
-            <input id="offline-nick" class="pii" type="text" maxlength="16" placeholder="Tu nick" aria-label="Nick" />
-            <button id="login-offline">Entrar con este nick</button>
-          </div>
-        </div>
-      </div>
-      <div id="account-msg" class="msg" role="status"></div>
-      <button id="logout-btn" class="ghost" hidden>Cerrar sesión</button>
-    </section>
-  </main>
   </div>
   </div>
 
