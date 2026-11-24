@@ -2,6 +2,9 @@
 // Guarda por instalación: nick (si inició sesión), si es premium, versión del launcher y sistema.
 // No guarda IP ni nada más. Los registros inactivos se borran solos a los 180 días.
 // Variables: KV "USERS" y secreto "ADMIN_KEY" (clave que solo conoce el administrador).
+// Opcional: binding "LIMITER" (Rate Limiting de Cloudflare). Sin él se usa el límite en memoria de worker/limit.mjs.
+
+import { createLimiter } from './limit.mjs';
 
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const NICK = /^[A-Za-z0-9_]{0,16}$/;
@@ -11,15 +14,61 @@ const TTL = 60 * 60 * 24 * 180;
 const WRITE_EVERY_MS = 6 * 60 * 60 * 1000; // el plan gratis de KV permite ~1000 escrituras al día
 
 const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 
-function isAdmin(request, env) {
+const limiter = createLimiter();
+const ipOf = (request) => request.headers.get('CF-Connecting-IP') || 'local';
+// ¿Esta IP todavía puede llamar a esta ruta? (máximo `max` por ventana)
+async function allow(request, env, name, max, windowMs) {
+  const key = `${name}:${ipOf(request)}`;
+  if (env.LIMITER && typeof env.LIMITER.limit === 'function') {
+    try { if (!(await env.LIMITER.limit({ key })).success) return false; } catch {}
+  }
+  return limiter.hit(key, max, windowMs);
+}
+const tooMany = () => new Response(JSON.stringify({ error: 'rate_limited' }), { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', 'Cache-Control': 'no-store' } });
+
+const digest = async (text) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+const ADMIN_FAILS = 8;
+const ADMIN_WINDOW = 10 * 60 * 1000;
+
+// Compara los hashes (no las claves): el tiempo no depende de la longitud ni de cuántos caracteres coinciden.
+async function checkAdmin(request, env) {
   const key = env.ADMIN_KEY || '';
+  if (!key || key.length < 16) return false;
   const got = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!key || key.length < 16 || got.length !== key.length) return false;
+  const [a, b] = await Promise.all([digest(key), digest(got)]);
   let diff = 0;
-  for (let i = 0; i < key.length; i++) diff |= key.charCodeAt(i) ^ got.charCodeAt(i);
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
   return diff === 0;
+}
+
+// Devuelve 'ok', 'no' (clave incorrecta) o 'bloqueada' (demasiados intentos fallidos desde esta IP).
+async function adminStatus(request, env) {
+  const fk = `admfail:${ipOf(request)}`;
+  if (limiter.count(fk, ADMIN_WINDOW) >= ADMIN_FAILS) return 'bloqueada';
+  if (await checkAdmin(request, env)) return 'ok';
+  limiter.hit(fk, ADMIN_FAILS, ADMIN_WINDOW);
+  return 'no';
+}
+const denied = (st) => (st === 'bloqueada' ? tooMany() : json({ error: 'unauthorized' }, 401));
+
+// Anuncios válidos: los de data/ads.json del repositorio (caché de 5 min). Evita que cualquiera invente claves en KV.
+const ADS_URL = 'https://raw.githubusercontent.com/javierroman94/Nova-PX-Event-Launcher/main/data/ads.json';
+const ADS_ID = /^[a-z0-9-]{1,40}$/;
+let adsCache = { at: 0, ids: null };
+async function knownAdIds() {
+  if (adsCache.ids && Date.now() - adsCache.at < 5 * 60 * 1000) return adsCache.ids;
+  try {
+    const r = await fetch(ADS_URL, { cf: { cacheTtl: 60 } });
+    if (r.ok) {
+      const list = await r.json();
+      const ids = new Set((Array.isArray(list) ? list : []).map((x) => String((x && x.id) || '')).filter((id) => ADS_ID.test(id)));
+      adsCache = { at: Date.now(), ids };
+      return ids;
+    }
+  } catch {}
+  return adsCache.ids; // null si nunca se pudo leer
 }
 
 async function handlePing(request, env) {
@@ -227,36 +276,45 @@ async function getRev(request, env, ctx) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (request.method === 'GET' && url.pathname === '/rev') return getRev(request, env, ctx);
-    if (request.method === 'POST' && url.pathname === '/ping') return handlePing(request, env);
-    if (request.method === 'POST' && url.pathname.startsWith('/presence/') && OPS.has(url.pathname.slice(10))) return presence(request, env, url.pathname.slice(10));
+    if (request.method === 'GET' && url.pathname === '/rev') { if (!(await allow(request, env, 'rev', 120, 60000))) return tooMany(); return getRev(request, env, ctx); }
+    if (request.method === 'POST' && url.pathname === '/ping') { if (!(await allow(request, env, 'ping', 10, 60000))) return tooMany(); return handlePing(request, env); }
+    if (request.method === 'POST' && url.pathname.startsWith('/presence/') && OPS.has(url.pathname.slice(10))) { if (!(await allow(request, env, 'presence', 120, 60000))) return tooMany(); return presence(request, env, url.pathname.slice(10)); }
     if (request.method === 'POST' && url.pathname === '/ads/track') {
+      if (!(await allow(request, env, 'ads', 20, 60000))) return tooMany();
       let b = null;
       try { b = await request.json(); } catch { return json({ error: 'bad_json' }, 400); }
-      if (!b || !/^[a-z0-9-]{1,40}$/.test(String(b.id || '')) || !['v', 'c'].includes(b.k)) return json({ error: 'bad_request' }, 400);
+      if (!b || !ADS_ID.test(String(b.id || '')) || !['v', 'c'].includes(b.k)) return json({ error: 'bad_request' }, 400);
       const key = `ad:${b.id}`;
-      const cur = (await env.USERS.get(key, 'json')) || { v: 0, c: 0 };
-      cur[b.k] = (Number(cur[b.k]) || 0) + 1;
-      await env.USERS.put(key, JSON.stringify(cur));
+      const known = await knownAdIds();
+      const cur = await env.USERS.get(key, 'json');
+      // Solo se cuentan anuncios que existen en el repositorio (o que ya tenían contador si no se pudo leer la lista).
+      if (!(known ? known.has(b.id) : !!cur)) return json({ ok: true, ignored: true });
+      const next = cur || { v: 0, c: 0 };
+      next[b.k] = (Number(next[b.k]) || 0) + 1;
+      await env.USERS.put(key, JSON.stringify(next));
       return json({ ok: true });
     }
     if (request.method === 'GET' && url.pathname === '/ads/stats') {
-      if (!isAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+      const st = await adminStatus(request, env);
+      if (st !== 'ok') return denied(st);
       const ads = {};
       const page = await env.USERS.list({ prefix: 'ad:', limit: 200 });
       for (const k of page.keys) ads[k.name.slice(3)] = (await env.USERS.get(k.name, 'json')) || { v: 0, c: 0 };
       return json({ ads });
     }
     if (request.method === 'GET' && url.pathname === '/stats') {
+      if (!(await allow(request, env, 'stats', 60, 60000))) return tooMany();
       const { total, day, week } = await stats(env);
       return json({ total, day, week });
     }
     if (request.method === 'GET' && url.pathname === '/users') {
-      if (!isAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+      const st = await adminStatus(request, env);
+      if (st !== 'ok') return denied(st);
       return json({ users: await listUsers(env) });
     }
     if (request.method === 'DELETE' && url.pathname.startsWith('/users/')) {
-      if (!isAdmin(request, env)) return json({ error: 'unauthorized' }, 401);
+      const st = await adminStatus(request, env);
+      if (st !== 'ok') return denied(st);
       const id = url.pathname.slice(7);
       if (!ID.test(id)) return json({ error: 'bad_id' }, 400);
       await env.USERS.delete(`u:${id}`);

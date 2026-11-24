@@ -47,5 +47,33 @@ const t = require('../lib/telemetry');
   assert.strictEqual((await call('DELETE', `/users/${ping.id}`, null, env.ADMIN_KEY)).status, 200);
   assert.strictEqual((await (await call('GET', '/users', null, env.ADMIN_KEY)).json()).users.length, 0);
   assert.strictEqual((await worker.fetch(new Request('https://w.dev/users'), { ...env, ADMIN_KEY: '' })).status, 401, 'sin clave configurada nadie entra');
+
+  // Límites y protección de rutas del Worker
+  const lim = await import('../worker/limit.mjs');
+  const L = lim.createLimiter();
+  for (let i = 0; i < 3; i++) assert.ok(L.hit('k', 3, 1000, 100 + i));
+  assert.ok(!L.hit('k', 3, 1000, 200), 'el cuarto intento seguido se rechaza');
+  assert.ok(L.hit('k', 3, 1000, 5000), 'pasada la ventana vuelve a dejar');
+  const envLim = { ...env, USERS: { ...env.USERS } };
+  const ipCall = (ip, method, p, body, auth) => worker.fetch(new Request(`https://w.dev${p}`, { method, body: body ? JSON.stringify(body) : undefined, headers: { 'CF-Connecting-IP': ip, ...(auth ? { Authorization: `Bearer ${auth}` } : {}) } }), envLim);
+  const pingB = { id: '11111111-2222-3333-4444-555555555556', nick: '', premium: false, version: '1.0.25', os: 'linux' };
+  let last = 0;
+  for (let i = 0; i < 12; i++) last = (await ipCall('9.9.9.9', 'POST', '/ping', pingB)).status;
+  assert.strictEqual(last, 429, 'más de 10 pings por minuto desde una IP se frenan');
+  assert.strictEqual((await ipCall('8.8.8.8', 'POST', '/ping', pingB)).status, 200, 'otra IP no se ve afectada');
+  for (let i = 0; i < 8; i++) assert.strictEqual((await ipCall('7.7.7.7', 'GET', '/users', null, 'x'.repeat(30))).status, 401);
+  assert.strictEqual((await ipCall('7.7.7.7', 'GET', '/users', null, envLim.ADMIN_KEY)).status, 429, 'tras 8 claves malas se bloquea esa IP, incluso con la clave buena');
+  assert.strictEqual((await ipCall('6.6.6.6', 'GET', '/users', null, envLim.ADMIN_KEY)).status, 200, 'la clave correcta desde otra IP funciona');
+  assert.strictEqual((await ipCall('6.6.6.5', 'GET', '/users', null, 'k'.repeat(23))).status, 401, 'una clave de otra longitud no entra');
+  // Un anuncio que no existe en el repositorio no crea claves en KV
+  const before = store.size;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify([{ id: 'anuncio-real' }]));
+  try {
+    assert.strictEqual((await ipCall('5.5.5.5', 'POST', '/ads/track', { id: 'inventado', k: 'v' })).status, 200);
+    assert.strictEqual(store.size, before, 'un id inventado no escribe');
+    assert.strictEqual((await ipCall('5.5.5.5', 'POST', '/ads/track', { id: 'anuncio-real', k: 'v' })).status, 200);
+    assert.strictEqual(JSON.parse(store.get('ad:anuncio-real')).v, 1);
+  } finally { globalThis.fetch = realFetch; }
   console.log('telemetry.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });
