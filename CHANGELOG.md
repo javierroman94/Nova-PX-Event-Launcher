@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.177
+- Seguridad: los tokens ya no aparecen en la consola ni en los informes, y los informes de eventos protegidos se sellan con una llave pública.
+- Seguridad: los datos de eventos, plugins, modpacks recomendados y ajustes van firmados; el launcher rechaza lo que no esté firmado por el administrador. Para publicar, el administrador importa su llave de firma en Ajustes.
+- Seguridad: los eventos nuevos usan un cifrado más fuerte (los antiguos siguen funcionando) y todo mod necesita su huella para instalarse.
+- Seguridad: las ventanas no pueden navegar fuera del launcher y los canales internos solo atienden a las páginas propias.
+- Servidor del contador: límite de peticiones por IP y bloqueo tras intentos fallidos de la clave de administrador.
+
 ## 1.0.176
 - Administrador: los patrocinadores y los créditos ahora pueden llevar skin de Minecraft (usuario premium o skin PNG). Si no tienen logo, se muestra su cabeza 3D.
 
