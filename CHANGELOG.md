@@ -2,6 +2,13 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.180
+- Ajustes se abre como ventana superpuesta sobre la pantalla actual (se cierra con Cerrar, Esc o pulsando fuera).
+- Administrador: permisos rediseñados, con rol en dos opciones e interruptores por permiso. Al elegir Moderador se aplican sus permisos, y si falla el guardado (por ejemplo sin llave de firma) sale un aviso visible.
+- Inicio: nueva portada de bienvenida cuando no hay imagen de evento.
+- Al jugar, todos los loaders abren la consola en vivo; la pantalla de carga queda solo para Nova Client.
+- El recortador de imágenes muestra la imagen entera con un marco de la proporción real de cada sitio, y guías de otros sitios donde sale la misma imagen. El icono de modpack también se acomoda.
+
 ## 1.0.179
 - Administrador: Eventos se rehace en tres pantallas. Lista con el banner de cada evento de fondo, insignia ACTIVO y botón Publicar; configuración con vista previa para los jugadores.
 - Publicar un evento ahora o programarlo para una fecha: los jugadores lo ven como Próximamente con cuenta atrás y se abre solo a la hora.
