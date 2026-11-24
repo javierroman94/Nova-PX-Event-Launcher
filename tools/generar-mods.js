@@ -61,7 +61,7 @@ const sha1 = (buf) => crypto.createHash('sha1').update(buf).digest('hex');
 function sameAsBefore(prot, password) {
   if (!pc.isEnvelope(prot)) return false;
   try {
-    pc.openEnvelope(prot, pc.deriveKey(password, prot.salt));
+    pc.openEnvelope(prot, pc.deriveKey(password, prot.salt, pc.kdfOf(prot)));
     return true;
   } catch {
     return false;
@@ -119,6 +119,7 @@ async function readPassword(prot) {
   const password = await readPassword(previous);
   const reuse = sameAsBefore(previous, password);
   const salt = reuse ? previous.salt : pc.newSalt();
+  const kdf = reuse ? pc.kdfOf(previous) : pc.KDF_STRONG; // con la misma sal se conservan los parámetros: la llave guardada por los jugadores sigue valiendo
   const packKey = pc.newPackKey();
 
   fs.rmSync(encDir, { recursive: true, force: true });
@@ -135,7 +136,7 @@ async function readPassword(prot) {
     };
   });
 
-  manifest.protected = pc.createEnvelope({ packKey, mods }, pc.deriveKey(password, salt), salt);
+  manifest.protected = pc.createEnvelope({ packKey, mods }, pc.deriveKey(password, salt, kdf), salt, kdf);
   manifest.mods = []; // la lista pública queda vacía: todo va dentro del bloque cifrado
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 

@@ -271,6 +271,25 @@ function makeKeyStore() {
     );
   });
 
+  await test('un sobre nuevo usa scrypt fuerte, uno antiguo sigue abriéndose y uno manipulado se rechaza', async () => {
+    const salt = pc.newSalt();
+    const strong = pc.createEnvelope({ ok: 1 }, pc.deriveKey('una frase larga y segura', salt, pc.KDF_STRONG), salt, pc.KDF_STRONG);
+    assert.strictEqual(strong.kdf.N, 131072);
+    assert.deepStrictEqual(pc.openEnvelope(strong, pc.deriveKey('una frase larga y segura', salt, pc.kdfOf(strong))), { ok: 1 });
+    assert.throws(() => pc.openEnvelope(strong, pc.deriveKey('una frase larga y segura', salt)), /BAD_KEY/);
+    const legacy = pc.createEnvelope({ ok: 2 }, pc.deriveKey('una frase larga y segura', salt), salt);
+    assert.ok(!('kdf' in legacy));
+    assert.deepStrictEqual(pc.openEnvelope(legacy, pc.deriveKey('una frase larga y segura', salt, pc.kdfOf(legacy))), { ok: 2 });
+    assert.throws(() => pc.kdfOf({ kdf: { N: 2 ** 30, r: 8, p: 1 } }), /no válidos/);
+    assert.throws(() => pc.kdfOf({ kdf: { N: 1000, r: 8, p: 1 } }), /no válidos/);
+  });
+
+  await test('un mod sin sha1 no se instala, ni en packs no protegidos', async () => {
+    const dir = tmp();
+    const download = async () => Buffer.from('X');
+    await assert.rejects(pi.syncMods({ modsDir: path.join(dir, 'mods'), stateFile: path.join(dir, 's.json'), mods: [{ url: 'https://x.com/a.jar' }], download }), /sha1/);
+  });
+
   console.log(`\n${count} pruebas correctas.`);
 })().catch((e) => {
   console.error('FALLÓ:', e);

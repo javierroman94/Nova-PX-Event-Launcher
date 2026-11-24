@@ -10,7 +10,7 @@ const { GithubRepo, GithubError } = require('../lib/github');
   const r = a.buildProtectedEvent({ jars, password: 'una contraseña larga', baseUrl: 'https://github.com/o/r/releases/download/t/', previous: null });
   assert.strictEqual(r.assets.length, 2);
   assert.strictEqual(r.assets[0].name, 'a.jar.enc');
-  const env = pc.openEnvelope(r.envelope, pc.deriveKey('una contraseña larga', r.envelope.salt));
+  const env = pc.openEnvelope(r.envelope, pc.deriveKey('una contraseña larga', r.envelope.salt, pc.kdfOf(r.envelope)));
   assert.strictEqual(env.mods[0].url, 'https://github.com/o/r/releases/download/t/a.jar.enc');
   assert.strictEqual(pc.decryptFile(r.assets[0].data, env.packKey, 'a.jar').toString(), 'AAA');
   const r2 = a.buildProtectedEvent({ jars, password: 'una contraseña larga', baseUrl: 'https://x.y/z', previous: r.envelope });
