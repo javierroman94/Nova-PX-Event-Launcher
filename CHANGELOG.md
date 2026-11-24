@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.183
+- La vista previa del editor de eventos es una copia de la pestaña Evento (portada, logo, textos, datos y patrocinadores), para acomodar texto e imágenes.
+
 ## 1.0.182
 - Ajustes se abre como una capa sobre toda la ventana, también encima del menú lateral.
 - La portada de Inicio se reduce al 60 % y usa la imagen de mayor calidad.
