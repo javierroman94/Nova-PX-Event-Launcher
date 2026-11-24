@@ -2,6 +2,18 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.188
+- Más rápido y ligero: el muñeco 3D de Inicio y los efectos se pausan mientras juegas, el launcher abre antes y la intro completa sale solo la primera vez del día.
+- Modo rendimiento en un clic (Modpacks → tu perfil → Contenido): instala Sodium, Lithium, FerriteCore, ModernFix y EntityCulling (Embeddium en Forge) y ajusta la RAM a tu PC.
+- Aviso de actualizaciones de mods en la biblioteca y botón «Actualizar todo»; las actualizaciones bajan varias a la vez.
+- Nueva sección Capturas: todas tus capturas de todos los perfiles, con visor grande, copiar, guardar y borrar (a la papelera).
+- Pestaña Servidores en cada perfil: ping real desde tu PC, jugadores en línea, mensaje del servidor y botón «Jugar aquí».
+- Compartir un modpack con un código corto (NPX-XXXXXXX) y «Usar código» en la biblioteca para importarlo.
+- Tarjeta de perfil de tus amigos: skin, qué están jugando y sus horas jugadas (se puede ocultar en Ajustes).
+- Copias automáticas de tus mundos al jugar (se guardan las 3 últimas de cada mundo).
+- Descargas en paralelo con reintentos: los mods del evento, los .novapx y los archivos del juego bajan más rápido.
+- Entrar directo al servidor ahora funciona también en Minecraft 1.20 o más nuevo.
+
 ## 1.0.187
 - Inicio rediseñado: portada enmarcada con brillo del tema, saludo y botón de evento sobre la imagen.
 - Pulido general de la interfaz: barras finas, foco visible, botones con brillo y entrada suave de pestañas.
