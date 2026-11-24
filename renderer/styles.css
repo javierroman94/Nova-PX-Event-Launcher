@@ -1491,7 +1491,6 @@ button.sponsor:hover { border-color: rgba(120,200,255,.45); background: rgba(255
 .sponsor-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sponsor-role { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 .sponsor-empty { flex-direction: column; align-items: flex-start; border-style: dashed; gap: 4px; }
-.ad-state-quick { margin-top: 8px; }
 
 .community-stat { margin: 14px 0 0; font-size: 13px; opacity: .85; display: flex; align-items: center; gap: 4px; }
 

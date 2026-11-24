@@ -206,7 +206,6 @@ async function loadAdmin() {
     $('ad-live-name').textContent = ev.name || 'Sin evento';
     $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
     $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
-    $('ad-state-quick').querySelectorAll('button').forEach((x) => x.classList.toggle('active', x.dataset.st === $('ad-state').value));
     adm.evImage = ev.image || '';
     adm.evLogo = ev.logo || '';
     adm.sponsors = (m.sponsors || []).map((x) => ({ ...x }));
@@ -356,24 +355,6 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-$('ad-state-quick').addEventListener('click', async (e) => {
-  const b = e.target.closest('button[data-st]');
-  if (!b) return;
-  const btns = [...$('ad-state-quick').querySelectorAll('button')];
-  btns.forEach((x) => { x.disabled = true; });
-  try {
-    await window.api.adminSetEventState(b.dataset.st);
-    toast(`Estado del evento: ${b.textContent}`, 'success');
-    const evn = (adm.manifest && adm.manifest.event) || {};
-    await autoDiscord('event', { title: `${evn.name || 'Evento'}: ${b.textContent}`, text: evn.tagline || '', image: imageUrl(evn.image) });
-    await loadAdmin();
-    await renderHero();
-  } catch (err) {
-    toast(cleanError(err), 'error');
-  } finally {
-    btns.forEach((x) => { x.disabled = false; });
-  }
-});
 $('ad-finish').addEventListener('click', () => { $('ad-state').value = 'ended'; $('ad-publish').click(); });
 $('ad-publish').addEventListener('click', async () => {
   const id = $('ad-pack').value;

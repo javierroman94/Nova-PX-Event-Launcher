@@ -55,7 +55,7 @@ function paintSponsors(list) {
     credits.forEach((x) => row.append(make(x, 'sponsor sponsor-credit', SP_ROLE.credit)));
     g.append(row); box.append(g);
   }
-  if (!sponsors.length) {
+  if (!sponsors.length && eventState !== 'ended') {
     const g = el('div', 'sp-group');
     const c = el('div', 'sponsor sponsor-empty');
     c.append(el('span', 'sponsor-role', 'Tu marca aquí'), el('strong', '', 'Patrocina un evento de Nova PX'), el('span', 'muted', 'Haz que miles de jugadores conozcan tu marca. Habla con el equipo de Nova PX.'));
@@ -86,18 +86,21 @@ async function renderHero() {
     heroBox.classList.toggle('soon', !eventActive);
     heroBox.classList.toggle('ended', evState === 'ended');
     $('hero-badge-text').textContent = evState === 'ended' ? 'Evento finalizado' : eventActive ? 'Evento actual' : 'Próximamente';
-    $('soon-art').hidden = eventActive || !!(m.event && (m.event.logo || m.event.image));
+    $('soon-art').hidden = eventActive || (!(evState === 'ended') && !!(m.event && (m.event.logo || m.event.image)));
     setPlaying(playing);
     if (m.event && m.event.name) $('hero-title').textContent = m.event.name;
     eventInfo = { name: (m.event && m.event.name) || 'Evento', image: imageUrl(m.event && m.event.image), logo: imageUrl(m.event && m.event.logo), mc: m.minecraftVersion, loader: String((m.loader && m.loader.type) || 'vanilla') };
+    const ended = evState === 'ended'; // un evento finalizado deja de mostrarse (queda en el Historial)
+    if (ended) eventInfo = { ...eventInfo, name: 'Sin evento activo', image: '', logo: '' };
     renderContinue();
-    $('hero-tagline').textContent = (m.event && m.event.tagline) || '';
+    if (ended) $('hero-title').textContent = 'Sin evento activo';
+    $('hero-tagline').textContent = ended ? 'El último evento ya terminó. Mira cómo fue en el Historial y espera el próximo.' : (m.event && m.event.tagline) || '';
     // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
     const art = $('hero-art');
-    const artUrl = imageUrl(m.event && m.event.logo);
+    const artUrl = ended ? '' : imageUrl(m.event && m.event.logo);
     art.hidden = !artUrl;
     if (artUrl) art.src = artUrl;
-    const heroImg = imageUrl(m.event && m.event.image);
+    const heroImg = ended ? '' : imageUrl(m.event && m.event.image);
     const hero = document.querySelector('.hero');
     hero.classList.toggle('has-banner', !!heroImg);
     if (heroImg) hero.style.setProperty('--hero-image', `url(${JSON.stringify(heroImg)})`);
@@ -115,7 +118,7 @@ async function renderHero() {
     $('stat-ver-label').textContent = eventActive ? loaderNames[loader] || loader : 'Minecraft';
     startCountdown(m.event && m.event.startsAt, evState);
     lastEventLinks = m.links;
-    paintSponsors(m.sponsors);
+    paintSponsors(ended ? [] : m.sponsors);
     paintCommunity();
     window.refreshLinks();
   } catch {
@@ -311,7 +314,7 @@ async function renderContinue() {
       card.append(body, when, play, more);
       box.append(card);
     });
-  if (!eventActive) box.append(ev);
+  if (!eventActive && eventState !== 'ended') box.append(ev);
   if (!packs.length) {
     const hint = el('div', 'continue-card empty');
     hint.append(el('span', 'muted', 'Aún no tienes modpacks. Instala uno en la pestaña Modpacks y aparecerá aquí.'));
