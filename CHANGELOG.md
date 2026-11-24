@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.192
+- Los modos PvP y Clásico también se cambian dentro del juego: en el menú de Nova Client (Shift derecho) hay dos interruptores, y encender uno apaga el otro y ajusta los gráficos al momento (Nova Client 0.6.1). El launcher marca el modo que elegiste para que el menú lo muestre.
+
 ## 1.0.191
 - Modos Clásico y PvP: la primera vez que juegas un perfil Nova eliges cómo vas a jugar. Clásico trae gráficos según tu PC, animaciones suaves, coordenadas y el texture pack Nova; PvP va a lo máximo de FPS (sin nubes, sombras ni balanceo de cámara) con CPS y teclas en pantalla. Se cambia desde el perfil.
 

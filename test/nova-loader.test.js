@@ -74,6 +74,7 @@ const mod = (slug, id, f) => ({ slug, id, project: 'AAAAAAAA', name: slug, versi
   assert.deepStrictEqual(perf.modeOptions('clasico', '1.21.1', 'alto').slice(0, -3), perf.optionsLines('alto', '1.21.1'));
   assert.ok(perf.modeOptions('clasico', '1.21.1').includes('bobView:true'));
   assert.strictEqual(perf.modeModules('pvp').cps, true);
+  assert.deepStrictEqual([perf.modeModules('pvp').mode_pvp, perf.modeModules('pvp').mode_classic], [true, false]);
   assert.strictEqual(perf.modeModules('clasico').smooth_anim, true);
   const merged = perf.mergeOptions('fov:0.7\nrenderDistance:20\nlang:es_es\n', ['renderDistance:8', 'maxFps:260']);
   assert.strictEqual(merged, 'fov:0.7\nrenderDistance:8\nlang:es_es\nmaxFps:260\n');

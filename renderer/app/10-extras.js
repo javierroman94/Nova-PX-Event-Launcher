@@ -450,7 +450,7 @@ function askNovaMode(current) {
     const finish = (v) => { if (done) return; done = true; m.close(); resolve(v); };
     m.dlg.addEventListener('close', () => finish(null));
     const head = el('div', 'nova-mode-head');
-    head.append(el('h3', '', '¿Cómo vas a jugar?'), el('p', 'muted', 'Puedes cambiarlo cuando quieras desde el perfil.'));
+    head.append(el('h3', '', '¿Cómo vas a jugar?'), el('p', 'muted', 'Puedes cambiarlo cuando quieras: aquí en el perfil o dentro del juego con Shift derecho.'));
     const grid = el('div', 'nova-mode-grid');
     for (const [key, info] of Object.entries(NOVA_MODE_INFO)) {
       const card = el('button', `nova-mode-card${current === key ? ' current' : ''}`);
