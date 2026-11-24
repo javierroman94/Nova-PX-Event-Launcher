@@ -15,6 +15,8 @@ Nova PX Event Launcher is an open-source Minecraft launcher. This page explains 
 
 **Friends and chat**
 - If you use friends or chat, your nickname, friend list and messages are stored on a Nova PX server (Cloudflare) so they can be delivered.
+- Friends use a live connection to the Nova PX server while the launcher is open, so messages, requests, invitations and online status arrive instantly. Your status (available, away, do not disturb, invisible) and optional status text are visible only to your friends. Blocked players cannot send you requests or messages. Party and play invitations store only the nicknames involved, the event or modpack name, its share code and (for your own profiles) the server address to join, for 30 minutes.
+- Nickname verification (premium accounts only): the launcher asks Mojang's official session server to confirm that you own the account, exactly as when joining a premium server. Your Minecraft access token is sent only to Mojang, never to Nova PX.
 - Friend profile card: unless you turn off "Mostrar a mis amigos qué estoy jugando y mis horas jugadas" in Settings, your friends can see what you are playing (the event or modpack name) and your total hours played with the launcher. Turning it off removes it from the server.
 
 **Sharing a modpack with a code (only when you press "Crear código")**

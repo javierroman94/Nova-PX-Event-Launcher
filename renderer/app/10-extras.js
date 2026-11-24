@@ -365,8 +365,10 @@ function openFriendCard(f) {
   const top = el('div', 'fc-top');
   top.append(head3d({ nick: f.nick }, 84));
   const who = el('div', 'fc-who');
-  who.append(el('strong', 'fc-nick pii', f.nick));
-  const status = f.playing ? (f.game ? `Jugando: ${f.game}` : 'Jugando') : f.online ? 'En línea' : f.seen ? `Activo ${agoMs(Date.now() - f.seen)}` : 'Desconectado';
+  const nickEl = el('strong', 'fc-nick pii', f.nick);
+  if (f.verified) { const v = el('span', 'fr-verified', '✓'); v.title = 'Nick verificado con su cuenta premium'; nickEl.append(v); }
+  who.append(nickEl);
+  const status = friendLine(f);
   const st = el('span', `fc-status${f.online || f.playing ? ' on' : ''}`);
   st.append(el('span', `live-dot${f.online ? '' : ' off'}`), el('span', '', status));
   who.append(st);
@@ -382,7 +384,9 @@ function openFriendCard(f) {
     if (!(await askConfirm(`¿Quitar a ${f.nick} de tus amigos? También se borrará la conversación.`, 'Quitar', 'Cancelar'))) return;
     try { await window.api.friendsRemove(f.nick); m.close(); renderFriends(); } catch (e) { toast(cleanError(e), 'error'); }
   });
-  actions.append(chat, rm);
+  const inv = el('button', '', 'Invitar a jugar'); inv.type = 'button';
+  inv.addEventListener('click', () => { m.close(); if (window.frInvite) window.frInvite(f); });
+  actions.append(chat, inv, rm);
   m.body.append(top, stats);
   if (f.hours === null || f.hours === undefined) m.body.append(el('p', 'muted fc-note', 'Tu amigo no comparte sus horas o todavía no actualizó el launcher.'));
   m.body.append(actions);

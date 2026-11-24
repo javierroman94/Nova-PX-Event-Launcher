@@ -2,6 +2,16 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.189
+- Nueva sección Amigos: lista por estado (jugando, en línea, ausentes, desconectados), búsqueda y aviso con número en la barra lateral.
+- Todo en tiempo real: mensajes, solicitudes, invitaciones y conexiones llegan al instante, con aviso del sistema si el launcher está en segundo plano.
+- Invitar a jugar: tu amigo recibe «Unirme» y entra a tu evento o a tu perfil (se le instala con un código y entra a tu servidor).
+- Party de hasta 8 amigos con líder, invitaciones y «Jugar juntos».
+- Estados: Disponible, Ausente (también automático tras 10 min sin usar la PC), No molestar e Invisible, más un mensaje propio.
+- Chat mejorado: «escribiendo…», «Visto», emojis, enlaces que se abren en el navegador y mensajes más largos.
+- Bloquear y silenciar amigos, y límites contra el spam.
+- Nick verificado con la cuenta premium: el dueño real recupera su nick y nadie más puede usarlo.
+
 ## 1.0.188
 - Más rápido y ligero: el muñeco 3D de Inicio y los efectos se pausan mientras juegas, el launcher abre antes y la intro completa sale solo la primera vez del día.
 - Modo rendimiento en un clic (Modpacks → tu perfil → Contenido): instala Sodium, Lithium, FerriteCore, ModernFix y EntityCulling (Embeddium en Forge) y ajusta la RAM a tu PC.

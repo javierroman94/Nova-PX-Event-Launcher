@@ -72,6 +72,6 @@ module.exports = [
   },
   {
     files: ['worker/**/*.mjs'],
-    languageOptions: { sourceType: 'module', globals: { ...globals.serviceworker, ...globals.browser } }
+    languageOptions: { sourceType: 'module', globals: { ...globals.serviceworker, ...globals.browser, WebSocketPair: 'readonly' } }
   }
 ];
