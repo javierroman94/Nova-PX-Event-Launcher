@@ -228,6 +228,8 @@ async function checkRev() {
     const was = lastRev; lastRev = next;
     if (!revLib.changed(was, next)) return;
     dataMemo.clear();
+    // Lo que otro administrador publicó después manda sobre lo que este launcher publicó hace rato (antes tardaba hasta 5 min en verse).
+    for (const [k, v] of justPublished) if (Date.now() - (v.at || 0) > 15 * 1000) justPublished.delete(k);
     await refreshRemote();
     send('content:changed', { at: Date.now() });
   } catch {}
