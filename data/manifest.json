@@ -1,10 +1,10 @@
 {
   "event": {
-    "active": true,
+    "active": false,
     "name": "Murder Mistery",
     "tagline": "Evento organizado por EzLuiiz con el mod de \"Sweet Vacations\" donde 15 jugadores tendran que descubrir quien es el asesino en un yate en medio del oceano.",
     "startsAt": "2026-11-24T03:37:50.950Z",
-    "status": "active",
+    "status": "ended",
     "image": "images/banner-murder-mistery-mwu50mg8.png",
     "logo": "",
     "autoStart": false,
