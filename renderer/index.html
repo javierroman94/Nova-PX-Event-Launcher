@@ -825,16 +825,32 @@
       </div>
 
       <div id="ad-tab-event">
-        <article class="ad-card" id="ad-evlib">
-          <header><div><h3>Tus eventos</h3><p class="muted">Cada tarjeta guarda todo un evento: información, fecha, imagen, patrocinadores y modpack. Ábrela para editarla; «Publicar» la manda a los jugadores.</p></div><button id="ad-evlib-new" type="button" class="primary">+ Crear evento</button></header>
-          <div id="ad-evlib-cards" class="evlib-cards"></div>
+        <!-- Pantalla 1 y 3: eventos guardados, publicar y programar -->
+        <article class="ad-card" id="ev-screen-list">
+          <header class="evlib-head"><h3>Eventos guardados</h3><button id="ad-evlib-new" type="button" class="primary">+ Nuevo Evento</button></header>
+          <div id="ad-evlib-cards" class="evlib-list"></div>
+          <progress id="ad-evpub-progress" max="1" value="0" hidden></progress>
           <p id="ad-evlib-status" class="muted" role="status"></p>
         </article>
-        <div id="ad-ev-editor" hidden>
-        <div class="ad-card ad-editing"><div><strong id="ad-editing-title">Editando</strong><p class="muted" id="ad-editing-sub"></p></div><div class="btn-row"><button id="ad-editing-save" type="button">Guardar en tus eventos</button><button id="ad-editing-close" type="button" class="ghost">Cerrar</button></div></div>
-        <div class="ad-grid">
+
+        <!-- Pantalla 2: configurar el evento (aquí no se decide cuándo se ve) -->
+        <div id="ev-screen-edit" hidden>
+          <div class="ad-card ad-editing"><button id="ad-editing-close" type="button" class="ghost">← Eventos</button><strong id="ad-editing-title">Evento nuevo</strong></div>
           <article class="ad-card">
-            <header><span class="ad-step">1</span><div><h3>Modpack del evento</h3><p class="muted">Lo que jugarán todos. Créalo y pruébalo en Modpacks; aquí eliges cuál se publica.</p></div></header>
+            <h3>Vista previa</h3>
+            <p class="muted">Así lo verán los jugadores en la pestaña Evento.</p>
+            <div id="ev-preview" class="ev-preview"><div class="ev-preview-body"><img id="ev-preview-logo" alt="" hidden /><h2 id="ev-preview-name">Nombre del evento</h2><p id="ev-preview-desc"></p></div></div>
+          </article>
+          <article class="ad-card">
+            <div class="field"><label for="ad-name">Nombre del evento</label><input id="ad-name" type="text" maxlength="80" /></div>
+            <div class="field"><label for="ad-tag">Descripción</label><textarea id="ad-tag" rows="4" maxlength="300"></textarea></div>
+            <div class="btn-row center"><button id="ad-banner-pick" type="button">+ Banner</button><button id="ad-logo-pick" type="button">+ Logo</button><button id="ad-art-clear" type="button" class="ghost">Quitar</button></div>
+            <small id="ad-art-state" class="muted"></small>
+            <p id="ad-status" class="muted" role="status"></p>
+            <label class="check"><input id="ad-lock" type="checkbox" checked /> 🔒 Bloquear el modpack: los jugadores no pueden añadir ni cambiar mods, texturas ni shaders del evento</label>
+          </article>
+          <article class="ad-card">
+            <header><div><h3>Modpack del evento</h3><p class="muted">Lo que jugarán todos. Créalo y pruébalo en Modpacks; aquí eliges cuál lleva este evento.</p></div></header>
             <label for="ad-pack">Instancia</label>
             <select id="ad-pack"></select>
             <div id="ad-pack-card" class="ad-pack" hidden>
@@ -851,55 +867,31 @@
               <button id="ad-pack-new" type="button">+ Instancia nueva</button>
             </div>
           </article>
-
-          <article class="ad-card">
-            <header><span class="ad-step">2</span><div><h3>Datos del evento</h3><p class="muted">Lo que verán los jugadores en el launcher.</p></div></header>
-            <div class="field inline">
-              <div><label for="ad-state">Estado del evento</label>
-                <select id="ad-state"><option value="soon">Próximamente</option><option value="active">Activo (los jugadores pueden entrar)</option><option value="ended">Finalizado</option></select></div>
-              <div><label>Banner y logo</label>
-                <div class="btn-row"><button id="ad-banner-pick" type="button">Banner…</button><button id="ad-logo-pick" type="button">Logo…</button><button id="ad-art-clear" type="button">Quitar</button></div>
-                <small id="ad-art-state" class="muted"></small></div>
-            </div>
-            <div class="field inline">
-              <div><label for="ad-name">Nombre</label><input id="ad-name" type="text" maxlength="80" /></div>
-              <div><label for="ad-start">Empieza</label><input id="ad-start" type="datetime-local" /><small id="ad-start-tz" class="muted"></small></div>
-            </div>
-            <div class="field"><label for="ad-tag">Frase</label><input id="ad-tag" type="text" maxlength="300" /></div>
-            <p class="muted">La IP del servidor va dentro del modpack (servers.dat) y no se muestra a los jugadores.</p>
-            <label class="check"><input id="ad-new" type="checkbox" /> Es un evento nuevo (los jugadores empiezan en una carpeta limpia)</label>
-            <label class="check"><input id="ad-lock" type="checkbox" checked /> 🔒 Bloquear el modpack: los jugadores no pueden añadir ni cambiar mods, texturas ni shaders del evento</label>
+          <article class="ad-card ad-brands">
+            <header><div><h3>Hosting, patrocinadores y créditos</h3><p class="muted">Quién aparece en la pestaña Evento. El hosting con tarjeta destacada, los patrocinadores del evento y, aparte, los créditos del equipo.</p></div></header>
+            <div id="ad-sponsors" class="brand-groups"></div>
           </article>
+          <article class="ad-card ad-publish">
+            <header><div><h3>Clave de acceso</h3><p class="muted">Con ella se cifran los mods del evento. Se usa cuando lo publicas.</p></div></header>
+            <ul id="ad-check" class="ad-check"></ul>
+            <div class="field">
+              <label for="ad-pass">Contraseña de instalación</label>
+              <div class="pass-row">
+                <input id="ad-pass" type="password" autocomplete="off" placeholder="Mínimo 10 caracteres. Guárdala: no se puede recuperar." />
+                <button id="ad-pass-eye" type="button" title="Mostrar u ocultar la contraseña" aria-label="Mostrar contraseña" aria-pressed="false">👁</button>
+              </div>
+              <div class="pass-actions">
+                <button id="ad-pass-check" type="button">Comprobar si es la actual</button>
+                <button id="ad-pass-gen" type="button">Generar una nueva</button>
+                <button id="ad-pass-copy" type="button">Copiar</button>
+                <label id="ad-pass-remember-row" class="check" hidden><input id="ad-pass-remember" type="checkbox" /> Recordarla en este equipo (cifrada)</label>
+              </div>
+              <p id="ad-pass-msg" class="muted" role="status"></p>
+              <p class="muted">¿Se te olvidó? No se puede recuperar. Genera una nueva y publica: los jugadores la escribirán una sola vez.</p>
+            </div>
+          </article>
+          <div class="mp-actions center"><button id="ad-editing-save" type="button" class="primary ad-big">Guardar cambios</button></div>
         </div>
-
-        <article class="ad-card ad-brands">
-          <header><span class="ad-step">3</span><div><h3>Hosting, patrocinadores y créditos</h3><p class="muted">Quién aparece en la pestaña Evento. Cada grupo se muestra distinto: el hosting con tarjeta destacada, los patrocinadores del evento y, aparte, los créditos del equipo.</p></div></header>
-          <div id="ad-sponsors" class="brand-groups"></div>
-        </article>
-
-        <article class="ad-card ad-publish">
-          <header><span class="ad-step">4</span><div><h3>Publicar</h3><p class="muted">Se cifran los mods, se suben a GitHub y los jugadores lo reciben al abrir el launcher.</p></div></header>
-          <ul id="ad-check" class="ad-check"></ul>
-          <div class="field">
-            <label for="ad-pass">Contraseña de instalación</label>
-            <div class="pass-row">
-              <input id="ad-pass" type="password" autocomplete="off" placeholder="Mínimo 10 caracteres. Guárdala: no se puede recuperar." />
-              <button id="ad-pass-eye" type="button" title="Mostrar u ocultar la contraseña" aria-label="Mostrar contraseña" aria-pressed="false">👁</button>
-            </div>
-            <div class="pass-actions">
-              <button id="ad-pass-check" type="button">Comprobar si es la actual</button>
-              <button id="ad-pass-gen" type="button">Generar una nueva</button>
-              <button id="ad-pass-copy" type="button">Copiar</button>
-              <label id="ad-pass-remember-row" class="check" hidden><input id="ad-pass-remember" type="checkbox" /> Recordarla en este equipo (cifrada)</label>
-            </div>
-            <p id="ad-pass-msg" class="muted" role="status"></p>
-            <p class="muted">¿Se te olvidó? No se puede recuperar. Genera una nueva y publica: los jugadores la escribirán una sola vez.</p>
-          </div>
-          <progress id="ad-progress" max="1" value="0" hidden></progress>
-          <p id="ad-status" class="muted" role="status"></p>
-          <div class="mp-actions"><button id="ad-finish" type="button" class="ad-big">Finalizar evento</button><button id="ad-publish" type="button" class="primary ad-big">Publicar evento</button></div>
-        </article>
-      </div>
       </div>
 
       <div id="ad-tab-team" hidden>

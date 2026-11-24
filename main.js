@@ -3300,7 +3300,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     } else {
       send('game:status', { text: 'Leyendo configuración del evento…' });
       manifest = await loadData('manifest');
-      if (manifest.event && manifest.event.active === false) {
+      if (manifest.event && require('./lib/evento-estado').estadoEfectivo(manifest.event) !== 'active') {
         throw new Error('Todavía no hay un evento activo. ¡Pronto habrá novedades!');
       }
     }

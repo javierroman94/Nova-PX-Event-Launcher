@@ -3473,3 +3473,22 @@ main { container-type: inline-size; overflow-x: hidden; }
 .evlib-tag { justify-self: start; padding: 1px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .evlib-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px; }
 .ad-editing { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+
+.evlib-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 2px solid var(--line); margin-bottom: 14px; }
+.evlib-list { display: grid; gap: 10px; min-height: 220px; align-content: start; }
+.evlib-empty { margin: 80px 0; text-align: center; font-weight: 700; color: var(--muted, #9a9aa6); }
+.evlib-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, .04) center / cover no-repeat; }
+.evlib-main { min-width: 0; flex: 1; }
+.evlib-main strong { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.evlib-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.evlib-badge { padding: 4px 12px; border-radius: 10px; font-size: 12px; font-weight: 800; background: rgba(255, 255, 255, .1); }
+.evlib-badge.on { background: color-mix(in srgb, #46d27a 30%, transparent); color: #7ff0a8; }
+.evlib-publish { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+#ad-evpub-progress { width: 100%; margin-top: 10px; }
+.ev-preview { min-height: 170px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, .05) center / cover no-repeat; display: flex; align-items: flex-end; }
+.ev-preview-body { padding: 18px 20px; display: grid; gap: 6px; max-width: 70%; }
+.ev-preview-body img { width: 64px; height: 64px; object-fit: contain; }
+.ev-preview-body h2 { margin: 0; font-size: 28px; }
+.ev-preview-body p { margin: 0; opacity: .85; }
+.btn-row.center, .mp-actions.center { justify-content: center; }
+#ad-tag { width: 100%; resize: vertical; }

@@ -79,7 +79,9 @@ async function paintCommunity() {
 async function renderHero() {
   try {
     const m = await window.api.getData('manifest');
-    const evState = (m.event && m.event.status) || (m.event && m.event.active === false ? 'soon' : 'active');
+    let evState = (m.event && m.event.status) || (m.event && m.event.active === false ? 'soon' : 'active');
+    // Un evento programado se abre solo a la hora de inicio (misma regla que lib/evento-estado.js).
+    if (evState === 'soon' && m.event && m.event.autoStart === true && Date.parse(m.event.startsAt || '') <= Date.now()) evState = 'active';
     eventState = evState;
     eventActive = evState === 'active';
     const heroBox = document.querySelector('.hero');
@@ -372,6 +374,7 @@ function startCountdown(iso, state) {
       clearInterval(countdownTimer);
       box.textContent = '¡Ya empezó!';
       label.textContent = 'Próximo evento';
+      renderHero(); // si estaba programado, se abre solo
       return;
     }
     const d = Math.floor(left / 86400000);

@@ -186,6 +186,7 @@ function sponsorsEditor() {
 
 function paintArtState() {
   $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con logo' : 'sin logo'}`;
+  paintEvPreview();
 }
 /* Elige una imagen, deja acomodarla en un cuadro (como Instagram o X) y solo entonces la sube. Devuelve {path, preview} o null. */
 async function pickImageCropped(label, aspect) {
@@ -219,19 +220,6 @@ async function loadAdmin() {
     const ev = m.event || {};
     $('ad-live-name').textContent = ev.name || 'Sin evento';
     $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
-    if (evEditKey === null || evEditKey === 'live') {
-      $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
-      adm.evImage = ev.image || '';
-      adm.evLogo = ev.logo || '';
-      adm.sponsors = (m.sponsors || []).map((x) => ({ ...x }));
-      sponsorsEditor();
-      paintArtState();
-      $('ad-name').value = ev.name || '';
-      $('ad-tag').value = ev.tagline || '';
-      $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
-      $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
-      $('ad-new').checked = false;
-    }
     loadEvLib().catch(() => {});
     adm.team = d.team;
     adm.news = d.news;
@@ -307,7 +295,6 @@ function paintChecklist() {
     ul.append(li);
     if (!ok && !soft) ready = false;
   });
-  $('ad-publish').disabled = !ready;
   $('ad-pass').closest('.field').hidden = !hasPack;
 }
 ['ad-name', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
@@ -372,58 +359,14 @@ function toLocalInput(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-$('ad-finish').addEventListener('click', () => { $('ad-state').value = 'ended'; $('ad-publish').click(); });
-$('ad-publish').addEventListener('click', async () => {
-  const id = $('ad-pack').value;
-  const name = $('ad-name').value.trim();
-  const state = $('ad-state').value;
-  const active = state === 'active';
-  const msg = `¿Publicar "${name}"?\n\n${active ? 'El evento queda ACTIVO: los jugadores podrán entrar.' : state === 'ended' ? 'El evento queda FINALIZADO.' : 'El evento queda como próximamente.'}${id && adm.summary ? `\nSe publican ${adm.summary.mods} mods cifrados.` : ''}`;
-  if (!await askConfirm(msg)) return;
-  const btn = $('ad-publish');
-  btn.disabled = true;
-  const bar = $('ad-progress');
-  bar.hidden = false;
-  bar.removeAttribute('value');
-  adminProgress = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } $('ad-status').textContent = d.text || ''; };
-  try {
-    const start = $('ad-start').value;
-    const r = await window.api.adminPublishEvent({
-      id: id || undefined, password: $('ad-pass').value,
-      form: {
-        status: state, active, sponsors: adm.sponsors || [], image: adm.evImage || '', logo: adm.evLogo || '', name, tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '', newEvent: $('ad-new').checked, lockPack: $('ad-lock').checked
-      }
-    });
-    $('ad-status').textContent = r.mods
-      ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'} Los jugadores lo ven en unos minutos.`
-      : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`;
-    try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: $('ad-pass').value }); } catch (e) { toast(cleanError(e), 'error'); }
-    if (!$('ad-pass-remember').checked) $('ad-pass').value = '';
-    $('ad-pass').type = 'password';
-    $('ad-new').checked = false;
-    toast('Evento publicado');
-    await evLibAfterPublish();
-    await autoDiscord('event', { title: `${r.name}: evento publicado`, text: $('ad-tag').value, image: imageUrl(adm.evImage) });
-    try { await loadAdmin(); } catch {}
-    window.refreshContent && window.refreshContent();
-    if (state === 'ended') await offerSaveToHistory(r.name || name);
-  } catch (e) {
-    $('ad-status').textContent = cleanError(e);
-  }
-  adminProgress = null;
-  bar.hidden = true;
-  paintChecklist();
-});
-
-// Al finalizar un evento, pregunta si se guarda en el apartado Historial (sin duplicarlo).
-async function offerSaveToHistory(evName) {
+async function offerSaveToHistory(evName, entryInfo) {
   const nm = String(evName || '').trim();
   if (!nm) return;
   const list = Array.isArray(adm.events) ? adm.events : [];
   if (list.some((e) => String(e.name || '').trim().toLowerCase() === nm.toLowerCase())) return;
   if (!await askConfirm(`El evento "${nm}" quedó FINALIZADO.\n\n¿Quieres guardarlo en el apartado Historial?\nPodrás añadir ganadores, participantes y enlaces editándolo después.`)) return;
-  const img = String(adm.evImage || '');
-  const entry = { name: nm.slice(0, 80), date: new Date().toISOString().slice(0, 10), image: /^(images\/|https:\/\/)/i.test(img) ? img : '', description: String($('ad-tag').value || '').slice(0, 800) };
+  const img = String((entryInfo && entryInfo.image) || adm.evImage || '');
+  const entry = { name: nm.slice(0, 80), date: new Date().toISOString().slice(0, 10), image: /^(images\/|https:\/\/)/i.test(img) ? img : '', description: String((entryInfo && entryInfo.tagline) || $('ad-tag').value || '').slice(0, 800) };
   await saveAdminEvents([entry, ...list], false);
   toast('Evento guardado en Historial');
 }
@@ -1092,47 +1035,87 @@ $('ad-sign-import').addEventListener('click', async () => {
 document.querySelector('[data-ad-tab="config"]')?.addEventListener('click', paintSignKey);
 
 
-/* --- biblioteca de eventos: una tarjeta por evento --- */
+/* --- eventos: lista, configurar y publicar --- */
 let evLib = [];
-let evEditKey = null; // null = nada abierto, 'live' = el evento publicado ahora, o el id de una tarjeta
-const EV_STATE = { soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' };
+let evEditKey = null; // id de la tarjeta que se está configurando (null = ninguna)
+let evImporting = false;
 const evSlug = (name) => `${String(name || 'evento').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'evento'}-${Date.now().toString(36)}`.slice(0, 40);
+const evWhen = (iso) => new Date(iso).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 function readEditorEvent() {
-  const start = $('ad-start').value;
   return {
-    name: $('ad-name').value.trim(), tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '',
-    status: $('ad-state').value, image: adm.evImage || '', logo: adm.evLogo || '', sponsors: (adm.sponsors || []).map((x) => ({ ...x })),
-    lockPack: $('ad-lock').checked, instanceId: $('ad-pack').value || ''
+    name: $('ad-name').value.trim(), tagline: $('ad-tag').value, image: adm.evImage || '', logo: adm.evLogo || '',
+    sponsors: (adm.sponsors || []).map((x) => ({ ...x })), lockPack: $('ad-lock').checked, instanceId: $('ad-pack').value || ''
   };
 }
-function fillEditorEvent(e, isNew) {
-  $('ad-state').value = e.status || 'soon';
+function fillEditorEvent(e) {
   adm.evImage = e.image || '';
   adm.evLogo = e.logo || '';
   adm.sponsors = (e.sponsors || []).map((x) => ({ ...x }));
   sponsorsEditor();
-  paintArtState();
   $('ad-name').value = e.name || '';
   $('ad-tag').value = e.tagline || '';
   $('ad-lock').checked = e.lockPack !== false;
-  $('ad-start').value = e.startsAt ? toLocalInput(e.startsAt) : '';
-  $('ad-new').checked = !!isNew;
-  if (e.instanceId && [...$('ad-pack').options].some((o) => o.value === e.instanceId)) { $('ad-pack').value = e.instanceId; $('ad-pack').dispatchEvent(new Event('change')); }
+  const has = e.instanceId && [...$('ad-pack').options].some((o) => o.value === e.instanceId);
+  $('ad-pack').value = has ? e.instanceId : '';
+  $('ad-pack').dispatchEvent(new Event('change'));
+  paintArtState();
 }
-function openEvEditor(key, entry, isNew) {
+function paintEvPreview() {
+  const box = $('ev-preview');
+  if (!box) return;
+  const img = imageUrl(adm.evImage || '');
+  box.style.backgroundImage = img ? `linear-gradient(90deg, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${JSON.stringify(img)})` : '';
+  const logo = imageUrl(adm.evLogo || '');
+  const lg = $('ev-preview-logo');
+  lg.hidden = !logo;
+  if (logo) lg.src = logo;
+  $('ev-preview-name').textContent = $('ad-name').value.trim() || 'Nombre del evento';
+  $('ev-preview-desc').textContent = $('ad-tag').value;
+}
+['ad-name', 'ad-tag'].forEach((id) => $(id).addEventListener('input', paintEvPreview));
+
+function showEvScreen(edit) {
+  $('ev-screen-list').hidden = edit;
+  $('ev-screen-edit').hidden = !edit;
+}
+function openEvEditor(key, entry) {
   evEditKey = key;
-  fillEditorEvent(entry, isNew);
-  $('ad-ev-editor').hidden = false;
-  $('ad-editing-title').textContent = key === 'live' ? `Evento publicado: ${entry.name || 'sin nombre'}` : `Editando: ${entry.name || 'evento nuevo'}`;
-  $('ad-editing-sub').textContent = key === 'live'
-    ? 'Es lo que ven los jugadores ahora. Puedes guardar una copia en tus eventos.'
-    : 'Tus cambios se guardan en tus eventos. Al pulsar «Publicar evento» también llegan a los jugadores.';
-  paintEvLib();
-  $('ad-ev-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  fillEditorEvent(entry);
+  $('ad-editing-title').textContent = entry.name ? `Configurar: ${entry.name}` : 'Evento nuevo';
+  $('ad-status').textContent = '';
+  paintChecklist();
+  showEvScreen(true);
 }
+
+// El evento que ven los jugadores ahora, según data/manifest.json.
+function liveInfo() {
+  const m = adm.manifest || {};
+  const ev = m.event || {};
+  if (!ev.name) return null;
+  let status = ev.status || (ev.active ? 'active' : 'soon');
+  if (status === 'soon' && ev.autoStart && Date.parse(ev.startsAt || '') <= Date.now()) status = 'active';
+  return { id: ev.id || '', name: ev.name, status, startsAt: ev.startsAt || '', autoStart: !!ev.autoStart };
+}
+function isLiveEntry(e, live) {
+  if (!live) return false;
+  if (e.publishedId) return e.publishedId === live.id;
+  return String(e.name || '').trim().toLowerCase() === live.name.trim().toLowerCase();
+}
+
 async function loadEvLib() {
   evLib = await window.api.adminEvLibList();
+  const live = liveInfo();
+  // El evento que ya está publicado se guarda solo en la lista la primera vez.
+  if (live && !evImporting && !evLib.some((e) => isLiveEntry(e, live))) {
+    evImporting = true;
+    const m = adm.manifest || {};
+    const ev = m.event || {};
+    try {
+      evLib = await window.api.adminEvLibSave([...evLib, { id: evSlug(ev.name), name: ev.name, tagline: ev.tagline || '', startsAt: ev.startsAt || '', status: ev.status || (ev.active ? 'active' : 'soon'), image: ev.image || '', logo: ev.logo || '', sponsors: m.sponsors || [], lockPack: m.lockPack !== false, instanceId: '', publishedId: ev.id || '' }]);
+    } catch {}
+    evImporting = false;
+  }
   paintEvLib();
 }
 async function saveEvLib(list, okText) {
@@ -1144,60 +1127,114 @@ async function saveEvLib(list, okText) {
     return true;
   } catch (e) { st.textContent = cleanError(e); return false; }
 }
+const upsertEv = (e, id) => (evLib.some((x) => x.id === id) ? evLib.map((x) => (x.id === id ? { ...x, ...e, id } : x)) : [...evLib, { ...e, id }]);
+
 function paintEvLib() {
   const box = $('ad-evlib-cards');
   if (!box) return;
   box.replaceChildren();
-  const card = (key, e, tag, live) => {
-    const c = el('div', `evlib-card${live ? ' live' : ''}${evEditKey === key ? ' open' : ''}`);
-    const art = el('div', 'evlib-art');
-    const img = imageUrl(e.image || e.logo || '');
-    if (img) art.style.backgroundImage = `url(${JSON.stringify(img)})`; else art.textContent = '🎮';
-    const body = el('div', 'evlib-body');
-    const when = e.startsAt ? new Date(e.startsAt).toLocaleString('es', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sin fecha';
-    body.append(el('span', 'evlib-tag', tag), el('strong', '', e.name || 'Sin nombre'), el('small', 'muted', when));
+  if (!evLib.length) { box.append(el('p', 'evlib-empty', 'Sin eventos guardados')); return; }
+  const live = liveInfo();
+  evLib.forEach((e) => {
+    const row = el('div', 'evlib-row');
+    const img = imageUrl(e.image || '');
+    if (img) { row.classList.add('has-banner'); row.style.backgroundImage = `linear-gradient(90deg, rgba(10,10,14,.92) 8%, rgba(10,10,14,.35)), url(${JSON.stringify(img)})`; }
+    const main = el('div', 'evlib-main');
+    const mine = isLiveEntry(e, live);
+    main.append(el('strong', '', e.name));
     const acts = el('div', 'evlib-actions');
     const btn = (text, fn, cls) => { const b = el('button', cls || '', text); b.type = 'button'; b.addEventListener('click', fn); acts.append(b); return b; };
-    btn('Editar', () => openEvEditor(key, e, false));
-    if (live) {
-      btn('Guardar copia', async () => { const copy = { ...e, id: evSlug(e.name), instanceId: '' }; await saveEvLib([...evLib, copy], 'Copia guardada en tus eventos.'); }, 'ghost');
-    } else {
-      btn('Duplicar', async () => { await saveEvLib([...evLib, { ...e, id: evSlug(e.name), name: `${e.name} (copia)`.slice(0, 80), status: 'soon' }], 'Evento duplicado.'); }, 'ghost');
-      btn('Eliminar', async () => {
-        if (!await askConfirm(`¿Eliminar "${e.name}" de tus eventos? Si está publicado, los jugadores lo siguen viendo.`)) return;
-        if (evEditKey === key) { evEditKey = null; $('ad-ev-editor').hidden = true; }
-        await saveEvLib(evLib.filter((x) => x.id !== key), 'Evento eliminado de tus eventos.');
-      }, 'ghost');
-    }
-    c.append(art, body, acts);
-    box.append(c);
-  };
-  const m = adm.manifest || {};
-  const ev = m.event || {};
-  if (ev.name) {
-    const st = ev.status || (ev.active ? 'active' : 'soon');
-    card('live', { name: ev.name, tagline: ev.tagline, startsAt: ev.startsAt, status: st, image: ev.image, logo: ev.logo, sponsors: m.sponsors || [], lockPack: m.lockPack !== false }, `Publicado · ${EV_STATE[st]}`, true);
-  }
-  evLib.forEach((e) => card(e.id, e, EV_STATE[e.status] || 'Borrador', false));
-  if (!ev.name && !evLib.length) box.append(el('p', 'muted', 'Todavía no hay eventos. Pulsa «Crear evento».'));
+    if (mine && live.status === 'active') acts.append(el('span', 'evlib-badge on', 'ACTIVO'));
+    else if (mine && live.status === 'soon') acts.append(el('span', 'evlib-badge', live.autoStart && live.startsAt ? `PROGRAMADO · ${evWhen(live.startsAt)}` : 'PRÓXIMAMENTE'));
+    else if (mine && live.status === 'ended') acts.append(el('span', 'evlib-badge', 'FINALIZADO'));
+    btn('Editar', () => openEvEditor(e.id, e), 'ghost');
+    if (mine && live.status !== 'ended') btn('Finalizar', () => finishEvent(e), 'ghost');
+    if (!mine || live.status === 'ended') btn('Publicar', () => togglePublishPanel(row, e), 'primary');
+    btn('Duplicar', async () => { await saveEvLib([...evLib, { ...e, id: evSlug(e.name), name: `${e.name} (copia)`.slice(0, 80), publishedId: '' }], 'Evento duplicado.'); }, 'ghost');
+    btn('Eliminar', async () => {
+      if (!await askConfirm(`¿Eliminar "${e.name}" de tus eventos?${mine && live.status !== 'ended' ? '\n\nSigue publicado: los jugadores lo seguirán viendo hasta que lo finalices.' : ''}`)) return;
+      await saveEvLib(evLib.filter((x) => x.id !== e.id), 'Evento eliminado.');
+    }, 'ghost');
+    row.append(main, acts);
+    box.append(row);
+  });
 }
+
+// Panel que se abre bajo la fila: publicar ahora o programar para una fecha.
+function togglePublishPanel(row, e) {
+  const open = row.querySelector('.evlib-publish');
+  if (open) { open.remove(); return; }
+  const panel = el('div', 'evlib-publish');
+  const now = el('button', 'primary', 'Publicar ahora'); now.type = 'button';
+  const when = el('input'); when.type = 'datetime-local';
+  const d = new Date(Date.now() + 24 * 3600 * 1000); d.setMinutes(0, 0, 0);
+  when.value = toLocalInput(d.toISOString());
+  const sched = el('button', '', 'Programar'); sched.type = 'button';
+  const note = el('small', 'muted', 'Programado: los jugadores lo ven como «Próximamente» con cuenta atrás y se abre solo a esa hora.');
+  now.addEventListener('click', () => publishEntry(e, ''));
+  sched.addEventListener('click', () => {
+    const t = when.value ? new Date(when.value) : null;
+    if (!t || Number.isNaN(t.getTime()) || t.getTime() <= Date.now()) { $('ad-evlib-status').textContent = 'Elige una fecha y hora futuras.'; return; }
+    publishEntry(e, t.toISOString());
+  });
+  panel.append(now, el('span', 'muted', 'o el'), when, sched, note);
+  row.append(panel);
+}
+
+async function publishEntry(e, whenIso) {
+  const st = $('ad-evlib-status');
+  const bar = $('ad-evpub-progress');
+  const hasPack = !!e.instanceId;
+  const pw = $('ad-pass').value;
+  if (!e.name) { st.textContent = 'El evento necesita un nombre.'; return; }
+  if (hasPack && !(await window.api.modpackInstalled()).some((p) => p.id === e.instanceId)) { st.textContent = 'La instancia de este evento no está en este equipo. Ábrelo y elige otra.'; return; }
+  if (hasPack && pw.length < 10) { st.textContent = 'Falta la clave de acceso: abre el evento («Editar») y escríbela en «Clave de acceso».'; return; }
+  const live = liveInfo();
+  if (!await askConfirm(`¿Publicar "${e.name}"?\n\n${whenIso ? `Los jugadores lo verán como próximamente y se abrirá solo el ${evWhen(whenIso)}.` : 'Queda ACTIVO: los jugadores podrán entrar ya.'}${live && !isLiveEntry(e, live) && live.status !== 'ended' ? `\n\nReemplaza al evento publicado ahora ("${live.name}").` : ''}`)) return;
+  document.querySelectorAll('#ad-evlib-cards button').forEach((b) => { b.disabled = true; });
+  bar.hidden = false;
+  bar.removeAttribute('value');
+  adminProgress = (d) => { if (d.total) { bar.max = d.total; bar.value = d.done; } st.textContent = d.text || ''; };
+  try {
+    const r = await window.api.adminPublishEvent({
+      id: hasPack ? e.instanceId : undefined, password: pw,
+      form: { status: whenIso ? 'soon' : 'active', active: !whenIso, autoStart: !!whenIso, sponsors: e.sponsors || [], image: e.image || '', logo: e.logo || '', name: e.name, tagline: e.tagline || '', startsAt: whenIso || new Date().toISOString(), newEvent: !(live && isLiveEntry(e, live)), lockPack: e.lockPack !== false }
+    });
+    if (hasPack) { try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: pw }); } catch (err) { toast(cleanError(err), 'error'); } }
+    if (!$('ad-pass-remember').checked) { $('ad-pass').value = ''; $('ad-pass').type = 'password'; }
+    try { await loadAdmin(); } catch {}
+    const ev = (adm.manifest && adm.manifest.event) || {};
+    await saveEvLib(upsertEv({ ...e, publishedId: ev.id || '', status: whenIso ? 'soon' : 'active', startsAt: whenIso || '' }, e.id), r.mods ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'}` : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`);
+    toast(whenIso ? 'Evento programado' : 'Evento publicado');
+    await autoDiscord('event', { title: `${r.name}: ${whenIso ? 'evento programado' : 'evento publicado'}`, text: e.tagline || '', image: imageUrl(e.image) });
+    window.refreshContent && window.refreshContent();
+  } catch (err) {
+    st.textContent = cleanError(err);
+  }
+  adminProgress = null;
+  bar.hidden = true;
+  paintEvLib();
+}
+
+async function finishEvent(e) {
+  if (!await askConfirm(`¿Finalizar "${e.name}"?\n\nDeja de verse en Inicio y en la pestaña Evento, y los jugadores ya no podrán entrar.`)) return;
+  try {
+    await window.api.adminSetEventState('ended');
+    try { await loadAdmin(); } catch {}
+    await saveEvLib(upsertEv({ ...e, status: 'ended' }, e.id), 'Evento finalizado.');
+    window.refreshContent && window.refreshContent();
+    await offerSaveToHistory(e.name, e);
+  } catch (err) { $('ad-evlib-status').textContent = cleanError(err); }
+}
+
 $('ad-evlib-new').addEventListener('click', () => {
-  const id = evSlug('evento');
-  openEvEditor(id, { name: '', tagline: '', startsAt: '', status: 'soon', image: '', logo: '', sponsors: [], lockPack: true, instanceId: '' }, true);
+  openEvEditor(evSlug('evento'), { name: '', tagline: '', image: '', logo: '', sponsors: [], lockPack: true, instanceId: '' });
   $('ad-name').focus();
 });
-$('ad-editing-close').addEventListener('click', () => { evEditKey = null; $('ad-ev-editor').hidden = true; paintEvLib(); });
+$('ad-editing-close').addEventListener('click', () => { evEditKey = null; showEvScreen(false); paintEvLib(); });
 $('ad-editing-save').addEventListener('click', async () => {
   const e = readEditorEvent();
-  if (!e.name) { $('ad-evlib-status').textContent = 'Ponle un nombre al evento.'; return; }
-  const id = evEditKey && evEditKey !== 'live' ? evEditKey : evSlug(e.name);
-  const next = evLib.some((x) => x.id === id) ? evLib.map((x) => (x.id === id ? { ...x, ...e, id } : x)) : [...evLib, { ...e, id }];
-  if (await saveEvLib(next, 'Guardado en tus eventos.')) { evEditKey = id; $('ad-editing-title').textContent = `Editando: ${e.name}`; paintEvLib(); toast('Evento guardado'); }
+  if (!e.name) { $('ad-status').textContent = 'Ponle un nombre al evento.'; return; }
+  const id = evEditKey || evSlug(e.name);
+  if (await saveEvLib(upsertEv(e, id), 'Cambios guardados.')) { evEditKey = null; showEvScreen(false); toast('Evento guardado'); }
 });
-async function evLibAfterPublish() {
-  if (!evEditKey || evEditKey === 'live') return;
-  const e = readEditorEvent();
-  if (!e.name) return;
-  const next = evLib.some((x) => x.id === evEditKey) ? evLib.map((x) => (x.id === evEditKey ? { ...x, ...e, id: evEditKey } : x)) : [...evLib, { ...e, id: evEditKey }];
-  try { await saveEvLib(next, ''); } catch {}
-}
