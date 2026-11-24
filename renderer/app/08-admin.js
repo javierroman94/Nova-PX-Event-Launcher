@@ -1120,18 +1120,61 @@ function fillEditorEvent(e) {
   paintArtState();
   paintEvCounts();
 }
-function paintEvPreview() {
-  const box = $('ev-preview');
-  if (!box) return;
-  const img = imageUrl(adm.evImage || '');
-  box.style.backgroundImage = img ? `linear-gradient(90deg, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${JSON.stringify(img)})` : '';
-  const logo = imageUrl(adm.evLogo || '');
-  const lg = $('ev-preview-logo');
-  lg.hidden = !logo;
-  if (logo) lg.src = logo;
-  $('ev-preview-name').textContent = $('ad-name').value.trim() || 'Nombre del evento';
-  $('ev-preview-desc').textContent = $('ad-tag').value;
+// Vista previa: una copia real de la pestaña Evento (misma portada, mismos estilos y el mismo código de patrocinadores).
+let evPrevMeta = null;
+async function evPreviewMeta() {
+  if (!evPrevMeta) { try { evPrevMeta = await window.api.getData('manifest'); } catch { evPrevMeta = {}; } }
+  return evPrevMeta;
 }
+let evPrevTimer = 0;
+function paintEvPreview() {
+  clearTimeout(evPrevTimer);
+  evPrevTimer = setTimeout(paintEvPreviewNow, 120);
+}
+async function paintEvPreviewNow() {
+  const box = $('ev-preview');
+  const page = $('page-event');
+  if (!box || !page) return;
+  const m = await evPreviewMeta();
+  const hero = page.querySelector('.hero').cloneNode(true);
+  const stats = $('stats').cloneNode(true);
+  for (const n of [hero, stats]) { n.removeAttribute('id'); n.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); }
+  hero.classList.remove('soon', 'ended', 'has-soon-panel');
+  hero.querySelectorAll('.soon-panel, .soon-art').forEach((x) => x.remove());
+  const q = (sel) => hero.querySelector(sel);
+  q('.hero-badge span:last-child').textContent = 'Evento actual';
+  q('.hero h1').textContent = $('ad-name').value.trim() || 'Nombre del evento';
+  q('.hero-tagline').textContent = $('ad-tag').value;
+  const loaderNames = { vanilla: 'Vanilla', fabric: 'Fabric', forge: 'Forge' };
+  const loader = String((m.loader && m.loader.type) || 'vanilla').toLowerCase();
+  const chips = q('.chips');
+  chips.replaceChildren();
+  if (m.minecraftVersion) chips.append(el('span', 'chip', `Minecraft ${m.minecraftVersion}`), el('span', 'chip', loaderNames[loader] || loader));
+  if (m.protected) chips.append(el('span', 'chip', 'Protegido'));
+  const art = q('.hero-art:not(.soon-art)');
+  const logo = imageUrl(adm.evLogo || '');
+  if (art) { art.hidden = !logo; if (logo) art.src = logo; }
+  const banner = imageUrl(adm.evImage || '');
+  hero.classList.toggle('has-banner', !!banner);
+  if (banner) hero.style.setProperty('--hero-image', `url(${JSON.stringify(banner)})`);
+  else hero.style.removeProperty('--hero-image');
+  q('.play-status span').textContent = 'Listo para jugar';
+  const vals = stats.querySelectorAll('.stat-val');
+  if (vals[1]) vals[1].textContent = '¡Ya empezó!';
+  if (vals[2]) vals[2].textContent = '0 min';
+  if (vals[3]) vals[3].textContent = m.minecraftVersion || '–';
+  const lbl = stats.querySelectorAll('.stat-label');
+  if (lbl[1]) lbl[1].textContent = 'Próximo evento';
+  if (lbl[3]) lbl[3].textContent = loaderNames[loader] || loader;
+  const sec = el('section', 'sponsors');
+  const wrap = el('div', 'sponsors-wrap');
+  sec.append(wrap);
+  paintSponsors((adm.sponsors || []).filter((x) => x && (x.name || x.logo || x.nick)), wrap);
+  box.replaceChildren(hero, stats, sec);
+  box.inert = true; // solo se mira: los botones de la copia no hacen nada
+}
+// Los cambios en patrocinadores también se reflejan en la vista previa.
+['input', 'change', 'click'].forEach((t) => $('ad-sponsors').addEventListener(t, paintEvPreview));
 // Límites del texto (los mismos que aplica lib/admin.js): una sola línea, nombre de 60 y descripción de 220 caracteres.
 function paintEvCounts() {
   const n = $('ad-name').value.length; const t = $('ad-tag').value.length;

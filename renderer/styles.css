@@ -3582,3 +3582,8 @@ main { container-type: inline-size; overflow-x: hidden; }
 .users-group-head small { margin-left: auto; }
 .users-empty { margin: 4px 0 8px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); }
 .user-dot { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: #46d27a; box-shadow: 0 0 8px #46d27a; vertical-align: middle; }
+
+/* Vista previa del editor de eventos: copia de la pestaña Evento */
+.ev-preview-live { display: grid; gap: 16px; padding: 14px; border-radius: 18px; border: 1px dashed var(--line); background: rgba(0, 0, 0, .18); pointer-events: none; user-select: none; }
+.ev-preview-live .hero { margin: 0; }
+.ev-preview-live .sponsors { margin: 0; }

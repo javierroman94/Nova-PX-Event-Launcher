@@ -12,8 +12,8 @@ function spKind(x) {
   const r = String((x && x.role) || '').toLowerCase();
   return /hospedad|hosting|servidor/.test(r) ? 'host' : /patrocin|presenta/.test(r) ? 'sponsor' : 'credit';
 }
-function paintSponsors(list) {
-  const box = $('sponsors-list');
+function paintSponsors(list, target) {
+  const box = target || $('sponsors-list'); // target: la vista previa del editor de eventos usa la misma función
   box.replaceChildren();
   const items = Array.isArray(list) ? list : [];
   const open = (url) => window.api.openLink(url).catch(() => {});
