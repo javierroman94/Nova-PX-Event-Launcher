@@ -1800,6 +1800,17 @@ ipcMain.handle('admin:restore', async (_e, name, sha) => {
   if (name === 'launcher') { remoteCfg = clean; send('remote:changed', remoteCfg); }
   return clean;
 });
+// Biblioteca de eventos del panel (borradores y eventos pasados). No la leen los jugadores.
+ipcMain.handle('admin:evlibList', async () => {
+  const r = await requireAdmin();
+  return adminLib.sanitizeEventLibrary((await r.getJson('data/biblioteca-eventos.json') || {}).data);
+});
+ipcMain.handle('admin:evlibSave', async (_e, list) => {
+  const r = await requireAdmin();
+  const clean = adminLib.sanitizeEventLibrary(list);
+  await r.putJson('data/biblioteca-eventos.json', clean, 'Biblioteca de eventos actualizada (desde el launcher)');
+  return clean;
+});
 ipcMain.handle('admin:saveTeam', async (_e, list) => {
   const r = await requireAdmin();
   const clean = adminLib.sanitizeTeam(list);

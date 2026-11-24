@@ -74,5 +74,21 @@ for (const v of Object.values(P.ARCHIVOS)) assert.ok(P.TODOS.includes(v), v);
   assert.deepStrictEqual(clean[0], { nick: 'Mod1', uuid: uuid(2), rol: 'moderador' });
   assert.deepStrictEqual(clean[1], { nick: 'Cus', uuid: uuid(3), permisos: ['eventos'] });
   assert.deepStrictEqual(clean[2], { nick: 'Raro', uuid: uuid(4) }, 'un rol desconocido vuelve a administrador');
+
+  // Biblioteca de eventos
+  const lib = admin.sanitizeEventLibrary([
+    { id: 'Evento-1', name: 'Backrooms', tagline: 'x', startsAt: '2026-11-22T06:20:00.000Z', status: 'ended', image: 'images/a.png', sponsors: [], lockPack: false, instanceId: 'mi pack!', password: 'secreta' },
+    { id: 'evento-1', name: 'Repetido' },
+    { id: 'sin-nombre', name: '' },
+    { id: 'fecha-mala', name: 'Otro', startsAt: 'no-es-fecha', status: 'raro' }
+  ]);
+  assert.strictEqual(lib.length, 2, 'se quitan repetidos y los que no tienen nombre');
+  assert.strictEqual(lib[0].id, 'evento-1');
+  assert.strictEqual(lib[0].instanceId, 'mipack', 'el id de instancia se limpia');
+  assert.strictEqual(lib[0].lockPack, false);
+  assert.ok(!('password' in lib[0]), 'nunca se guardan contraseñas');
+  assert.strictEqual(lib[1].startsAt, '');
+  assert.strictEqual(lib[1].status, 'soon');
+  assert.ok(P.permite(a.permisos, P.CANALES['admin:evlibSave']) && !P.permite(m.permisos, P.CANALES['admin:evlibSave']));
   console.log('permisos.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });

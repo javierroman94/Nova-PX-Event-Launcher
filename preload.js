@@ -141,6 +141,8 @@ contextBridge.exposeInMainWorld('api', {
   adminUsersKey: (k) => ipcRenderer.invoke('admin:usersKey', k),
   adminUsers: () => ipcRenderer.invoke('admin:users'),
   adminUserDelete: (id) => ipcRenderer.invoke('admin:userDelete', id),
+  adminEvLibList: () => ipcRenderer.invoke('admin:evlibList'),
+  adminEvLibSave: (l) => ipcRenderer.invoke('admin:evlibSave', l),
   adminSaveTeam: (l) => ipcRenderer.invoke('admin:saveTeam', l),
   adminSaveEvents: (l) => ipcRenderer.invoke('admin:saveEvents', l),
   adminPickImage: (l, opts) => ipcRenderer.invoke('admin:pickImage', l, opts),

@@ -807,9 +807,9 @@
           <p id="ad-live-meta" class="muted"></p>
         </div>
         <div class="seg" id="ad-tabs" role="group" aria-label="Secciones de administración">
-          <button type="button" class="active" data-ad-tab="event">Evento</button>
+          <button type="button" class="active" data-ad-tab="event">Eventos</button>
           <button type="button" data-ad-tab="team">Equipo</button>
-          <button type="button" data-ad-tab="events">Eventos</button>
+          <button type="button" data-ad-tab="events">Historial</button>
           <button type="button" data-ad-tab="news">Noticias</button>
           <button type="button" data-ad-tab="plugins">Plugins</button>
           <button type="button" data-ad-tab="users">Usuarios</button>
@@ -825,6 +825,13 @@
       </div>
 
       <div id="ad-tab-event">
+        <article class="ad-card" id="ad-evlib">
+          <header><div><h3>Tus eventos</h3><p class="muted">Cada tarjeta guarda todo un evento: información, fecha, imagen, patrocinadores y modpack. Ábrela para editarla; «Publicar» la manda a los jugadores.</p></div><button id="ad-evlib-new" type="button" class="primary">+ Crear evento</button></header>
+          <div id="ad-evlib-cards" class="evlib-cards"></div>
+          <p id="ad-evlib-status" class="muted" role="status"></p>
+        </article>
+        <div id="ad-ev-editor" hidden>
+        <div class="ad-card ad-editing"><div><strong id="ad-editing-title">Editando</strong><p class="muted" id="ad-editing-sub"></p></div><div class="btn-row"><button id="ad-editing-save" type="button">Guardar en tus eventos</button><button id="ad-editing-close" type="button" class="ghost">Cerrar</button></div></div>
         <div class="ad-grid">
           <article class="ad-card">
             <header><span class="ad-step">1</span><div><h3>Modpack del evento</h3><p class="muted">Lo que jugarán todos. Créalo y pruébalo en Modpacks; aquí eliges cuál se publica.</p></div></header>
@@ -892,6 +899,7 @@
           <p id="ad-status" class="muted" role="status"></p>
           <div class="mp-actions"><button id="ad-finish" type="button" class="ad-big">Finalizar evento</button><button id="ad-publish" type="button" class="primary ad-big">Publicar evento</button></div>
         </article>
+      </div>
       </div>
 
       <div id="ad-tab-team" hidden>

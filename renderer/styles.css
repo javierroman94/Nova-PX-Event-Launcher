@@ -3462,3 +3462,14 @@ main { container-type: inline-size; overflow-x: hidden; }
 .perm-rol { justify-self: start; width: max-content; padding: 3px 8px; border-radius: 10px; font-size: 12.5px; font-weight: 700; }
 .perm-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; margin-top: 6px; }
 .perm-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+
+.evlib-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-top: 10px; }
+.evlib-card { display: grid; gap: 8px; padding: 0 0 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel, rgba(255, 255, 255, .03)); overflow: hidden; }
+.evlib-card.live { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.evlib-card.open { outline: 2px solid var(--accent); }
+.evlib-art { height: 110px; background: rgba(255, 255, 255, .05) center / cover no-repeat; display: grid; place-items: center; font-size: 28px; }
+.evlib-body { display: grid; gap: 4px; padding: 0 14px; }
+.evlib-body strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evlib-tag { justify-self: start; padding: 1px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.evlib-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px; }
+.ad-editing { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }

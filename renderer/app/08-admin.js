@@ -219,17 +219,20 @@ async function loadAdmin() {
     const ev = m.event || {};
     $('ad-live-name').textContent = ev.name || 'Sin evento';
     $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
-    $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
-    adm.evImage = ev.image || '';
-    adm.evLogo = ev.logo || '';
-    adm.sponsors = (m.sponsors || []).map((x) => ({ ...x }));
-    sponsorsEditor();
-    paintArtState();
-    $('ad-name').value = ev.name || '';
-    $('ad-tag').value = ev.tagline || '';
-    $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
-    $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
-    $('ad-new').checked = false;
+    if (evEditKey === null || evEditKey === 'live') {
+      $('ad-state').value = ev.status || (ev.active ? 'active' : 'soon');
+      adm.evImage = ev.image || '';
+      adm.evLogo = ev.logo || '';
+      adm.sponsors = (m.sponsors || []).map((x) => ({ ...x }));
+      sponsorsEditor();
+      paintArtState();
+      $('ad-name').value = ev.name || '';
+      $('ad-tag').value = ev.tagline || '';
+      $('ad-lock').checked = (adm.manifest || {}).lockPack !== false;
+      $('ad-start').value = ev.startsAt ? toLocalInput(ev.startsAt) : '';
+      $('ad-new').checked = false;
+    }
+    loadEvLib().catch(() => {});
     adm.team = d.team;
     adm.news = d.news;
     adm.ads = d.ads || [];
@@ -399,6 +402,7 @@ $('ad-publish').addEventListener('click', async () => {
     $('ad-pass').type = 'password';
     $('ad-new').checked = false;
     toast('Evento publicado');
+    await evLibAfterPublish();
     await autoDiscord('event', { title: `${r.name}: evento publicado`, text: $('ad-tag').value, image: imageUrl(adm.evImage) });
     try { await loadAdmin(); } catch {}
     window.refreshContent && window.refreshContent();
@@ -1086,3 +1090,114 @@ $('ad-sign-import').addEventListener('click', async () => {
   } catch (e) { $('ad-sign-status').textContent = cleanError(e); }
 });
 document.querySelector('[data-ad-tab="config"]')?.addEventListener('click', paintSignKey);
+
+
+/* --- biblioteca de eventos: una tarjeta por evento --- */
+let evLib = [];
+let evEditKey = null; // null = nada abierto, 'live' = el evento publicado ahora, o el id de una tarjeta
+const EV_STATE = { soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' };
+const evSlug = (name) => `${String(name || 'evento').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'evento'}-${Date.now().toString(36)}`.slice(0, 40);
+
+function readEditorEvent() {
+  const start = $('ad-start').value;
+  return {
+    name: $('ad-name').value.trim(), tagline: $('ad-tag').value, startsAt: start ? new Date(start).toISOString() : '',
+    status: $('ad-state').value, image: adm.evImage || '', logo: adm.evLogo || '', sponsors: (adm.sponsors || []).map((x) => ({ ...x })),
+    lockPack: $('ad-lock').checked, instanceId: $('ad-pack').value || ''
+  };
+}
+function fillEditorEvent(e, isNew) {
+  $('ad-state').value = e.status || 'soon';
+  adm.evImage = e.image || '';
+  adm.evLogo = e.logo || '';
+  adm.sponsors = (e.sponsors || []).map((x) => ({ ...x }));
+  sponsorsEditor();
+  paintArtState();
+  $('ad-name').value = e.name || '';
+  $('ad-tag').value = e.tagline || '';
+  $('ad-lock').checked = e.lockPack !== false;
+  $('ad-start').value = e.startsAt ? toLocalInput(e.startsAt) : '';
+  $('ad-new').checked = !!isNew;
+  if (e.instanceId && [...$('ad-pack').options].some((o) => o.value === e.instanceId)) { $('ad-pack').value = e.instanceId; $('ad-pack').dispatchEvent(new Event('change')); }
+}
+function openEvEditor(key, entry, isNew) {
+  evEditKey = key;
+  fillEditorEvent(entry, isNew);
+  $('ad-ev-editor').hidden = false;
+  $('ad-editing-title').textContent = key === 'live' ? `Evento publicado: ${entry.name || 'sin nombre'}` : `Editando: ${entry.name || 'evento nuevo'}`;
+  $('ad-editing-sub').textContent = key === 'live'
+    ? 'Es lo que ven los jugadores ahora. Puedes guardar una copia en tus eventos.'
+    : 'Tus cambios se guardan en tus eventos. Al pulsar «Publicar evento» también llegan a los jugadores.';
+  paintEvLib();
+  $('ad-ev-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+async function loadEvLib() {
+  evLib = await window.api.adminEvLibList();
+  paintEvLib();
+}
+async function saveEvLib(list, okText) {
+  const st = $('ad-evlib-status');
+  try {
+    evLib = await window.api.adminEvLibSave(list);
+    st.textContent = okText || '';
+    paintEvLib();
+    return true;
+  } catch (e) { st.textContent = cleanError(e); return false; }
+}
+function paintEvLib() {
+  const box = $('ad-evlib-cards');
+  if (!box) return;
+  box.replaceChildren();
+  const card = (key, e, tag, live) => {
+    const c = el('div', `evlib-card${live ? ' live' : ''}${evEditKey === key ? ' open' : ''}`);
+    const art = el('div', 'evlib-art');
+    const img = imageUrl(e.image || e.logo || '');
+    if (img) art.style.backgroundImage = `url(${JSON.stringify(img)})`; else art.textContent = '🎮';
+    const body = el('div', 'evlib-body');
+    const when = e.startsAt ? new Date(e.startsAt).toLocaleString('es', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sin fecha';
+    body.append(el('span', 'evlib-tag', tag), el('strong', '', e.name || 'Sin nombre'), el('small', 'muted', when));
+    const acts = el('div', 'evlib-actions');
+    const btn = (text, fn, cls) => { const b = el('button', cls || '', text); b.type = 'button'; b.addEventListener('click', fn); acts.append(b); return b; };
+    btn('Editar', () => openEvEditor(key, e, false));
+    if (live) {
+      btn('Guardar copia', async () => { const copy = { ...e, id: evSlug(e.name), instanceId: '' }; await saveEvLib([...evLib, copy], 'Copia guardada en tus eventos.'); }, 'ghost');
+    } else {
+      btn('Duplicar', async () => { await saveEvLib([...evLib, { ...e, id: evSlug(e.name), name: `${e.name} (copia)`.slice(0, 80), status: 'soon' }], 'Evento duplicado.'); }, 'ghost');
+      btn('Eliminar', async () => {
+        if (!await askConfirm(`¿Eliminar "${e.name}" de tus eventos? Si está publicado, los jugadores lo siguen viendo.`)) return;
+        if (evEditKey === key) { evEditKey = null; $('ad-ev-editor').hidden = true; }
+        await saveEvLib(evLib.filter((x) => x.id !== key), 'Evento eliminado de tus eventos.');
+      }, 'ghost');
+    }
+    c.append(art, body, acts);
+    box.append(c);
+  };
+  const m = adm.manifest || {};
+  const ev = m.event || {};
+  if (ev.name) {
+    const st = ev.status || (ev.active ? 'active' : 'soon');
+    card('live', { name: ev.name, tagline: ev.tagline, startsAt: ev.startsAt, status: st, image: ev.image, logo: ev.logo, sponsors: m.sponsors || [], lockPack: m.lockPack !== false }, `Publicado · ${EV_STATE[st]}`, true);
+  }
+  evLib.forEach((e) => card(e.id, e, EV_STATE[e.status] || 'Borrador', false));
+  if (!ev.name && !evLib.length) box.append(el('p', 'muted', 'Todavía no hay eventos. Pulsa «Crear evento».'));
+}
+$('ad-evlib-new').addEventListener('click', () => {
+  const id = evSlug('evento');
+  openEvEditor(id, { name: '', tagline: '', startsAt: '', status: 'soon', image: '', logo: '', sponsors: [], lockPack: true, instanceId: '' }, true);
+  $('ad-name').focus();
+});
+$('ad-editing-close').addEventListener('click', () => { evEditKey = null; $('ad-ev-editor').hidden = true; paintEvLib(); });
+$('ad-editing-save').addEventListener('click', async () => {
+  const e = readEditorEvent();
+  if (!e.name) { $('ad-evlib-status').textContent = 'Ponle un nombre al evento.'; return; }
+  const id = evEditKey && evEditKey !== 'live' ? evEditKey : evSlug(e.name);
+  const next = evLib.some((x) => x.id === id) ? evLib.map((x) => (x.id === id ? { ...x, ...e, id } : x)) : [...evLib, { ...e, id }];
+  if (await saveEvLib(next, 'Guardado en tus eventos.')) { evEditKey = id; $('ad-editing-title').textContent = `Editando: ${e.name}`; paintEvLib(); toast('Evento guardado'); }
+});
+async function evLibAfterPublish() {
+  if (!evEditKey || evEditKey === 'live') return;
+  const e = readEditorEvent();
+  if (!e.name) return;
+  const next = evLib.some((x) => x.id === evEditKey) ? evLib.map((x) => (x.id === evEditKey ? { ...x, ...e, id: evEditKey } : x)) : [...evLib, { ...e, id: evEditKey }];
+  try { await saveEvLib(next, ''); } catch {}
+}
