@@ -54,7 +54,7 @@ $('adm-login').addEventListener('click', async () => {
 $('adm-logout').addEventListener('click', async () => {
   await window.api.adminLogout();
   setAdminUi(false, undefined, undefined, true);
-  if ($('page-admin').classList.contains('active')) goTo('settings');
+  if ($('page-admin').classList.contains('active')) { goTo('home'); goTo('settings'); }
 });
 
 const adm = { sponsors: [], team: [], news: [], reco: [], launcher: null, manifest: {}, summary: null };

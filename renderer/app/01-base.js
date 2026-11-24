@@ -211,7 +211,29 @@ function navStep(d) {
   navHist.skip = true;
   goTo(navHist.stack[n]);
 }
+// Ajustes es una ventana superpuesta: se abre encima de la pantalla actual y al cerrarla vuelves a ella.
+let settingsReturnFocus = null;
+function openSettings() {
+  const o = $('page-settings');
+  if (o.classList.contains('open')) return;
+  settingsReturnFocus = document.activeElement;
+  o.classList.add('open');
+  document.querySelectorAll('.tab-btn[data-tab="settings"]').forEach((b) => b.classList.add('overlay-open'));
+  $('so-close').focus();
+}
+function closeSettings() {
+  const o = $('page-settings');
+  if (!o.classList.contains('open')) return;
+  o.classList.remove('open');
+  document.querySelectorAll('.tab-btn[data-tab="settings"]').forEach((b) => b.classList.remove('overlay-open'));
+  if (settingsReturnFocus && settingsReturnFocus.focus) { try { settingsReturnFocus.focus(); } catch {} }
+  settingsReturnFocus = null;
+}
+document.addEventListener('click', (e) => { if (e.target.id === 'page-settings' || e.target.closest('#so-close')) closeSettings(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('page-settings').classList.contains('open') && !document.querySelector('dialog[open]')) { e.preventDefault(); closeSettings(); } });
 function goTo(tab) {
+  if (tab === 'settings') { openSettings(); return; }
+  closeSettings();
   if (!navHist.skip && navHist.stack[navHist.i] !== tab) {
     navHist.stack = navHist.stack.slice(0, navHist.i + 1);
     navHist.stack.push(tab);
