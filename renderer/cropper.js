@@ -36,7 +36,7 @@
         { label: 'Cabecera de la pestaña Evento', aspect: clamp(mw / 350, 1.5, 4) },
         { label: 'Fila de la lista de eventos', aspect: clamp((mw - 64) / 80, 3, 12) }] },
       logo: { title: 'Logo del evento', where: 'Inicio y las tarjetas del evento (cuadrado)', aspect: 1 },
-      sponsor: { title: 'Logo del patrocinador', where: 'la tarjeta del patrocinador', aspect: 2 },
+      sponsor: { title: 'Foto del hosting, patrocinador o crédito', where: 'una foto redonda, como una foto de perfil', aspect: 1, circle: true },
       noticia: { title: 'Imagen de la noticia', where: 'la tarjeta de la noticia', aspect: 16 / 9 },
       historial: { title: 'Imagen del evento pasado', where: 'el historial de eventos', aspect: 4 / 3, guides: [
         { label: 'Vista en cuadrícula', aspect: 1 }, { label: 'Ventana de detalle', aspect: 16 / 9 }] },
@@ -101,7 +101,9 @@
         x.drawImage(img, dx, dy, dw, dh);
         // Lo que queda fuera del marco se oscurece.
         x.fillStyle = 'rgba(6, 8, 14, .66)';
-        x.beginPath(); x.rect(0, 0, SW, SH); x.rect(RX, RY, FW, FH); x.fill('evenodd');
+        x.beginPath(); x.rect(0, 0, SW, SH);
+        if (spec.circle) x.ellipse(RX + FW / 2, RY + FH / 2, FW / 2, FH / 2, 0, 0, Math.PI * 2); else x.rect(RX, RY, FW, FH);
+        x.fill('evenodd');
         // Guías de otros sitios donde sale esta misma imagen.
         (spec.guides || []).forEach((gd, i) => {
           let gw = FW; let gh = gw / gd.aspect;
@@ -111,7 +113,8 @@
           x.font = '11px system-ui, sans-serif'; x.fillStyle = x.strokeStyle; x.fillText(gd.label, gx + 6, gy + 14 + (i % 2) * 0);
         });
         // Marco real
-        x.strokeStyle = '#ff3b3b'; x.lineWidth = 2; x.strokeRect(RX, RY, FW, FH);
+        x.strokeStyle = '#ff3b3b'; x.lineWidth = 2;
+        if (spec.circle) { x.beginPath(); x.ellipse(RX + FW / 2, RY + FH / 2, FW / 2, FH / 2, 0, 0, Math.PI * 2); x.stroke(); x.setLineDash([4, 4]); x.strokeStyle = 'rgba(255,255,255,.35)'; x.strokeRect(RX, RY, FW, FH); x.setLineDash([]); } else x.strokeRect(RX, RY, FW, FH);
         x.strokeStyle = 'rgba(255,255,255,.3)'; x.lineWidth = 1; x.beginPath();
         for (let i = 1; i < 3; i++) { x.moveTo(RX + (FW / 3) * i, RY); x.lineTo(RX + (FW / 3) * i, RY + FH); x.moveTo(RX, RY + (FH / 3) * i); x.lineTo(RX + FW, RY + (FH / 3) * i); }
         x.stroke();

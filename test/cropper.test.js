@@ -29,10 +29,12 @@ assert.ok(Math.abs(r1.w / r1.h - 4) < 0.05 && r1.w <= 640 * 0.9 + 1);
 const r2 = C.reticle(640, 380, 1);
 assert.strictEqual(r2.w, r2.h);
 assert.ok(r2.h <= 380 * 0.9 + 1);
-// Cada espacio de imagen tiene su proporción: portada ancha, logo y perfil cuadrados, patrocinador 2:1.
+// Cada espacio de imagen tiene su proporción: portada ancha, logo y perfil cuadrados, patrocinador cuadrado y redondo.
 assert.strictEqual(C.slotSpec('logo').aspect, 1);
 assert.strictEqual(C.slotSpec('perfil').aspect, 1);
-assert.strictEqual(C.slotSpec('sponsor').aspect, 2);
+assert.strictEqual(C.slotSpec('sponsor').aspect, 1);
+assert.strictEqual(C.slotSpec('sponsor').circle, true, 'hosting, patrocinadores y créditos son fotos redondas');
+assert.ok(!C.slotSpec('banner').circle);
 assert.ok(C.slotSpec('banner', 1000, 600).aspect > 1.5);
 assert.ok(C.slotSpec('banner').guides.length >= 2);
 assert.strictEqual(C.slotSpec('no-existe'), null);
