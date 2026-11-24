@@ -3521,3 +3521,10 @@ main { container-type: inline-size; overflow-x: hidden; }
 .perm-editable .perm-del { opacity: 1; white-space: nowrap; }
 @media (max-width: 700px) { .perm-seg, .perm-editable .perm-checks { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .perm-track, .perm-track::after { transition: none; } }
+/* Portada de bienvenida por defecto (sin imagen de evento): banner claro completo, sin recortar */
+.home-cover.default-cover { background: #fff; }
+.default-cover .hc-img { object-fit: contain; }
+.default-cover::after { display: none; }
+.default-cover .hc-welcome { color: #14141c; text-shadow: none; }
+.default-cover .hc-event { color: #14141c; background: rgba(255, 255, 255, .9); border-color: rgba(0, 0, 0, .25); }
+.default-cover .hc-event:hover { border-color: #14141c; }
