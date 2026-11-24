@@ -1,7 +1,12 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, safeStorage, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, safeStorage: electronSafeStorage, Notification } = require('electron');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
+// Los canales IPC solo se atienden desde las páginas del launcher; y safeStorage no cuenta si en Linux cae a la llave fija.
+const { makeSecureStorage } = require('./lib/secure-storage');
+const { guardIpc, isTrustedUrl } = require('./lib/ipc-guard');
+const safeStorage = makeSecureStorage(electronSafeStorage);
+guardIpc(ipcMain, path.join(__dirname, 'renderer'));
 const crypto = require('crypto');
 const { Client } = require('minecraft-launcher-core');
 const { Auth } = require('msmc');
@@ -274,17 +279,18 @@ function hideHost(host) {
   if (h.length >= 3) hiddenHosts.add(h);
 }
 function redact(text) {
-  let out = String(text);
+  let out = require('./lib/redact').redactSecrets(text);
   for (const h of hiddenHosts) out = out.split(h).join('•••');
   return out;
 }
 
 // Evento protegido: la consola no debe revelar qué mods se cargan. El log real se guarda cifrado (para soporte).
 function saveProtectedLog(lines) {
+  // Se sella con la llave pública de soporte (config/soporte-informes.pub.pem): solo quien tiene la privada lo abre.
   try {
-    const key = crypto.createHash('sha256').update('nova-px-protected-log-v1').digest().toString('base64');
-    const enc = require('./lib/pack-crypto').encryptFile(Buffer.from(lines.join('\n'), 'utf8'), key, 'event-log');
-    fs.writeFileSync(path.join(app.getPath('userData'), 'event-error.enc'), enc);
+    const pub = fs.readFileSync(path.join(__dirname, 'config', 'soporte-informes.pub.pem'), 'utf8');
+    const sealed = require('./lib/seal').seal(Buffer.from(require('./lib/redact').redactSecrets(lines.join('\n')), 'utf8'), pub);
+    fs.writeFileSync(path.join(app.getPath('userData'), 'event-error.enc'), sealed);
   } catch {}
 }
 let protectedRun = false;
@@ -366,6 +372,12 @@ const { readJavaVersionOutput, managedJavaPath, preferJavaw, resolveJava } = req
 
 /* ---------- ventana y bandeja ---------- */
 
+// Una ventana del launcher solo puede mostrar páginas de renderer/: sin navegación, sin ventanas nuevas y sin <webview>.
+function lockWindow(wc) {
+  wc.on('will-navigate', (e, url) => { if (!isTrustedUrl(url, path.join(__dirname, 'renderer'))) e.preventDefault(); });
+  wc.on('will-attach-webview', (e) => e.preventDefault());
+}
+
 let windowShownBefore = false;
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -396,9 +408,7 @@ function createWindow() {
     if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
     return { action: 'deny' };
   });
-  mainWindow.webContents.on('will-navigate', (e, url) => {
-    if (!url.startsWith('file://')) e.preventDefault();
-  });
+  lockWindow(mainWindow.webContents);
   // Si la ventana se vuelve a abrir (después de cerrarla con el juego en marcha), no se repite la intro.
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'), windowShownBefore ? { query: { resume: '1' } } : undefined);
   windowShownBefore = true;
@@ -1904,6 +1914,8 @@ function overlayShow(p) {
     });
     overlayWin.setAlwaysOnTop(true, 'screen-saver');
     overlayWin.setIgnoreMouseEvents(true, { forward: true }); // los clics pasan al juego
+    lockWindow(overlayWin.webContents);
+    overlayWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     overlayWin.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
     overlayWin.once('ready-to-show', () => { if (overlayWin && !overlayWin.isDestroyed()) overlayWin.showInactive(); });
     overlayWin.on('closed', () => { overlayWin = null; if (overlayKeep) { clearInterval(overlayKeep); overlayKeep = null; } });
@@ -3172,7 +3184,7 @@ ipcMain.handle('event:checkPassword', async (_e, password) => {
     const manifest = await loadData('manifest');
     const prot = manifest && manifest.protected;
     if (!prot || typeof password !== 'string' || !password) return false;
-    pcrypto.openEnvelope(prot, pcrypto.deriveKey(password, prot.salt));
+    pcrypto.openEnvelope(prot, pcrypto.deriveKey(password, prot.salt, pcrypto.kdfOf(prot)));
     return true;
   } catch { return false; }
 });

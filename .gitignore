@@ -5,3 +5,10 @@ dist/
 # Los .jar de los mods pesan mucho: se suben a un Release de GitHub, no al repositorio
 mods-evento/*.jar
 mods-evento/cifrados/
+
+# Llaves privadas: nunca al repositorio
+*.PRIVADA.pem
+*.privada.pem
+*.key.pem
+.env
+.dev.vars
