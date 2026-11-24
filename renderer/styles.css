@@ -3542,3 +3542,6 @@ main { container-type: inline-size; overflow-x: hidden; }
 @keyframes so-rise { from { opacity: 0; transform: translateY(10px) scale(.985); } }
 @media (max-width: 700px) { #page-settings.open { padding: 0; } .so-panel { max-height: 100vh; height: 100vh; border-radius: 0; padding: 0 16px 8px; } .so-panel .save-row { margin: 14px -16px 0; padding: 12px 16px; } }
 @media (prefers-reduced-motion: reduce) { #page-settings.open, .so-panel { animation: none; } }
+
+/* Portada fija de Inicio: la imagen llena toda la portada (sin bandas vacías alrededor) */
+.default-cover .hc-img { object-fit: cover; object-position: center; }

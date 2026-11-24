@@ -247,13 +247,12 @@ function renderCover() {
   const nick = ($('player-name').textContent || '').replace('Sin sesión', '').trim();
   w.replaceChildren(document.createTextNode(nick ? 'Bienvenido, ' : 'Bienvenido'));
   if (nick) w.append(el('span', 'pii', nick));
-  const art = eventInfo.image || eventInfo.logo || '';
+  // La portada de Inicio es siempre la imagen fija de NovaPX (que ya trae el logo); la imagen del evento se ve en la pestaña Evento.
   const img = $('hc-img');
   const cover = $('home-cover');
-  cover.classList.toggle('has-img', !!art);
-  // Sin imagen de evento se muestra la portada de bienvenida de NovaPX (que ya trae el logo).
-  const shown = art || 'images/portada-bienvenida.png';
-  cover.classList.toggle('default-cover', !art);
+  cover.classList.remove('has-img');
+  cover.classList.add('default-cover');
+  const shown = 'images/portada-bienvenida.png';
   if (img.getAttribute('src') !== shown) img.src = shown;
   img.hidden = false;
   $('hc-logo').hidden = true;
