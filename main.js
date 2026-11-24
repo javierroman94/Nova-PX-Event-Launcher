@@ -1769,7 +1769,11 @@ ipcMain.handle('admin:usersKey', async (_e, key) => {
 ipcMain.handle('admin:users', async () => {
   const r = await usersCall('GET', '/users');
   const users = (r.users || []).map((u) => ({ id: String(u.id), nick: String(u.nick || ''), premium: !!u.premium, version: String(u.version || ''), os: String(u.os || ''), first: Number(u.first) || 0, last: Number(u.last) || 0, count: Number(u.count) || 0 }));
-  return { users, summary: telemetry.summarize(users) };
+  // Quién está en línea ahora (el Worker lo sabe por el latido de cada launcher). Si el Worker no lo ofrece, queda en null.
+  let online = null;
+  try { const o = await usersCall('GET', '/online'); if (Array.isArray(o.online)) online = o.online.slice(0, 500).map((x) => ({ nick: String(x.nick || '').slice(0, 16), playing: !!x.playing })); } catch {}
+  const marked = online ? telemetry.markOnline(users, online) : users.map((u) => ({ ...u, online: false, playing: false }));
+  return { users: marked, summary: { ...telemetry.summarize(users), onlineNow: online ? marked.filter((u) => u.online).length : null }, onlineKnown: !!online };
 });
 ipcMain.handle('admin:userDelete', async (_e, id) => {
   if (!/^[0-9a-f-]{36}$/.test(String(id))) throw new Error('Id no válido.');

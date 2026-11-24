@@ -77,3 +77,12 @@ const t = require('../lib/telemetry');
   } finally { globalThis.fetch = realFetch; }
   console.log('telemetry.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// En línea: se marca por nick (sin distinguir mayúsculas); quien no tiene nick nunca aparece en línea.
+{
+  const us = [{ id: 'a', nick: 'EzLuiiz', last: 1 }, { id: 'b', nick: 'Otro', last: 1 }, { id: 'c', nick: '', last: 1 }];
+  const m = t.markOnline(us, [{ nick: 'ezluiiz', playing: true }, { nick: '', playing: true }]);
+  assert.deepStrictEqual(m.map((u) => [u.online, u.playing]), [[true, true], [false, false], [false, false]]);
+  assert.strictEqual(t.markOnline(us, null).every((u) => !u.online), true);
+  assert.strictEqual(t.markOnline(us, []).every((u) => !u.online), true);
+}

@@ -3559,3 +3559,11 @@ main { container-type: inline-size; overflow-x: hidden; }
 .ev-preview-body p { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .field-count { justify-self: end; font-variant-numeric: tabular-nums; }
 .field-count.over { color: var(--bad, #ff6b6b); }
+
+/* Usuarios: en línea y desconectados */
+.users-group-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 8px; }
+.users-group-head:first-child { margin-top: 4px; }
+.users-group-head strong { font-size: 15px; }
+.users-group-head small { margin-left: auto; }
+.users-empty { margin: 4px 0 8px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); }
+.user-dot { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: #46d27a; box-shadow: 0 0 8px #46d27a; vertical-align: middle; }

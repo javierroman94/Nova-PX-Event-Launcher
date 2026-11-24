@@ -161,9 +161,17 @@ export class Presence {
   }
   online(u, now) { return !!u && now - (u.seen || 0) <= ONLINE_MS; }
 
+  // Quién está en línea ahora (solo lo pide el administrador, ya autenticado en el Worker): nicks vistos hace menos de ONLINE_MS.
+  async onlineList(now) {
+    const rows = await this.st.list({ prefix: 'u:' });
+    const online = [];
+    for (const u of rows.values()) if (u && this.online(u, now)) online.push({ nick: u.n, playing: !!u.playing });
+    return online.slice(0, 500);
+  }
   async fetch(request) {
     const op = new URL(request.url).pathname.slice(1);
     const now = Date.now();
+    if (op === '__online') return json({ online: await this.onlineList(now) });
     let b = {};
     try { b = JSON.parse(await request.text()); } catch { return json({ error: 'bad_json' }, 400); }
     if (!OPS.has(op)) return json({ error: 'not_found' }, 404);
@@ -306,6 +314,13 @@ export default {
       if (!(await allow(request, env, 'stats', 60, 60000))) return tooMany();
       const { total, day, week } = await stats(env);
       return json({ total, day, week });
+    }
+    if (request.method === 'GET' && url.pathname === '/online') {
+      const st = await adminStatus(request, env);
+      if (st !== 'ok') return denied(st);
+      if (!env.PRESENCE) return json({ online: [] });
+      const stub = env.PRESENCE.get(env.PRESENCE.idFromName('global'));
+      return stub.fetch(new Request('https://presence/__online', { method: 'GET' }));
     }
     if (request.method === 'GET' && url.pathname === '/users') {
       const st = await adminStatus(request, env);
