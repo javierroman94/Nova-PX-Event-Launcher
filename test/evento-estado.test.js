@@ -37,4 +37,12 @@ const lib = admin.sanitizeEventLibrary([{ id: 'a', name: 'A', publishedId: 'back
 assert.strictEqual(lib[0].publishedId, 'backrooms-2026-11-22');
 assert.strictEqual(lib[1].publishedId, 'x');
 
+// Texto del evento: una sola línea y con tope, para que no desborde la cabecera
+const largo = 'a'.repeat(500);
+assert.strictEqual(admin.mergeManifest({}, { name: 'X', tagline: largo }).event.tagline.length, admin.EVENT_TAGLINE_MAX);
+assert.strictEqual(admin.mergeManifest({}, { name: largo }).event.name.length, admin.EVENT_NAME_MAX);
+assert.strictEqual(admin.mergeManifest({}, { name: 'X', tagline: 'uno\n\n\n\ndos\r\n  tres' }).event.tagline, 'uno dos tres', 'sin saltos de línea');
+const lib2 = admin.sanitizeEventLibrary([{ id: 'a', name: 'N\nB', tagline: 'x\n'.repeat(300) }]);
+assert.ok(!/\n/.test(lib2[0].tagline + lib2[0].name));
+assert.ok(lib2[0].tagline.length <= admin.EVENT_TAGLINE_MAX);
 console.log('evento-estado.test OK');

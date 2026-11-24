@@ -3551,3 +3551,11 @@ main { container-type: inline-size; overflow-x: hidden; }
 .brand-logo-pick img { object-fit: cover; border-radius: 50%; }
 /* Portada fija de Inicio: la imagen llena toda la portada (sin bandas vacías alrededor) */
 .default-cover .hc-img { object-fit: cover; object-position: center; }
+/* Texto del evento: aire entre la descripción y el panel de Jugar, y límite de líneas para que nada se desborde */
+.hero-body { margin-bottom: 22px; }
+.hero h1 { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.hero-tagline { margin-top: 12px; line-height: 1.6; max-width: 54ch; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.ev-preview-body h2 { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.ev-preview-body p { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.field-count { justify-self: end; font-variant-numeric: tabular-nums; }
+.field-count.over { color: var(--bad, #ff6b6b); }

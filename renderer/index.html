@@ -842,8 +842,8 @@
             <div id="ev-preview" class="ev-preview"><div class="ev-preview-body"><img id="ev-preview-logo" alt="" hidden /><h2 id="ev-preview-name">Nombre del evento</h2><p id="ev-preview-desc"></p></div></div>
           </article>
           <article class="ad-card">
-            <div class="field"><label for="ad-name">Nombre del evento</label><input id="ad-name" type="text" maxlength="80" /></div>
-            <div class="field"><label for="ad-tag">Descripción</label><textarea id="ad-tag" rows="4" maxlength="300"></textarea></div>
+            <div class="field"><label for="ad-name">Nombre del evento</label><input id="ad-name" type="text" maxlength="60" /><small class="muted field-count" id="ad-name-count" aria-live="off"></small></div>
+            <div class="field"><label for="ad-tag">Descripción</label><textarea id="ad-tag" rows="4" maxlength="220"></textarea><small class="muted field-count" id="ad-tag-count" aria-live="off">Una sola línea de texto, hasta 220 caracteres.</small></div>
             <div class="btn-row center"><button id="ad-banner-pick" type="button">+ Banner</button><button id="ad-logo-pick" type="button">+ Logo</button><button id="ad-art-clear" type="button" class="ghost">Quitar</button></div>
             <small id="ad-art-state" class="muted"></small>
             <p id="ad-status" class="muted" role="status"></p>
