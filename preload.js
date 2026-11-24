@@ -225,6 +225,19 @@ contextBridge.exposeInMainWorld('api', {
   shotsFolder: (src) => ipcRenderer.invoke('shots:folder', src),
   shareCreate: (id) => ipcRenderer.invoke('share:create', id),
   shareImport: (code) => ipcRenderer.invoke('share:import', code),
+  // amigos 2.0
+  friendsStatus: (status, smsg) => ipcRenderer.invoke('friends:status', status, smsg),
+  friendsBlock: (n) => ipcRenderer.invoke('friends:block', n),
+  friendsUnblock: (n) => ipcRenderer.invoke('friends:unblock', n),
+  friendsMute: (n, on) => ipcRenderer.invoke('friends:mute', n, on),
+  friendsInvite: (n, what) => ipcRenderer.invoke('friends:invite', n, what),
+  friendsDismiss: (id) => ipcRenderer.invoke('friends:dismiss', id),
+  friendsJoin: (inv) => ipcRenderer.invoke('friends:join', inv),
+  friendsParty: (action, arg) => ipcRenderer.invoke('friends:party', action, arg),
+  friendsVerify: () => ipcRenderer.invoke('friends:verify'),
+  chatTyping: (to) => ipcRenderer.invoke('chat:typing', to),
+  onFriendsEvent: (cb) => ipcRenderer.on('friends:event', (_e, d) => cb(d)),
+  onFriendsOpen: (cb) => ipcRenderer.on('friends:open', (_e, d) => cb(d)),
 
   // eventos
   onUpdate: (cb) => ipcRenderer.on('update:state', (_e, d) => cb(d)),

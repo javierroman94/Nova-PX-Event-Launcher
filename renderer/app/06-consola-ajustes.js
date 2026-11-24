@@ -302,6 +302,8 @@ function readSettingsForm() {
     shareUsage: $('share-usage').checked,
     autoBackup: $('auto-backup').checked,
     shareActivity: $('share-activity').checked,
+    notifyFriends: $('notify-friends').checked,
+    notifyFriendsOnline: $('notify-friends-online').checked,
     gameBehavior: $('behavior').value
   };
 }
@@ -321,6 +323,8 @@ function fillSettingsForm(s) {
   $('share-usage').checked = s.shareUsage !== false;
   $('auto-backup').checked = s.autoBackup !== false;
   $('share-activity').checked = s.shareActivity !== false;
+  $('notify-friends').checked = s.notifyFriends !== false;
+  $('notify-friends-online').checked = s.notifyFriendsOnline === true;
   $('behavior').value = s.gameBehavior;
   $('res-w').disabled = $('res-h').disabled = s.fullscreen;
 }

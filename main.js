@@ -151,7 +151,10 @@ function defaultSettings() {
     playSeconds: 0,
     autoBackup: true,
     backupKeep: 3,
-    shareActivity: true
+    shareActivity: true,
+    notifyFriends: true,
+    notifyFriendsOnline: false,
+    mutedFriends: []
   };
 }
 
@@ -203,7 +206,10 @@ function cleanSettings(s) {
     playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0)),
     autoBackup: s.autoBackup !== false,
     backupKeep: Math.round(num(s.backupKeep, 1, 10, d.backupKeep)),
-    shareActivity: s.shareActivity !== false
+    shareActivity: s.shareActivity !== false,
+    notifyFriends: s.notifyFriends !== false,
+    notifyFriendsOnline: s.notifyFriendsOnline === true,
+    mutedFriends: (Array.isArray(s.mutedFriends) ? s.mutedFriends : []).map(String).filter((n) => /^[A-Za-z0-9_]{3,16}$/.test(n)).slice(-200)
   };
 }
 
@@ -1389,10 +1395,26 @@ const FRIEND_ERRORS = {
   full: 'Llegaste al máximo de amigos.',
   busy: 'Esa persona tiene demasiadas solicitudes pendientes.',
   no_request: 'Esa solicitud ya no existe.',
-  not_friends: 'Solo puedes chatear con tus amigos.',
-  empty: 'Escribe un mensaje.'
+  not_friends: 'Solo puedes hacer eso con tus amigos.',
+  empty: 'Escribe un mensaje.',
+  verified_owner: 'Ese nick lo verificó su dueño con su cuenta premium. Si eres tú, entra con tu cuenta premium.',
+  slow: 'Vas muy rápido. Espera un momento y vuelve a intentarlo.',
+  blocked_by_you: 'Bloqueaste a esa persona. Desbloquéala primero en Amigos.',
+  bad_invite: 'Esa invitación no es válida.',
+  not_leader: 'Solo el líder de la party puede hacer eso.',
+  in_party: 'Ya estás en una party. Sal de ella primero.',
+  no_party: 'Esa party ya no existe.',
+  party_full: 'La party está llena (máximo 8 personas).'
 };
-const friendFail = (r) => { throw new Error(FRIEND_ERRORS[r.error] || 'No se pudo completar la acción.'); };
+const friendError = (code) => FRIEND_ERRORS[code] || 'No se pudo completar la acción.';
+const friendFail = (r) => { throw new Error(friendError(r.error)); };
+
+/* ---------- amigos 2.0: tiempo real, estados, invitaciones, party y nick verificado (lib/main/ipc-amigos.js) ---------- */
+const amigos = require('./lib/main/ipc-amigos')({
+  ipcMain, Notification, powerMonitor: require('electron').powerMonitor, USAGE_URL, getSession: () => session, getPresenceToken, presenceCall,
+  readSettings, writeSettings, send, getMainWindow: () => mainWindow, showWindow, getLaunching: () => launching, freshPremium,
+  getExtras: () => extras, loadData, readModpacks, packs, serversLib, pushLog, instanceDir, GAME_DIR, friendError
+});
 
 // Lo que ven tus amigos en tu tarjeta: qué juegas y tus horas (null si lo apagaste en Ajustes).
 function presenceActivity() {
@@ -1404,11 +1426,11 @@ function presenceActivity() {
 // Latido: dice que sigues conectado (solo con sesión y con "compartir uso" activado).
 function presenceBeat() {
   if (!readSettings().shareUsage) return;
-  presenceCall('sync', { playing: launching, act: presenceActivity() });
+  amigos.call('sync', { playing: launching, act: presenceActivity() }).then((r) => { if (r.ok) amigos.afterSync(r.data); });
 }
 setInterval(presenceBeat, 60 * 1000).unref();
 setTimeout(presenceBeat, 8000).unref();
-app.on('before-quit', () => { if (session) presenceCall('leave', {}, 1500); });
+app.on('before-quit', () => { amigos.stop(); if (session) presenceCall('leave', {}, 1500); });
 
 ipcMain.handle('friends:list', async () => {
   const base = { enabled: !!USAGE_URL, loggedIn: !!session, sharing: readSettings().shareUsage !== false, reachable: true, friends: [], incoming: [], outgoing: [] };
@@ -1419,26 +1441,31 @@ ipcMain.handle('friends:list', async () => {
     for (const n of legacy) await presenceCall('request', { to: n });
     friendsLib.save(FRIENDS_FILE, []);
   }
-  const r = await presenceCall('sync', { playing: launching, act: presenceActivity() });
+  const r = await amigos.call('sync', { playing: launching, act: presenceActivity() });
   if (!r.ok) return { ...base, reachable: false, error: FRIEND_ERRORS[r.error] || '' };
   const d = r.data;
-  return { ...base, friends: d.friends || [], incoming: d.incoming || [], outgoing: d.outgoing || [], now: d.now };
+  amigos.afterSync(d);
+  return {
+    ...base, friends: d.friends || [], incoming: d.incoming || [], outgoing: d.outgoing || [], now: d.now,
+    blocked: d.blocked || [], invites: d.invites || [], party: d.party || null, partyInvites: d.partyInvites || [],
+    me: { ...(d.me || {}), nick: session.name, premium: session.mode === 'premium' }, muted: readSettings().mutedFriends || []
+  };
 });
 ipcMain.handle('friends:add', async (_e, nick) => {
   const n = String(nick || '').trim();
   if (!NICK_OK.test(n)) throw new Error(FRIEND_ERRORS.bad_nick);
-  const r = await presenceCall('request', { to: n });
+  const r = await amigos.call('request', { to: n });
   return r.ok ? r.data.status : friendFail(r);
 });
 for (const [ch, op] of [['friends:accept', 'accept'], ['friends:remove', 'remove']]) {
-  ipcMain.handle(ch, async (_e, nick) => { const r = await presenceCall(op, { to: String(nick || '') }); return r.ok ? true : friendFail(r); });
+  ipcMain.handle(ch, async (_e, nick) => { const r = await amigos.call(op, { to: String(nick || '') }); return r.ok ? true : friendFail(r); });
 }
 ipcMain.handle('chat:send', async (_e, to, text) => {
-  const r = await presenceCall('send', { to: String(to || ''), text: String(text || '') });
+  const r = await amigos.call('send', { to: String(to || ''), text: String(text || '').slice(0, 500) });
   return r.ok ? true : friendFail(r);
 });
 ipcMain.handle('chat:poll', async (_e, who, since) => {
-  const r = await presenceCall('poll', { with: String(who || ''), since: Number(since) || 0 }, 5000);
+  const r = await amigos.call('poll', { with: String(who || ''), since: Number(since) || 0 }, 5000);
   return r.ok ? { ...r.data, me: session.name } : friendFail(r);
 });
 
@@ -3471,6 +3498,11 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     if (eventServer) hideHost(eventServer.host);
     if (st.joinServer && eventServer) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, eventServer.host, eventServer.port));
     // Modpack propio: entrar directo al servidor elegido en la pestaña Servidores (la dirección sale de su servers.dat).
+    // Invitación de un amigo: entrar al servidor que él tenía guardado.
+    if (pack && typeof opts.joinHost === 'string' && opts.joinHost) {
+      const addr = serversLib.parseAddress(opts.joinHost.slice(0, 260));
+      if (addr) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, addr.host, addr.port));
+    }
     if (pack && Number.isInteger(opts.serverIndex) && opts.serverIndex >= 0 && opts.serverIndex < 50) {
       const target = serversLib.listPackServers(eventDir)[opts.serverIndex];
       if (target) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, target.host, target.port));

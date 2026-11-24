@@ -1,6 +1,6 @@
 {
   "name": "nova-px-event-launcher",
-  "version": "1.0.188",
+  "version": "1.0.189",
   "description": "Nova PX - Event Launcher: launcher de Minecraft para los eventos del equipo (premium y no premium)",
   "main": "main.js",
   "author": "Nova PX",
@@ -21,7 +21,8 @@
   "dependencies": {
     "electron-updater": "^6.3.9",
     "minecraft-launcher-core": "^3.18.2",
-    "msmc": "^5.0.5"
+    "msmc": "^5.0.5",
+    "ws": "^8.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

@@ -50,6 +50,7 @@
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
       <button class="tab-btn" data-tab="shots"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13.5" rx="2.5"/><circle cx="12" cy="12.75" r="3.4"/><path d="M8.6 6l1.3-2.3h4.2L15.4 6"/></svg><span class="nav-label">Capturas</span></button>
+      <button class="tab-btn" data-tab="friends"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 19.5c.7-3.4 3.2-5.3 6.2-5.3s5.5 1.9 6.2 5.3"/><circle cx="17" cy="9.5" r="2.6"/><path d="M16.6 14.3c2.5.1 4.2 1.8 4.7 4.7"/></svg><span class="nav-label">Amigos</span><span class="nav-badge" id="fr-badge" hidden></span></button>
       <div id="nav-recent" class="nav-recent" hidden><span class="nav-group">Recientes</span></div>
       <span class="nav-group">Evento</span>
       <button class="tab-btn" data-tab="event"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span class="nav-label">Evento</span></button>
@@ -1300,6 +1301,23 @@
     </section>
 
     <!-- SKINS -->
+    <section class="page" id="page-friends">
+      <div class="fr-layout">
+        <aside class="fr-side">
+          <div class="fr-me fr-box" id="fr-me"></div>
+          <form id="fr-add" class="friends-form fr-add"><input id="fr-add-input" class="events-search pii" type="text" maxlength="16" placeholder="Agregar amigo por su nick" autocomplete="off" aria-label="Nick del amigo" /><button type="submit" class="primary">Agregar</button></form>
+          <p id="fr-note" class="muted" role="status"></p>
+          <div id="fr-inbox" class="fr-inbox"></div>
+          <div id="fr-party" class="fr-box fr-party"></div>
+        </aside>
+        <div class="fr-main">
+          <div class="fr-tools"><input id="fr-search" class="events-search" type="search" placeholder="Buscar entre tus amigos…" aria-label="Buscar amigo" autocomplete="off" /><span id="fr-count" class="muted"></span></div>
+          <div id="fr-list" class="fr-list"></div>
+          <details id="fr-blocked-box" class="fr-blocked" hidden><summary id="fr-blocked-sum">Bloqueados</summary><div id="fr-blocked"></div></details>
+        </div>
+      </div>
+    </section>
+
     <section class="page" id="page-shots">
       <div class="shots-head">
         <select id="shots-filter" aria-label="Mostrar capturas de"><option value="">Todas las instancias</option></select>
@@ -1582,6 +1600,8 @@
         <fieldset>
           <legend>Notificaciones</legend>
           <label class="check"><input id="notify-events" type="checkbox" /> Avisarme cuando un evento esté por empezar</label>
+          <label class="check"><input id="notify-friends" type="checkbox" /> Avisarme de mensajes, solicitudes e invitaciones de amigos</label>
+          <label class="check"><input id="notify-friends-online" type="checkbox" /> Avisarme cuando un amigo se conecta</label>
           <small class="muted">Te llega un aviso del sistema unos minutos antes de cada evento.</small>
         </fieldset>
 
@@ -1661,7 +1681,9 @@
     <dialog id="chat-modal" class="chat-dialog" aria-label="Chat con un amigo">
     <div class="chat-head"><span id="chat-face" class="chat-face"></span><div class="chat-who"><b id="chat-name" class="pii"></b><small id="chat-status" class="muted"></small></div><button type="button" id="chat-close" class="ghost chat-x" aria-label="Cerrar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
-    <form id="chat-form" class="chat-form"><input id="chat-input" type="text" maxlength="300" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje" /><button type="submit" class="primary">Enviar</button></form>
+    <div id="chat-typing" class="chat-typing muted" aria-live="polite"></div>
+    <div id="chat-emojis" class="chat-emojis" hidden></div>
+    <form id="chat-form" class="chat-form"><button type="button" id="chat-emoji" class="ghost chat-emoji-btn" aria-label="Emojis" title="Emojis">😊</button><input id="chat-input" type="text" maxlength="500" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje" /><button type="submit" class="primary">Enviar</button></form>
   </dialog>
   <dialog id="member-modal" class="event-modal member-dialog" aria-label="Perfil">
     <div id="mm-card"></div>
@@ -1741,6 +1763,7 @@
   <script src="app/08-admin.js"></script>
   <script src="app/09-ajustes-menu.js"></script>
   <script src="app/10-extras.js"></script>
+  <script src="app/11-amigos.js"></script>
   <script src="app/99-iniciar.js"></script>
   <script src="versions.js"></script>
   <script src="topbar.js"></script>
