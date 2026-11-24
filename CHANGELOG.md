@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.191
+- Modos Clásico y PvP: la primera vez que juegas un perfil Nova eliges cómo vas a jugar. Clásico trae gráficos según tu PC, animaciones suaves, coordenadas y el texture pack Nova; PvP va a lo máximo de FPS (sin nubes, sombras ni balanceo de cámara) con CPS y teclas en pantalla. Se cambia desde el perfil.
+
 ## 1.0.190
 - Loader Nova: los perfiles Nova instalan una lista fija de mods de rendimiento probados entre sí para cada versión de Minecraft (36 versiones), cada archivo verificado con su huella. Se renueva sola cada semana.
 - «Actualizar Nova» en un clic: cada perfil Nova muestra su versión de Nova y avisa cuando hay una nueva. Solo cambia los mods que puso Nova; los tuyos se quedan.

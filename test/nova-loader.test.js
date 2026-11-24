@@ -67,6 +67,21 @@ const mod = (slug, id, f) => ({ slug, id, project: 'AAAAAAAA', name: slug, versi
   assert.ok(perf.optionsLines('bajo', '1.15.2').includes('fancyGraphics:false'));
   assert.ok(!perf.optionsLines('medio', '1.16.5').some((l) => l.startsWith('simulationDistance')));
 
+  // Modos Clásico y PvP.
+  const pvp = perf.modeOptions('pvp', '1.21.1');
+  assert.ok(pvp.includes('renderClouds:"false"') && pvp.includes('graphicsMode:0') && pvp.includes('particles:2'));
+  assert.ok(perf.modeOptions('pvp', '1.16.5').includes('renderClouds:false'));
+  assert.deepStrictEqual(perf.modeOptions('clasico', '1.21.1', 'alto').slice(0, -3), perf.optionsLines('alto', '1.21.1'));
+  assert.ok(perf.modeOptions('clasico', '1.21.1').includes('bobView:true'));
+  assert.strictEqual(perf.modeModules('pvp').cps, true);
+  assert.strictEqual(perf.modeModules('clasico').smooth_anim, true);
+  const merged = perf.mergeOptions('fov:0.7\nrenderDistance:20\nlang:es_es\n', ['renderDistance:8', 'maxFps:260']);
+  assert.strictEqual(merged, 'fov:0.7\nrenderDistance:8\nlang:es_es\nmaxFps:260\n');
+  assert.strictEqual(perf.optionValue(merged, 'lang'), 'es_es');
+  assert.strictEqual(perf.packList('["vanilla","fabric","file/Nova-Pack.zip"]', false), '["vanilla","fabric"]');
+  assert.strictEqual(perf.packList(null, true), '["vanilla","fabric","file/Nova-Pack.zip"]');
+  assert.strictEqual(perf.packList(null, false, []), '[]');
+
   // La lista publicada en el repositorio es válida.
   const real = nl.cleanLock(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'nova-loader.json'), 'utf8')));
   assert.ok(real && Object.keys(real.mc).length >= 10);

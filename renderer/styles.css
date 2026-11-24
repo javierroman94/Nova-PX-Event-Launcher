@@ -4006,3 +4006,15 @@ main { animation: px-page-in .28s ease-out; }
 .nova-bar[hidden] { display: none; }
 .nova-bar-mark { font-size: 18px; }
 .nova-bar #mp-nova-text { flex: 1; font-size: 13px; }
+
+/* 1.0.190: elegir modo Clásico / PvP */
+.nova-mode-modal .event-modal-body { width: min(600px, 88vw); }
+.nova-mode-head h3 { margin: 0 0 4px; }
+.nova-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+.nova-mode-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; padding: 18px; border-radius: 14px; border: 1px solid var(--border, rgba(255,255,255,.12)); background: rgba(255,255,255,.03); cursor: pointer; }
+.nova-mode-card:hover, .nova-mode-card:focus-visible { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.nova-mode-card.current { border-color: var(--accent); }
+.nova-mode-card strong { font-size: 18px; }
+.nova-mode-icon { font-size: 30px; }
+.nova-mode-card ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+@media (max-width: 640px) { .nova-mode-grid { grid-template-columns: 1fr; } }

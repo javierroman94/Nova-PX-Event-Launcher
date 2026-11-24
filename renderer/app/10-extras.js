@@ -394,17 +394,22 @@ function openFriendCard(f) {
 }
 window.openFriendCard = openFriendCard;
 
-/* ---------- loader Nova: versión del perfil y "Actualizar Nova" (1.0.190) ---------- */
+/* ---------- loader Nova: versión del perfil y "Actualizar Nova" (1.0.191) ---------- */
 async function paintNovaBar(p) {
   const bar = $('mp-nova-bar');
   const btn = $('mp-nova-update');
   bar.hidden = true;
   btn.hidden = true;
+  $('mp-nova-mode').hidden = true;
   if (!p || p.preset !== 'nova' || p.protected) return;
   let st;
   try { st = await window.api.novaStatus(p.id); } catch { return; }
   if (mp.pack !== p) return;
   const text = $('mp-nova-text');
+  const modeBtn = $('mp-nova-mode');
+  const info = NOVA_MODE_INFO[st.mode];
+  modeBtn.textContent = info ? `${info.icon} Modo ${info.name} · Cambiar` : 'Elegir modo';
+  modeBtn.hidden = false;
   if (st.update) {
     text.textContent = st.update.from
       ? `Nova ${st.update.from} → hay Nova ${st.update.to} con mods probados más nuevos.`
@@ -412,7 +417,7 @@ async function paintNovaBar(p) {
     btn.hidden = false;
   } else if (st.version) {
     text.textContent = `Loader Nova ${st.version}: mods de rendimiento probados entre sí. Estás al día.`;
-  } else return;
+  } else text.textContent = 'Perfil Nova.';
   bar.hidden = false;
 }
 $('mp-nova-update').addEventListener('click', async () => {
@@ -431,3 +436,51 @@ $('mp-nova-update').addEventListener('click', async () => {
   } finally { btn.disabled = false; }
 });
 window.paintNovaBar = paintNovaBar;
+
+/* ---------- modo del cliente Nova: Clásico o PvP (1.0.191) ---------- */
+const NOVA_MODE_INFO = {
+  clasico: { icon: '🏡', name: 'Clásico', desc: 'Para construir, explorar y jugar tranquilo.', items: ['Gráficos ajustados a tu PC', 'Animaciones suaves del jugador', 'Texture pack Nova', 'Coordenadas en pantalla'] },
+  pvp: { icon: '⚔️', name: 'PvP', desc: 'Lo máximo de FPS para pelear sin tirones.', items: ['Gráficos bajos, sin nubes ni sombras', 'Menos partículas y distancia', 'CPS y teclas en pantalla', 'Sin balanceo de cámara'] }
+};
+// Muestra la elección. -> 'clasico' | 'pvp' | null si se cierra.
+function askNovaMode(current) {
+  return new Promise((resolve) => {
+    const m = openModal('nova-mode-modal', 'Elige el modo de Nova');
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; m.close(); resolve(v); };
+    m.dlg.addEventListener('close', () => finish(null));
+    const head = el('div', 'nova-mode-head');
+    head.append(el('h3', '', '¿Cómo vas a jugar?'), el('p', 'muted', 'Puedes cambiarlo cuando quieras desde el perfil.'));
+    const grid = el('div', 'nova-mode-grid');
+    for (const [key, info] of Object.entries(NOVA_MODE_INFO)) {
+      const card = el('button', `nova-mode-card${current === key ? ' current' : ''}`);
+      card.type = 'button';
+      card.dataset.mode = key;
+      const ul = el('ul');
+      for (const it of info.items) ul.append(el('li', '', it));
+      card.append(el('span', 'nova-mode-icon', info.icon), el('strong', '', info.name), el('span', 'muted', info.desc), ul);
+      card.addEventListener('click', () => finish(key));
+      grid.append(card);
+    }
+    m.body.append(head, grid);
+    m.open();
+  });
+}
+async function chooseNovaMode(p, current) {
+  const mode = await askNovaMode(current);
+  if (!mode) return null;
+  try {
+    const up = await window.api.novaSetMode(p.id, mode);
+    const i = mp.installed.findIndex((x) => x.id === p.id);
+    if (i >= 0) mp.installed[i] = up;
+    if (mp.pack && mp.pack.id === p.id) { mp.pack = up; paintNovaBar(up); }
+    toast(`${NOVA_MODE_INFO[mode].icon} Modo ${NOVA_MODE_INFO[mode].name} listo.`, 'success');
+    return up;
+  } catch (e) { toast(cleanError(e), 'error'); return null; }
+}
+// Antes de la primera partida de un perfil Nova se pregunta el modo. -> false si el jugador cerró sin elegir.
+window.novaModeBeforePlay = async (p) => {
+  if (!p || p.preset !== 'nova' || p.protected || p.novaMode) return true;
+  return !!(await chooseNovaMode(p, null));
+};
+$('mp-nova-mode').addEventListener('click', () => mp.pack && chooseNovaMode(mp.pack, mp.pack.novaMode));

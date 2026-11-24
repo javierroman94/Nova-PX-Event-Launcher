@@ -312,7 +312,10 @@ async function playPack(id, extra = {}) {
     showMsg('Inicia sesión como premium o no premium para jugar.', true);
     return;
   }
-  const p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
+  let p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
+  // Perfil Nova sin modo elegido: primero se elige Clásico o PvP.
+  if (window.novaModeBeforePlay && !(await window.novaModeBeforePlay(p))) return;
+  p = mp.installed.find((x) => x.id === id) || p;
   // La pantalla de carga de un modpack usa su propia portada (o la de su versión), no el logo del evento.
   launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: packCover(p) || '', preset: p.preset || '' };
   setPlaying(true);
