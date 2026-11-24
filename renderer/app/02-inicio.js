@@ -22,6 +22,7 @@ function paintSponsors(list) {
     if (x.url) { c.type = 'button'; c.addEventListener('click', () => open(x.url)); }
     const logo = imageUrl(x.logo);
     if (logo) { const im = el('img', 'sponsor-logo'); im.alt = ''; im.src = logo; c.append(im); }
+    else if (x.nick || x.skin) { const hw = el('span', 'sponsor-logo sponsor-head'); hw.append(head3d({ nick: x.nick || String(x.name || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 16), ...(x.skin ? { skin: x.skin, slim: x.slim } : {}) }, 40)); c.append(hw); }
     else c.append(el('span', 'sponsor-logo sponsor-initial', (x.name || '?').trim().charAt(0).toUpperCase()));
     const t = el('div', 'sponsor-text');
     t.append(el('span', 'sponsor-role', x.role || label), el('strong', '', x.name));

@@ -144,6 +144,15 @@ function sponsorsEditor() {
         const l1 = el('div', 'brand-line'); l1.append(r, n);
         const l2 = el('div', 'brand-line'); l2.append(u, t);
         fields.append(l1, l2);
+        if (g.kind !== 'host') {
+          // Persona con Minecraft: se muestra su cabeza 3D si no hay logo (por usuario de Minecraft, o subiendo una skin PNG).
+          const sk = el('details', 'brand-skin'); sk.open = !!(x.nick || x.skin);
+          sk.append(el('summary', '', 'Skin de Minecraft (opcional)'));
+          const nk = el('input'); nk.type = 'text'; nk.maxLength = 16; nk.placeholder = 'Usuario de Minecraft (si tiene cuenta premium)'; nk.value = x.nick || '';
+          nk.addEventListener('input', () => { x.nick = nk.value.trim(); });
+          sk.append(nk, skinEditor(Object.assign(x, { nick: x.nick || '' })), el('p', 'muted', 'Se usa en lugar del logo. Si pones el usuario premium se baja su skin; si no tiene cuenta, sube su skin en PNG.'));
+          fields.append(sk);
+        }
         const q = el('button', 'ghost brand-del', '✕'); q.type = 'button'; q.title = 'Quitar';
         q.addEventListener('click', () => { list.splice(list.indexOf(x), 1); paint(); });
         row.append(lg, fields, q);

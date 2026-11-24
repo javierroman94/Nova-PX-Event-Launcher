@@ -263,3 +263,13 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(a.sameAsBefore(null, 'clave-segura-123'), false);
   console.log('ok comprobar contraseña');
 }
+
+{
+  const sp = a.sanitizeSponsors([
+    { name: 'EzLuiiz', role: 'Evento patrocinado por', nick: 'EzLuiiz', skin: 'images/skin-ez.png', slim: true },
+    { name: 'Malo', nick: 'no válido!!', skin: 'http://x/y.png' }
+  ]);
+  assert.strictEqual(sp[0].nick, 'EzLuiiz'); assert.strictEqual(sp[0].skin, 'images/skin-ez.png'); assert.strictEqual(sp[0].slim, true);
+  assert.strictEqual(sp[1].nick, undefined); assert.strictEqual(sp[1].skin, undefined);
+  console.log('ok skin en patrocinadores');
+}
