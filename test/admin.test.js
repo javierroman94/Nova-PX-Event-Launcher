@@ -255,3 +255,11 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.notStrictEqual(ads[2].id, ads[0].id);
   console.log('ok publicidad');
 }
+
+{
+  const built = a.buildProtectedEvent({ jars: [{ file: 'a.jar', data: Buffer.from('x') }], password: 'clave-segura-123', previous: null, baseUrl: 'https://example.com/x' });
+  assert.strictEqual(a.sameAsBefore(built.envelope, 'clave-segura-123'), true);
+  assert.strictEqual(a.sameAsBefore(built.envelope, 'otra-clave-123'), false);
+  assert.strictEqual(a.sameAsBefore(null, 'clave-segura-123'), false);
+  console.log('ok comprobar contraseña');
+}

@@ -286,6 +286,50 @@ function paintChecklist() {
   $('ad-pass').closest('.field').hidden = !hasPack;
 }
 ['ad-name', 'ad-pass'].forEach((id) => $(id).addEventListener('input', paintChecklist));
+
+/* Contraseña de instalación: ver, comprobar, generar y recordar. */
+const passMsg = (t, cls) => { const p = $('ad-pass-msg'); p.textContent = t; p.className = cls || 'muted'; };
+$('ad-pass-eye').addEventListener('click', () => {
+  const show = $('ad-pass').type === 'password';
+  $('ad-pass').type = show ? 'text' : 'password';
+  $('ad-pass-eye').setAttribute('aria-pressed', String(show));
+  $('ad-pass-eye').setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+});
+$('ad-pass').addEventListener('input', () => passMsg(''));
+$('ad-pass-check').addEventListener('click', async () => {
+  const pw = $('ad-pass').value;
+  if (!pw) { passMsg('Escribe la contraseña para comprobarla.', 'warn'); return; }
+  try {
+    const r = await window.api.adminPasswordCheck(pw);
+    if (r.state === 'ok') passMsg('✓ Es la contraseña actual del evento: los jugadores que ya instalaron no tendrán que escribir nada.', 'ok');
+    else if (r.state === 'wrong') passMsg('✗ No es la contraseña actual. Si publicas así, será una contraseña nueva y los jugadores la escribirán una vez.', 'warn');
+    else passMsg('Todavía no hay un modpack protegido publicado: cualquier contraseña de 10 caracteres o más sirve.', 'muted');
+  } catch (e) { passMsg(cleanError(e), 'warn'); }
+});
+$('ad-pass-gen').addEventListener('click', () => {
+  const abc = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const buf = new Uint32Array(16);
+  crypto.getRandomValues(buf);
+  const pw = [...buf].map((n) => abc[n % abc.length]).join('');
+  $('ad-pass').value = pw;
+  $('ad-pass').type = 'text';
+  $('ad-pass-eye').setAttribute('aria-pressed', 'true');
+  paintChecklist();
+  passMsg('Contraseña nueva generada. Cópiala o márcala para recordarla antes de publicar: no se puede recuperar.', 'ok');
+});
+$('ad-pass-copy').addEventListener('click', async () => {
+  const pw = $('ad-pass').value;
+  if (!pw) { passMsg('No hay nada que copiar.', 'warn'); return; }
+  try { await navigator.clipboard.writeText(pw); toast('Contraseña copiada'); } catch { passMsg('No se pudo copiar; selecciónala y usa Ctrl+C.', 'warn'); }
+});
+(async () => {
+  try {
+    const s = await window.api.adminPasswordSaved();
+    if (!s || !s.available) return;
+    $('ad-pass-remember-row').hidden = false;
+    if (s.password) { $('ad-pass-remember').checked = true; $('ad-pass').value = s.password; paintChecklist(); passMsg('Contraseña guardada en este equipo cargada.', 'muted'); }
+  } catch {}
+})();
 $('ad-pack').addEventListener('change', showAdminPack);
 $('ad-pack-edit').addEventListener('click', async () => {
   const p = (await window.api.modpackInstalled()).find((x) => x.id === $('ad-pack').value);
@@ -346,7 +390,9 @@ $('ad-publish').addEventListener('click', async () => {
     $('ad-status').textContent = r.mods
       ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'} Los jugadores lo ven en unos minutos.`
       : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`;
-    $('ad-pass').value = '';
+    try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: $('ad-pass').value }); } catch (e) { toast(cleanError(e), 'error'); }
+    if (!$('ad-pass-remember').checked) $('ad-pass').value = '';
+    $('ad-pass').type = 'password';
     $('ad-new').checked = false;
     toast('Evento publicado');
     await autoDiscord('event', { title: `${r.name}: evento publicado`, text: $('ad-tag').value, image: imageUrl(adm.evImage) });

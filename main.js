@@ -2065,6 +2065,29 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
   }
 });
 
+/* Contraseña de instalación (administrador): comprobarla, generarla y, si el administrador quiere, recordarla cifrada en este equipo. */
+const ADMIN_PASS_FILE = () => path.join(app.getPath('userData'), 'admin-pass.bin');
+ipcMain.handle('admin:passwordCheck', async (_e, password) => {
+  const r = await requireAdmin();
+  const cur = ((await r.getJson('data/manifest.json')) || {}).data || {};
+  if (!pcrypto.isEnvelope(cur.protected)) return { state: 'none' };
+  return { state: adminLib.sameAsBefore(cur.protected, typeof password === 'string' ? password : '') ? 'ok' : 'wrong' };
+});
+ipcMain.handle('admin:passwordSaved', async () => {
+  await requireAdmin();
+  if (!safeStorage.isEncryptionAvailable()) return { available: false, password: '' };
+  try { return { available: true, password: safeStorage.decryptString(fs.readFileSync(ADMIN_PASS_FILE())) }; } catch { return { available: true, password: '' }; }
+});
+ipcMain.handle('admin:passwordRemember', async (_e, p = {}) => {
+  await requireAdmin();
+  if (!p.remember) { try { fs.unlinkSync(ADMIN_PASS_FILE()); } catch {} return false; }
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Este equipo no permite guardar la contraseña de forma segura.');
+  const pw = typeof p.password === 'string' ? p.password : '';
+  if (pcrypto.passwordProblem(pw)) throw new Error(pcrypto.passwordProblem(pw));
+  fs.writeFileSync(ADMIN_PASS_FILE(), safeStorage.encryptString(pw));
+  return true;
+});
+
 // Cambia solo el estado del evento (Próximamente / Activo / Finalizado) sin volver a subir mods.
 ipcMain.handle('admin:setEventState', async (_e, state) => {
   const st = ['soon', 'active', 'ended'].includes(state) ? state : null;

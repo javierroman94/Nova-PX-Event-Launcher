@@ -880,7 +880,18 @@
           <ul id="ad-check" class="ad-check"></ul>
           <div class="field">
             <label for="ad-pass">Contraseña de instalación</label>
-            <input id="ad-pass" type="password" autocomplete="off" placeholder="Mínimo 10 caracteres. Guárdala: no se puede recuperar." />
+            <div class="pass-row">
+              <input id="ad-pass" type="password" autocomplete="off" placeholder="Mínimo 10 caracteres. Guárdala: no se puede recuperar." />
+              <button id="ad-pass-eye" type="button" title="Mostrar u ocultar la contraseña" aria-label="Mostrar contraseña" aria-pressed="false">👁</button>
+            </div>
+            <div class="pass-actions">
+              <button id="ad-pass-check" type="button">Comprobar si es la actual</button>
+              <button id="ad-pass-gen" type="button">Generar una nueva</button>
+              <button id="ad-pass-copy" type="button">Copiar</button>
+              <label id="ad-pass-remember-row" class="check" hidden><input id="ad-pass-remember" type="checkbox" /> Recordarla en este equipo (cifrada)</label>
+            </div>
+            <p id="ad-pass-msg" class="muted" role="status"></p>
+            <p class="muted">¿Se te olvidó? No se puede recuperar. Genera una nueva y publica: los jugadores la escribirán una sola vez.</p>
           </div>
           <progress id="ad-progress" max="1" value="0" hidden></progress>
           <p id="ad-status" class="muted" role="status"></p>

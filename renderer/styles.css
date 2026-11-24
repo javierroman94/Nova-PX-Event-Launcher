@@ -3423,3 +3423,11 @@ main { container-type: inline-size; overflow-x: hidden; }
 .mw-src { width: 100%; text-align: left; cursor: pointer; }
 .mw-src:hover { border-color: var(--accent, var(--line)); }
 #mp-tab-worlds .events-head { margin-top: 18px; }
+
+/* Contraseña de instalación */
+.pass-row { display: flex; gap: 8px; }
+.pass-row input { flex: 1; min-width: 0; }
+.pass-row button { padding: 0 14px; }
+.pass-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.pass-actions .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+#ad-pass-msg.ok { color: #6fd08c; } #ad-pass-msg.warn { color: #f2a65a; }
