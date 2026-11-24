@@ -1258,24 +1258,48 @@ function paintEvLib() {
     const row = el('div', cards ? 'evlib-card' : 'evlib-row');
     const img = imageUrl(e.image || '');
     if (img && !cards) { row.classList.add('has-banner'); row.style.backgroundImage = `linear-gradient(90deg, rgba(10,10,14,.92) 8%, rgba(10,10,14,.35)), url(${JSON.stringify(img)})`; }
-    if (cards) { const art = el('div', 'evlib-art'); if (img) art.style.backgroundImage = `url(${JSON.stringify(img)})`; else art.textContent = e.name.slice(0, 1).toUpperCase(); row.append(art); }
-    const main = el('div', 'evlib-main');
     const mine = isLiveEntry(e, live);
+    const badge = mine && live.status === 'active' ? el('span', 'evlib-badge on', 'ACTIVO')
+      : mine && live.status === 'soon' ? el('span', 'evlib-badge soon', live.autoStart && live.startsAt ? `PROGRAMADO · ${evWhen(live.startsAt)}` : 'PRÓXIMAMENTE')
+      : mine && live.status === 'ended' ? el('span', 'evlib-badge', 'FINALIZADO') : null;
+    if (cards) {
+      row.classList.toggle('live', !!(mine && live.status !== 'ended'));
+      const art = el('div', 'evlib-art');
+      if (img) art.style.backgroundImage = `url(${JSON.stringify(img)})`; else art.append(el('span', 'evlib-initial', e.name.slice(0, 1).toUpperCase()));
+      if (badge) art.append(badge);
+      row.append(art);
+    }
+    const main = el('div', 'evlib-main');
     main.append(el('strong', '', e.name));
+    if (cards) main.append(el('p', 'evlib-tagline', e.tagline || 'Sin descripción'));
     const acts = el('div', 'evlib-actions');
-    const btn = (text, fn, cls) => { const b = el('button', cls || '', text); b.type = 'button'; b.addEventListener('click', fn); acts.append(b); return b; };
-    if (mine && live.status === 'active') acts.append(el('span', 'evlib-badge on', 'ACTIVO'));
-    else if (mine && live.status === 'soon') acts.append(el('span', 'evlib-badge', live.autoStart && live.startsAt ? `PROGRAMADO · ${evWhen(live.startsAt)}` : 'PRÓXIMAMENTE'));
-    else if (mine && live.status === 'ended') acts.append(el('span', 'evlib-badge', 'FINALIZADO'));
-    btn('Editar', () => openEvEditor(e.id, e), 'ghost');
-    if (mine && live.status !== 'ended') btn('Finalizar', () => finishEvent(e), 'ghost');
-    if (!mine || live.status === 'ended') btn('Publicar', () => togglePublishPanel(row, e), 'primary');
-    btn('Duplicar', async () => { await saveEvLib([...evLib, { ...e, id: evSlug(e.name), name: `${e.name} (copia)`.slice(0, 80), publishedId: '' }], 'Evento duplicado.'); }, 'ghost');
-    btn('Eliminar', async () => {
+    const btn = (text, fn, cls, into) => { const b = el('button', cls || '', text); b.type = 'button'; b.addEventListener('click', fn); (into || acts).append(b); return b; };
+    const remove = async () => {
       if (!await askConfirm(`¿Eliminar "${e.name}" de tus eventos?${mine && live.status !== 'ended' ? '\n\nSigue publicado: los jugadores lo seguirán viendo hasta que lo finalices.' : ''}`)) return;
       await saveEvLib(evLib.filter((x) => x.id !== e.id), 'Evento eliminado.');
-    }, 'ghost');
-    if (cards) { const body = el('div', 'evlib-card-body'); body.append(main, acts); row.append(body); } else row.append(main, acts);
+    };
+    const duplicate = async () => { await saveEvLib([...evLib, { ...e, id: evSlug(e.name), name: `${e.name} (copia)`.slice(0, 80), publishedId: '' }], 'Evento duplicado.'); };
+    const canFinish = mine && live.status !== 'ended';
+    if (cards) {
+      // Tarjeta: una acción principal grande, Editar al lado y Duplicar / Eliminar discretos abajo.
+      const top = el('div', 'evlib-main-actions');
+      if (canFinish) btn('Finalizar', () => finishEvent(e), 'evlib-cta', top); else btn('Publicar', () => togglePublishPanel(row, e), 'primary evlib-cta', top);
+      btn('Editar', () => openEvEditor(e.id, e), 'ghost', top);
+      const low = el('div', 'evlib-low-actions');
+      btn('Duplicar', duplicate, 'evlib-link', low);
+      btn('Eliminar', remove, 'evlib-link danger', low);
+      const body = el('div', 'evlib-card-body');
+      body.append(main, top, low);
+      row.append(body);
+    } else {
+      if (badge) acts.append(badge);
+      btn('Editar', () => openEvEditor(e.id, e), 'ghost');
+      if (canFinish) btn('Finalizar', () => finishEvent(e), 'ghost');
+      if (!mine || live.status === 'ended') btn('Publicar', () => togglePublishPanel(row, e), 'primary');
+      btn('Duplicar', duplicate, 'ghost');
+      btn('Eliminar', remove, 'ghost');
+      row.append(main, acts);
+    }
     box.append(row);
   });
 }
