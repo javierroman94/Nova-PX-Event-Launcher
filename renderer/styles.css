@@ -3587,3 +3587,26 @@ main { container-type: inline-size; overflow-x: hidden; }
 .ev-preview-live { display: grid; gap: 16px; padding: 14px; border-radius: 18px; border: 1px dashed var(--line); background: rgba(0, 0, 0, .18); pointer-events: none; user-select: none; }
 .ev-preview-live .hero { margin: 0; }
 .ev-preview-live .sponsors { margin: 0; }
+
+/* Tarjetas de eventos guardados (vista Tarjetas) */
+.evlib-cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.evlib-card { position: relative; display: flex; flex-direction: column; gap: 0; padding: 0; border-radius: 18px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel, #1b2030) 90%, #000); overflow: hidden; box-shadow: 0 18px 40px -28px #000; transition: border-color .18s, transform .18s; }
+.evlib-card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); transform: translateY(-2px); }
+.evlib-card.live { border-color: color-mix(in srgb, var(--accent) 65%, var(--line)); box-shadow: 0 18px 44px -26px var(--accent); }
+.evlib-card .evlib-art { position: relative; height: auto; aspect-ratio: 16 / 9; background: linear-gradient(135deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)) center / cover no-repeat; }
+.evlib-card .evlib-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 10, 18, .45) 0%, rgba(8, 10, 18, 0) 38%, rgba(8, 10, 18, .55) 100%); pointer-events: none; }
+.evlib-initial { font-size: 44px; font-weight: 800; color: var(--accent); opacity: .85; }
+.evlib-card .evlib-art .evlib-badge { position: absolute; top: 12px; left: 12px; z-index: 1; padding: 5px 12px; border-radius: 999px; font-size: 11.5px; letter-spacing: .06em; background: rgba(10, 12, 20, .78); border: 1px solid rgba(255, 255, 255, .16); backdrop-filter: blur(6px); }
+.evlib-card .evlib-art .evlib-badge.on { background: rgba(20, 70, 44, .82); border-color: rgba(127, 240, 168, .5); color: #8ff5b4; }
+.evlib-card .evlib-art .evlib-badge.soon { background: rgba(70, 52, 14, .82); border-color: rgba(255, 205, 100, .5); color: #ffd678; }
+.evlib-card-body { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px 14px; flex: 1; }
+.evlib-card .evlib-main strong { font-size: 18px; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.evlib-tagline { margin: 6px 0 0; color: var(--muted, #9aa3b8); font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 2.9em; }
+.evlib-main-actions { display: flex; gap: 8px; margin-top: auto; }
+.evlib-main-actions .evlib-cta { flex: 1; padding: 10px 14px; font-weight: 700; }
+.evlib-main-actions button { padding: 10px 16px; font-size: 14px; }
+.evlib-low-actions { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.evlib-link { background: none; border: 0; padding: 4px 2px; font-size: 13px; color: var(--muted, #9aa3b8); cursor: pointer; }
+.evlib-link:hover { color: #fff; text-decoration: underline; }
+.evlib-link.danger:hover { color: #ff7d7d; }
+.evlib-card .evlib-publish { margin: 0; padding: 14px 18px; border-top: 1px dashed var(--line); background: rgba(0, 0, 0, .2); }
