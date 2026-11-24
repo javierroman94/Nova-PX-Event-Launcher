@@ -2172,7 +2172,7 @@ ipcMain.handle('admin:publishEvent', async (_e, p = {}) => {
     await r.putJson('data/manifest.json', merged, `Evento: ${merged.event.name}${pack ? `, ${result.mods} mods` : ''} (desde el launcher)`);
     remember('manifest', merged);
     progress('Listo');
-    return { ...result, name: merged.event.name, active: !!merged.event.active };
+    return { ...result, name: merged.event.name, active: !!merged.event.active, manifest: merged };
   } finally {
     publishing = false;
   }
@@ -2210,7 +2210,7 @@ ipcMain.handle('admin:setEventState', async (_e, state) => {
   const merged = adminLib.mergeManifest(cur, { status: st });
   await r.putJson('data/manifest.json', merged, `Estado del evento: ${st} (desde el launcher)`);
   remember('manifest', merged);
-  return { status: st, name: (merged.event && merged.event.name) || '' };
+  return { status: st, name: (merged.event && merged.event.name) || '', manifest: merged };
 });
 
 /* ---------- importar de otros launchers y exportar .novapx ---------- */

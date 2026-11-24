@@ -71,7 +71,7 @@ const { GithubRepo, GithubError } = require('../lib/github');
   // GitHub (fetch falso)
   const calls = [];
   const fake = async (url, o) => {
-    calls.push([o.method || 'GET', url, o.headers.Authorization]);
+    calls.push([o.method || 'GET', url, o.headers.Authorization]); if (url.includes('/contents/') && !o.method) assert.strictEqual(o.headers['Cache-Control'], 'no-cache', 'las lecturas de contenido no usan caché');
     const json = (status, body) => ({ status, ok: status < 400, json: async () => body });
     if (url.endsWith('/repos/o/r')) return json(200, { full_name: 'o/r', permissions: { push: true } });
     if (url.includes('/git/ref/heads/main')) return json(200, { object: { sha: 'H1' } });
@@ -97,6 +97,9 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual((await ro.check()).canPush, false, 'un token de solo lectura no debe pasar');
   assert.deepStrictEqual((await gh.getJson('data/x.json')).data, { a: 1 });
   assert.strictEqual(await gh.getJson('data/nuevo.json'), null);
+  // Las lecturas piden la copia fresca: justo tras publicar, el panel no debe ver el estado viejo.
+  const lastGet = calls.filter((c) => c[0] === 'GET' && c[1].includes('/contents/data/x.json')).length;
+  assert.ok(lastGet >= 1);
   await gh.putJson('data/x.json', { a: 2 }, 'msg');
   await gh.putFile('data/x.json', Buffer.from('bin'), 'img');
   const rel = await gh.ensureRelease('evento-x');

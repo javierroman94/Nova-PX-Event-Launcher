@@ -211,15 +211,19 @@ $('ad-banner-pick').addEventListener('click', () => pickEventArt('banner'));
 $('ad-logo-pick').addEventListener('click', () => pickEventArt('logo'));
 $('ad-art-clear').addEventListener('click', () => { adm.evImage = ''; adm.evLogo = ''; paintArtState(); });
 
+function paintLiveHeader() {
+  const m = adm.manifest || {};
+  const ev = m.event || {};
+  $('ad-live-name').textContent = ev.name || 'Sin evento';
+  $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
+}
 async function loadAdmin() {
   if (!isAdmin) return;
   try {
     const d = await window.api.adminLoad();
     const m = d.manifest;
     adm.manifest = m;
-    const ev = m.event || {};
-    $('ad-live-name').textContent = ev.name || 'Sin evento';
-    $('ad-live-meta').textContent = `${({ soon: 'Próximamente', active: 'Activo', ended: 'Finalizado' })[ev.status || (ev.active ? 'active' : 'soon')]} · Minecraft ${m.minecraftVersion || '?'} · ${LOADER_NAMES[m.loader && m.loader.type] || 'Vanilla'}${m.protected ? ' · modpack protegido con contraseña' : ''}`;
+    paintLiveHeader();
     loadEvLib().catch(() => {});
     adm.team = d.team;
     adm.news = d.news;
@@ -1214,8 +1218,12 @@ function isLiveEntry(e, live) {
   return String(e.name || '').trim().toLowerCase() === live.name.trim().toLowerCase();
 }
 
+let evLibSeq = 0; // una lectura de la lista que llega tarde no puede pisar un guardado más nuevo
 async function loadEvLib() {
-  evLib = await window.api.adminEvLibList();
+  const mySeq = ++evLibSeq;
+  const loaded = await window.api.adminEvLibList();
+  if (mySeq !== evLibSeq) return;
+  evLib = loaded;
   const live = liveInfo();
   // El evento que ya está publicado se guarda solo en la lista la primera vez.
   if (live && !evImporting && !evLib.some((e) => isLiveEntry(e, live))) {
@@ -1231,6 +1239,7 @@ async function loadEvLib() {
 }
 async function saveEvLib(list, okText) {
   const st = $('ad-evlib-status');
+  evLibSeq++; // cancela lecturas que sigan en vuelo
   try {
     evLib = await window.api.adminEvLibSave(list);
     st.textContent = okText || '';
@@ -1322,7 +1331,7 @@ async function publishEntry(e, whenIso) {
     });
     if (hasPack) { try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: pw }); } catch (err) { toast(cleanError(err), 'error'); } }
     if (!$('ad-pass-remember').checked) { $('ad-pass').value = ''; $('ad-pass').type = 'password'; }
-    try { await loadAdmin(); } catch {}
+    if (r && r.manifest) { adm.manifest = r.manifest; paintLiveHeader(); }
     const ev = (adm.manifest && adm.manifest.event) || {};
     await saveEvLib(upsertEv({ ...e, publishedId: ev.id || '', status: whenIso ? 'soon' : 'active', startsAt: whenIso || '' }, e.id), r.mods ? `Publicado: "${r.name}" con ${r.mods} mods cifrados. ${r.sameSalt ? 'Quien ya instaló no tendrá que escribir la contraseña.' : 'Contraseña nueva: los jugadores la escribirán una vez.'}` : `Publicado: "${r.name}". Los jugadores lo ven en unos minutos.`);
     toast(whenIso ? 'Evento programado' : 'Evento publicado');
@@ -1339,8 +1348,9 @@ async function publishEntry(e, whenIso) {
 async function finishEvent(e) {
   if (!await askConfirm(`¿Finalizar "${e.name}"?\n\nDeja de verse en Inicio y en la pestaña Evento, y los jugadores ya no podrán entrar.`)) return;
   try {
-    await window.api.adminSetEventState('ended');
-    try { await loadAdmin(); } catch {}
+    const done = await window.api.adminSetEventState('ended');
+    // Se usa lo que se acaba de guardar (no se vuelve a leer de GitHub, que a veces aún devuelve la copia vieja).
+    if (done && done.manifest) { adm.manifest = done.manifest; paintLiveHeader(); }
     await saveEvLib(upsertEv({ ...e, status: 'ended' }, e.id), 'Evento finalizado.');
     window.refreshContent && window.refreshContent();
     await offerSaveToHistory(e.name, e);
