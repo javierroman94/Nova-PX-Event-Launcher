@@ -97,6 +97,7 @@ async function renderHero() {
     renderContinue();
     if (ended) $('hero-title').textContent = 'Sin evento activo';
     $('hero-tagline').textContent = ended ? 'El último evento ya terminó. Mira cómo fue en el Historial y espera el próximo.' : (m.event && m.event.tagline) || '';
+    $('hero-tagline').title = $('hero-tagline').textContent; // el texto completo al pasar el ratón, por si se recorta
     // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
     const art = $('hero-art');
     const artUrl = ended ? '' : imageUrl(m.event && m.event.logo);

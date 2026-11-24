@@ -1100,6 +1100,7 @@ function fillEditorEvent(e) {
   $('ad-pack').value = has ? e.instanceId : '';
   $('ad-pack').dispatchEvent(new Event('change'));
   paintArtState();
+  paintEvCounts();
 }
 function paintEvPreview() {
   const box = $('ev-preview');
@@ -1113,7 +1114,16 @@ function paintEvPreview() {
   $('ev-preview-name').textContent = $('ad-name').value.trim() || 'Nombre del evento';
   $('ev-preview-desc').textContent = $('ad-tag').value;
 }
-['ad-name', 'ad-tag'].forEach((id) => $(id).addEventListener('input', paintEvPreview));
+// Límites del texto (los mismos que aplica lib/admin.js): una sola línea, nombre de 60 y descripción de 220 caracteres.
+function paintEvCounts() {
+  const n = $('ad-name').value.length; const t = $('ad-tag').value.length;
+  $('ad-name-count').textContent = `${n}/60`;
+  $('ad-tag-count').textContent = `${t}/220 · una sola línea`;
+  $('ad-tag-count').classList.toggle('over', t >= 220);
+}
+$('ad-tag').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); }); // sin saltos de línea
+$('ad-tag').addEventListener('input', () => { const v = $('ad-tag').value.replace(/\s*[\r\n]+\s*/g, ' '); if (v !== $('ad-tag').value) $('ad-tag').value = v; });
+['ad-name', 'ad-tag'].forEach((id) => { $(id).addEventListener('input', paintEvPreview); $(id).addEventListener('input', paintEvCounts); });
 
 function showEvScreen(edit) {
   $('ev-screen-list').hidden = edit;
