@@ -276,3 +276,19 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(sp[1].nick, undefined); assert.strictEqual(sp[1].skin, undefined);
   console.log('ok skin en patrocinadores');
 }
+
+{
+  // Editar el evento publicado: solo cambian textos e imágenes; modpack, estado e id se conservan.
+  const cur = { event: { id: 'ev-1', name: 'Viejo', tagline: 'a', status: 'active', active: true, startsAt: '2026-11-01T00:00:00Z' }, protected: { v: 1 }, mods: [], minecraftVersion: '1.21.1', lockPack: true };
+  const out = a.mergeManifest(cur, { name: 'Nuevo', tagline: 'Texto nuevo', image: '', logo: '', sponsors: [] });
+  assert.strictEqual(out.event.name, 'Nuevo');
+  assert.strictEqual(out.event.tagline, 'Texto nuevo');
+  assert.strictEqual(out.event.id, 'ev-1');
+  assert.strictEqual(out.event.status, 'active');
+  assert.strictEqual(out.event.startsAt, '2026-11-01T00:00:00Z');
+  assert.deepStrictEqual(out.protected, { v: 1 });
+  assert.strictEqual(out.lockPack, true);
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'renderer', 'app', '08-admin.js'), 'utf8');
+  assert.ok(/ad-editing-save[\s\S]*isLiveEntry\(prev, live\)[\s\S]*adminPublishEvent\(\{ form:/.test(src), 'guardar el evento publicado actualiza la pestaña Evento');
+  console.log('ok editar evento publicado');
+}

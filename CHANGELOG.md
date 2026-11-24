@@ -2,6 +2,9 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.186
+- Editar el evento publicado (nombre, descripción, imágenes o patrocinadores) y guardar ahora actualiza también la pestaña Evento.
+
 ## 1.0.185
 - Eventos guardados: tarjetas rediseñadas, con banner, insignia de estado y una acción principal.
 - Publicar o finalizar un evento se refleja al instante en el panel (antes podía mostrar el estado anterior).
