@@ -251,12 +251,16 @@ function renderCover() {
   const img = $('hc-img');
   const cover = $('home-cover');
   cover.classList.toggle('has-img', !!art);
-  if (art) { if (img.getAttribute('src') !== art) img.src = art; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); }
-  $('hc-logo').hidden = !!art;
+  // Sin imagen de evento se muestra la portada de bienvenida de NovaPX (que ya trae el logo).
+  const shown = art || 'images/portada-bienvenida.png';
+  cover.classList.toggle('default-cover', !art);
+  if (img.getAttribute('src') !== shown) img.src = shown;
+  img.hidden = false;
+  $('hc-logo').hidden = true;
   $('lp-event').textContent = eventActive ? 'Evento activo →' : 'Próximo evento →';
   $('lp-event').classList.toggle('live', !!eventActive);
 }
-$('hc-img').addEventListener('error', () => { $('hc-img').hidden = true; $('home-cover').classList.remove('has-img'); $('hc-logo').hidden = false; });
+$('hc-img').addEventListener('error', () => { $('hc-img').hidden = true; $('home-cover').classList.remove('has-img', 'default-cover'); $('hc-logo').hidden = false; });
 // La portada ocupa el alto visible del área principal; al bajar se va con el resto.
 (() => {
   const main = document.querySelector('main');

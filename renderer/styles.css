@@ -3492,3 +3492,11 @@ main { container-type: inline-size; overflow-x: hidden; }
 .ev-preview-body p { margin: 0; opacity: .85; }
 .btn-row.center, .mp-actions.center { justify-content: center; }
 #ad-tag { width: 100%; resize: vertical; }
+
+/* Portada de bienvenida por defecto (sin imagen de evento): banner claro completo, sin recortar */
+.home-cover.default-cover { background: #fff; }
+.default-cover .hc-img { object-fit: contain; }
+.default-cover::after { display: none; }
+.default-cover .hc-welcome { color: #14141c; text-shadow: none; }
+.default-cover .hc-event { color: #14141c; background: rgba(255, 255, 255, .9); border-color: rgba(0, 0, 0, .25); }
+.default-cover .hc-event:hover { border-color: #14141c; }
