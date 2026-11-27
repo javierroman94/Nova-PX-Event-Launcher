@@ -4018,3 +4018,15 @@ main { animation: px-page-in .28s ease-out; }
 .nova-mode-icon { font-size: 30px; }
 .nova-mode-card ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
 @media (max-width: 640px) { .nova-mode-grid { grid-template-columns: 1fr; } }
+
+/* 1.0.193: título del evento en imagen (reemplaza al nombre en grande; la descripción queda debajo) */
+.hero-title-img { display: block; width: auto; height: auto; max-width: min(78%, calc(560px * var(--title-scale, 1))); max-height: calc(140px * var(--title-scale, 1)); object-fit: contain; object-position: left center; margin: 14px 0 10px; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .45)); }
+.hero-title-img[hidden] { display: none; }
+.hero h1.has-title-img { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* 1.0.193: Amigos — la cabeza 3D gira y se ve más grande que su caja; se le da aire para que no tape el texto.
+   El botón «Agregar» lleva texto, no el «+» cuadrado del panel de Inicio. */
+.fr-me-top .head3d { margin: 10px 8px; }
+.fr-face .head3d { margin: 7px 6px; }
+.fr-me-who { padding-top: 2px; }
+.fr-add button { width: auto; height: 38px; padding: 0 16px; font-size: 14px; font-weight: 700; white-space: nowrap; }

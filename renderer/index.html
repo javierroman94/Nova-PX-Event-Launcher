@@ -219,6 +219,7 @@
         <div class="hero-body">
           <div class="hero-badge"><span class="live-dot"></span><span id="hero-badge-text">Evento actual</span></div>
           <div class="chips" id="hero-chips"></div>
+          <img id="hero-title-img" class="hero-title-img" alt="" hidden />
           <h1 id="hero-title">Evento de temporada</h1>
           <p id="hero-tagline" class="hero-tagline"></p>
         </div>
@@ -868,8 +869,9 @@
           <article class="ad-card">
             <div class="field"><label for="ad-name">Nombre del evento</label><input id="ad-name" type="text" maxlength="60" /><small class="muted field-count" id="ad-name-count" aria-live="off"></small></div>
             <div class="field"><label for="ad-tag">Descripción</label><textarea id="ad-tag" rows="4" maxlength="220"></textarea><small class="muted field-count" id="ad-tag-count" aria-live="off">Una sola línea de texto, hasta 220 caracteres.</small></div>
-            <div class="btn-row center"><button id="ad-banner-pick" type="button">+ Banner</button><button id="ad-logo-pick" type="button">+ Logo</button><button id="ad-art-clear" type="button" class="ghost">Quitar</button></div>
+            <div class="btn-row center"><button id="ad-banner-pick" type="button">+ Banner</button><button id="ad-logo-pick" type="button">+ Título en imagen</button><button id="ad-art-clear" type="button" class="ghost">Quitar</button></div>
             <small id="ad-art-state" class="muted"></small>
+            <div class="field" id="ad-title-size-row" hidden><label for="ad-title-size">Tamaño del título en imagen <span id="ad-title-size-val" class="muted"></span></label><input id="ad-title-size" type="range" min="40" max="160" step="5" value="100" /><small class="muted">El título en imagen (PNG con fondo transparente) reemplaza al nombre en grande; la descripción queda debajo.</small></div>
             <p id="ad-status" class="muted" role="status"></p>
             <label class="check"><input id="ad-lock" type="checkbox" checked /> 🔒 Bloquear el modpack: los jugadores no pueden añadir ni cambiar mods, texturas ni shaders del evento</label>
           </article>

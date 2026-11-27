@@ -2,6 +2,10 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.193
+- Evento: el «logo» ahora es el título en imagen. Reemplaza al nombre en grande del evento (por ejemplo «Murder Mistery»), con un control de tamaño en Administración, y la descripción queda debajo sin taparse. Ya no se muestra a la derecha de la portada.
+- Amigos: las cabezas de los jugadores ya no tapan el texto de abajo y el botón «Agregar» muestra su texto dentro.
+
 ## 1.0.192
 - Los modos PvP y Clásico también se cambian dentro del juego: en el menú de Nova Client (Shift derecho) hay dos interruptores, y encender uno apaga el otro y ajusta los gráficos al momento (Nova Client 0.6.1). El launcher marca el modo que elegiste para que el menú lo muestre.
 

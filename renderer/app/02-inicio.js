@@ -98,11 +98,9 @@ async function renderHero() {
     if (ended) $('hero-title').textContent = 'Sin evento activo';
     $('hero-tagline').textContent = ended ? 'El último evento ya terminó. Mira cómo fue en el Historial y espera el próximo.' : (m.event && m.event.tagline) || '';
     $('hero-tagline').title = $('hero-tagline').textContent; // el texto completo al pasar el ratón, por si se recorta
-    // Logo del evento (PNG con fondo transparente) a la derecha de la portada.
-    const art = $('hero-art');
-    const artUrl = ended ? '' : imageUrl(m.event && m.event.logo);
-    art.hidden = !artUrl;
-    if (artUrl) art.src = artUrl;
+    // Título en imagen (PNG con fondo transparente): reemplaza al nombre en grande; la descripción queda debajo.
+    paintTitleImage($('hero-title-img'), $('hero-title'), ended ? '' : imageUrl(m.event && m.event.logo), m.event && m.event.titleSize);
+    $('hero-art').hidden = true;
     const heroImg = ended ? '' : imageUrl(m.event && m.event.image);
     const hero = document.querySelector('.hero');
     hero.classList.toggle('has-banner', !!heroImg);
@@ -128,6 +126,19 @@ async function renderHero() {
     $('hero-tagline').textContent = 'No se pudo leer la configuración del evento.';
   }
 }
+
+// Muestra el título del evento como imagen (y deja el nombre solo para lectores de pantalla), o vuelve al texto.
+function paintTitleImage(img, h1, url, size) {
+  const scale = Math.min(160, Math.max(40, Number(size) || 100)) / 100;
+  img.hidden = !url;
+  h1.classList.toggle('has-title-img', !!url);
+  if (url) {
+    img.alt = h1.textContent;
+    img.style.setProperty('--title-scale', String(scale));
+    if (img.getAttribute('src') !== url) img.src = url;
+  } else img.removeAttribute('src');
+}
+window.paintTitleImage = paintTitleImage;
 
 /* ---------- inicio: jugando ahora y continuar ---------- */
 let launchTarget = null; // { kind: 'event' | 'pack', title, icon }

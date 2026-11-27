@@ -138,7 +138,7 @@ function paintMe(r) {
   box.replaceChildren();
   const me = r.me || {};
   const top = el('div', 'fr-me-top');
-  top.append(head3d({ nick: me.nick || 'Steve' }, 52));
+  top.append(head3d({ nick: me.nick || 'Steve' }, 40));
   const who = el('div', 'fr-me-who');
   const name = el('strong', 'pii', me.nick || '');
   if (me.verified) name.append(verifiedBadge());
@@ -275,7 +275,7 @@ function friendRow(f, r) {
   const st = statusOf(f);
   const row = el('div', `fr-row st-${st}`);
   const face = el('span', 'fr-face');
-  face.append(head3d({ nick: f.nick }, 36), el('span', `fr-dot st-${st}`));
+  face.append(head3d({ nick: f.nick }, 30), el('span', `fr-dot st-${st}`));
   const info = el('div', 'fr-info');
   const name = el('strong', 'pii', f.nick);
   if (f.verified) name.append(verifiedBadge());

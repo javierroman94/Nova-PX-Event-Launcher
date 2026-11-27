@@ -221,6 +221,10 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(m.event.active, false);
   assert.strictEqual(m.event.image, 'images/b.png');
   assert.strictEqual(m.event.logo, '');
+  // Tamaño del título en imagen: se limita a 40-160 %.
+  assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { titleSize: 999 }).event.titleSize, 160);
+  assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { titleSize: 'x' }).event.titleSize, 100);
+  assert.strictEqual(A.sanitizeEventLibrary([{ id: 'a', name: 'A', titleSize: 20 }])[0].titleSize, 40);
   assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { status: 'active' }).event.active, true);
   console.log('ok estado del evento (próximamente/activo/finalizado)');
 }
