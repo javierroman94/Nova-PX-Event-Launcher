@@ -25,6 +25,7 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 - Nunca se suben al repositorio: tokens, claves de API, webhooks, contraseñas, llaves privadas, `.env` ni `.dev.vars`. El `.gitignore` ya bloquea `*.PRIVADA.pem`, `*.key.pem`, `.env` y `.dev.vars`.
 - Los secretos del Worker viven en Cloudflare, nunca en `wrangler.jsonc` ni en el código: `ADMIN_KEY` es obligatorio y `ANTHROPIC_KEY` solo se configura si PX usa Anthropic en vez del binding Workers AI.
 - Fija las GitHub Actions a SHA completo e inmutable; no uses etiquetas movibles como `@v4` en workflows de publicación.
+- Los flujos automáticos (como «Lista del loader Nova») no suben a `main`: abren un Pull Request en una rama propia.
 - Antes de cada commit revisa el diff buscando claves, URLs privadas y datos personales.
 - `config/launcher.config.json` es público: solo configuración, jamás credenciales.
 
@@ -51,11 +52,12 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 
 ### Worker de Cloudflare
 - Las rutas administrativas exigen `ADMIN_KEY` como secreto de Cloudflare y usan `ADMIN_LIMITER` además del contador local. Las rutas públicas usan `LIMITER` y límites por ruta.
-- Los Rate Limiting bindings de Cloudflare son aproximados por ubicación; no equivalen a un contador global estricto. Para cuotas globales atómicas, usa Durable Objects.
+- Los Rate Limiting bindings de Cloudflare son aproximados por ubicación; no equivalen a un contador global estricto. Para cuotas globales atómicas, usa Durable Objects (el Worker PX usa `PetQuota` y falla cerrado sin el binding `QUOTA`).
+- Ningún Worker se despliega solo al unir: se despliegan a mano con `wrangler deploy`, y nunca desde una auditoría.
 - Nada que escriba en KV sin límite ni sin validar el contenido. Los incrementos `get` + `put` en KV no son atómicos y no sirven como cuota estricta bajo concurrencia.
 
 ### Dependencias
-- Revisa `npm audit --omit=dev` antes de publicar. La auditoría de referencia reportó 7 vulnerabilidades de producción (3 moderadas, 2 altas y 2 críticas), en la cadena de `minecraft-launcher-core` (`request`, `form-data`, `adm-zip`, entre otras). No uses `npm audit fix --force`; reemplaza o parchea la dependencia y prueba el juego completo.
+- Revisa `npm audit --omit=dev` antes de publicar. Con los `overrides` de `package.json` (`adm-zip@0.6.1`, `form-data@2.5.6`, `qs@6.17`) quedan 4 moderadas sin arreglo compatible (`request`, `tough-cookie`, `uuid` y `minecraft-launcher-core` por depender de ellas). No quites esos overrides ni uses `npm audit fix --force`; para el resto hay que reemplazar `minecraft-launcher-core` y probar el juego completo.
 
 ## Trabajo diario
 
