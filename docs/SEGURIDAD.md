@@ -33,7 +33,7 @@ Auditoría hecha sobre el código del repositorio público. Resume qué se revis
 **Cuándo se descifran (Fabric).** Solo al pulsar Jugar, en una carpeta nueva de `%TEMP%` (`npx-run-<16 hex>`, con permisos 0700 donde el sistema los respeta; en Windows `%TEMP%` ya es solo del usuario), con nombres aleatorios (`m-<hex>.jar`) y una marca `.novapx-run`. Fabric los carga con `-Dfabric.addMods=<carpeta>`; la carpeta `mods/` del evento no recibe ningún `.jar` del evento. La carpeta se borra:
 - al cerrar Minecraft;
 - si el arranque falla (Java, loader, contraseña);
-- al abrir el launcher, por si se cerró a la fuerza o se apagó el PC;
+- al abrir el launcher, por si se cerró a la fuerza o se apagó el PC, y cada 10 minutos mientras el launcher está abierto. Solo se borran las carpetas que ya nadie usa: al arrancar Minecraft se anota su proceso en la marca, así que si se cierra el launcher con el juego abierto y se vuelve a abrir, esos mods no se tocan hasta que el juego termine. Una carpeta sin juego anotado se conserva mientras viva el launcher que la creó. Si el sistema reutiliza el número de un proceso terminado, la carpeta se conserva de más hasta una limpieza posterior; nunca se borra una partida activa por eso;
 - al cerrar el launcher sin partida en curso.
 
 La limpieza solo borra carpetas `npx-run-*` que tengan la marca; nunca toca carpetas ajenas ni los mods del jugador.
@@ -49,7 +49,7 @@ La limpieza solo borra carpetas `npx-run-*` que tengan la marca; nunca toca carp
 - limpieza normal y tras cierres inesperados (sin tocar carpetas ajenas);
 - SHA-256 incorrecta, eventos solo con SHA-1, migración `.bin`, evento republicado, Forge/NeoForge y modpacks normales.
 
-En un Windows 11 real se probó con Fabric API y Lithium para 1.21.1, bajados de Modrinth: caché solo `.px` cifrada, `mods/` vacío, dos `.jar` con nombre aleatorio en `%TEMP%`, 3 republicaciones seguidas y limpieza al abrir sin `.jar` restantes. Las pruebas pasaron también con el Node 20 del Electron del launcher. **Pendiente:** arrancar Minecraft de verdad con `-Dfabric.addMods`. El intento de levantar un servidor Fabric de prueba en el PC del dueño quedó bloqueado por los permisos del entorno y no se hizo.
+En un Windows 11 real se probó con Fabric API y Lithium para 1.21.1, bajados de Modrinth: caché solo `.px` cifrada, `mods/` vacío, dos `.jar` con nombre aleatorio en `%TEMP%`, 3 republicaciones seguidas y limpieza al abrir sin `.jar` restantes. Las pruebas pasaron también con el Node 20 del Electron del launcher. **Pendiente:** arrancar Fabric Loader 0.20.1 con Minecraft 1.21.1 de verdad con `-Dfabric.addMods`, también con una ruta con espacios. Los dos intentos de levantar un servidor Fabric de prueba (en el PC del dueño y en el entorno de Claude) quedaron bloqueados por los permisos del entorno y no se hicieron. No está aprobado.
 
 ## Loader Nova (1.0.190)
 - `data/nova-loader.json` lo arma una tarea de GitHub (`tools/nova-loader.js`) y no va firmado: el launcher solo acepta enlaces `https://cdn.modrinth.com/data/…`, nombres de archivo seguros y huella SHA-512 de cada `.jar`. Es el mismo nivel de confianza que bajar lo último de Modrinth, con la ventaja de que la versión queda fija.

@@ -614,6 +614,8 @@ app.whenReady().then(() => {
   }, 8000).unref();
   // Carpetas temporales de mods .px que quedaron de un cierre inesperado (solo las que llevan la marca de Nova PX).
   setTimeout(() => { try { if (!launching) modsPx.sweepRunDirs(app.getPath('temp')); } catch {} }, 3000).unref();
+  // Y cada 10 minutos, por si quedó una de una partida que siguió abierta tras cerrar y reabrir el launcher.
+  setInterval(() => { try { if (!launching) modsPx.sweepRunDirs(app.getPath('temp')); } catch {} }, 10 * 60 * 1000).unref();
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
@@ -3621,6 +3623,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       launching = false;
       throw new Error('No se pudo iniciar Minecraft. Revisa la consola para ver el motivo.');
     }
+    // Se anota el proceso del juego en la carpeta temporal: así otra limpieza no le borra los mods en plena partida.
+    try { if (currentRunDir && child.pid) modsPx.markRunGame(currentRunDir, child.pid); } catch {}
     gameStartedAt = Date.now();
     currentTarget = pack
       ? { kind: 'pack', title: pack.title, icon: pack.icon || '' }
