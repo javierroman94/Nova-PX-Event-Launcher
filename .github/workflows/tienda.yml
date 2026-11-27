@@ -16,6 +16,10 @@ on:
         description: 'Package/Properties/PublisherDisplayName'
         required: true
 
+# Solo lee el código y sube el paquete como artefacto: el token no necesita escribir nada.
+permissions:
+  contents: read
+
 jobs:
   msix:
     runs-on: windows-latest
