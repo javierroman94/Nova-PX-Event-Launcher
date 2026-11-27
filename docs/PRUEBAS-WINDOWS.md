@@ -5,14 +5,14 @@ Si algo falla, anota qué pasó (captura o mensaje de error), la versión y las 
 Para la rama de seguridad (PR #9): instala el `.exe` que genera el flujo «Pruebas y auditoría de seguridad» o una versión de prueba, **no** la de la Tienda.
 
 Carpetas útiles (Win + R):
-- Datos del launcher: `%APPDATA%\Nova PX Event Launcher` (o `%LOCALAPPDATA%\Packages\…` en la versión de Microsoft Store)
+- Datos del launcher: `%APPDATA%\nova-px-event-launcher` (comprobado en un Windows real el 27-11-2026)
 - Juego e instancias: `%APPDATA%\.novapx-event-launcher`
 
 ## 1. Inicio de sesión Microsoft (OAuth con `msmc`)
 - [ ] «Iniciar sesión con Microsoft» abre la ventana de login de Microsoft (login.live.com) y, al terminar, se cierra sola y aparece tu nick y tu skin.
 - [ ] Cerrar la ventana de login a la mitad **no** deja el launcher colgado: vuelve a «Sin sesión» y se puede reintentar.
 - [ ] Cerrar el launcher y abrirlo de nuevo: la sesión sigue (el refresh token se guardó cifrado).
-- [ ] En `%APPDATA%\Nova PX Event Launcher\accounts.json` el campo `refresh` es un texto en base64 ilegible (cifrado con safeStorage), **no** un token que empiece por `M.` ni contenga `refresh_token`.
+- [ ] En `%APPDATA%\nova-px-event-launcher\accounts.json` el campo `refresh` es un texto en base64 ilegible (cifrado con safeStorage), **no** un token que empiece por `M.` ni contenga `refresh_token`.
 - [ ] Varias cuentas: agregar una segunda, cambiar entre ellas y cerrar sesión de una.
 - [ ] Nick local (no premium): entrar y lanzar el juego.
 - [ ] Tras unas horas (o al día siguiente), lanzar el juego sin volver a iniciar sesión: el token se renueva solo.
@@ -20,7 +20,7 @@ Carpetas útiles (Win + R):
 
 ## 2. Almacenamiento seguro (Electron safeStorage)
 - [ ] Amigos: con sesión iniciada, la sección Amigos conecta (sin el aviso «Activa el llavero seguro»).
-- [ ] `%APPDATA%\Nova PX Event Launcher\presence.token` empieza por `safeStorage:v1:` (el token viejo en texto plano se migra solo la primera vez).
+- [ ] `%APPDATA%\nova-px-event-launcher\presence.token` empieza por `safeStorage:v1:` (el token viejo en texto plano se migra solo la primera vez).
 - [ ] Copiar ese archivo a otro usuario de Windows o a otro PC **no** sirve: allí no se puede descifrar (DPAPI va ligado a tu usuario).
 - [ ] Modo administrador: la llave de firma de datos importada se guarda cifrada y publicar sigue funcionando.
 

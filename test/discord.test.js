@@ -18,7 +18,8 @@ assert.ok(ipcPaths('linux', { XDG_RUNTIME_DIR: '/run/u' })[3].endsWith('discord-
 
 // --- protocolo contra un "Discord" falso
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rpc-'));
-const sock = path.join(dir, 'discord-ipc-0');
+// En Windows Discord usa named pipes (\\?\pipe\...), no archivos de socket.
+const sock = process.platform === 'win32' ? `\\\\?\\pipe\\novapx-test-discord-${process.pid}` : path.join(dir, 'discord-ipc-0');
 const seen = [];
 const server = net.createServer((c) => {
   let buf = Buffer.alloc(0);

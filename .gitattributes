@@ -1,0 +1,4 @@
+# Archivos firmados con Ed25519: la firma cubre los bytes exactos.
+# Sin esto, Git en Windows (core.autocrlf=true) los cambia a CRLF y la firma
+# deja de coincidir. -text: Git nunca convierte sus finales de línea.
+data/*.json -text
