@@ -26,7 +26,7 @@
     "lockPack": true,
     "publishedId": "",
     "instanceId": "",
-    "updatedAt": "2026-11-27T21:17:58.153Z"
+    "updatedAt": "2026-11-27T21:18:53.692Z"
   },
   {
     "id": "evento-mwu4xi5v",
@@ -50,7 +50,7 @@
     "lockPack": true,
     "publishedId": "murder-mistery-2026-11-24",
     "instanceId": "mp-backrooms-ezluiiz",
-    "updatedAt": "2026-11-27T21:17:58.153Z"
+    "updatedAt": "2026-11-27T21:18:53.692Z"
   },
   {
     "id": "evento-mwzh9qfl",
@@ -58,13 +58,13 @@
     "tagline": "",
     "startsAt": "",
     "status": "ended",
-    "image": "",
+    "image": "images/banner-prueba-mwzhh240.jpg",
     "logo": "",
     "titleSize": 100,
     "sponsors": [],
     "lockPack": true,
     "publishedId": "",
     "instanceId": "mp-keo-optimized",
-    "updatedAt": "2026-11-27T21:17:58.153Z"
+    "updatedAt": "2026-11-27T21:18:53.692Z"
   }
 ]
