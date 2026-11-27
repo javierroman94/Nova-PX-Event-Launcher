@@ -1,10 +1,10 @@
 {
   "event": {
-    "active": true,
+    "active": false,
     "name": "prueba",
     "tagline": "",
     "startsAt": "2026-11-27T17:58:46.939Z",
-    "status": "active",
+    "status": "ended",
     "image": "",
     "logo": "",
     "autoStart": false,
