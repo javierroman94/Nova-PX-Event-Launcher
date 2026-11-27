@@ -29,13 +29,24 @@ jobs:
         run: node tools/nova-loader.js
       - name: Probar la lista
         run: node test/nova-loader.test.js
+      # Firma Ed25519 con el secreto NOVA_FIRMA_PRIVADA (ver docs/SEGURIDAD.md, «Firma de publicaciones Nova»).
+      # Si el launcher ya trae la llave pública, firmar es obligatorio: sin el secreto la tarea falla y no sube nada.
+      - name: Firmar la lista
+        env:
+          NOVA_FIRMA_PRIVADA: ${{ secrets.NOVA_FIRMA_PRIVADA }}
+        run: |
+          if git diff --quiet -- data/nova-loader.json && [ -f data/nova-loader.firma.json ]; then echo "Sin cambios: la firma actual sigue valiendo."; exit 0; fi
+          if [ -n "$NOVA_FIRMA_PRIVADA" ]; then node tools/firmar-nova.js; exit 0; fi
+          if [ -f config/nova-firma.pub.pem ]; then echo "Falta el secreto NOVA_FIRMA_PRIVADA y la firma es obligatoria."; exit 1; fi
+          echo "Sin llave Nova configurada todavía: la lista se publica sin firma (como hasta ahora)."
       - name: Subir si cambió
         run: |
-          if git diff --quiet -- data/nova-loader.json; then echo "Sin cambios."; exit 0; fi
+          if git diff --quiet -- data/nova-loader.json && git diff --quiet -- data/nova-loader.firma.json 2>/dev/null && [ -z "$(git status --porcelain -- data/nova-loader.firma.json)" ]; then echo "Sin cambios."; exit 0; fi
           v="$(node -p "require('./data/nova-loader.json').version")"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/nova-loader.json
+          if [ -f data/nova-loader.firma.json ]; then git add data/nova-loader.firma.json; fi
           git commit -m "Lista del loader Nova $v"
           git pull --rebase -q origin main
           git push origin HEAD:main

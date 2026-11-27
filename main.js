@@ -267,13 +267,18 @@ async function loadData(name) {
 const firmaLib = require('./lib/firma');
 let FIRMA_PUB = null;
 try { FIRMA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'firma-datos.pub.pem'), 'utf8'); } catch {}
+// Llave de las publicaciones automáticas de Nova (lista del loader y Nova Client). Mientras no venga en el
+// launcher, esos archivos se aceptan sin firma (como hasta 1.0.193); en cuanto viene, la firma es obligatoria.
+let NOVA_PUB = null;
+try { NOVA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'nova-firma.pub.pem'), 'utf8'); } catch {}
 async function fetchDataVerified(base, name) {
   const known = (() => { try { return JSON.parse(fs.readFileSync(path.join(DATA_CACHE_DIR, `${name}.firma.json`), 'utf8')); } catch { return null; } })();
+  const nova = firmaLib.FIRMADOS_NOVA.includes(name);
   return require('./lib/data-firmada').leerFirmado({
     name,
     getText: async (file) => (await fetchWithTimeout(`${base}/${file}?t=${Date.now()}`, 4000)).text(),
-    pub: FIRMA_PUB,
-    obligatoria: !!config.firmaObligatoria,
+    pub: nova ? NOVA_PUB : FIRMA_PUB,
+    obligatoria: nova ? !!NOVA_PUB : !!config.firmaObligatoria,
     known
   });
 }
@@ -2742,10 +2747,21 @@ ipcMain.handle('java:browse', async () => {
   return res.canceled ? null : res.filePaths[0];
 });
 
-ipcMain.handle('link:open', (_e, url) => {
-  const u = new URL(String(url));
-  if (u.protocol !== 'https:') throw new Error('Solo se pueden abrir enlaces https.');
-  return shell.openExternal(u.href);
+// Enlaces externos: solo https y, si el sitio no es de los conocidos, se confirma mostrando el dominio real (lib/links.js).
+ipcMain.handle('link:open', async (e, url) => {
+  const c = require('./lib/links').checkLink(url);
+  if (!c.ok) throw new Error(c.reason);
+  if (!c.trusted) {
+    const win = BrowserWindow.fromWebContents(e.sender) || undefined;
+    const r = await dialog.showMessageBox(win, {
+      type: 'question', buttons: ['Abrir', 'Cancelar'], defaultId: 1, cancelId: 1, noLink: true,
+      title: 'Enlace externo', message: `Vas a abrir ${c.host}`,
+      detail: 'Es un sitio fuera de Nova PX. Nunca escribas tu contraseña de Microsoft en una página que llegó por un enlace.'
+    });
+    if (r.response !== 0) return false;
+  }
+  await shell.openExternal(c.href);
+  return true;
 });
 
 // Estado del servidor de un modpack: se lee de su servers.dat. Nunca se devuelve la dirección, solo si está activo.
@@ -3370,7 +3386,7 @@ const extras = require('./lib/main/ipc-extras')({
 
 // Loader Nova: lista fija de mods, "Actualizar Nova" y gráficos según la PC (lib/main/ipc-nova.js).
 const nova = require('./lib/main/ipc-nova')({
-  ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
+  novaPub: NOVA_PUB, ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
 });
 
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
