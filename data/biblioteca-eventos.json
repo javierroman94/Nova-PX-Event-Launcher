@@ -26,7 +26,7 @@
     "lockPack": true,
     "publishedId": "",
     "instanceId": "",
-    "updatedAt": "2026-11-27T18:02:32.507Z"
+    "updatedAt": "2026-11-27T21:12:44.012Z"
   },
   {
     "id": "evento-mwu4xi5v",
@@ -50,21 +50,6 @@
     "lockPack": true,
     "publishedId": "murder-mistery-2026-11-24",
     "instanceId": "mp-backrooms-ezluiiz",
-    "updatedAt": "2026-11-27T18:02:32.507Z"
-  },
-  {
-    "id": "evento-mwzaaea7",
-    "name": "PRUEBA",
-    "tagline": "",
-    "startsAt": "",
-    "status": "active",
-    "image": "",
-    "logo": "",
-    "titleSize": 100,
-    "sponsors": [],
-    "lockPack": true,
-    "publishedId": "prueba-2026-11-27",
-    "instanceId": "mp-rlcraft",
-    "updatedAt": "2026-11-27T18:02:32.507Z"
+    "updatedAt": "2026-11-27T21:12:44.012Z"
   }
 ]
