@@ -32,9 +32,11 @@ if [[ "$method" == "PUT" && "$url" == */workers/scripts/* ]]; then
 fi
 if [[ "$method" == "DELETE" ]]; then rm -f "$state"; fi
 if [[ "$url" == */workers/scripts ]]; then
-  extra=""
-  if [[ -s "$state" ]]; then extra=",{\\"id\\":\\"$(cat "$state")\\",\\"migration_tag\\":\\"v1\\"}"; fi
-  printf '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"}%s]}' "$extra" > "$out"
+  if [[ -s "$state" ]]; then
+    printf '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"},{"id":"%s","migration_tag":"v1"}]}' "$(cat "$state")" > "$out"
+  else
+    echo '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"}]}' > "$out"
+  fi
 else echo '{"success":true,"errors":[],"result":{}}' > "$out"; fi
 `, { mode: 0o755 });
 fs.writeFileSync(path.join(bin, 'npx'), `#!/usr/bin/env bash
