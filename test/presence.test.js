@@ -38,5 +38,18 @@ const assert = require('assert');
   // solicitud cruzada se acepta sola
   await call(d, 'request', { ...A, to: 'Bobby' });
   assert.strictEqual((await call(d, 'request', { ...B, to: 'Alice' })).status, 'accepted');
+  // Actividad para la tarjeta de amigo: qué juega y sus horas (solo si el jugador lo comparte)
+  await call(d, 'sync', { ...B, playing: true, act: { g: 'Evento: <b>Skyblock</b>\n', h: 42 } });
+  let fa = (await call(d, 'sync', { ...A })).friends[0];
+  assert.strictEqual(fa.game, 'Evento: b Skyblock /b', 'texto limpio, sin etiquetas ni saltos');
+  assert.strictEqual(fa.hours, 42);
+  await call(d, 'sync', { ...B, playing: false, act: { g: 'x', h: -3 } });
+  fa = (await call(d, 'sync', { ...A })).friends[0];
+  assert.strictEqual(fa.game, '', 'si no está jugando no se muestra qué juega');
+  assert.strictEqual(fa.hours, null, 'horas no válidas se descartan');
+  await call(d, 'sync', { ...B, playing: true, act: null });
+  fa = (await call(d, 'sync', { ...A })).friends[0];
+  assert.strictEqual(fa.game, '');
+  assert.strictEqual(fa.hours, null, 'apagado: no se muestra nada');
   console.log('presence.test OK');
 })().catch((e) => { console.error(e); process.exit(1); });

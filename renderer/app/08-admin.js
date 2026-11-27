@@ -185,7 +185,9 @@ function sponsorsEditor() {
 }
 
 function paintArtState() {
-  $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con logo' : 'sin logo'}`;
+  $('ad-art-state').textContent = `${adm.evImage ? 'Con banner' : 'Sin banner'} · ${adm.evLogo ? 'con título en imagen' : 'sin título en imagen'}`;
+  $('ad-title-size-row').hidden = !adm.evLogo;
+  $('ad-title-size-val').textContent = `${$('ad-title-size').value} %`;
   paintEvPreview();
 }
 /* Elige una imagen, deja acomodarla en un cuadro (como Instagram o X) y solo entonces la sube. Devuelve {path, preview} o null. */
@@ -204,12 +206,13 @@ async function pickEventArt(kind) {
     if (!r) { $('ad-status').textContent = ''; return; }
     if (kind === 'banner') adm.evImage = r.path; else adm.evLogo = r.path;
     paintArtState();
-    $('ad-status').textContent = `${kind === 'banner' ? 'Banner' : 'Logo'} subido. Se verá al publicar el evento.`;
+    $('ad-status').textContent = `${kind === 'banner' ? 'Banner' : 'Título en imagen'} subido. Se verá al publicar el evento.`;
   } catch (e) { $('ad-status').textContent = cleanError(e); }
 }
 $('ad-banner-pick').addEventListener('click', () => pickEventArt('banner'));
 $('ad-logo-pick').addEventListener('click', () => pickEventArt('logo'));
 $('ad-art-clear').addEventListener('click', () => { adm.evImage = ''; adm.evLogo = ''; paintArtState(); });
+$('ad-title-size').addEventListener('input', paintArtState);
 
 function paintLiveHeader() {
   const m = adm.manifest || {};
@@ -1106,13 +1109,14 @@ const evWhen = (iso) => new Date(iso).toLocaleString('es', { day: 'numeric', mon
 
 function readEditorEvent() {
   return {
-    name: $('ad-name').value.trim(), tagline: $('ad-tag').value, image: adm.evImage || '', logo: adm.evLogo || '',
+    name: $('ad-name').value.trim(), tagline: $('ad-tag').value, image: adm.evImage || '', logo: adm.evLogo || '', titleSize: Number($('ad-title-size').value) || 100,
     sponsors: (adm.sponsors || []).map((x) => ({ ...x })), lockPack: $('ad-lock').checked, instanceId: $('ad-pack').value || ''
   };
 }
 function fillEditorEvent(e) {
   adm.evImage = e.image || '';
   adm.evLogo = e.logo || '';
+  $('ad-title-size').value = String(e.titleSize || 100);
   adm.sponsors = (e.sponsors || []).map((x) => ({ ...x }));
   sponsorsEditor();
   $('ad-name').value = e.name || '';
@@ -1156,8 +1160,9 @@ async function paintEvPreviewNow() {
   if (m.minecraftVersion) chips.append(el('span', 'chip', `Minecraft ${m.minecraftVersion}`), el('span', 'chip', loaderNames[loader] || loader));
   if (m.protected) chips.append(el('span', 'chip', 'Protegido'));
   const art = q('.hero-art:not(.soon-art)');
-  const logo = imageUrl(adm.evLogo || '');
-  if (art) { art.hidden = !logo; if (logo) art.src = logo; }
+  if (art) art.hidden = true;
+  const timg = q('.hero-title-img');
+  if (timg) window.paintTitleImage(timg, q('.hero h1'), imageUrl(adm.evLogo || ''), Number($('ad-title-size').value) || 100);
   const banner = imageUrl(adm.evImage || '');
   hero.classList.toggle('has-banner', !!banner);
   if (banner) hero.style.setProperty('--hero-image', `url(${JSON.stringify(banner)})`);
@@ -1231,7 +1236,7 @@ async function loadEvLib() {
     const m = adm.manifest || {};
     const ev = m.event || {};
     try {
-      evLib = await window.api.adminEvLibSave([...evLib, { id: evSlug(ev.name), name: ev.name, tagline: ev.tagline || '', startsAt: ev.startsAt || '', status: ev.status || (ev.active ? 'active' : 'soon'), image: ev.image || '', logo: ev.logo || '', sponsors: m.sponsors || [], lockPack: m.lockPack !== false, instanceId: '', publishedId: ev.id || '' }]);
+      evLib = await window.api.adminEvLibSave([...evLib, { id: evSlug(ev.name), name: ev.name, tagline: ev.tagline || '', startsAt: ev.startsAt || '', status: ev.status || (ev.active ? 'active' : 'soon'), image: ev.image || '', logo: ev.logo || '', titleSize: ev.titleSize || 100, sponsors: m.sponsors || [], lockPack: m.lockPack !== false, instanceId: '', publishedId: ev.id || '' }]);
     } catch {}
     evImporting = false;
   }
@@ -1351,7 +1356,7 @@ async function publishEntry(e, whenIso) {
   try {
     const r = await window.api.adminPublishEvent({
       id: hasPack ? e.instanceId : undefined, password: pw,
-      form: { status: whenIso ? 'soon' : 'active', active: !whenIso, autoStart: !!whenIso, sponsors: e.sponsors || [], image: e.image || '', logo: e.logo || '', name: e.name, tagline: e.tagline || '', startsAt: whenIso || new Date().toISOString(), newEvent: !(live && isLiveEntry(e, live)), lockPack: e.lockPack !== false }
+      form: { status: whenIso ? 'soon' : 'active', active: !whenIso, autoStart: !!whenIso, sponsors: e.sponsors || [], image: e.image || '', logo: e.logo || '', titleSize: e.titleSize || 100, name: e.name, tagline: e.tagline || '', startsAt: whenIso || new Date().toISOString(), newEvent: !(live && isLiveEntry(e, live)), lockPack: e.lockPack !== false }
     });
     if (hasPack) { try { await window.api.adminPasswordRemember({ remember: $('ad-pass-remember').checked, password: pw }); } catch (err) { toast(cleanError(err), 'error'); } }
     if (!$('ad-pass-remember').checked) { $('ad-pass').value = ''; $('ad-pass').type = 'password'; }
@@ -1398,7 +1403,7 @@ $('ad-editing-save').addEventListener('click', async () => {
   if (isLive) {
     try {
       $('ad-status').textContent = 'Actualizando el evento publicado…';
-      const r = await window.api.adminPublishEvent({ form: { name: e.name, tagline: e.tagline || '', image: e.image || '', logo: e.logo || '', sponsors: e.sponsors || [] } });
+      const r = await window.api.adminPublishEvent({ form: { name: e.name, tagline: e.tagline || '', image: e.image || '', logo: e.logo || '', titleSize: e.titleSize || 100, sponsors: e.sponsors || [] } });
       if (r && r.manifest) { adm.manifest = r.manifest; paintLiveHeader(); }
       window.refreshContent && window.refreshContent();
     } catch (err) {

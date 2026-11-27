@@ -49,6 +49,8 @@
       <button class="tab-btn" data-tab="versions"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span class="nav-label">Versiones</span></button>
       <button class="tab-btn" data-tab="modpacks"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11M7.5 10L12 14.5 16.5 10"/><path d="M4 15v3.5A2.5 2.5 0 006.5 21h11a2.5 2.5 0 002.5-2.5V15"/></svg><span class="nav-label">Modpacks</span></button>
       <button class="tab-btn" data-tab="skins"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="nav-label">Skins</span></button>
+      <button class="tab-btn" data-tab="shots"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13.5" rx="2.5"/><circle cx="12" cy="12.75" r="3.4"/><path d="M8.6 6l1.3-2.3h4.2L15.4 6"/></svg><span class="nav-label">Capturas</span></button>
+      <button class="tab-btn" data-tab="friends"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 19.5c.7-3.4 3.2-5.3 6.2-5.3s5.5 1.9 6.2 5.3"/><circle cx="17" cy="9.5" r="2.6"/><path d="M16.6 14.3c2.5.1 4.2 1.8 4.7 4.7"/></svg><span class="nav-label">Amigos</span><span class="nav-badge" id="fr-badge" hidden></span></button>
       <div id="nav-recent" class="nav-recent" hidden><span class="nav-group">Recientes</span></div>
       <span class="nav-group">Evento</span>
       <button class="tab-btn" data-tab="event"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span class="nav-label">Evento</span></button>
@@ -217,6 +219,7 @@
         <div class="hero-body">
           <div class="hero-badge"><span class="live-dot"></span><span id="hero-badge-text">Evento actual</span></div>
           <div class="chips" id="hero-chips"></div>
+          <img id="hero-title-img" class="hero-title-img" alt="" hidden />
           <h1 id="hero-title">Evento de temporada</h1>
           <p id="hero-tagline" class="hero-tagline"></p>
         </div>
@@ -359,6 +362,7 @@
             <button id="mp-import-file" type="button" hidden>Importar archivo</button>
             <button id="mp-import-folder" type="button" hidden>Importar carpeta</button>
             <button id="mp-import-launchers" type="button">🔎 Importar de otro launcher</button>
+            <button id="mp-use-code" type="button">🔗 Usar código</button>
             <button id="mp-go-create" type="button" hidden>+ Crear instancia</button>
             <button id="mp-new-profile" type="button" class="primary">+ Nuevo perfil</button>
             <button id="mp-go-discover" type="button">Explorar modpacks</button>
@@ -438,10 +442,17 @@
             <button id="mp-detail-delete" type="button">Eliminar</button>
           </div>
         </div>
+        <div id="mp-nova-bar" class="nova-bar" hidden>
+          <span class="nova-bar-mark" aria-hidden="true">⚡</span>
+          <span id="mp-nova-text"></span>
+          <button id="mp-nova-mode" type="button" hidden>Elegir modo</button>
+          <button id="mp-nova-update" type="button" class="primary" hidden>Actualizar Nova</button>
+        </div>
         <div class="seg" id="mp-tabs" role="group" aria-label="Secciones del modpack">
           <button type="button" class="active" data-mp-tab="content">🧩 Contenido</button>
           <button type="button" data-mp-tab="files">📁 Archivos</button>
           <button type="button" data-mp-tab="worlds">🌍 Mundos</button>
+          <button type="button" data-mp-tab="servers">🖧 Servidores</button>
           <button type="button" data-mp-tab="shots">📷 Capturas</button>
           <button type="button" data-mp-tab="logs">📜 Registros</button>
           <button type="button" data-mp-tab="share">📤 Compartir</button>
@@ -466,6 +477,8 @@
             </select>
             <button id="mp-add-local" type="button">Cargar archivos</button>
             <button id="mp-check-updates" type="button">Buscar actualizaciones</button>
+            <button id="mp-update-all" type="button" hidden>Actualizar todo</button>
+            <button id="mp-perf" type="button" title="Instala mods de optimización compatibles y ajusta la RAM a tu PC">⚡ Modo rendimiento</button>
             <button id="mp-add-explore" type="button" class="primary">Explorar contenido</button>
           </div>
           <p id="mp-content-note" class="muted"></p>
@@ -491,6 +504,13 @@
           <p id="mp-backups-note" class="muted"></p>
           <div id="mp-backups-list" class="mods-list"></div>
         </div>
+        <div id="mp-tab-servers" hidden>
+          <div class="events-head">
+            <p id="mp-srv-note" class="muted" aria-live="polite"></p>
+            <button id="mp-srv-refresh" type="button">⟳ Actualizar</button>
+          </div>
+          <div id="mp-srv-list" class="srv-list"></div>
+        </div>
         <div id="mp-tab-shots" hidden>
           <div class="events-head">
             <p id="mp-shots-note" class="muted"></p>
@@ -514,6 +534,11 @@
         <div id="mp-tab-share" hidden>
           <p class="muted">Comparte esta instancia con otra persona: se crea un archivo .novapx que solo abre este launcher. No incluye tus mundos, tu cuenta ni tus comandos.</p>
           <div class="mp-actions"><button type="button" id="mp-share-export" class="primary">📤 Exportar .novapx</button><button type="button" id="mp-share-opts">Opciones de exportación…</button></div>
+          <h4 class="share-code-title">Compartir con un código</h4>
+          <p class="muted">Crea un código corto que tus amigos pegan en «Usar código» de su biblioteca. Lleva solo la lista de mods, texturas y shaders que están en Modrinth (sin mundos ni ajustes) y dura 90 días.</p>
+          <div class="mp-actions"><button type="button" id="mp-share-code">🔗 Crear código</button></div>
+          <div id="mp-share-code-box" class="share-code" hidden><code id="mp-share-code-text"></code><button type="button" id="mp-share-code-copy">Copiar</button></div>
+          <p id="mp-share-code-note" class="muted" aria-live="polite"></p>
         </div>
         <div id="mp-tab-logs" hidden>
           <div id="mp-log" class="log" tabindex="0"></div>
@@ -844,8 +869,9 @@
           <article class="ad-card">
             <div class="field"><label for="ad-name">Nombre del evento</label><input id="ad-name" type="text" maxlength="60" /><small class="muted field-count" id="ad-name-count" aria-live="off"></small></div>
             <div class="field"><label for="ad-tag">Descripción</label><textarea id="ad-tag" rows="4" maxlength="220"></textarea><small class="muted field-count" id="ad-tag-count" aria-live="off">Una sola línea de texto, hasta 220 caracteres.</small></div>
-            <div class="btn-row center"><button id="ad-banner-pick" type="button">+ Banner</button><button id="ad-logo-pick" type="button">+ Logo</button><button id="ad-art-clear" type="button" class="ghost">Quitar</button></div>
+            <div class="btn-row center"><button id="ad-banner-pick" type="button">+ Banner</button><button id="ad-logo-pick" type="button">+ Título en imagen</button><button id="ad-art-clear" type="button" class="ghost">Quitar</button></div>
             <small id="ad-art-state" class="muted"></small>
+            <div class="field" id="ad-title-size-row" hidden><label for="ad-title-size">Tamaño del título en imagen <span id="ad-title-size-val" class="muted"></span></label><input id="ad-title-size" type="range" min="40" max="160" step="5" value="100" /><small class="muted">El título en imagen (PNG con fondo transparente) reemplaza al nombre en grande; la descripción queda debajo.</small></div>
             <p id="ad-status" class="muted" role="status"></p>
             <label class="check"><input id="ad-lock" type="checkbox" checked /> 🔒 Bloquear el modpack: los jugadores no pueden añadir ni cambiar mods, texturas ni shaders del evento</label>
           </article>
@@ -948,7 +974,7 @@
             <div><label for="lk-sub">Subtítulo</label><input id="lk-sub" type="text" maxlength="60" placeholder="Event Launcher" /></div>
           </div>
           <div class="field inline">
-            <div><label for="lk-preset">Tema por defecto</label><select id="lk-preset"><option value="">Sin cambiar</option><option value="nova">Nova Neón</option><option value="dark">Oscuro</option><option value="light">Claro</option><option value="oled">OLED</option><option value="catppuccin">Catppuccin</option><option value="tokyonight">Tokyo Night</option><option value="dracula">Dracula</option><option value="rosepine">Rosé Pine</option><option value="synthwave">Synthwave</option><option value="cyberpunk">Cyberpunk</option><option value="sakura">Sakura</option><option value="deepdark">Deep Dark</option><option value="nether">Nether</option><option value="end">The End</option><option value="eclipse">Nova Eclipse</option><option value="vicesunset">Vice Sunset</option></select></div>
+            <div><label for="lk-preset">Tema por defecto</label><select id="lk-preset"><option value="">Sin cambiar</option><option value="nova">Nova Neón</option><option value="dark">Oscuro</option><option value="light">Claro</option><option value="oled">OLED</option><option value="catppuccin">Catppuccin</option><option value="tokyonight">Tokyo Night</option><option value="dracula">Dracula</option><option value="rosepine">Rosé Pine</option><option value="synthwave">Synthwave</option><option value="cyberpunk">Cyberpunk</option><option value="sakura">Sakura</option><option value="deepdark">Deep Dark</option><option value="nether">Nether</option><option value="end">The End</option><option value="eclipse">Nova Eclipse</option><option value="vicesunset">Vice Sunset</option><option value="xp">Windows XP</option><option value="win7">Windows 7 Aero</option></select></div>
             <div><label for="lk-season">Temporada</label><select id="lk-season"><option value="">Sin cambiar</option><option value="auto">Automática</option><option value="off">Sin decoración</option><option value="halloween">Halloween</option><option value="navidad">Navidad</option><option value="anio">Año Nuevo</option><option value="sanvalentin">San Valentín</option><option value="carnaval">Carnaval</option><option value="madres">Día de la Madre</option><option value="ecuador">10 de Agosto</option></select></div>
             <div><label for="lk-accent">Color principal</label><div class="ad-color"><input id="lk-accent" type="color" value="#35d6ff" /><button id="lk-accent-clear" type="button" class="ghost">Sin cambiar</button></div></div>
           </div>
@@ -1283,6 +1309,31 @@
     </section>
 
     <!-- SKINS -->
+    <section class="page" id="page-friends">
+      <div class="fr-layout">
+        <aside class="fr-side">
+          <div class="fr-me fr-box" id="fr-me"></div>
+          <form id="fr-add" class="friends-form fr-add"><input id="fr-add-input" class="events-search pii" type="text" maxlength="16" placeholder="Agregar amigo por su nick" autocomplete="off" aria-label="Nick del amigo" /><button type="submit" class="primary">Agregar</button></form>
+          <p id="fr-note" class="muted" role="status"></p>
+          <div id="fr-inbox" class="fr-inbox"></div>
+          <div id="fr-party" class="fr-box fr-party"></div>
+        </aside>
+        <div class="fr-main">
+          <div class="fr-tools"><input id="fr-search" class="events-search" type="search" placeholder="Buscar entre tus amigos…" aria-label="Buscar amigo" autocomplete="off" /><span id="fr-count" class="muted"></span></div>
+          <div id="fr-list" class="fr-list"></div>
+          <details id="fr-blocked-box" class="fr-blocked" hidden><summary id="fr-blocked-sum">Bloqueados</summary><div id="fr-blocked"></div></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-shots">
+      <div class="shots-head">
+        <select id="shots-filter" aria-label="Mostrar capturas de"><option value="">Todas las instancias</option></select>
+        <p id="shots-note" class="muted" aria-live="polite"></p>
+      </div>
+      <div id="shots-grid" class="shots-grid"></div>
+    </section>
+
     <section class="page" id="page-skins">
       <h2 class="page-title">Skins y capas</h2>
       <div id="skins-notice" class="notice" hidden></div>
@@ -1478,6 +1529,8 @@
               <button type="button" data-theme-value="end" data-accent="#b86bff" class="theme-card"><span class="tc-prev tc-end"><i></i><b></b><b></b></span><span class="tc-name">The End</span></button>
               <button type="button" data-theme-value="eclipse" data-accent="#e8334a" class="theme-card"><span class="tc-prev tc-eclipse"><i></i><b></b><b></b></span><span class="tc-name">Nova Eclipse</span></button>
               <button type="button" data-theme-value="vicesunset" data-accent="#ff3d8b" class="theme-card"><span class="tc-prev tc-vicesunset"><i></i><b></b><b></b></span><span class="tc-name">Vice Sunset</span></button>
+              <button type="button" data-theme-value="xp" data-accent="#245edb" class="theme-card"><span class="tc-prev tc-xp"><i></i><b></b><b></b></span><span class="tc-name">Windows XP</span></button>
+              <button type="button" data-theme-value="win7" data-accent="#3b9be0" class="theme-card"><span class="tc-prev tc-win7"><i></i><b></b><b></b></span><span class="tc-name">Windows 7 Aero</span></button>
             </div>
           </div>
           <div class="field">
@@ -1532,7 +1585,9 @@
         <fieldset>
           <legend>Al jugar</legend>
           <label class="check"><input id="join-server" type="checkbox" /> Entrar directo al servidor del evento</label>
+          <label class="check"><input id="auto-backup" type="checkbox" /> Copiar mis mundos automáticamente al jugar (guarda las 3 últimas copias de cada mundo)</label>
           <label class="check"><input id="share-usage" type="checkbox" /> Contar mi uso para las estadísticas del equipo</label>
+          <label class="check"><input id="share-activity" type="checkbox" /> Mostrar a mis amigos qué estoy jugando y mis horas jugadas</label>
           <small class="muted">Solo se envía un número de instalación al azar, tu nick (si iniciaste sesión), si eres premium, la versión del launcher y tu sistema operativo. Nunca tu IP, tu contraseña ni tus archivos.</small>
           <div class="field">
             <label for="behavior">Launcher mientras juego</label>
@@ -1553,6 +1608,8 @@
         <fieldset>
           <legend>Notificaciones</legend>
           <label class="check"><input id="notify-events" type="checkbox" /> Avisarme cuando un evento esté por empezar</label>
+          <label class="check"><input id="notify-friends" type="checkbox" /> Avisarme de mensajes, solicitudes e invitaciones de amigos</label>
+          <label class="check"><input id="notify-friends-online" type="checkbox" /> Avisarme cuando un amigo se conecta</label>
           <small class="muted">Te llega un aviso del sistema unos minutos antes de cada evento.</small>
         </fieldset>
 
@@ -1632,7 +1689,9 @@
     <dialog id="chat-modal" class="chat-dialog" aria-label="Chat con un amigo">
     <div class="chat-head"><span id="chat-face" class="chat-face"></span><div class="chat-who"><b id="chat-name" class="pii"></b><small id="chat-status" class="muted"></small></div><button type="button" id="chat-close" class="ghost chat-x" aria-label="Cerrar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
-    <form id="chat-form" class="chat-form"><input id="chat-input" type="text" maxlength="300" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje" /><button type="submit" class="primary">Enviar</button></form>
+    <div id="chat-typing" class="chat-typing muted" aria-live="polite"></div>
+    <div id="chat-emojis" class="chat-emojis" hidden></div>
+    <form id="chat-form" class="chat-form"><button type="button" id="chat-emoji" class="ghost chat-emoji-btn" aria-label="Emojis" title="Emojis">😊</button><input id="chat-input" type="text" maxlength="500" autocomplete="off" placeholder="Escribe un mensaje…" aria-label="Mensaje" /><button type="submit" class="primary">Enviar</button></form>
   </dialog>
   <dialog id="member-modal" class="event-modal member-dialog" aria-label="Perfil">
     <div id="mm-card"></div>
@@ -1711,6 +1770,8 @@
   <script src="app/07-asistente-arranque.js"></script>
   <script src="app/08-admin.js"></script>
   <script src="app/09-ajustes-menu.js"></script>
+  <script src="app/10-extras.js"></script>
+  <script src="app/11-amigos.js"></script>
   <script src="app/99-iniciar.js"></script>
   <script src="versions.js"></script>
   <script src="topbar.js"></script>

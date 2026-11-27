@@ -2,6 +2,50 @@
 
 Todas las versiones se publican en [Releases](https://github.com/javierroman94/Nova-PX-Event-Launcher/releases).
 
+## 1.0.193
+- Evento: el «logo» ahora es el título en imagen. Reemplaza al nombre en grande del evento (por ejemplo «Murder Mistery»), con un control de tamaño en Administración, y la descripción queda debajo sin taparse. Ya no se muestra a la derecha de la portada.
+- Amigos: las cabezas de los jugadores ya no tapan el texto de abajo y el botón «Agregar» muestra su texto dentro.
+
+## 1.0.192
+- Los modos PvP y Clásico también se cambian dentro del juego: en el menú de Nova Client (Shift derecho) hay dos interruptores, y encender uno apaga el otro y ajusta los gráficos al momento (Nova Client 0.6.1). El launcher marca el modo que elegiste para que el menú lo muestre.
+
+## 1.0.191
+- Modos Clásico y PvP: la primera vez que juegas un perfil Nova eliges cómo vas a jugar. Clásico trae gráficos según tu PC, animaciones suaves, coordenadas y el texture pack Nova; PvP va a lo máximo de FPS (sin nubes, sombras ni balanceo de cámara) con CPS y teclas en pantalla. Se cambia desde el perfil.
+
+## 1.0.190
+- Loader Nova: los perfiles Nova instalan una lista fija de mods de rendimiento probados entre sí para cada versión de Minecraft (36 versiones), cada archivo verificado con su huella. Se renueva sola cada semana.
+- «Actualizar Nova» en un clic: cada perfil Nova muestra su versión de Nova y avisa cuando hay una nueva. Solo cambia los mods que puso Nova; los tuyos se quedan.
+- Gráficos ajustados a tu PC la primera vez que abres un perfil Nova (bajo, medio o alto según RAM, procesador y tarjeta de video).
+- Nova Client 0.6.0: la ventana se llama «Nova PX · Minecraft…», F3 muestra «nova», animaciones suaves del jugador y texture pack Nova.
+
+## 1.0.189
+- Nueva sección Amigos: lista por estado (jugando, en línea, ausentes, desconectados), búsqueda y aviso con número en la barra lateral.
+- Todo en tiempo real: mensajes, solicitudes, invitaciones y conexiones llegan al instante, con aviso del sistema si el launcher está en segundo plano.
+- Invitar a jugar: tu amigo recibe «Unirme» y entra a tu evento o a tu perfil (se le instala con un código y entra a tu servidor).
+- Party de hasta 8 amigos con líder, invitaciones y «Jugar juntos».
+- Estados: Disponible, Ausente (también automático tras 10 min sin usar la PC), No molestar e Invisible, más un mensaje propio.
+- Chat mejorado: «escribiendo…», «Visto», emojis, enlaces que se abren en el navegador y mensajes más largos.
+- Bloquear y silenciar amigos, y límites contra el spam.
+- Nick verificado con la cuenta premium: el dueño real recupera su nick y nadie más puede usarlo.
+
+## 1.0.188
+- Más rápido y ligero: el muñeco 3D de Inicio y los efectos se pausan mientras juegas, el launcher abre antes y la intro completa sale solo la primera vez del día.
+- Modo rendimiento en un clic (Modpacks → tu perfil → Contenido): instala Sodium, Lithium, FerriteCore, ModernFix y EntityCulling (Embeddium en Forge) y ajusta la RAM a tu PC.
+- Aviso de actualizaciones de mods en la biblioteca y botón «Actualizar todo»; las actualizaciones bajan varias a la vez.
+- Nueva sección Capturas: todas tus capturas de todos los perfiles, con visor grande, copiar, guardar y borrar (a la papelera).
+- Pestaña Servidores en cada perfil: ping real desde tu PC, jugadores en línea, mensaje del servidor y botón «Jugar aquí».
+- Compartir un modpack con un código corto (NPX-XXXXXXX) y «Usar código» en la biblioteca para importarlo.
+- Tarjeta de perfil de tus amigos: skin, qué están jugando y sus horas jugadas (se puede ocultar en Ajustes).
+- Copias automáticas de tus mundos al jugar (se guardan las 3 últimas de cada mundo).
+- Descargas en paralelo con reintentos: los mods del evento, los .novapx y los archivos del juego bajan más rápido.
+- Entrar directo al servidor ahora funciona también en Minecraft 1.20 o más nuevo.
+
+## 1.0.187
+- Inicio rediseñado: portada enmarcada con brillo del tema, saludo y botón de evento sobre la imagen.
+- Pulido general de la interfaz: barras finas, foco visible, botones con brillo y entrada suave de pestañas.
+- Dos temas nuevos en Ajustes → Apariencia: Windows XP y Windows 7 Aero.
+- Sonidos renovados (más limpios y con eco suave), avisos ok/info/error en todos los temas y sonidos clásicos propios para XP y Windows 7.
+
 ## 1.0.186
 - Editar el evento publicado (nombre, descripción, imágenes o patrocinadores) y guardar ahora actualiza también la pestaña Evento.
 

@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('assert');
+const crypto = require('crypto');
 const pc = require('../lib/pack-crypto');
 const a = require('../lib/admin');
 const { GithubRepo, GithubError } = require('../lib/github');
@@ -12,6 +13,8 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(r.assets[0].name, 'a.jar.enc');
   const env = pc.openEnvelope(r.envelope, pc.deriveKey('una contraseña larga', r.envelope.salt, pc.kdfOf(r.envelope)));
   assert.strictEqual(env.mods[0].url, 'https://github.com/o/r/releases/download/t/a.jar.enc');
+  assert.strictEqual(env.mods[0].sha256, crypto.createHash('sha256').update(jars[0].data).digest('hex'));
+  assert.strictEqual(env.mods[0].sha1, crypto.createHash('sha1').update(jars[0].data).digest('hex'));
   assert.strictEqual(pc.decryptFile(r.assets[0].data, env.packKey, 'a.jar').toString(), 'AAA');
   const r2 = a.buildProtectedEvent({ jars, password: 'una contraseña larga', baseUrl: 'https://x.y/z', previous: r.envelope });
   assert.ok(r2.reusedSalt && r2.envelope.salt === r.envelope.salt);
@@ -238,6 +241,10 @@ const { GithubRepo, GithubError } = require('../lib/github');
   assert.strictEqual(m.event.active, false);
   assert.strictEqual(m.event.image, 'images/b.png');
   assert.strictEqual(m.event.logo, '');
+  // Tamaño del título en imagen: se limita a 40-160 %.
+  assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { titleSize: 999 }).event.titleSize, 160);
+  assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { titleSize: 'x' }).event.titleSize, 100);
+  assert.strictEqual(A.sanitizeEventLibrary([{ id: 'a', name: 'A', titleSize: 20 }])[0].titleSize, 40);
   assert.strictEqual(A.mergeManifest({ event: { name: 'X' } }, { status: 'active' }).event.active, true);
   console.log('ok estado del evento (próximamente/activo/finalizado)');
 }

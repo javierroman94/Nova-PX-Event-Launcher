@@ -370,9 +370,7 @@ $('mp-go-discover').addEventListener('click', async () => {
 })();
 
 
-/* --- Amigos: solicitudes, estado en línea y chat --- */
-const lastUnread = new Map();
-let friendsFirst = true;
+/* --- Amigos: tarjeta de Inicio y chat (la sección completa está en app/11-amigos.js) --- */
 const agoMs = (ms) => {
   const m = Math.max(1, Math.round(ms / 60000));
   if (m < 60) return `hace ${m} min`;
@@ -380,81 +378,67 @@ const agoMs = (ms) => {
   return h < 48 ? `hace ${h} h` : `hace ${Math.round(h / 24)} d`;
 };
 const friendHead = (nick) => head3d({ nick }, 26);
+const STATUS_LABEL = { online: 'En línea', away: 'Ausente', dnd: 'No molestar', invisible: 'Invisible', offline: 'Desconectado' };
+function friendLine(f) {
+  if (f.playing) return f.game ? `Jugando: ${f.game}` : 'Jugando';
+  if (f.online) return f.smsg || STATUS_LABEL[f.status] || 'En línea';
+  return f.seen ? `Activo ${agoMs(Date.now() - f.seen)}` : 'Desconectado';
+}
+// Se mantiene el nombre: otras partes piden "renderFriends()" para refrescar.
+function renderFriends() { return window.friendsRefresh ? window.friendsRefresh() : Promise.resolve(); }
 
-async function renderFriends() {
+// Tarjeta de Inicio: los amigos conectados primero y acceso a la sección Amigos.
+function paintHomeFriends(r) {
   const list = $('friends-list');
   const req = $('friends-req');
-  try {
-    const r = await window.api.friendsList();
-    if (!r.enabled) { $('friends-card').hidden = true; return; }
-    $('friends-card').hidden = false;
-    list.replaceChildren();
-    req.replaceChildren();
-    $('friends-form').hidden = !r.loggedIn;
-    if (!r.loggedIn) { $('friends-count').textContent = ''; $('friends-note').textContent = 'Inicia sesión para añadir amigos, ver cuándo están en línea y chatear.'; req.hidden = true; return; }
-    const online = r.friends.filter((f) => f.online).length;
-    $('friends-count').textContent = r.friends.length ? `(${online} en línea)` : '';
-    const notes = [];
-    if (!r.reachable) notes.push(r.error || 'No se pudo consultar el estado ahora.');
-    else if (!r.sharing) notes.push('Tienes desactivado «compartir uso»: tus amigos te verán desconectado. Actívalo en Ajustes.');
-    else if (!r.friends.length && !r.incoming.length && !r.outgoing.length) notes.push('Envía una solicitud con el nick de un amigo. Cuando la acepte, verás si está en línea y podrán chatear.');
-    $('friends-note').textContent = notes.join(' ');
-
-    // solicitudes recibidas y enviadas
-    req.hidden = !(r.incoming.length || r.outgoing.length);
-    if (!req.hidden) {
-      r.incoming.forEach((n) => {
-        const row = el('div', 'friend-req');
-        const ok = el('button', 'primary', 'Aceptar'); ok.type = 'button';
-        const no = el('button', 'ghost', 'Rechazar'); no.type = 'button';
-        ok.addEventListener('click', async () => { try { await window.api.friendsAccept(n); } catch (e) { toast(cleanError(e), 'error'); } renderFriends(); });
-        no.addEventListener('click', async () => { try { await window.api.friendsRemove(n); } catch (e) { toast(cleanError(e), 'error'); } renderFriends(); });
-        row.append(friendHead(n), el('span', 'friend-name pii', n), el('span', 'muted friend-st', 'quiere ser tu amigo'), ok, no);
-        req.append(row);
-      });
-      r.outgoing.forEach((n) => {
-        const row = el('div', 'friend-req out');
-        const no = el('button', 'ghost', 'Cancelar'); no.type = 'button';
-        no.addEventListener('click', async () => { try { await window.api.friendsRemove(n); } catch {} renderFriends(); });
-        row.append(friendHead(n), el('span', 'friend-name pii', n), el('span', 'muted friend-st', 'solicitud enviada'), no);
-        req.append(row);
-      });
-    }
-
-    r.friends.forEach((f) => {
-      const li = el('li', 'friend');
-      const dot = el('span', 'live-dot');
-      dot.classList.toggle('off', !f.online);
-      const name = el('span', 'friend-name pii', f.nick);
-      const stTxt = f.playing ? 'Jugando' : f.online ? 'En línea' : f.seen ? `Activo ${agoMs(Date.now() - f.seen)}` : 'Desconectado';
-      const st = el('span', 'muted friend-st', stTxt);
-      st.dataset.on = f.online || f.playing ? '1' : '0';
-      const chat = el('button', 'ghost friend-chat');
-      chat.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H10l-4.5 3.5V17.5H4A1.5 1.5 0 012.5 16V7A1.5 1.5 0 014 5.5z"/></svg>';
-      chat.type = 'button';
-      chat.title = `Chatear con ${f.nick}`;
-      if (f.unread) chat.append(el('span', 'friend-badge', String(Math.min(f.unread, 9))));
-      chat.addEventListener('click', () => openChat(f));
-      const rm = el('button', 'ghost friend-rm');
-      rm.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-      rm.type = 'button';
-      rm.setAttribute('aria-label', `Quitar a ${f.nick}`);
-      rm.addEventListener('click', async () => {
-        if (!(await askConfirm(`¿Quitar a ${f.nick} de tus amigos? También se borrará la conversación.`, 'Quitar', 'Cancelar'))) return;
-        try { await window.api.friendsRemove(f.nick); } catch (e) { toast(cleanError(e), 'error'); }
-        renderFriends();
-      });
-      li.append(dot, friendHead(f.nick), el('span', 'friend-info', ''), chat, rm);
-      const info = li.querySelector('.friend-info');
-      info.append(name, st);
-      list.append(li);
-      const prev = lastUnread.get(f.nick) || 0;
-      if (!friendsFirst && f.unread > prev && !(chatWith && chatWith.toLowerCase() === f.nick.toLowerCase())) toast(`💬 ${f.nick} te escribió`, 'info');
-      lastUnread.set(f.nick, f.unread);
-    });
-    friendsFirst = false;
-  } catch { $('friends-note').textContent = 'No se pudo cargar la lista de amigos.'; }
+  if (!r || !r.enabled) { $('friends-card').hidden = true; return; }
+  $('friends-card').hidden = false;
+  list.replaceChildren();
+  req.replaceChildren();
+  $('friends-form').hidden = !r.loggedIn;
+  if (!r.loggedIn) { $('friends-count').textContent = ''; $('friends-note').textContent = 'Inicia sesión para añadir amigos, ver cuándo están en línea y chatear.'; req.hidden = true; return; }
+  const online = r.friends.filter((f) => f.online).length;
+  $('friends-count').textContent = r.friends.length ? `(${online} en línea)` : '';
+  $('friends-note').textContent = !r.reachable ? r.error || 'No se pudo consultar el estado ahora.' : !r.sharing ? 'Tienes desactivado «compartir uso»: tus amigos te verán desconectado. Actívalo en Ajustes.' : !r.friends.length && !r.incoming.length ? 'Envía una solicitud con el nick de un amigo. Cuando la acepte, verás si está en línea y podrán chatear.' : '';
+  const pend = r.incoming.length + (r.invites || []).length + (r.partyInvites || []).length;
+  req.hidden = !pend;
+  if (pend) {
+    const go = el('button', 'ghost fr-home-go', `🔔 Tienes ${pend} aviso${pend === 1 ? '' : 's'} de amigos · Ver`);
+    go.type = 'button';
+    go.addEventListener('click', () => goTo('friends'));
+    req.append(go);
+  }
+  r.friends.slice(0, 6).forEach((f) => {
+    const li = el('li', 'friend');
+    const dot = el('span', `live-dot st-${f.status || (f.online ? 'online' : 'offline')}`);
+    dot.classList.toggle('off', !f.online);
+    const info = el('span', 'friend-info');
+    info.append(el('span', 'friend-name pii', f.nick), el('span', 'muted friend-st', friendLine(f)));
+    info.tabIndex = 0;
+    info.setAttribute('role', 'button');
+    info.title = `Ver el perfil de ${f.nick}`;
+    const card = () => window.openFriendCard && window.openFriendCard(f);
+    info.addEventListener('click', card);
+    info.addEventListener('keydown', (e) => { if (e.key === 'Enter') card(); });
+    const chat = el('button', 'ghost friend-chat');
+    chat.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H10l-4.5 3.5V17.5H4A1.5 1.5 0 012.5 16V7A1.5 1.5 0 014 5.5z"/></svg>';
+    chat.type = 'button';
+    chat.title = `Chatear con ${f.nick}`;
+    if (f.unread) chat.append(el('span', 'friend-badge', String(Math.min(f.unread, 9))));
+    chat.addEventListener('click', () => openChat(f));
+    li.append(dot, friendHead(f.nick), info, chat);
+    list.append(li);
+  });
+  if (r.friends.length > 6) {
+    const more = el('li', 'friend fr-more');
+    const b = el('button', 'ghost', `Ver los ${r.friends.length} amigos`);
+    b.type = 'button';
+    b.addEventListener('click', () => goTo('friends'));
+    more.append(b);
+    list.append(more);
+  }
 }
+window.paintHomeFriends = paintHomeFriends;
 $('friends-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const n = $('friends-input').value.trim();
@@ -467,15 +451,39 @@ $('friends-form').addEventListener('submit', async (e) => {
   } catch (err) { $('friends-note').textContent = cleanError(err); }
 });
 
-// Ventana de chat con un amigo (consulta al Worker cada pocos segundos mientras está abierta).
+// Ventana de chat: se actualiza al instante con los avisos en tiempo real y, por si acaso, cada pocos segundos.
 let chatWith = null;
 let chatSince = 0;
 let chatTimer = null;
+let chatTypingTimer = null;
+let chatTypingSent = 0;
+const CHAT_EMOJIS = ['😀', '😂', '😅', '😍', '😎', '🤔', '😮', '😢', '😡', '👍', '👎', '👏', '🙏', '🔥', '💀', '🎉', '❤️', '💜', '⭐', '⚔️', '🛡️', '💎', '🏆', '🎮'];
+function chatText(text) {
+  const span = el('span', 'chat-text');
+  // Enlaces https: se abren en el navegador (nunca dentro del launcher).
+  String(text).split(/(https:\/\/[^\s<>"]{3,300})/g).forEach((part, i) => {
+    if (i % 2 === 1) {
+      const a = el('a', 'chat-link', part);
+      a.href = part;
+      a.addEventListener('click', (e) => { e.preventDefault(); window.api.openLink(part).catch(() => {}); });
+      span.append(a);
+    } else if (part) span.append(document.createTextNode(part));
+  });
+  return span;
+}
 function chatBubble(m, me) {
   const mine = m.f.toLowerCase() === String(me).toLowerCase();
   const b = el('div', mine ? 'chat-msg mine' : 'chat-msg');
-  b.append(el('span', 'chat-text', m.t), el('small', 'chat-time muted', new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })));
+  b.dataset.id = String(m.id);
+  b.append(chatText(m.t), el('small', 'chat-time muted', new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })));
   return b;
+}
+function paintSeen(read) {
+  const log = $('chat-log');
+  log.querySelectorAll('.chat-seen').forEach((n) => n.remove());
+  const mine = [...log.querySelectorAll('.chat-msg.mine')];
+  const last = mine[mine.length - 1];
+  if (last && Number(last.dataset.id) <= read) last.append(el('small', 'chat-seen', '✓✓ Visto'));
 }
 async function chatPoll() {
   if (!chatWith) return;
@@ -486,25 +494,58 @@ async function chatPoll() {
     const atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
     if (r.messages && r.messages.length) log.querySelector('.chat-empty')?.remove();
     (r.messages || []).forEach((m) => { log.append(chatBubble(m, r.me)); chatSince = Math.max(chatSince, m.id); });
-    if (r.messages && r.messages.length && atEnd) log.scrollTop = log.scrollHeight;
-    $('chat-status').textContent = r.playing ? 'Jugando' : r.online ? 'En línea' : 'Desconectado'; $('chat-status').dataset.on = r.online || r.playing ? '1' : '0';
+    if (r.messages && r.messages.length) { $('chat-typing').textContent = ''; if (atEnd) log.scrollTop = log.scrollHeight; }
+    paintSeen(Number(r.read) || 0);
+    $('chat-status').textContent = r.playing ? 'Jugando' : r.online ? STATUS_LABEL[r.status] || 'En línea' : 'Desconectado'; $('chat-status').dataset.on = r.online || r.playing ? '1' : '0';
   } catch (e) { $('chat-status').textContent = cleanError(e); }
 }
 function openChat(f) {
   chatWith = f.nick;
   chatSince = 0;
   $('chat-name').textContent = f.nick;
-  $('chat-status').textContent = f.playing ? 'Jugando' : f.online ? 'En línea' : 'Desconectado'; $('chat-status').dataset.on = f.online || f.playing ? '1' : '0';
+  $('chat-status').textContent = f.playing ? 'Jugando' : f.online ? STATUS_LABEL[f.status] || 'En línea' : 'Desconectado'; $('chat-status').dataset.on = f.online || f.playing ? '1' : '0';
   $('chat-face').replaceChildren(head3d({ nick: f.nick }, 40));
   const log = $('chat-log');
   log.replaceChildren(el('p', 'muted chat-empty', 'Aquí empieza la conversación. Los mensajes se guardan unos días en el servidor del launcher.'));
   $('chat-input').value = '';
+  $('chat-typing').textContent = '';
+  $('chat-emojis').hidden = true;
   if (!$('chat-modal').open) $('chat-modal').showModal();
   clearInterval(chatTimer);
   chatPoll().then(() => { log.scrollTop = log.scrollHeight; });
-  chatTimer = setInterval(chatPoll, 4000);
+  chatTimer = setInterval(chatPoll, 8000);
   setTimeout(() => $('chat-input').focus(), 50);
 }
+// Avisos en tiempo real que llegan desde app/11-amigos.js
+window.chatOnEvent = (evt) => {
+  if (!chatWith || !evt || String(evt.from).toLowerCase() !== chatWith.toLowerCase()) return false;
+  if (evt.t === 'msg' || evt.t === 'read') { chatPoll(); return true; }
+  if (evt.t === 'typing') {
+    $('chat-typing').textContent = `${chatWith} está escribiendo…`;
+    clearTimeout(chatTypingTimer);
+    chatTypingTimer = setTimeout(() => { $('chat-typing').textContent = ''; }, 4500);
+    return true;
+  }
+  return false;
+};
+window.chatWithNick = () => chatWith;
+CHAT_EMOJIS.forEach((em) => {
+  const b = el('button', 'ghost', em);
+  b.type = 'button';
+  b.addEventListener('click', () => {
+    const i = $('chat-input');
+    const pos = i.selectionStart ?? i.value.length;
+    i.value = (i.value.slice(0, pos) + em + i.value.slice(pos)).slice(0, 500);
+    i.focus();
+  });
+  $('chat-emojis').append(b);
+});
+$('chat-emoji').addEventListener('click', () => { $('chat-emojis').hidden = !$('chat-emojis').hidden; });
+$('chat-input').addEventListener('input', () => {
+  if (!chatWith || Date.now() - chatTypingSent < 2500) return;
+  chatTypingSent = Date.now();
+  window.api.chatTyping(chatWith).catch(() => {});
+});
 $('chat-close').addEventListener('click', () => $('chat-modal').close());
 $('chat-modal').addEventListener('close', () => { clearInterval(chatTimer); chatWith = null; renderFriends(); });
 $('chat-modal').addEventListener('click', (e) => { if (e.target === $('chat-modal')) $('chat-modal').close(); });
@@ -513,14 +554,13 @@ $('chat-form').addEventListener('submit', async (e) => {
   const text = $('chat-input').value.trim();
   if (!text || !chatWith) return;
   $('chat-input').value = '';
+  $('chat-emojis').hidden = true;
   try {
     await window.api.chatSend(chatWith, text);
     await chatPoll();
     $('chat-log').scrollTop = $('chat-log').scrollHeight;
   } catch (err) { toast(cleanError(err), 'error'); $('chat-input').value = text; }
 });
-renderFriends();
-setInterval(() => { if (!document.hidden) renderFriends(); }, 45 * 1000);
 
 
 /* --- Catálogo de modpacks (Modrinth o FTB) --- */

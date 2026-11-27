@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 // Los canales IPC solo se atienden desde las páginas del launcher; y safeStorage no cuenta si en Linux cae a la llave fija.
 const { makeSecureStorage } = require('./lib/secure-storage');
+const { makePresenceTokenStore } = require('./lib/presence-token');
 const { guardIpc, isTrustedUrl } = require('./lib/ipc-guard');
 const safeStorage = makeSecureStorage(electronSafeStorage);
 guardIpc(ipcMain, path.join(__dirname, 'renderer'));
@@ -11,9 +12,12 @@ const permisosLib = require('./lib/permisos');
 // Cada acción del panel de administración pide su permiso (lib/permisos.js). `adminPerms` se define más abajo.
 permisosLib.gatePermisos(ipcMain, () => adminPerms());
 const crypto = require('crypto');
-const { Client } = require('minecraft-launcher-core');
+// Librerías pesadas: se cargan la primera vez que se usan, no al abrir (arranque ~0,4 s más rápido).
+let mclcCache = null;
+const mclc = () => mclcCache || (mclcCache = require('minecraft-launcher-core'));
 const { Auth } = require('msmc');
-const { autoUpdater } = require('electron-updater');
+let updaterCache = null;
+const updater = () => updaterCache || (updaterCache = require('electron-updater').autoUpdater);
 const { execFile } = require('child_process');
 const loaders = require('./lib/loaders');
 const jvmDefaults = require('./lib/jvm-args');
@@ -23,6 +27,8 @@ const packInstall = require('./lib/pack-install');
 const { analyzeCrash } = require('./lib/crash');
 const gameLogs = require('./lib/game-logs');
 const { instanceDir, instanceId } = require('./lib/instance');
+const pingLib = require('./lib/ping');
+const descargas = require('./lib/descargas');
 const serversLib = require('./lib/servers');
 const langLib = require('./lib/langpack');
 const { DiscordRpc, buildActivity } = require('./lib/discord-rpc');
@@ -143,7 +149,13 @@ function defaultSettings() {
     intro: true,
     introSound: true,
     welcomed: false,
-    playSeconds: 0
+    playSeconds: 0,
+    autoBackup: true,
+    backupKeep: 3,
+    shareActivity: true,
+    notifyFriends: true,
+    notifyFriendsOnline: false,
+    mutedFriends: []
   };
 }
 
@@ -192,7 +204,13 @@ function cleanSettings(s) {
     intro: s.intro !== false,
     introSound: s.introSound !== false,
     welcomed: s.welcomed === true,
-    playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0))
+    playSeconds: Math.max(0, Math.floor(Number(s.playSeconds) || 0)),
+    autoBackup: s.autoBackup !== false,
+    backupKeep: Math.round(num(s.backupKeep, 1, 10, d.backupKeep)),
+    shareActivity: s.shareActivity !== false,
+    notifyFriends: s.notifyFriends !== false,
+    notifyFriendsOnline: s.notifyFriendsOnline === true,
+    mutedFriends: (Array.isArray(s.mutedFriends) ? s.mutedFriends : []).map(String).filter((n) => /^[A-Za-z0-9_]{3,16}$/.test(n)).slice(-200)
   };
 }
 
@@ -249,13 +267,22 @@ async function loadData(name) {
 const firmaLib = require('./lib/firma');
 let FIRMA_PUB = null;
 try { FIRMA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'firma-datos.pub.pem'), 'utf8'); } catch {}
+// Llave de las publicaciones automáticas de Nova (lista del loader y Nova Client).
+//  - Sin config/nova-firma.pub.pem: se aceptan sin firma (como hasta 1.0.193).
+//  - Con la pública y novaFirmaObligatoria=false: una firma presente se verifica (si es mala, se rechaza),
+//    pero lo que llega sin firma se sigue aceptando. Sirve para comprobar las firmas antes de exigirlas.
+//  - Con la pública y novaFirmaObligatoria=true: sin firma válida no se usa nada.
+const NOVA_OBLIGATORIA = !!config.novaFirmaObligatoria;
+let NOVA_PUB = null;
+try { NOVA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'nova-firma.pub.pem'), 'utf8'); } catch {}
 async function fetchDataVerified(base, name) {
   const known = (() => { try { return JSON.parse(fs.readFileSync(path.join(DATA_CACHE_DIR, `${name}.firma.json`), 'utf8')); } catch { return null; } })();
+  const nova = firmaLib.FIRMADOS_NOVA.includes(name);
   return require('./lib/data-firmada').leerFirmado({
     name,
     getText: async (file) => (await fetchWithTimeout(`${base}/${file}?t=${Date.now()}`, 4000)).text(),
-    pub: FIRMA_PUB,
-    obligatoria: !!config.firmaObligatoria,
+    pub: nova ? NOVA_PUB : FIRMA_PUB,
+    obligatoria: nova ? !!NOVA_PUB && NOVA_OBLIGATORIA : !!config.firmaObligatoria,
     known
   });
 }
@@ -394,7 +421,10 @@ const { readJavaVersionOutput, managedJavaPath, preferJavaw, resolveJava } = req
 
 // Una ventana del launcher solo puede mostrar páginas de renderer/: sin navegación, sin ventanas nuevas y sin <webview>.
 function lockWindow(wc) {
-  wc.on('will-navigate', (e, url) => { if (!isTrustedUrl(url, path.join(__dirname, 'renderer'))) e.preventDefault(); });
+  const rendererDir = path.join(__dirname, 'renderer');
+  const blockUntrusted = (e, url) => { if (!isTrustedUrl(url, rendererDir)) e.preventDefault(); };
+  wc.on('will-navigate', blockUntrusted);
+  wc.on('will-redirect', blockUntrusted);
   wc.on('will-attach-webview', (e) => e.preventDefault());
 }
 
@@ -412,6 +442,7 @@ function createWindow() {
     ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#0d0f16', symbolColor: '#e8eaf2', height: 52 } } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: true,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -424,8 +455,9 @@ function createWindow() {
   // El launcher no necesita cámara, micrófono, ubicación ni notificaciones del navegador: se niegan todos los permisos.
   mainWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
   mainWindow.webContents.session.setPermissionCheckHandler(() => false);
+  // window.open y target=_blank pasan por la misma revisión que link:open (lib/links.js).
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+    openExternalLink(url, mainWindow).catch(() => {});
     return { action: 'deny' };
   });
   lockWindow(mainWindow.webContents);
@@ -507,7 +539,7 @@ const FROM_STORE = !!process.windowsStore;
 
 function checkForUpdates() {
   if (!app.isPackaged || FROM_STORE) return Promise.resolve();
-  return autoUpdater.checkForUpdates().catch(() => {});
+  return updater().checkForUpdates().catch(() => {});
 }
 
 // Solo funciona en la versión instalada (npm run dist), que consulta los Releases de GitHub.
@@ -520,16 +552,16 @@ function setupUpdater() {
     setUpdate({ state: 'dev' });
     return;
   }
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.on('checking-for-update', () => setUpdate({ state: 'checking' }));
-  autoUpdater.on('update-available', (i) => setUpdate({ state: 'downloading', version: i.version, percent: 0 }));
-  autoUpdater.on('download-progress', (p) =>
+  updater().autoDownload = true;
+  updater().autoInstallOnAppQuit = true;
+  updater().on('checking-for-update', () => setUpdate({ state: 'checking' }));
+  updater().on('update-available', (i) => setUpdate({ state: 'downloading', version: i.version, percent: 0 }));
+  updater().on('download-progress', (p) =>
     setUpdate({ state: 'downloading', version: updateState.version, percent: Math.round(p.percent) })
   );
-  autoUpdater.on('update-downloaded', (i) => setUpdate({ state: 'ready', version: i.version }));
-  autoUpdater.on('update-not-available', () => setUpdate({ state: 'none' }));
-  autoUpdater.on('error', (e) =>
+  updater().on('update-downloaded', (i) => setUpdate({ state: 'ready', version: i.version }));
+  updater().on('update-not-available', () => setUpdate({ state: 'none' }));
+  updater().on('error', (e) =>
     setUpdate({ state: 'error', reason: classifyNetworkError(e), message: String((e && e.message) || e).slice(0, 200) })
   );
   // Busca solo: al abrir, cada 10 minutos y cada vez que vuelves a la ventana (con 2 minutos de margen).
@@ -590,7 +622,7 @@ app.whenReady().then(() => {
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
-  setupUpdater();
+  setTimeout(setupUpdater, 5000); // busca actualizaciones cuando la ventana ya está abierta
   setTimeout(checkEventNotifications, 15000);
   setInterval(checkEventNotifications, 60000);
 });
@@ -616,7 +648,7 @@ ipcMain.handle('update:check', async () => {
 ipcMain.handle('update:install', () => {
   if (updateState.state !== 'ready') throw new Error('Todavía no hay una actualización descargada.');
   if (launching) throw new Error('Cierra Minecraft antes de actualizar el launcher.');
-  autoUpdater.quitAndInstall();
+  updater().quitAndInstall();
 });
 
 // Reinstala los mods del evento actual la próxima vez que se juegue. No toca ajustes, cuenta ni mundos.
@@ -920,11 +952,19 @@ ipcMain.handle('modpacks:create', async (_e, p = {}) => {
   if (entry.preset === 'nova') {
     const progress = (text) => send('modpack:progress', { text });
     try {
-      const r = await novaLib.installNovaMods(
-        (slug) => content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: dir, type: 'mod', projectId: slug, mc: entry.mcVersion, loader: 'fabric' }),
-        { onStatus: progress }
-      );
-      entry.novaSkipped = r.skipped;
+      // Loader Nova: lista fija de mods probados entre sí. Si no hay lista para esa versión, se usa lo último de Modrinth.
+      let novaVer = null;
+      try { novaVer = await nova.installNova(dir, entry.mcVersion); } catch (err) { pushLog('launcher', `[Nova] ${err.message}`); }
+      if (novaVer) {
+        entry.novaLoader = novaVer;
+        entry.novaSkipped = [];
+      } else {
+        const r = await novaLib.installNovaMods(
+          (slug) => content.installFromModrinth({ request: apiRequest, download: (u) => downloadBuffer(u), root: dir, type: 'mod', projectId: slug, mc: entry.mcVersion, loader: 'fabric' }),
+          { onStatus: progress }
+        );
+        entry.novaSkipped = r.skipped;
+      }
       progress('Instalando Nova Client…');
       try {
         entry.novaClient = await novaLib.installNovaClient({ request: apiRequest, download: (u) => downloadBuffer(u), dir, mc: entry.mcVersion });
@@ -1267,6 +1307,7 @@ async function planAllUpdates(entry, root) {
 ipcMain.handle('instance:updatesCheck', async (_e, id) => {
   const { entry, root } = packRoot(id);
   const plan = await planAllUpdates(entry, root);
+  try { extras.noteUpdates(entry.id, plan.length); } catch {}
   return plan.map((u) => ({ type: u.type, file: u.file, enabled: u.enabled, newFile: u.newFile, version: u.version }));
 });
 ipcMain.handle('instance:updatesApply', async (_e, arg) => {
@@ -1275,17 +1316,19 @@ ipcMain.handle('instance:updatesApply', async (_e, arg) => {
   const only = arg && Array.isArray(arg.only) ? new Set(arg.only.map((f) => String(f))) : null; // "tipo:archivo" de lo elegido
   const { entry, root } = packRoot(id);
   let plan = await planAllUpdates(entry, root);
+  const pending = plan.length;
   if (only) plan = plan.filter((u) => only.has(`${u.type}:${u.file}`));
   let done = 0;
   const errors = [];
+  // Varias descargas a la vez y con reintentos (antes iban de una en una).
   try {
-    for (const u of plan) {
+    if (plan.length) send('modpack:progress', { text: `Actualizando 0 de ${plan.length}…` });
+    await descargas.pool(plan, async (u) => {
       try {
         const dir = content.contentDir(root, u.type);
         const name = content.safeFileName(u.newFile, u.type);
         if (!name || !modpacks.allowedUrl(u.url, ['cdn.modrinth.com'])) throw new Error('descarga no permitida');
-        send('modpack:progress', { text: `Actualizando ${name} (${done + 1} de ${plan.length})…` });
-        const data = await downloadBuffer(u.url);
+        const data = await descargas.retry(() => downloadBuffer(u.url), { tries: 3, delayMs: 800, shouldRetry: descargas.shouldRetry });
         if (crypto.createHash('sha1').update(data).digest('hex') !== u.sha1) throw new Error('la huella no coincide');
         const dest = path.join(dir, u.enabled ? name : `${name}.disabled`);
         fs.writeFileSync(dest, data);
@@ -1294,8 +1337,9 @@ ipcMain.handle('instance:updatesApply', async (_e, arg) => {
       } catch (err) {
         errors.push(`${u.file}: ${err.message}`);
       }
-    }
+    }, { concurrency: 4, onProgress: (n, total) => send('modpack:progress', { text: `Actualizando ${n} de ${total}…` }) });
   } finally { send('modpack:progress', { text: 'Listo' }); }
+  try { extras.noteUpdates(entry.id, pending - done); } catch {}
   return { updated: done, errors };
 });
 
@@ -1338,27 +1382,21 @@ ipcMain.handle('community:stats', async () => {
 /* ---------- amigos y estado en línea ---------- */
 
 const FRIENDS_FILE = path.join(app.getPath('userData'), 'friends.json');
-// Token secreto de esta instalación: el Worker lo usa para que nadie más pueda hablar como tu nick.
+// Credencial de presencia local: se cifra con el almacén seguro del sistema.
 const PRESENCE_TOKEN_FILE = path.join(app.getPath('userData'), 'presence.token');
-let presenceToken = null;
-function getPresenceToken() {
-  if (presenceToken) return presenceToken;
-  try { presenceToken = fs.readFileSync(PRESENCE_TOKEN_FILE, 'utf8').trim(); } catch {}
-  if (!/^[A-Za-z0-9_-]{16,64}$/.test(presenceToken || '')) {
-    presenceToken = require('crypto').randomBytes(24).toString('base64url');
-    try { fs.writeFileSync(PRESENCE_TOKEN_FILE, presenceToken, { mode: 0o600 }); } catch {}
-  }
-  return presenceToken;
-}
+const presenceTokenStore = makePresenceTokenStore({ fs, file: PRESENCE_TOKEN_FILE, safeStorage });
+const getPresenceToken = () => presenceTokenStore.get();
 const NICK_OK = /^[A-Za-z0-9_]{3,16}$/;
 // Llama al Worker como el jugador con sesión. Devuelve { ok, data } o { ok:false, error }.
 async function presenceCall(op, body = {}, ms = 6000) {
   if (!USAGE_URL) return { ok: false, error: 'disabled' };
   if (!session || !NICK_OK.test(session.name || '')) return { ok: false, error: 'no_session' };
+  const token = getPresenceToken();
+  if (!token) return { ok: false, error: 'secure_storage_unavailable' };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token: getPresenceToken() }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
     let data = {};
     try { data = await r.json(); } catch {}
     return r.ok ? { ok: true, data } : { ok: false, error: data.error || 'http_' + r.status };
@@ -1366,6 +1404,7 @@ async function presenceCall(op, body = {}, ms = 6000) {
 }
 const FRIEND_ERRORS = {
   disabled: 'La función de amigos no está activa en este launcher.',
+  secure_storage_unavailable: 'Activa el llavero seguro del sistema para usar amigos; el token no se guarda sin cifrado.',
   no_session: 'Inicia sesión para usar amigos.',
   network: 'No se pudo conectar. Revisa tu internet e inténtalo de nuevo.',
   auth: 'Ese nick ya lo usa otra instalación del launcher.',
@@ -1374,19 +1413,42 @@ const FRIEND_ERRORS = {
   full: 'Llegaste al máximo de amigos.',
   busy: 'Esa persona tiene demasiadas solicitudes pendientes.',
   no_request: 'Esa solicitud ya no existe.',
-  not_friends: 'Solo puedes chatear con tus amigos.',
-  empty: 'Escribe un mensaje.'
+  not_friends: 'Solo puedes hacer eso con tus amigos.',
+  empty: 'Escribe un mensaje.',
+  verified_owner: 'Ese nick lo verificó su dueño con su cuenta premium. Si eres tú, entra con tu cuenta premium.',
+  slow: 'Vas muy rápido. Espera un momento y vuelve a intentarlo.',
+  blocked_by_you: 'Bloqueaste a esa persona. Desbloquéala primero en Amigos.',
+  bad_invite: 'Esa invitación no es válida.',
+  not_leader: 'Solo el líder de la party puede hacer eso.',
+  in_party: 'Ya estás en una party. Sal de ella primero.',
+  no_party: 'Esa party ya no existe.',
+  party_full: 'La party está llena (máximo 8 personas).'
 };
-const friendFail = (r) => { throw new Error(FRIEND_ERRORS[r.error] || 'No se pudo completar la acción.'); };
+const friendError = (code) => FRIEND_ERRORS[code] || 'No se pudo completar la acción.';
+const friendFail = (r) => { throw new Error(friendError(r.error)); };
 
+/* ---------- amigos 2.0: tiempo real, estados, invitaciones, party y nick verificado (lib/main/ipc-amigos.js) ---------- */
+const amigos = require('./lib/main/ipc-amigos')({
+  ipcMain, Notification, powerMonitor: require('electron').powerMonitor, USAGE_URL, getSession: () => session, getPresenceToken, presenceCall,
+  readSettings, writeSettings, send, getMainWindow: () => mainWindow, showWindow, getLaunching: () => launching, freshPremium,
+  getExtras: () => extras, loadData, readModpacks, packs, serversLib, pushLog, instanceDir, GAME_DIR, friendError
+});
+
+// Lo que ven tus amigos en tu tarjeta: qué juegas y tus horas (null si lo apagaste en Ajustes).
+function presenceActivity() {
+  const st = readSettings();
+  if (st.shareActivity === false) return null;
+  const g = launching && currentTarget ? (currentTarget.kind === 'event' ? `Evento: ${currentTarget.title}` : String(currentTarget.title || '')) : '';
+  return { g: g.slice(0, 48), h: Math.floor((st.playSeconds || 0) / 3600) };
+}
 // Latido: dice que sigues conectado (solo con sesión y con "compartir uso" activado).
 function presenceBeat() {
   if (!readSettings().shareUsage) return;
-  presenceCall('sync', { playing: launching });
+  amigos.call('sync', { playing: launching, act: presenceActivity() }).then((r) => { if (r.ok) amigos.afterSync(r.data); });
 }
 setInterval(presenceBeat, 60 * 1000).unref();
 setTimeout(presenceBeat, 8000).unref();
-app.on('before-quit', () => { if (session) presenceCall('leave', {}, 1500); });
+app.on('before-quit', () => { amigos.stop(); if (session) presenceCall('leave', {}, 1500); });
 
 ipcMain.handle('friends:list', async () => {
   const base = { enabled: !!USAGE_URL, loggedIn: !!session, sharing: readSettings().shareUsage !== false, reachable: true, friends: [], incoming: [], outgoing: [] };
@@ -1397,26 +1459,31 @@ ipcMain.handle('friends:list', async () => {
     for (const n of legacy) await presenceCall('request', { to: n });
     friendsLib.save(FRIENDS_FILE, []);
   }
-  const r = await presenceCall('sync', { playing: launching });
+  const r = await amigos.call('sync', { playing: launching, act: presenceActivity() });
   if (!r.ok) return { ...base, reachable: false, error: FRIEND_ERRORS[r.error] || '' };
   const d = r.data;
-  return { ...base, friends: d.friends || [], incoming: d.incoming || [], outgoing: d.outgoing || [], now: d.now };
+  amigos.afterSync(d);
+  return {
+    ...base, friends: d.friends || [], incoming: d.incoming || [], outgoing: d.outgoing || [], now: d.now,
+    blocked: d.blocked || [], invites: d.invites || [], party: d.party || null, partyInvites: d.partyInvites || [],
+    me: { ...(d.me || {}), nick: session.name, premium: session.mode === 'premium' }, muted: readSettings().mutedFriends || []
+  };
 });
 ipcMain.handle('friends:add', async (_e, nick) => {
   const n = String(nick || '').trim();
   if (!NICK_OK.test(n)) throw new Error(FRIEND_ERRORS.bad_nick);
-  const r = await presenceCall('request', { to: n });
+  const r = await amigos.call('request', { to: n });
   return r.ok ? r.data.status : friendFail(r);
 });
 for (const [ch, op] of [['friends:accept', 'accept'], ['friends:remove', 'remove']]) {
-  ipcMain.handle(ch, async (_e, nick) => { const r = await presenceCall(op, { to: String(nick || '') }); return r.ok ? true : friendFail(r); });
+  ipcMain.handle(ch, async (_e, nick) => { const r = await amigos.call(op, { to: String(nick || '') }); return r.ok ? true : friendFail(r); });
 }
 ipcMain.handle('chat:send', async (_e, to, text) => {
-  const r = await presenceCall('send', { to: String(to || ''), text: String(text || '') });
+  const r = await amigos.call('send', { to: String(to || ''), text: String(text || '').slice(0, 500) });
   return r.ok ? true : friendFail(r);
 });
 ipcMain.handle('chat:poll', async (_e, who, since) => {
-  const r = await presenceCall('poll', { with: String(who || ''), since: Number(since) || 0 }, 5000);
+  const r = await amigos.call('poll', { with: String(who || ''), since: Number(since) || 0 }, 5000);
   return r.ok ? { ...r.data, me: session.name } : friendFail(r);
 });
 
@@ -2031,7 +2098,7 @@ function overlayShow(p) {
     const b = overlayLib.bounds(screen.getPrimaryDisplay().workArea);
     overlayWin = new BrowserWindow({
       ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, skipTaskbar: true, hasShadow: false, show: false, alwaysOnTop: true,
-      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
+      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), webSecurity: true, contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
     });
     overlayWin.setAlwaysOnTop(true, 'screen-saver');
     overlayWin.setIgnoreMouseEvents(true, { forward: true }); // los clics pasan al juego
@@ -2703,11 +2770,22 @@ ipcMain.handle('java:browse', async () => {
   return res.canceled ? null : res.filePaths[0];
 });
 
-ipcMain.handle('link:open', (_e, url) => {
-  const u = new URL(String(url));
-  if (u.protocol !== 'https:') throw new Error('Solo se pueden abrir enlaces https.');
-  return shell.openExternal(u.href);
-});
+// Enlaces externos: solo https y, si el sitio no es de los conocidos, se confirma mostrando el dominio real (lib/links.js).
+async function openExternalLink(url, win) {
+  const c = require('./lib/links').checkLink(url);
+  if (!c.ok) throw new Error(c.reason);
+  if (!c.trusted) {
+    const r = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
+      type: 'question', buttons: ['Abrir', 'Cancelar'], defaultId: 1, cancelId: 1, noLink: true,
+      title: 'Enlace externo', message: `Vas a abrir ${c.host}`,
+      detail: 'Es un sitio fuera de Nova PX. Nunca escribas tu contraseña de Microsoft en una página que llegó por un enlace.'
+    });
+    if (r.response !== 0) return false;
+  }
+  await shell.openExternal(c.href);
+  return true;
+}
+ipcMain.handle('link:open', async (e, url) => openExternalLink(url, BrowserWindow.fromWebContents(e.sender)));
 
 // Estado del servidor de un modpack: se lee de su servers.dat. Nunca se devuelve la dirección, solo si está activo.
 const packServerCache = new Map();
@@ -2717,6 +2795,14 @@ ipcMain.handle('modpacks:serverStatus', async (_e, id) => {
   const srv = serversLib.findPackServer(instanceDir(GAME_DIR, { event: { id: entry.id } }));
   if (!srv) return { found: false };
   const key = `${srv.host}:${srv.port}`;
+  // Perfiles propios: ping directo desde esta PC (latencia real). Los modpacks de terceros se consultan como antes
+  // (mcsrvstat.us), para no avisar al servidor del autor cada vez que alguien abre su biblioteca.
+  if (packs.isOwnPack(entry)) {
+    try {
+      const p = await pingLib.pingCached(srv.host, srv.port, { timeout: 3500 });
+      return { found: true, online: true, players: { online: p.players.online, max: p.players.max }, ms: p.ms };
+    } catch {}
+  }
   const hit = packServerCache.get(key);
   if (hit && Date.now() - hit.at < 60000) return hit.value;
   let value;
@@ -2738,6 +2824,10 @@ ipcMain.handle('server:status', async () => {
     const found = serversLib.findPackServer(instanceDir(GAME_DIR, manifest));
     if (!found) return { configured: false };
     hideHost(found.host);
+    try {
+      const p = await pingLib.pingCached(found.host, found.port, { timeout: 3500 });
+      return { configured: true, online: true, players: { online: p.players.online, max: p.players.max }, version: p.version || null, ms: p.ms };
+    } catch {}
     const target = found.port && Number(found.port) !== 25565 ? `${found.host}:${found.port}` : found.host;
     const data = await fetchJson(`https://api.mcsrvstat.us/3/${encodeURIComponent(target)}`);
     return {
@@ -3310,6 +3400,18 @@ ipcMain.handle('event:checkPassword', async (_e, password) => {
   } catch { return false; }
 });
 
+/* ---------- IPC de la 1.0.188: ahora en lib/main/ipc-extras.js ---------- */
+const extras = require('./lib/main/ipc-extras')({
+  ipcMain, fs, path, app, shell, dialog, clipboard: require('electron').clipboard, nativeImage, GAME_DIR, USAGE_URL,
+  readModpacks, writeModpacks, packRoot, instanceDir, instanceId, loadData, readSettings, send, pushLog,
+  apiRequest, downloadBuffer, cachedSha1, content, planAllUpdates, assertEditable, getMainWindow: () => mainWindow, packEntryFrom
+});
+
+// Loader Nova: lista fija de mods, "Actualizar Nova" y gráficos según la PC (lib/main/ipc-nova.js).
+const nova = require('./lib/main/ipc-nova')({
+  novaPub: NOVA_PUB, novaObligatoria: NOVA_OBLIGATORIA, ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
+});
+
 ipcMain.handle('game:launch', async (_e, opts = {}) => {
   // Si este modpack recuerda una cuenta, se cambia a ella antes de jugar.
   if (opts.modpackId && !launching) {
@@ -3366,6 +3468,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     // Cada evento vive en su propia carpeta: los mods de un evento no chocan con los de otro.
     const eventDir = instanceDir(GAME_DIR, manifest);
     fs.mkdirSync(eventDir, { recursive: true });
+    // Copia de los mundos que cambiaron desde la última copia (normalmente ya se hizo al cerrar la partida anterior).
+    await extras.autoBackupFor(eventDir, { onStatus: (w) => send('game:status', { text: `Copiando tu mundo «${String(w).slice(0, 40)}»…` }) });
     // Evento bloqueado (por defecto): los jugadores no pueden añadir ni cambiar mods, texturas ni shaders.
     const lockEvent = !pack && manifest.lockPack !== false;
     const enforceLock = () => {
@@ -3389,7 +3493,10 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     if (pack && pack.preset === 'optifine' && loaderType === 'vanilla') {
       customId = await ensureOptiFine(pack, javaPath);
     } else if (loaderType === 'fabric') {
-      if (pack && pack.preset === 'nova') await fixNovaMods(eventDir, manifest.minecraftVersion);
+      if (pack && pack.preset === 'nova') {
+        await fixNovaMods(eventDir, manifest.minecraftVersion);
+        try { await nova.autoGraphics(eventDir, manifest.minecraftVersion); } catch (err) { pushLog('launcher', `[Nova] No se pudieron ajustar los gráficos: ${err.message}`); }
+      }
       send('game:status', { text: 'Preparando Fabric…' });
       customId = await ensureFabric(manifest.minecraftVersion, manifest.loader.version);
     } else if (loaderType === 'quilt') {
@@ -3432,7 +3539,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         type: 'release',
         ...(customId ? { custom: customId } : {})
       },
-      overrides: { gameDirectory: eventDir },
+      overrides: { gameDirectory: eventDir, maxSockets: 8 }, // más descargas a la vez al bajar el juego (antes 2)
       memory: { max: `${st.ramGb}G`, min: userArgs.length ? '1G' : `${jvmDefaults.initialMemoryGb(st.ramGb)}G` },
       ...(forgeInstaller ? { forge: forgeInstaller } : {}),
       window: st.fullscreen
@@ -3444,8 +3551,16 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     // Entrar directo al servidor del evento: la IP sale del servers.dat del modpack (nunca del manifest público).
     const eventServer = !pack ? serversLib.findPackServer(eventDir) : null;
     if (eventServer) hideHost(eventServer.host);
-    if (st.joinServer && eventServer) {
-      launchOpts.server = { host: eventServer.host, port: String(eventServer.port || 25565) };
+    if (st.joinServer && eventServer) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, eventServer.host, eventServer.port));
+    // Modpack propio: entrar directo al servidor elegido en la pestaña Servidores (la dirección sale de su servers.dat).
+    // Invitación de un amigo: entrar al servidor que él tenía guardado.
+    if (pack && typeof opts.joinHost === 'string' && opts.joinHost) {
+      const addr = serversLib.parseAddress(opts.joinHost.slice(0, 260));
+      if (addr) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, addr.host, addr.port));
+    }
+    if (pack && Number.isInteger(opts.serverIndex) && opts.serverIndex >= 0 && opts.serverIndex < 50) {
+      const target = serversLib.listPackServers(eventDir)[opts.serverIndex];
+      if (target) Object.assign(launchOpts, pingLib.joinOptions(manifest.minecraftVersion, target.host, target.port));
     }
 
     // Ajustes locales de la instancia: sincronización, variables y comandos.
@@ -3463,7 +3578,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
       if (!r.ok) throw new Error(`El comando previo falló (${r.err && r.err.message ? r.err.message.split('\n')[0] : 'error'}). Revísalo en Ajustes de la instancia > Launch hooks.`);
     }
     const userEnv = parseEnvLines(own.env);
-    const launcher = new Client();
+    const launcher = new (mclc().Client)();
     launcher.on('progress', (e) => send('game:progress', { type: e.type, task: e.task, total: e.total }));
     launcher.on('package-extract', () => send('game:status', { text: 'Extrayendo archivos…' }));
     launcher.on('arguments', () => send('game:status', { text: 'Iniciando Minecraft…' }));
@@ -3484,6 +3599,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         } catch {}
       }
       try { syncOut(eventDir, own.sync); } catch {}
+      // Copia automática de los mundos al cerrar (no hace esperar a nadie; la próxima partida ya la encuentra hecha).
+      setTimeout(() => { if (!launching) extras.autoBackupFor(eventDir); }, 1500);
       if (own.postExit) { runHook(own.postExit, eventDir, hookEnv).then((r) => pushLog('launcher', `[Nova] Comando al salir ${r.ok ? 'terminado' : 'falló'}${r.out ? ': ' + r.out : ''}`)); }
       // Suma el tiempo de juego a las horas jugadas.
       if (gameStartedAt) {

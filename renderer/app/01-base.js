@@ -22,7 +22,7 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   let closed = false;
   let ready = !!window.__novaReady;
   let minDone = false;
-  const MIN = 3200;
+  const MIN = 1200; // tiempo mínimo de la animación corta (antes 3,2 s)
   const steps = ['Iniciando…', 'Cargando tu perfil…', 'Buscando eventos…', 'Preparando el launcher…', '¡Listo!'];
   const st = document.getElementById('sp-status');
   let si = 0;
@@ -57,7 +57,10 @@ const skinHead = (nick) => `https://minotar.net/helm/${encodeURIComponent(nick)}
   }
   window.api.getSettings().then((st) => {
     const resumed = new URLSearchParams(location.search).get('resume') === '1';
-    if ((st && st.intro === false) || resumed) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
+    // La intro completa (unos 9 s) sale la primera vez de cada día; las demás veces el launcher abre al instante.
+    let seenToday = false;
+    try { const day = new Date().toDateString(); seenToday = localStorage.getItem('px.intro.day') === day; if (!seenToday) localStorage.setItem('px.intro.day', day); } catch {}
+    if ((st && st.intro === false) || resumed || seenToday) { s.classList.remove('wants-video'); minDone = true; if (ready) close(); else window.addEventListener('nova-ready', close, { once: true }); return; }
     playIntro(!st || st.introSound !== false);
   }).catch(() => playIntro(true));
   s.addEventListener('click', close);
@@ -157,6 +160,8 @@ const PAGE_TITLES = {
   events: ['Historial', 'Los eventos anteriores del equipo'],
   team: ['Equipo', 'Las personas que hacen posible cada evento'],
   skins: ['Skins y capas', 'Cambia tu aspecto en Minecraft'],
+  shots: ['Capturas', 'Todas tus capturas de pantalla, de todos tus perfiles'],
+  friends: ['Amigos', 'Chatea, invita a jugar y arma tu party'],
   mods: ['Mods', 'Lo que lleva instalado el evento'],
   modpacks: ['Modpacks', 'Tus modpacks, los de Modrinth y los de la comunidad'],
   settings: ['Ajustes', 'Memoria, Java, apariencia y más'],
@@ -173,6 +178,7 @@ function toast(text, kind) {
   const box = $('toasts');
   const t = el('div', kind === 'error' ? 'toast error' : 'toast', maskNick(text));
   box.append(t);
+  try { if (window.NovaSound) window.NovaSound.event(kind === 'error' ? 'error' : kind === 'info' ? 'info' : 'ok'); } catch {}
   setTimeout(() => {
     t.classList.add('out');
     setTimeout(() => t.remove(), 320);
@@ -264,5 +270,7 @@ function goTo(tab) {
   if (tab === 'whatsnew' && window.whatsnewShow) window.whatsnewShow();
   if (tab === 'servers' && window.serversShow) window.serversShow();
   if (tab === 'versions' && window.versionsShow) window.versionsShow();
+  if (tab === 'shots' && window.shotsShow) window.shotsShow();
+  if (tab === 'friends' && window.friendsShow) window.friendsShow();
 }
 document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.tab)));

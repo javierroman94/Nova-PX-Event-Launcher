@@ -116,7 +116,7 @@ function fillServerPill(node, id) {
     if (!s || !s.found || s.unknown) return;
     node.hidden = false;
     node.className = `srv-pill ${s.online ? 'on' : 'off'}`;
-    node.textContent = s.online ? (s.players ? `● ${s.players.online}/${s.players.max} en línea` : '● Servidor activo') : '● Servidor apagado';
+    node.textContent = s.online ? `${s.players ? `● ${s.players.online}/${s.players.max} en línea` : '● Servidor activo'}${s.ms ? ` · ${s.ms} ms` : ''}` : '● Servidor apagado';
   }).catch(() => {});
 }
 
@@ -176,6 +176,7 @@ function packMenu(p, detail) {
 
 function packCard(p) {
   const card = el('div', 'event-card mp-card');
+  card.dataset.pack = p.id;
   card.tabIndex = 0;
   card.setAttribute('role', 'link');
   card.setAttribute('aria-label', `${p.title}: abrir`);
@@ -192,6 +193,10 @@ function packCard(p) {
   srv.hidden = true;
   body.append(srv);
   fillServerPill(srv, p.id);
+  const upd = el('span', 'upd-pill');
+  upd.hidden = true;
+  body.append(upd);
+  if (window.paintUpdPill) window.paintUpdPill(upd, p.id);
   card.append(media, body);
   const open = () => openDetail(p);
   ctx(card, () => packMenu(p, false));
@@ -301,13 +306,16 @@ $('mp-go-discover').addEventListener('click', () => {
 $('mp-back-lib').addEventListener('click', () => { showView('library'); renderLibrary(); });
 $('mp-detail-back').addEventListener('click', () => { mp.pack = null; showView('library'); renderLibrary(); });
 
-async function playPack(id) {
+async function playPack(id, extra = {}) {
   if (!loggedIn) {
     goTo('account');
     showMsg('Inicia sesión como premium o no premium para jugar.', true);
     return;
   }
-  const p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
+  let p = mp.installed.find((x) => x.id === id) || (await window.api.modpackInstalled()).find((x) => x.id === id) || {};
+  // Perfil Nova sin modo elegido: primero se elige Clásico o PvP.
+  if (window.novaModeBeforePlay && !(await window.novaModeBeforePlay(p))) return;
+  p = mp.installed.find((x) => x.id === id) || p;
   // La pantalla de carga de un modpack usa su propia portada (o la de su versión), no el logo del evento.
   launchTarget = { kind: 'pack', title: p.title || 'Modpack', icon: packCover(p) || '', preset: p.preset || '' };
   setPlaying(true);
@@ -316,7 +324,7 @@ async function playPack(id) {
   $('np-status').textContent = 'Preparando el modpack…';
   $('np-progress').hidden = true;
   try {
-    await window.api.launch({ modpackId: id });
+    await window.api.launch({ modpackId: id, ...extra });
   } catch (err) {
     $('np-status').textContent = `No se pudo iniciar: ${cleanError(err)}`;
     $('np-progress').hidden = true;
@@ -328,10 +336,11 @@ async function playPack(id) {
 /* --- instancia --- */
 function setTab(tab) {
   document.querySelectorAll('[data-mp-tab]').forEach((b) => b.classList.toggle('active', b.dataset.mpTab === tab));
-  ['content', 'files', 'worlds', 'shots', 'logs', 'share'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
+  ['content', 'files', 'worlds', 'servers', 'shots', 'logs', 'share'].forEach((t) => ($(`mp-tab-${t}`).hidden = t !== tab));
   if (tab === 'content') renderContent();
   if (tab === 'worlds') renderWorlds();
   if (tab === 'shots') renderShots();
+  if (tab === 'servers' && window.renderPackServers) window.renderPackServers();
   if (tab === 'logs') renderPackLog();
 }
 document.querySelectorAll('[data-mp-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.mpTab)));
@@ -371,7 +380,7 @@ function paintPackChips(p) {
   box.replaceChildren();
   const add = (cls, text) => box.append(el('span', `mp-chip ${cls || ''}`, text));
   add('mc', `Minecraft ${p.mcVersion}`);
-  add('loader', LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla');
+  add('loader', p.preset === 'nova' ? '⚡ Nova' : LOADER_NAMES[p.loader && p.loader.type] || 'Vanilla');
   if (p.provider) add('', SRC_NAMES[p.provider] || p.provider);
   if (p.lastPlayedAt) add('', `Jugado ${ago(p.lastPlayedAt)}`); else add('', 'Sin jugar');
   if (mp.items && mp.pack === p && mp.items.length) {
@@ -395,6 +404,7 @@ function openDetail(p) {
   openDetailHeader(p);
   showView('detail');
   setTab('content');
+  if (window.paintNovaBar) window.paintNovaBar(p);
 }
 
 $('mp-detail-play').addEventListener('click', () => mp.pack && playPack(mp.pack.id));
@@ -708,6 +718,13 @@ async function renderShots() {
     $('mp-shots-note').textContent = shots.length ? `${shots.length} captura${shots.length === 1 ? '' : 's'} recientes (F2 dentro del juego)` : 'Todavía no hay capturas. Pulsa F2 dentro del juego para sacar una.';
     shots.forEach((s) => {
       const card = el('div', 'event-card');
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', `Ver captura ${s.name}`);
+      const item = { src: `pack:${mp.pack.id}`, name: s.name, title: mp.pack.title, own: true, mtime: s.mtime };
+      const open = () => window.openShotViewer && window.openShotViewer(item, shots.map((x) => ({ src: item.src, name: x.name, title: item.title, own: true, mtime: x.mtime })), renderShots);
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
       if (s.thumb) {
         const img = el('img', 'event-card-img');
         img.alt = s.name;
@@ -779,7 +796,7 @@ async function loadMcVersions(...selects) {
 
 /* --- asistente "Crear instancia" --- */
 const LOADER_INFO = {
-  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Fabric + Sodium, Lithium, Iris, Mod Menu y Nova Client. Máximo rendimiento.' },
+  nova: { icon: '⚡', name: 'Nova', tag: 'Recomendado', desc: 'Loader Nova: mods de rendimiento probados entre sí, Nova Client y gráficos ajustados a tu PC.' },
   fabric: { icon: '🧵', name: 'Fabric', tag: '', desc: 'Ligero y rápido. Mods modernos (desde 1.14).' },
   quilt: { icon: '🪡', name: 'Quilt', tag: '', desc: 'Basado en Fabric, usa sus mods y los de Quilt (desde 1.14).' },
   neoforge: { icon: '🦊', name: 'NeoForge', tag: '', desc: 'El Forge moderno, para mods nuevos (desde 1.20.2).' },
@@ -1172,6 +1189,7 @@ async function autoCheckUpdates(p) {
   try {
     const ups = await window.api.instanceUpdatesCheck(p.id);
     if (my === updAuto && mp.pack === p) setUpdBadge(ups.length);
+    if (window.setPackUpdCount) window.setPackUpdCount(p.id, ups.length);
   } catch { /* sin conexión: no se avisa */ }
 }
 $('mp-check-updates').addEventListener('click', async () => {

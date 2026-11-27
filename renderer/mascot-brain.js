@@ -118,7 +118,7 @@
   }
 
   /* ---------- Nivel 2 (IA): memoria, privacidad y registros ---------- */
-  const SECRET = /(sk-ant-[\w-]{10,}|accessToken|access_token|Bearer\s+[\w.-]{12,}|[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}|\b\d{13,19}\b|[\w.+-]+@[\w-]+\.[\w.]+)/i;
+  const SECRET = /(sk-ant-[\w-]{10,}|(?:access|refresh|id|xsts)[_-]?token|client[_-]?secret|Bearer\s+[\w.-]{12,}|[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}|\b\d{13,19}\b|[\w.+-]+@[\w-]+\.[\w.]+)/i;
   const looksSecret = (t) => SECRET.test(String(t || ''));
 
   /* Un dato que PX puede recordar: corto, sin datos personales. Devuelve '' si no vale. */
@@ -157,8 +157,8 @@
     return pickLines.map((l) => l
       .replace(/([A-Za-z]:\\Users\\)[^\\\s"']+/gi, '$1<usuario>')
       .replace(/(\/(?:home|Users)\/)[^\/\s"']+/g, '$1<usuario>')
-      .replace(/(--(?:accessToken|uuid|username|clientId|xuid|userProperties)\s+)\S+/gi, '$1<oculto>')
-      .replace(/(access[_-]?token["'=:\s]+)[\w.-]+/gi, '$1<oculto>')
+      .replace(/(--(?:accessToken|refreshToken|idToken|session|uuid|username|clientId|xuid|userProperties)\s+)\S+/gi, '$1<oculto>')
+      .replace(/((?:access|refresh|id|xsts)[_-]?token["'=:\s]+)[\w.-]+/gi, '$1<oculto>')
       .replace(/Bearer\s+[\w.-]+/gi, 'Bearer <oculto>')
       .replace(/[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}/g, '<oculto>')
       .replace(/[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}/gi, '<uuid>')

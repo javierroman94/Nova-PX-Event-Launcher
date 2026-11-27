@@ -472,9 +472,12 @@
     }
     function sync() {
       const on = state.effects && !document.hidden;
-      if (on) start();
-      else stop();
+      if (!on) stop();
+      else if (document.hasFocus()) start();
+      else { cancelAnimationFrame(raf); raf = 0; } // sin foco (jugando u otra app): se congela el cuadro y no gasta
     }
+    window.addEventListener('blur', sync);
+    window.addEventListener('focus', sync);
 
     resize();
     window.addEventListener('resize', () => { resize(); });
