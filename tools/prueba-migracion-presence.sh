@@ -139,7 +139,7 @@ if (cd "$TMP" && npx --prefix "$RAIZ" wrangler deploy --config wrangler.jsonc) >
   echo "Conclusión: la secuencia de migración funciona en el entorno aislado."
   exit 0
 fi
-echo "RESULTADO: wrangler rechazó el dry-run. Últimas líneas:"
+echo "RESULTADO: wrangler rechazó la migración en el Worker desechable. Últimas líneas:"
 tail -5 "$TMP/paso2.log" | sed -E 's/[A-Za-z0-9_-]{32,}/[oculto]/g'
 
 echo "== 3. Arreglo candidato: subir solo la etiqueta v1 (sin crear clases)"
