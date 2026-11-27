@@ -1,6 +1,6 @@
 # Renueva la lista del loader Nova (data/nova-loader.json) una vez por semana:
 # busca en Modrinth versiones nuevas de los mods de rendimiento y deja solo las que no chocan entre sí.
-# Si algo cambió, sube la lista a main (la versión de Nova sube sola). No publica una versión del launcher.
+# Si algo cambió, abre un Pull Request con la lista nueva (nunca sube directo a main). No publica una versión del launcher.
 name: Lista del loader Nova
 
 on:
@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: nova-loader
@@ -19,8 +20,8 @@ jobs:
   renovar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 20
       - name: Armar la lista
@@ -29,13 +30,33 @@ jobs:
         run: node tools/nova-loader.js
       - name: Probar la lista
         run: node test/nova-loader.test.js
-      - name: Subir si cambió
+      # Firma Ed25519 con el secreto NOVA_FIRMA_PRIVADA (ver docs/SEGURIDAD.md, «Firma de publicaciones Nova»).
+      # Si el launcher ya trae la llave pública, firmar es obligatorio: sin el secreto la tarea falla y no sube nada.
+      - name: Firmar la lista
+        env:
+          NOVA_FIRMA_PRIVADA: ${{ secrets.NOVA_FIRMA_PRIVADA }}
         run: |
-          if git diff --quiet -- data/nova-loader.json; then echo "Sin cambios."; exit 0; fi
+          if git diff --quiet -- data/nova-loader.json && [ -f data/nova-loader.firma.json ]; then echo "Sin cambios: la firma actual sigue valiendo."; exit 0; fi
+          if [ -n "$NOVA_FIRMA_PRIVADA" ]; then node tools/firmar-nova.js; exit 0; fi
+          if [ -f config/nova-firma.pub.pem ]; then echo "Falta el secreto NOVA_FIRMA_PRIVADA y la firma es obligatoria."; exit 1; fi
+          echo "Sin llave Nova configurada todavía: la lista se publica sin firma (como hasta ahora)."
+      # Las reglas del repositorio prohíben subir directo a main: si la lista cambió, se abre un Pull Request
+      # en una rama propia y el dueño lo revisa y une. Hasta entonces los jugadores siguen con la lista anterior.
+      # Requiere: Settings → Actions → General → «Allow GitHub Actions to create and approve pull requests».
+      - name: Abrir Pull Request si cambió
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/nova-loader.json && [ -z "$(git status --porcelain -- data/nova-loader.firma.json)" ]; then echo "Sin cambios."; exit 0; fi
           v="$(node -p "require('./data/nova-loader.json').version")"
+          rama="revision-lista-nova-$v"
+          if git ls-remote --exit-code --heads origin "$rama" >/dev/null 2>&1; then echo "Ya hay una rama para Nova $v."; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$rama"
           git add data/nova-loader.json
+          if [ -f data/nova-loader.firma.json ]; then git add data/nova-loader.firma.json; fi
           git commit -m "Lista del loader Nova $v"
-          git pull --rebase -q origin main
-          git push origin HEAD:main
+          git push origin "$rama"
+          gh pr create --base main --head "$rama" --title "Lista del loader Nova $v" \
+            --body "Lista semanal de mods del loader Nova generada por la tarea «Lista del loader Nova». Revisa los mods que entran o salen antes de unir; al unirla, los perfiles Nova verán «Actualizar Nova»."

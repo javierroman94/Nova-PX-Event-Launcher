@@ -2,7 +2,11 @@
    aparece cualquier error de JavaScript. Necesita Playwright (npm i -g playwright && npx playwright install chromium). */
 const path = require('path');
 let chromium;
-try { ({ chromium } = require('playwright')); } catch { console.log('Playwright no está instalado: se omite la prueba de arranque.'); process.exit(0); }
+try { ({ chromium } = require('playwright')); } catch {
+  // En CI (SMOKE_OBLIGATORIO=1) omitirla sería un falso verde: falla.
+  if (process.env.SMOKE_OBLIGATORIO === '1') { console.error('Prueba de arranque: FALLÓ, Playwright no está instalado.'); process.exit(1); }
+  console.log('Playwright no está instalado: se omite la prueba de arranque.'); process.exit(0);
+}
 
 (async () => {
   const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;

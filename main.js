@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 // Los canales IPC solo se atienden desde las páginas del launcher; y safeStorage no cuenta si en Linux cae a la llave fija.
 const { makeSecureStorage } = require('./lib/secure-storage');
+const { makePresenceTokenStore } = require('./lib/presence-token');
 const { guardIpc, isTrustedUrl } = require('./lib/ipc-guard');
 const safeStorage = makeSecureStorage(electronSafeStorage);
 guardIpc(ipcMain, path.join(__dirname, 'renderer'));
@@ -266,13 +267,22 @@ async function loadData(name) {
 const firmaLib = require('./lib/firma');
 let FIRMA_PUB = null;
 try { FIRMA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'firma-datos.pub.pem'), 'utf8'); } catch {}
+// Llave de las publicaciones automáticas de Nova (lista del loader y Nova Client).
+//  - Sin config/nova-firma.pub.pem: se aceptan sin firma (como hasta 1.0.193).
+//  - Con la pública y novaFirmaObligatoria=false: una firma presente se verifica (si es mala, se rechaza),
+//    pero lo que llega sin firma se sigue aceptando. Sirve para comprobar las firmas antes de exigirlas.
+//  - Con la pública y novaFirmaObligatoria=true: sin firma válida no se usa nada.
+const NOVA_OBLIGATORIA = !!config.novaFirmaObligatoria;
+let NOVA_PUB = null;
+try { NOVA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'nova-firma.pub.pem'), 'utf8'); } catch {}
 async function fetchDataVerified(base, name) {
   const known = (() => { try { return JSON.parse(fs.readFileSync(path.join(DATA_CACHE_DIR, `${name}.firma.json`), 'utf8')); } catch { return null; } })();
+  const nova = firmaLib.FIRMADOS_NOVA.includes(name);
   return require('./lib/data-firmada').leerFirmado({
     name,
     getText: async (file) => (await fetchWithTimeout(`${base}/${file}?t=${Date.now()}`, 4000)).text(),
-    pub: FIRMA_PUB,
-    obligatoria: !!config.firmaObligatoria,
+    pub: nova ? NOVA_PUB : FIRMA_PUB,
+    obligatoria: nova ? !!NOVA_PUB && NOVA_OBLIGATORIA : !!config.firmaObligatoria,
     known
   });
 }
@@ -411,7 +421,10 @@ const { readJavaVersionOutput, managedJavaPath, preferJavaw, resolveJava } = req
 
 // Una ventana del launcher solo puede mostrar páginas de renderer/: sin navegación, sin ventanas nuevas y sin <webview>.
 function lockWindow(wc) {
-  wc.on('will-navigate', (e, url) => { if (!isTrustedUrl(url, path.join(__dirname, 'renderer'))) e.preventDefault(); });
+  const rendererDir = path.join(__dirname, 'renderer');
+  const blockUntrusted = (e, url) => { if (!isTrustedUrl(url, rendererDir)) e.preventDefault(); };
+  wc.on('will-navigate', blockUntrusted);
+  wc.on('will-redirect', blockUntrusted);
   wc.on('will-attach-webview', (e) => e.preventDefault());
 }
 
@@ -429,6 +442,7 @@ function createWindow() {
     ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#0d0f16', symbolColor: '#e8eaf2', height: 52 } } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: true,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -441,8 +455,9 @@ function createWindow() {
   // El launcher no necesita cámara, micrófono, ubicación ni notificaciones del navegador: se niegan todos los permisos.
   mainWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
   mainWindow.webContents.session.setPermissionCheckHandler(() => false);
+  // window.open y target=_blank pasan por la misma revisión que link:open (lib/links.js).
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+    openExternalLink(url, mainWindow).catch(() => {});
     return { action: 'deny' };
   });
   lockWindow(mainWindow.webContents);
@@ -1367,27 +1382,21 @@ ipcMain.handle('community:stats', async () => {
 /* ---------- amigos y estado en línea ---------- */
 
 const FRIENDS_FILE = path.join(app.getPath('userData'), 'friends.json');
-// Token secreto de esta instalación: el Worker lo usa para que nadie más pueda hablar como tu nick.
+// Credencial de presencia local: se cifra con el almacén seguro del sistema.
 const PRESENCE_TOKEN_FILE = path.join(app.getPath('userData'), 'presence.token');
-let presenceToken = null;
-function getPresenceToken() {
-  if (presenceToken) return presenceToken;
-  try { presenceToken = fs.readFileSync(PRESENCE_TOKEN_FILE, 'utf8').trim(); } catch {}
-  if (!/^[A-Za-z0-9_-]{16,64}$/.test(presenceToken || '')) {
-    presenceToken = require('crypto').randomBytes(24).toString('base64url');
-    try { fs.writeFileSync(PRESENCE_TOKEN_FILE, presenceToken, { mode: 0o600 }); } catch {}
-  }
-  return presenceToken;
-}
+const presenceTokenStore = makePresenceTokenStore({ fs, file: PRESENCE_TOKEN_FILE, safeStorage });
+const getPresenceToken = () => presenceTokenStore.get();
 const NICK_OK = /^[A-Za-z0-9_]{3,16}$/;
 // Llama al Worker como el jugador con sesión. Devuelve { ok, data } o { ok:false, error }.
 async function presenceCall(op, body = {}, ms = 6000) {
   if (!USAGE_URL) return { ok: false, error: 'disabled' };
   if (!session || !NICK_OK.test(session.name || '')) return { ok: false, error: 'no_session' };
+  const token = getPresenceToken();
+  if (!token) return { ok: false, error: 'secure_storage_unavailable' };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token: getPresenceToken() }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
     let data = {};
     try { data = await r.json(); } catch {}
     return r.ok ? { ok: true, data } : { ok: false, error: data.error || 'http_' + r.status };
@@ -1395,6 +1404,7 @@ async function presenceCall(op, body = {}, ms = 6000) {
 }
 const FRIEND_ERRORS = {
   disabled: 'La función de amigos no está activa en este launcher.',
+  secure_storage_unavailable: 'Activa el llavero seguro del sistema para usar amigos; el token no se guarda sin cifrado.',
   no_session: 'Inicia sesión para usar amigos.',
   network: 'No se pudo conectar. Revisa tu internet e inténtalo de nuevo.',
   auth: 'Ese nick ya lo usa otra instalación del launcher.',
@@ -2070,7 +2080,7 @@ function overlayShow(p) {
     const b = overlayLib.bounds(screen.getPrimaryDisplay().workArea);
     overlayWin = new BrowserWindow({
       ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, skipTaskbar: true, hasShadow: false, show: false, alwaysOnTop: true,
-      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
+      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), webSecurity: true, contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
     });
     overlayWin.setAlwaysOnTop(true, 'screen-saver');
     overlayWin.setIgnoreMouseEvents(true, { forward: true }); // los clics pasan al juego
@@ -2742,11 +2752,22 @@ ipcMain.handle('java:browse', async () => {
   return res.canceled ? null : res.filePaths[0];
 });
 
-ipcMain.handle('link:open', (_e, url) => {
-  const u = new URL(String(url));
-  if (u.protocol !== 'https:') throw new Error('Solo se pueden abrir enlaces https.');
-  return shell.openExternal(u.href);
-});
+// Enlaces externos: solo https y, si el sitio no es de los conocidos, se confirma mostrando el dominio real (lib/links.js).
+async function openExternalLink(url, win) {
+  const c = require('./lib/links').checkLink(url);
+  if (!c.ok) throw new Error(c.reason);
+  if (!c.trusted) {
+    const r = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
+      type: 'question', buttons: ['Abrir', 'Cancelar'], defaultId: 1, cancelId: 1, noLink: true,
+      title: 'Enlace externo', message: `Vas a abrir ${c.host}`,
+      detail: 'Es un sitio fuera de Nova PX. Nunca escribas tu contraseña de Microsoft en una página que llegó por un enlace.'
+    });
+    if (r.response !== 0) return false;
+  }
+  await shell.openExternal(c.href);
+  return true;
+}
+ipcMain.handle('link:open', async (e, url) => openExternalLink(url, BrowserWindow.fromWebContents(e.sender)));
 
 // Estado del servidor de un modpack: se lee de su servers.dat. Nunca se devuelve la dirección, solo si está activo.
 const packServerCache = new Map();
@@ -3370,7 +3391,7 @@ const extras = require('./lib/main/ipc-extras')({
 
 // Loader Nova: lista fija de mods, "Actualizar Nova" y gráficos según la PC (lib/main/ipc-nova.js).
 const nova = require('./lib/main/ipc-nova')({
-  ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
+  novaPub: NOVA_PUB, novaObligatoria: NOVA_OBLIGATORIA, ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
 });
 
 ipcMain.handle('game:launch', async (_e, opts = {}) => {

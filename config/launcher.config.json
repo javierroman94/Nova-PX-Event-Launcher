@@ -8,6 +8,7 @@
   "discordInvite": "https://discord.gg/VAfuFEQtjv",
   "discordLargeImage": "logo",
   "firmaObligatoria": true,
+  "novaFirmaObligatoria": false,
   "adminOwners": [
     "javierroman94"
   ],

@@ -35,6 +35,7 @@
     }
     if (st === 429) { cooldownUntil = Date.now() + 5 * 60000; left = 0; return { limit: true }; }
     if (st === 422) return { secret: true };
+    if (st === 503 && d && (d.error === 'quota_unavailable' || d.error === 'off')) return { maint: true };
     return { off: true };
   }
 
@@ -105,6 +106,7 @@
       if (r.text) { line('px', r.text); history.push({ role: 'assistant', content: r.text }); history = history.slice(-8); }
       else if (r.limit) line('px', 'Ya gastamos todos mis mensajes de hoy. ¡Mañana volvemos con más chistes! 🌙');
       else if (r.secret) line('px', 'Mejor no compartas claves ni datos personales. 🔒');
+      else if (r.maint) line('px', 'Mi parte con IA está en mantenimiento. Mientras tanto te respondo con lo que ya sé. 🛠️');
       else line('px', 'Uf, no logro conectarme ahora. Revisa tu internet y prueba de nuevo. 📡');
     } catch { wait.remove(); line('px', 'Algo falló, intenta otra vez.'); }
     busy = false;

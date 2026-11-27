@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('assert');
+const crypto = require('crypto');
 const { NOVA_MODS, installNovaMods } = require('../lib/nova');
 const packs = require('../lib/packs');
 
@@ -23,21 +24,68 @@ const packs = require('../lib/packs');
   assert.deepStrictEqual(packs.releaseVersions(man, { snapshots: true }), ['1.21.1', '24w14a']);
   // Nova Client: elige el .jar de la versión pedida, ignora sources y enlaces de otros sitios.
   const base = 'https://github.com/javierroman94/Nova-Client/releases/download/v0.1.0/';
+  const jarBytes = Buffer.from('jar');
+  const digest = 'sha256:' + crypto.createHash('sha256').update(jarBytes).digest('hex');
   const rel = { assets: [
-    { name: 'nova-client-0.1.0+mc1.21.1-sources.jar', browser_download_url: base + 'a-sources.jar' },
-    { name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'nova-client-0.1.0%2Bmc1.21.1.jar' },
-    { name: 'nova-client-0.1.0+mc1.20.1.jar', browser_download_url: 'https://evil.example/x.jar' }
+    { name: 'nova-client-0.1.0+mc1.21.1-sources.jar', browser_download_url: base + 'a-sources.jar', digest },
+    { name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'nova-client-0.1.0%2Bmc1.21.1.jar', digest },
+    { name: 'nova-client-0.1.0+mc1.20.1.jar', browser_download_url: 'https://evil.example/x.jar', digest }
   ] };
   const nova = require('../lib/nova');
   assert.strictEqual(nova.pickClientAsset(rel, '1.21.1').name, 'nova-client-0.1.0+mc1.21.1.jar');
+  assert.strictEqual(nova.pickClientAsset(rel, '1.21.1').sha256, digest.slice(7));
+  // Sin digest de GitHub: se elige, pero sin huella; installNovaClient se niega a instalarlo (abajo).
+  assert.strictEqual(nova.pickClientAsset({ assets: [{ name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'a.jar' }] }, '1.21.1').sha256, null);
   assert.strictEqual(nova.pickClientAsset(rel, '1.20.1'), null); // enlace fuera de GitHub
   assert.strictEqual(nova.pickClientAsset(rel, '1.8.9'), null);
   const os = require('os'); const fs = require('fs'); const path = require('path');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-'));
   fs.mkdirSync(path.join(dir, 'mods')); fs.writeFileSync(path.join(dir, 'mods', 'nova-client-0.0.1+mc1.21.1.jar'), 'old');
-  const got = await nova.installNovaClient({ request: async () => rel, download: async () => Buffer.from('jar'), dir, mc: '1.21.1' });
+  const got = await nova.installNovaClient({ request: async () => rel, download: async () => jarBytes, dir, mc: '1.21.1' });
   assert.strictEqual(got, 'nova-client-0.1.0+mc1.21.1.jar');
   assert.deepStrictEqual(fs.readdirSync(path.join(dir, 'mods')), ['nova-client-0.1.0+mc1.21.1.jar']);
+  const badDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-bad-'));
+  await assert.rejects(
+    nova.installNovaClient({ request: async () => rel, download: async () => Buffer.from('modificado'), dir: badDir, mc: '1.21.1' }),
+    /SHA-256/
+  );
+  const noDigest = { assets: [{ name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'a.jar' }] };
+  await assert.rejects(nova.installNovaClient({ request: async () => noDigest, download: async () => jarBytes, dir: badDir, mc: '1.21.1' }), /huella/);
+
+  // Con llave Nova: solo vale el manifiesto firmado de la release, no el digest de GitHub.
+  {
+    const firma = require('../lib/firma');
+    const kp = crypto.generateKeyPairSync('ed25519');
+    const priv = kp.privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const pub = kp.publicKey.export({ type: 'spki', format: 'pem' });
+    const manBytes = Buffer.from(JSON.stringify({ v: 1, version: '0.1.0', files: { 'nova-client-0.1.0+mc1.21.1.jar': digest.slice(7) } }));
+    const sigBytes = Buffer.from(JSON.stringify(firma.firmar('nova-client', manBytes, priv)));
+    const signedRel = { assets: [...rel.assets,
+      { name: 'nova-client.json', browser_download_url: base + 'nova-client.json' },
+      { name: 'nova-client.firma.json', browser_download_url: base + 'nova-client.firma.json' }] };
+    const files = { 'nova-client.json': manBytes, 'nova-client.firma.json': sigBytes };
+    const dlf = (over = {}) => async (u) => ({ ...files, ...over })[decodeURIComponent(u.split('/').pop())] || jarBytes;
+    const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-signed-'));
+    assert.strictEqual(await nova.installNovaClient({ request: async () => signedRel, download: dlf(), dir: d2, mc: '1.21.1', pub }), 'nova-client-0.1.0+mc1.21.1.jar');
+    // Sin manifiesto firmado: no se instala aunque GitHub dé su digest (firma obligatoria).
+    await assert.rejects(nova.installNovaClient({ request: async () => rel, download: dlf(), dir: d2, mc: '1.21.1', pub }), /manifiesto firmado/);
+    // Firma aún no obligatoria: sin manifiesto usa el digest de GitHub; con manifiesto, lo verifica igual.
+    const d3 = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-opt-'));
+    assert.strictEqual(await nova.installNovaClient({ request: async () => rel, download: dlf(), dir: d3, mc: '1.21.1', pub, obligatoria: false }), 'nova-client-0.1.0+mc1.21.1.jar');
+    const evilOpt = Buffer.from(JSON.stringify({ v: 1, version: '0.1.0', files: { 'nova-client-0.1.0+mc1.21.1.jar': 'c'.repeat(64) } }));
+    await assert.rejects(nova.installNovaClient({ request: async () => signedRel, download: dlf({ 'nova-client.json': evilOpt }), dir: d3, mc: '1.21.1', pub, obligatoria: false }), /no coincide con su firma/);
+    // Un manifiesto a medias (solo uno de los dos archivos) nunca vale.
+    const half = { assets: [...rel.assets, { name: 'nova-client.json', browser_download_url: base + 'nova-client.json' }] };
+    await assert.rejects(nova.installNovaClient({ request: async () => half, download: dlf(), dir: d3, mc: '1.21.1', pub, obligatoria: false }), /manifiesto firmado/);
+    // Manifiesto cambiado después de firmar.
+    const evil = Buffer.from(JSON.stringify({ v: 1, version: '0.1.0', files: { 'nova-client-0.1.0+mc1.21.1.jar': 'b'.repeat(64) } }));
+    await assert.rejects(nova.installNovaClient({ request: async () => signedRel, download: dlf({ 'nova-client.json': evil }), dir: d2, mc: '1.21.1', pub }), /no coincide con su firma/);
+    // Firmado con otra llave.
+    const other = crypto.generateKeyPairSync('ed25519').privateKey.export({ type: 'pkcs8', format: 'pem' });
+    await assert.rejects(nova.installNovaClient({ request: async () => signedRel, download: dlf({ 'nova-client.firma.json': Buffer.from(JSON.stringify(firma.firmar('nova-client', manBytes, other))) }), dir: d2, mc: '1.21.1', pub }), /no es válida/);
+    // Firma buena pero el .jar descargado está alterado.
+    await assert.rejects(nova.installNovaClient({ request: async () => signedRel, download: async (u) => (/nova-client\.(firma\.)?json$/.test(u) ? files[u.split('/').pop()] : Buffer.from('alterado')), dir: fs.mkdtempSync(path.join(os.tmpdir(), 'nova-alt-')), mc: '1.21.1', pub }), /SHA-256/);
+  }
 
   // Sodium + Iris: elige una pareja que no se rompa.
   {
