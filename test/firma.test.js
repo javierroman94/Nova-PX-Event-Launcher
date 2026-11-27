@@ -71,6 +71,9 @@ assert.strictEqual(f.rutaFirma('data/manifest.json'), 'data/manifest.firma.json'
   const reader = (fs2) => async (n) => { if (!(n in fs2)) throw new Error('HTTP 404'); return fs2[n]; };
   const base = { pub: A.pub, obligatoria: true, wait: async () => {} };
   assert.deepStrictEqual((await leerFirmado({ ...base, name: 'manifest', getText: reader(files) })).data, { mods: [] });
+  // Llave pública ausente: no debe degradarse silenciosamente cuando la firma es obligatoria.
+  await assert.rejects(() => leerFirmado({ ...base, pub: null, name: 'manifest', getText: reader(files) }), /falta la llave pública/);
+  assert.deepStrictEqual((await leerFirmado({ ...base, pub: null, obligatoria: false, name: 'manifest', getText: reader(files) })).data, { mods: [] }, 'sin llave solo se permite cuando la firma es opcional');
   assert.deepStrictEqual((await leerFirmado({ ...base, name: 'news', getText: reader(files) })).data, [], 'lo no crítico no pide firma');
   const tampered = { ...files, 'manifest.json': '{"mods":[{"url":"https://malo"}]}\n' };
   await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader(tampered) }), /no válida/);
