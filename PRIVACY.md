@@ -4,7 +4,7 @@ Nova PX Event Launcher is an open-source Minecraft launcher. This page explains 
 
 **Stays on your computer**
 - Your settings, modpacks, worlds, skins and saved accounts.
-- Microsoft sign-in tokens are encrypted with your operating system's secure storage. They are never sent to Nova PX.
+- Microsoft refresh tokens saved on disk are encrypted with your operating system's secure storage; access tokens stay in memory. Microsoft/Xbox/Minecraft tokens are never sent to Nova PX.
 
 **Sent only if you allow it (Settings → share usage)**
 - An anonymous usage counter: a random installation id, launcher version, operating system and a boolean indicating whether the signed-in account is premium. No Microsoft, Xbox or Minecraft token is sent. No IP address is stored for this usage counter.
@@ -14,7 +14,7 @@ Nova PX Event Launcher is an open-source Minecraft launcher. This page explains 
 - Every ~20 seconds the launcher asks a tiny public endpoint (a Nova PX Cloudflare Worker, or GitHub directly if "share usage" is off) for a revision code, to refresh news and events quickly after an administrator publishes. No personal data is sent.
 
 **Friends and chat**
-- If you use friends or chat, your nickname, friend list and messages are stored on a Nova PX server (Cloudflare) so they can be delivered.
+- If you use friends or chat, your nickname, friend list and messages are stored on a Nova PX server (Cloudflare) so they can be delivered. A separate random presence token is sent to authenticate your nickname; it is encrypted with safeStorage on your device and only its hash is stored on the server. It is not a Microsoft, Xbox or Minecraft token.
 - Friends use a live connection to the Nova PX server while the launcher is open, so messages, requests, invitations and online status arrive instantly. Your status (available, away, do not disturb, invisible) and optional status text are visible only to your friends. Blocked players cannot send you requests or messages. Party and play invitations store only the nicknames involved, the event or modpack name, its share code and (for your own profiles) the server address to join, for 30 minutes.
 - Nickname verification (premium accounts only): the launcher asks Mojang's official session server to confirm that you own the account, exactly as when joining a premium server. Your Minecraft access token is sent only to Mojang, never to Nova PX.
 - Friend profile card: unless you turn off "Mostrar a mis amigos qué estoy jugando y mis horas jugadas" in Settings, your friends can see what you are playing (the event or modpack name) and your total hours played with the launcher. Turning it off removes it from the server.
