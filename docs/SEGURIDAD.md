@@ -44,7 +44,7 @@ Revisión estática de seguridad y privacidad del repositorio público, actualiz
 
 **Comprobado en el commit revisado**
 - GitHub Actions: «Tests y lint» y los dos «Pruebas y auditoría de seguridad» terminaron en verde.
-- Cloudflare Workers Builds generó el Preview de la rama (`Workers Builds: nova-px-event-launcher`, éxito) en el último commit. El comentario del bot en el PR todavía muestra el primer commit que construyó.
+- Cloudflare Workers Builds generó el Preview de la rama (`Workers Builds: nova-px-event-launcher`, éxito) y el comentario del bot en el PR lo confirma: Preview del commit `204b661` (build y despliegue correctos).
 - Producción sin cambios: la última versión del Worker principal es del 24-11-2026, subida por API. Ninguna build de esta rama llegó a producción.
 
 **Pendiente (no se puede cerrar desde el código)**
