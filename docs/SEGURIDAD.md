@@ -4,7 +4,7 @@ Revisión estática de seguridad y privacidad del repositorio público, actualiz
 
 ## Verificado y correcto
 - En los archivos de código y configuración revisados no se encontró un valor real de secreto. No se verificaron exhaustivamente todos los commits históricos ni los valores del almacén de secretos de Cloudflare; no debe afirmarse que esa comprobación está completa.
-- Los tokens de Microsoft, Xbox y Minecraft nunca salen al Worker: `lib/telemetry.js` solo envía id aleatorio, nick, premium, versión y sistema.
+- Los tokens de Microsoft, Xbox y Minecraft nunca salen al Worker: `lib/telemetry.js` solo envía id aleatorio, nick, premium, versión y sistema. Amigos sí envía una credencial aleatoria de presencia separada; va cifrada en el dispositivo y el Worker conserva solo su hash.
 - El token de renovación, el token de administrador, el webhook y el token local de presencia se guardan con `safeStorage`, sin respaldo en texto plano. Si no hay almacén seguro, amigos no persiste el token.
 - Ventanas con `contextIsolation`, `sandbox`, `webSecurity: true` y sin `nodeIntegration`; CSP sin estilos inline; permisos del navegador denegados; bloqueo de `will-navigate` y `will-redirect`; IPC limitado al marco principal.
 - `ADMIN_KEY` está configurado como secreto de Cloudflare. La rama de auditoría añade `LIMITER` y `ADMIN_LIMITER` al Worker principal; esos bindings aún no están desplegados. Los límites de Cloudflare son aproximados por ubicación, no cuotas globales estrictas.
@@ -19,7 +19,7 @@ Revisión estática de seguridad y privacidad del repositorio público, actualiz
 | Mods de packs sin huella robusta | SHA-256 preferido en manifiestos nuevos; SHA-1 se conserva para compatibilidad con manifiestos antiguos |
 | `/ads/track` y `/ping` sin límite; claves inventadas en KV | Límite por IP, solo anuncios que existen en `data/ads.json`, `X-Content-Type-Options` |
 | Amigos en tiempo real (`/presence/ws`, 1.0.189) | El nick va en la URL y el token en el primer mensaje; sin autenticar se cierra; máximo 3 conexiones por nick y 30 conexiones por minuto por IP; mensajes limitados (20/min), solicitudes (15/h), invitaciones (20/10 min); bloquear oculta al bloqueado |
-| Códigos para compartir modpacks (`/pack`, 1.0.188) | Solo ids públicos de Modrinth validados (`worker/pack.mjs`), 6 creaciones por hora por IP, 40 lecturas por minuto, caducan a los 90 días; el launcher vuelve a validar lo que recibe y solo baja de `cdn.modrinth.com` con su sha1 |
+| Códigos para compartir modpacks (`/pack`, 1.0.188) | Solo ids públicos de Modrinth validados (`worker/pack.mjs`), 6 creaciones por hora por IP, 40 lecturas por minuto, caducan a los 90 días; el launcher vuelve a validar lo que recibe y solo baja de `cdn.modrinth.com` con su huella SHA-512; manifiestos de packs nuevos prefieren SHA-256 y los antiguos mantienen SHA-1 |
 | Intentos administrativos limitados solo en memoria | Comparación de hashes, bloqueo local y binding `ADMIN_LIMITER` para intentos fallidos (pendiente de despliegue) |
 | Token local de presencia en texto plano | Se migra a `safeStorage`; sin almacén seguro se elimina el formato antiguo y no se persiste |
 | `safeStorage` en Linux podía usar `basic_text` (llave fija) | `lib/secure-storage.js` lo trata como "sin almacén seguro" |
