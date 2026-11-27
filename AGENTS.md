@@ -65,7 +65,7 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 ### Worker de Cloudflare
 - Las rutas administrativas exigen `ADMIN_KEY` como secreto de Cloudflare y usan `ADMIN_LIMITER` además del contador local. Las rutas públicas usan `LIMITER` y límites por ruta.
 - Los Rate Limiting bindings de Cloudflare son aproximados por ubicación; no equivalen a un contador global estricto. Para cuotas globales atómicas, usa Durable Objects (el Worker PX usa `PetQuota` y falla cerrado sin el binding `QUOTA`).
-- El Worker principal tiene Workers Builds: cada rama crea un Preview y la rama de producción de Cloudflare despliega producción (hoy mal configurada, ver `docs/SEGURIDAD.md` punto 13). El Worker PX no tiene Workers Builds y se despliega a mano. Nunca despliegues producción desde una auditoría.
+- El Worker principal tiene Workers Builds: cada rama crea un Preview y la rama de producción es `main` (desde el 27-11-2026): **unir a `main` despliega el Worker principal en producción**. `main` tiene una regla que impide borrarla y reescribir su historial, pero no exige PR porque el panel de administración publica datos directo en `main`. El Worker PX no tiene Workers Builds y se despliega a mano (ya tiene `PetQuota`). Nunca despliegues producción desde una auditoría.
 - Nada que escriba en KV sin límite ni sin validar el contenido. Los incrementos `get` + `put` en KV no son atómicos y no sirven como cuota estricta bajo concurrencia.
 
 ### Dependencias
