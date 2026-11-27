@@ -267,8 +267,12 @@ async function loadData(name) {
 const firmaLib = require('./lib/firma');
 let FIRMA_PUB = null;
 try { FIRMA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'firma-datos.pub.pem'), 'utf8'); } catch {}
-// Llave de las publicaciones automáticas de Nova (lista del loader y Nova Client). Mientras no venga en el
-// launcher, esos archivos se aceptan sin firma (como hasta 1.0.193); en cuanto viene, la firma es obligatoria.
+// Llave de las publicaciones automáticas de Nova (lista del loader y Nova Client).
+//  - Sin config/nova-firma.pub.pem: se aceptan sin firma (como hasta 1.0.193).
+//  - Con la pública y novaFirmaObligatoria=false: una firma presente se verifica (si es mala, se rechaza),
+//    pero lo que llega sin firma se sigue aceptando. Sirve para comprobar las firmas antes de exigirlas.
+//  - Con la pública y novaFirmaObligatoria=true: sin firma válida no se usa nada.
+const NOVA_OBLIGATORIA = !!config.novaFirmaObligatoria;
 let NOVA_PUB = null;
 try { NOVA_PUB = fs.readFileSync(path.join(__dirname, 'config', 'nova-firma.pub.pem'), 'utf8'); } catch {}
 async function fetchDataVerified(base, name) {
@@ -278,7 +282,7 @@ async function fetchDataVerified(base, name) {
     name,
     getText: async (file) => (await fetchWithTimeout(`${base}/${file}?t=${Date.now()}`, 4000)).text(),
     pub: nova ? NOVA_PUB : FIRMA_PUB,
-    obligatoria: nova ? !!NOVA_PUB : !!config.firmaObligatoria,
+    obligatoria: nova ? !!NOVA_PUB && NOVA_OBLIGATORIA : !!config.firmaObligatoria,
     known
   });
 }
@@ -3386,7 +3390,7 @@ const extras = require('./lib/main/ipc-extras')({
 
 // Loader Nova: lista fija de mods, "Actualizar Nova" y gráficos según la PC (lib/main/ipc-nova.js).
 const nova = require('./lib/main/ipc-nova')({
-  novaPub: NOVA_PUB, ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
+  novaPub: NOVA_PUB, novaObligatoria: NOVA_OBLIGATORIA, ipcMain, fs, path, app, readModpacks, writeModpacks, packRoot, loadData, send, pushLog, apiRequest, downloadBuffer, novaLib, assertEditable
 });
 
 ipcMain.handle('game:launch', async (_e, opts = {}) => {

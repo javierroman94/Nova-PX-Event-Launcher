@@ -67,8 +67,16 @@ const packs = require('../lib/packs');
     const dlf = (over = {}) => async (u) => ({ ...files, ...over })[decodeURIComponent(u.split('/').pop())] || jarBytes;
     const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-signed-'));
     assert.strictEqual(await nova.installNovaClient({ request: async () => signedRel, download: dlf(), dir: d2, mc: '1.21.1', pub }), 'nova-client-0.1.0+mc1.21.1.jar');
-    // Sin manifiesto firmado: no se instala aunque GitHub dé su digest.
+    // Sin manifiesto firmado: no se instala aunque GitHub dé su digest (firma obligatoria).
     await assert.rejects(nova.installNovaClient({ request: async () => rel, download: dlf(), dir: d2, mc: '1.21.1', pub }), /manifiesto firmado/);
+    // Firma aún no obligatoria: sin manifiesto usa el digest de GitHub; con manifiesto, lo verifica igual.
+    const d3 = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-opt-'));
+    assert.strictEqual(await nova.installNovaClient({ request: async () => rel, download: dlf(), dir: d3, mc: '1.21.1', pub, obligatoria: false }), 'nova-client-0.1.0+mc1.21.1.jar');
+    const evilOpt = Buffer.from(JSON.stringify({ v: 1, version: '0.1.0', files: { 'nova-client-0.1.0+mc1.21.1.jar': 'c'.repeat(64) } }));
+    await assert.rejects(nova.installNovaClient({ request: async () => signedRel, download: dlf({ 'nova-client.json': evilOpt }), dir: d3, mc: '1.21.1', pub, obligatoria: false }), /no coincide con su firma/);
+    // Un manifiesto a medias (solo uno de los dos archivos) nunca vale.
+    const half = { assets: [...rel.assets, { name: 'nova-client.json', browser_download_url: base + 'nova-client.json' }] };
+    await assert.rejects(nova.installNovaClient({ request: async () => half, download: dlf(), dir: d3, mc: '1.21.1', pub, obligatoria: false }), /manifiesto firmado/);
     // Manifiesto cambiado después de firmar.
     const evil = Buffer.from(JSON.stringify({ v: 1, version: '0.1.0', files: { 'nova-client-0.1.0+mc1.21.1.jar': 'b'.repeat(64) } }));
     await assert.rejects(nova.installNovaClient({ request: async () => signedRel, download: dlf({ 'nova-client.json': evil }), dir: d2, mc: '1.21.1', pub }), /no coincide con su firma/);
