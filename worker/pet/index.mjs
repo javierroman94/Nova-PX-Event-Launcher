@@ -63,15 +63,6 @@ export function buildSystem(r) {
   return s;
 }
 
-// Respaldo con KV (lo que había antes): get + put no es atómico, así que con mucha gente a la vez
-// el límite se puede pasar por unos pocos mensajes. Se usa solo si el Worker no tiene el binding QUOTA.
-async function bump(env, key, limit, ttl = 172800) {
-  const n = Number(await env.PET.get(key)) || 0;
-  if (n >= limit) return { ok: false, n };
-  await env.PET.put(key, String(n + 1), { expirationTtl: ttl });
-  return { ok: true, n: n + 1 };
-}
-
 /*
  * Cuotas diarias atómicas: un Durable Object por día guarda los contadores (global, por instalación y por IP).
  * Un Durable Object atiende una petición a la vez, así que «mirar y sumar» no se cruza entre usuarios:
@@ -97,20 +88,13 @@ export class PetQuota {
   async alarm() { await this.state.storage.deleteAll(); }
 }
 
+// Sin el binding QUOTA no se atiende (fail-closed): los contadores de KV (get + put) no son atómicos
+// y con muchos mensajes a la vez dejarían pasar más de la cuenta.
 async function bumpAll(env, d, list) {
-  if (env.QUOTA) {
-    const stub = env.QUOTA.get(env.QUOTA.idFromName(`day:${d}`));
-    const r = await (await stub.fetch('https://quota/bump', { method: 'POST', body: JSON.stringify({ keys: list }) })).json();
-    if (!r.ok) return { ok: false, full: r.full };
-    return { ok: true, n: r.n };
-  }
-  const n = {};
-  for (const x of list) {
-    const b = await bump(env, x.k, x.limit);
-    if (!b.ok) return { ok: false, full: x.k };
-    n[x.k] = b.n;
-  }
-  return { ok: true, n };
+  const stub = env.QUOTA.get(env.QUOTA.idFromName(`day:${d}`));
+  const r = await (await stub.fetch('https://quota/bump', { method: 'POST', body: JSON.stringify({ keys: list }) })).json();
+  if (!r.ok) return { ok: false, full: r.full };
+  return { ok: true, n: r.n };
 }
 
 // Filtro de salida (los modelos abiertos fallan más que Claude): si algo no apto se cuela, se cambia por una broma segura.
@@ -143,6 +127,10 @@ async function callModel(env, r, fetchFn) {
 
 export async function handleChat(request, env, fetchFn = fetch) {
   if (!env.ANTHROPIC_KEY && !env.AI) return json({ error: 'off' }, 503);
+  if (!env.QUOTA || typeof env.QUOTA.idFromName !== 'function') {
+    console.error('pet: falta el binding QUOTA; no se atiende sin cuotas atómicas');
+    return json({ error: 'quota_unavailable' }, 503);
+  }
   const text = await request.text();
   if (text.length > 8000) return json({ error: 'too_big' }, 413);
   let b; try { b = JSON.parse(text); } catch { return json({ error: 'bad_json' }, 400); }
@@ -172,7 +160,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'POST' && url.pathname === '/chat') return handleChat(request, env);
-    if (url.pathname === '/health') return json({ ok: true, on: !!(env.ANTHROPIC_KEY || env.AI), engine: env.ANTHROPIC_KEY ? 'claude' : env.AI ? 'workers-ai' : 'none' });
+    if (url.pathname === '/health') return json({ ok: true, on: !!((env.ANTHROPIC_KEY || env.AI) && env.QUOTA), quota: !!env.QUOTA, engine: env.ANTHROPIC_KEY ? 'claude' : env.AI ? 'workers-ai' : 'none' });
     return json({ error: 'not_found' }, 404);
   }
 };
