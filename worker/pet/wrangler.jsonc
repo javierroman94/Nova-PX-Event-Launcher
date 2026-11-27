@@ -1,12 +1,16 @@
 {
-  // PX con IA: intermediario hacia Anthropic con límites diarios. Sin clave usa Workers AI (binding AI). Si existe el secreto ANTHROPIC_KEY, usa Claude (wrangler secret put ANTHROPIC_KEY).
+  // PX con IA: intermediario con límites diarios. Sin clave usa Workers AI (binding AI); si existe el secreto
+  // ANTHROPIC_KEY, usa Claude (wrangler secret put ANTHROPIC_KEY). Se despliega a mano:
+  // `npx wrangler deploy --config worker/pet/wrangler.jsonc` (unir a main no despliega nada).
   "name": "nova-px-pet",
   "main": "index.mjs",
   "compatibility_date": "2025-01-01",
   "workers_dev": true,
   "ai": { "binding": "AI" },
   "kv_namespaces": [{ "binding": "PET", "id": "50dcd679d1f44a838dd3ad2e4495a939" }],
-  // Cuotas diarias atómicas (PetQuota). Sin este binding el Worker vuelve a los contadores de KV.
+  // Cuotas diarias atómicas (Durable Object PetQuota, uno por día). Sin este binding el Worker NO atiende
+  // (falla cerrado, 503 quota_unavailable). La migración v1 crea la clase al desplegar; hoy no está desplegada.
+  // El KV PET ya no se usa para cuotas; se deja hasta confirmar que no hace falta.
   "durable_objects": { "bindings": [{ "name": "QUOTA", "class_name": "PetQuota" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PetQuota"] }],
   "vars": { "PET_USER_DAILY": "30", "PET_IP_DAILY": "80", "PET_GLOBAL_DAILY": "3000", "PET_MODEL": "claude-haiku-5-5" }
