@@ -157,7 +157,7 @@
     return pickLines.map((l) => l
       .replace(/([A-Za-z]:\\Users\\)[^\\\s"']+/gi, '$1<usuario>')
       .replace(/(\/(?:home|Users)\/)[^\/\s"']+/g, '$1<usuario>')
-      .replace(/(--(?:accessToken|refreshToken|idToken|session|uuid|username|clientId|xuid|userProperties)\s+)\S+/gi, '$1<oculto>')
+      .replace(/(--(?:accessToken|refreshToken|idToken|session|uuid|username|clientId|xuid|userProperties)(?:\s+|=))\S+/gi, '$1<oculto>')
       .replace(/((?:access|refresh|id|xsts)[_-]?token["'=:\s]+)[\w.-]+/gi, '$1<oculto>')
       .replace(/Bearer\s+[\w.-]+/gi, 'Bearer <oculto>')
       .replace(/[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}/g, '<oculto>')
