@@ -21,6 +21,7 @@ fs.writeFileSync(path.join(bin, 'curl'), `#!/usr/bin/env bash
 out=""; url=""; method=GET
 while [ $# -gt 0 ]; do case "$1" in --output) out="$2"; shift;; -X) method="$2"; shift;; https://*) url="$1";; esac; shift; done
 echo "$method $url" >> "${calls}"
+state="${calls}.worker"
 case "\${MOCK:-ok}" in
   neterr) exit 7;;
   fail) echo '{"success":false,"errors":[{"message":"DATO-PRIVADO"}]}' > "$out"; exit 22;;
