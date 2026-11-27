@@ -45,6 +45,8 @@ jobs:
 
       - name: Probar migración aislada con API simulada
         run: node test/prueba-migracion.test.js
+        env:
+          PRUEBA_MIGRACION_COMPLETA: '1'
 
       - name: Restaurar Node.js 20 para el launcher
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5

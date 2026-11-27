@@ -163,6 +163,15 @@ cat > "$TMP/wrangler.jsonc" <<JSON
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Presence"] }]
 }
 JSON
+# Defensa extra: el config debe apuntar al Worker temporal, nunca a producción.
+if ! node -e '
+  const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+  const prod = process.argv.slice(3);
+  process.exit(c.name === process.argv[2] && !prod.includes(c.name) && c.workers_dev === false ? 0 : 1);
+' "$TMP/wrangler.jsonc" "$NOMBRE" "${PRODUCCION[@]}"; then
+  echo "El wrangler.jsonc temporal no apunta al Worker de prueba; se cancela." >&2
+  exit 1
+fi
 # --yes y versión fija: sin una pregunta escondida en el log ni otra versión.
 if ! (cd "$TMP" && npx --prefix "$RAIZ" --yes "$WRANGLER" deploy --config wrangler.jsonc) > "$TMP/paso2.log" 2>&1; then
   echo "RESULTADO: wrangler falló en el Worker desechable. Últimas líneas:"

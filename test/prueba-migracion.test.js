@@ -19,9 +19,15 @@ const calls = path.join(bin, 'calls.log');
 const state = `${calls}.worker`;
 fs.writeFileSync(path.join(bin, 'curl'), `#!/usr/bin/env bash
 out=""; url=""; method=GET
-while [ $# -gt 0 ]; do case "$1" in --output) out="$2"; shift;; -X) method="$2"; shift;; https://*) url="$1";; esac; shift; done
+while [ $# -gt 0 ]; do case "$1" in
+  --output) out="$2"; shift;;
+  -X) method="$2"; shift;;
+  -F) f="$2"; if [[ "$f" == metadata=@* ]]; then m="\${f#metadata=@}"; cat "\${m%%;*}" >> "${calls}.meta"; fi; shift;;
+  https://*) url="$1";;
+esac; shift; done
 echo "$method $url" >> "${calls}"
 state="${calls}.worker"
+tag="v1"; if [[ -s "${calls}.tag" ]]; then tag="$(cat "${calls}.tag")"; fi
 case "\${MOCK:-ok}" in
   neterr) exit 7;;
   fail) echo '{"success":false,"errors":[{"message":"DATO-PRIVADO"}]}' > "$out"; exit 22;;
@@ -34,7 +40,7 @@ fi
 if [[ "$method" == "DELETE" ]]; then rm -f "$state"; fi
 if [[ "$url" == */workers/scripts ]]; then
   if [[ -s "$state" ]]; then
-    printf '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"},{"id":"%s","migration_tag":"v1"}]}' "$(cat "$state")" > "$out"
+    printf '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"},{"id":"%s","migration_tag":"%s"}]}' "$(cat "$state")" "$tag" > "$out"
   else
     echo '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"}]}' > "$out"
   fi
@@ -42,13 +48,15 @@ else echo '{"success":true,"errors":[],"result":{}}' > "$out"; fi
 `, { mode: 0o755 });
 fs.writeFileSync(path.join(bin, 'npx'), `#!/usr/bin/env bash
 echo "$*" >> "${calls}.npx"
+cat "$PWD/wrangler.jsonc" > "${calls}.wrangler" 2>/dev/null || true
+if [[ -n "\${MOCK_TAG_AFTER:-}" ]]; then printf '%s' "$MOCK_TAG_AFTER" > "${calls}.tag"; fi
+[[ "\${MOCK_NPX:-ok}" == "fail" ]] && exit 1
 exit 0
 `, { mode: 0o755 });
 
-function run(mock, args = []) {
-  fs.rmSync(calls, { force: true });
-  fs.rmSync(state, { force: true });
-  fs.rmSync(`${calls}.npx`, { force: true });
+const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '');
+function run(mock, args = [], extra = {}) {
+  for (const f of [calls, state, `${calls}.npx`, `${calls}.meta`, `${calls}.wrangler`, `${calls}.tag`]) fs.rmSync(f, { force: true });
   const r = spawnSync('bash', [script, ...args], {
     encoding: 'utf8',
     env: {
@@ -57,11 +65,11 @@ function run(mock, args = []) {
       MOCK: mock,
       CLOUDFLARE_API_TOKEN: 'TOKEN-DE-PRUEBA-NO-DEBE-SALIR',
       CLOUDFLARE_ACCOUNT_ID: '0123456789abcdef0123456789abcdef',
+      ...extra,
     },
   });
   const log = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n') : [];
-  const npx = fs.existsSync(`${calls}.npx`) ? fs.readFileSync(`${calls}.npx`, 'utf8') : '';
-  return { status: r.status, out: r.stdout + r.stderr, log, npx };
+  return { status: r.status, out: r.stdout + r.stderr, log, npx: read(`${calls}.npx`), meta: read(`${calls}.meta`), wrangler: read(`${calls}.wrangler`) };
 }
 
 // Solo lectura: GET de la lista y ninguna escritura.
@@ -86,6 +94,8 @@ for (const m of ['ok', 'fail']) assert.ok(!run(m, ['--aislada']).out.includes('T
 const [maj, min] = process.versions.node.split('.').map(Number);
 r = run('ok', ['--aislada']);
 if (!(maj > 22 || (maj === 22 && min >= 12))) {
+  // En el paso de CI con Node 22.12 se exige la prueba completa: si no, sería un verde falso.
+  assert.notStrictEqual(process.env.PRUEBA_MIGRACION_COMPLETA, '1', `se pidió la prueba completa, pero Node es ${process.versions.node}`);
   assert.notStrictEqual(r.status, 0);
   assert.match(r.out, /Node 22\.12/);
   assert.ok(r.log.every((l) => l.startsWith('GET ')), 'sin Node 22.12 no escribe nada');
@@ -102,6 +112,25 @@ for (const l of writes) {
 assert.ok(writes.some((l) => l.startsWith('DELETE ')), 'borra el Worker de prueba');
 assert.match(r.npx, /--yes wrangler@4\.168\.0 deploy --config wrangler\.jsonc/);
 assert.ok(!fs.existsSync(state), 'la limpieza elimina el Worker temporal simulado');
+
+// Lo que se sube y lo que se despliega apunta al Worker temporal, con la migración real.
+const temporal = writes.find((l) => l.startsWith('PUT ')).split('/').pop();
+const meta = JSON.parse(r.meta);
+assert.deepStrictEqual(meta.migrations, { new_tag: 'v1', new_sqlite_classes: ['Presence'] }, 'reproduce Presence con v1');
+assert.ok(meta.bindings.some((b) => b.type === 'durable_object_namespace' && b.class_name === 'Presence'));
+const cfg = JSON.parse(r.wrangler);
+assert.strictEqual(cfg.name, temporal, 'wrangler despliega el Worker temporal');
+assert.ok(!['nova-px-event-launcher', 'nova-px-pet'].includes(cfg.name), 'wrangler nunca apunta a producción');
+assert.strictEqual(cfg.workers_dev, false);
+const repo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'wrangler.jsonc'), 'utf8').replace(/^\s*\/\/.*$/gm, ''));
+assert.deepStrictEqual(cfg.migrations, repo.migrations, 'usa la misma migración que wrangler.jsonc');
+
+// Si wrangler falla o la etiqueta cambia, la prueba falla y borra el Worker igual.
+for (const [extra, desc] of [[{ MOCK_NPX: 'fail' }, 'wrangler falla'], [{ MOCK_TAG_AFTER: 'v2' }, 'la etiqueta cambia']]) {
+  const x = run('ok', ['--aislada'], extra);
+  assert.notStrictEqual(x.status, 0, `${desc}: debe fallar`);
+  assert.ok(x.log.some((l) => l.startsWith('DELETE ')), `${desc}: debe borrar el Worker`);
+}
 
 assert.notStrictEqual(run('ok', ['--otra']).status, 0, 'rechaza opciones desconocidas');
 
