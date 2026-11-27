@@ -1,11 +1,11 @@
 {
   // Contador de usuarios, amigos y estado en línea de Nova PX (ver docs/CLOUDFLARE.md y docs/SEGURIDAD.md).
-  // Workers Builds SÍ está conectado a este repositorio: cada push a una rama crea un Preview (URL aparte, sin el
-  // KV de producción). La rama de PRODUCCIÓN configurada en Cloudflare es «novapx-check-1794018615182» (rama vieja,
-  // sin proteger): un push ahí despliega producción con `npx wrangler deploy`. Unir a main hoy solo crea un Preview.
+  // Workers Builds está conectado a este repositorio: cada push a otra rama crea un Preview (URL aparte, sin el
+  // KV de producción). La rama de PRODUCCIÓN es `main` (desde el 27-11-2026): unir a main despliega producción con
+  // `npx wrangler deploy`, solo si cambian worker/*, wrangler.jsonc, package.json o package-lock.json.
   // Ver docs/SEGURIDAD.md, punto 13. El secreto ADMIN_KEY vive en Cloudflare.
-  // OJO migración: en Cloudflare el script tiene migration_tag vacío y la clase Presence (SQLite) ya existe;
-  // probar antes el primer `wrangler deploy` (ver docs/SEGURIDAD.md, punto 12).
+  // Migración: en Cloudflare el script ya está en migration_tag v1 (clase Presence, SQLite). Una clase nueva
+  // necesita otra migración con tag nuevo (ver docs/SEGURIDAD.md, punto 12).
   "name": "nova-px-event-launcher",
   "main": "worker/index.mjs",
   "compatibility_date": "2025-01-01",
