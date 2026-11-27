@@ -77,7 +77,7 @@ if (!(maj > 22 || (maj === 22 && min >= 12))) {
 const writes = r.log.filter((l) => !l.startsWith('GET '));
 assert.ok(writes.length >= 2, r.log.join('\n'));
 for (const l of writes) {
-  assert.match(l, /\/workers\/scripts\/nova-px-prueba-migracion-\d+(\?force=true)?$/, l);
+  assert.match(l, /\/workers\/scripts\/nova-px-prueba-migracion-\d+-[a-fA-F0-9]{32}(\?force=true)?$/, l);
   assert.ok(!/\/nova-px-(event-launcher|pet)\b/.test(l), `escribió en producción: ${l}`);
 }
 assert.ok(writes.some((l) => l.startsWith('DELETE ')), 'borra el Worker de prueba');
