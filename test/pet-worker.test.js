@@ -20,6 +20,8 @@ const assert = require('assert');
   assert.deepStrictEqual(r.messages, [{ role: 'user', content: 'a\nb' }]);
   assert.strictEqual(r.log, '', 'el registro solo se acepta en modo help');
   assert.ok(W.readBody({ id, mode: 'help', messages: [{ role: 'user', content: 'x' }], log: 'Exception' }).log === 'Exception');
+  assert.strictEqual(W.readBody({ id, mode: 'help', messages: [{ role: 'user', content: 'x' }], log: 'refresh_token=abcdefghijklmnop' }).error, 'secret');
+  assert.strictEqual(W.readBody({ id, mode: 'help', messages: [{ role: 'user', content: 'x' }], log: '--session abcdefghijklmnop' }).error, 'secret');
   assert.ok(/registro/.test(W.buildSystem({ mode: 'help', log: 'boom', memory: 'm', messages: [] })));
 
   // sin clave: apagado

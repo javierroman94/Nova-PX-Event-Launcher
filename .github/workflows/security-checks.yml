@@ -1,0 +1,62 @@
+name: Pruebas y auditoría de seguridad
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - 'fix/**'
+      - 'revision-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias bloqueadas
+        run: npm ci
+
+      - name: Configurar Node.js para Wrangler
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22.12.0
+
+      - name: Validar configuración del Worker principal
+        run: npx --yes wrangler@4.168.0 deploy --dry-run --config wrangler.jsonc
+
+      - name: Validar configuración del Worker PX
+        run: npx --yes wrangler@4.168.0 deploy --dry-run --config worker/pet/wrangler.jsonc
+
+      - name: Restaurar Node.js 20 para el launcher
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+
+      - name: Revisar estilo y errores
+        run: npm run lint
+
+      - name: Ejecutar pruebas
+        run: npm test
+
+      - name: Probar arranque simulado
+        run: npm run smoke
+
+      - name: Revisar vulnerabilidades de producción
+        run: npm audit --omit=dev
+        continue-on-error: true
