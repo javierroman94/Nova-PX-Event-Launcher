@@ -63,11 +63,54 @@ export function buildSystem(r) {
   return s;
 }
 
+// Respaldo con KV (lo que había antes): get + put no es atómico, así que con mucha gente a la vez
+// el límite se puede pasar por unos pocos mensajes. Se usa solo si el Worker no tiene el binding QUOTA.
 async function bump(env, key, limit, ttl = 172800) {
   const n = Number(await env.PET.get(key)) || 0;
   if (n >= limit) return { ok: false, n };
   await env.PET.put(key, String(n + 1), { expirationTtl: ttl });
   return { ok: true, n: n + 1 };
+}
+
+/*
+ * Cuotas diarias atómicas: un Durable Object por día guarda los contadores (global, por instalación y por IP).
+ * Un Durable Object atiende una petición a la vez, así que «mirar y sumar» no se cruza entre usuarios:
+ * nadie pasa el límite aunque lleguen muchos mensajes juntos. Si un contador está lleno no se suma ninguno.
+ */
+export class PetQuota {
+  constructor(state) { this.state = state; }
+  async fetch(request) {
+    let b;
+    try { b = await request.json(); } catch { return Response.json({ error: 'bad_json' }, { status: 400 }); }
+    const keys = Array.isArray(b && b.keys) ? b.keys.filter((x) => x && typeof x.k === 'string' && x.k.length <= 120 && Number.isFinite(x.limit)).slice(0, 5) : [];
+    if (!keys.length) return Response.json({ error: 'bad_keys' }, { status: 400 });
+    const st = this.state.storage;
+    const now = await st.get(keys.map((x) => x.k));
+    for (const x of keys) if ((Number(now.get(x.k)) || 0) >= x.limit) return Response.json({ ok: false, full: x.k });
+    const next = {};
+    for (const x of keys) next[x.k] = (Number(now.get(x.k)) || 0) + 1;
+    await st.put(next);
+    // Cada día es un objeto distinto; a los dos días se borra solo.
+    if (!(await st.getAlarm())) await st.setAlarm(Date.now() + 2 * 86400000);
+    return Response.json({ ok: true, n: next });
+  }
+  async alarm() { await this.state.storage.deleteAll(); }
+}
+
+async function bumpAll(env, d, list) {
+  if (env.QUOTA) {
+    const stub = env.QUOTA.get(env.QUOTA.idFromName(`day:${d}`));
+    const r = await (await stub.fetch('https://quota/bump', { method: 'POST', body: JSON.stringify({ keys: list }) })).json();
+    if (!r.ok) return { ok: false, full: r.full };
+    return { ok: true, n: r.n };
+  }
+  const n = {};
+  for (const x of list) {
+    const b = await bump(env, x.k, x.limit);
+    if (!b.ok) return { ok: false, full: x.k };
+    n[x.k] = b.n;
+  }
+  return { ok: true, n };
 }
 
 // Filtro de salida (los modelos abiertos fallan más que Claude): si algo no apto se cuela, se cambia por una broma segura.
@@ -111,12 +154,10 @@ export async function handleChat(request, env, fetchFn = fetch) {
   const globalMax = num(env.PET_GLOBAL_DAILY, 3000);
   const d = day();
   const ip = request.headers.get('CF-Connecting-IP') || 'x';
-  const g = await bump(env, `g:${d}`, globalMax);
-  if (!g.ok) return json({ error: 'busy', left: 0 }, 429);
-  const u = await bump(env, `u:${d}:${r.id}`, userMax);
-  if (!u.ok) return json({ error: 'limit', left: 0 }, 429);
-  const i = await bump(env, `i:${d}:${ip}`, ipMax);
-  if (!i.ok) return json({ error: 'limit', left: 0 }, 429);
+  const gk = `g:${d}`, uk = `u:${d}:${r.id}`;
+  const q = await bumpAll(env, d, [{ k: gk, limit: globalMax }, { k: uk, limit: userMax }, { k: `i:${d}:${ip}`, limit: ipMax }]);
+  if (!q.ok) return json({ error: q.full === gk ? 'busy' : 'limit', left: 0 }, 429);
+  const u = { n: q.n[uk] };
 
   let raw;
   try { raw = await callModel(env, r, fetchFn); } catch (e) { console.error('pet upstream', String(e && e.message).slice(0, 200)); return json({ error: 'upstream', detail: String(e && e.message).slice(0, 120) }, 502); }

@@ -52,5 +52,23 @@ const assert = require('assert');
   assert.strictEqual((await (await W.handleChat(req(body), { PET: kv(), AI: ai2 })).json()).text, 'Formato OpenAI 🐼');
   const bad = { run: async () => ({ response: 'eres un idiota' }) };
   assert.ok(!/idiota/.test((await (await W.handleChat(req(body), { PET: kv(), AI: bad })).json()).text));
+  // Cuotas con Durable Object: muchas peticiones a la vez no pasan el límite.
+  {
+    const store = new Map();
+    let chain = Promise.resolve();
+    const obj = new W.PetQuota({ storage: {
+      get: async (ks) => new Map(ks.map((k) => [k, store.get(k)])),
+      put: async (o) => { for (const [k, v] of Object.entries(o)) store.set(k, v); },
+      getAlarm: async () => 1, setAlarm: async () => {}, deleteAll: async () => store.clear()
+    } });
+    // Como en Cloudflare, el objeto atiende una petición a la vez.
+    const QUOTA = { idFromName: (n) => n, get: () => ({ fetch: (u, init) => { const p = chain.then(() => obj.fetch(new Request(u, init))); chain = p.catch(() => {}); return p; } }) };
+    const envQ = { PET: kv(), QUOTA, ANTHROPIC_KEY: 'k', PET_USER_DAILY: '3', PET_IP_DAILY: '100', PET_GLOBAL_DAILY: '100' };
+    const rs = await Promise.all(Array.from({ length: 10 }, () => W.handleChat(req(body), envQ, ok('x'))));
+    assert.strictEqual(rs.filter((x) => x.status === 200).length, 3, 'solo pasan 3 de 10 a la vez');
+    assert.strictEqual([...store.entries()].find(([k]) => k.startsWith('g:'))[1], 3, 'el global no sube con los rechazados');
+    const g0 = { PET: kv(), QUOTA, ANTHROPIC_KEY: 'k', PET_GLOBAL_DAILY: '3' };
+    assert.strictEqual((await (await W.handleChat(req({ ...body, id: '99999999-2222-3333-4444-555555555555' }), g0, ok('x'))).json()).error, 'busy');
+  }
   console.log('pet-worker ok');
 })().catch((e) => { console.error(e); process.exit(1); });
