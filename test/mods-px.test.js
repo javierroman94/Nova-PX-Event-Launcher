@@ -62,6 +62,15 @@ const dirs = (name) => { const g = path.join(tmp, name, 'juego'); const c = path
   const badHead = Buffer.from(pxBuf); badHead[0] = 0x50;
   assert.throws(() => px.open(badHead, ev.packKey, 'secreto.jar'), /\.px/);
 
+  // Nombres reales de mods (con !, corchetes, apóstrofos, acentos) se aceptan; los peligrosos no.
+  for (const n of ['Level Up! 2-1.1.23-1.12.jar', 'Mod [Forge] 1.0.jar', "Mod's.jar", 'Mod&co #2.jar', 'Ñandú mod.jar']) {
+    assert.strictEqual(pi.modFileName({ url: 'https://ej.test/x.enc', file: n }), n, n);
+  }
+  for (const n of ['.jar', '.oculto.jar', ' a.jar', 'a:b.jar', 'a?.jar', 'a*.jar', 'a<b>.jar', 'a|b.jar', 'a"b.jar', 'con\ncontrol.jar', 'CON.jar', 'nul.jar', 'com1.jar', 'mod.jar.exe']) {
+    assert.throws(() => pi.modFileName({ url: 'https://ej.test/x.enc', file: n }), /jar válido/, n);
+  }
+  assert.strictEqual(pi.modFileName({ url: 'https://ej.test/a.jar', file: '../../evil.jar' }), 'evil.jar', 'nunca sale de mods/');
+
   // 4. La extensión .px no se acepta como un .jar normal.
   assert.throws(() => pi.modFileName({ url: 'https://ej.test/a.px', file: 'a.px' }), /jar válido/);
   assert.ok(!px.isPx(ev.jars[0].data), 'un .jar no pasa por .px');
