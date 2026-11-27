@@ -34,7 +34,7 @@ const assert = require('assert');
   assert.strictEqual(W.readBody({ id, mode: 'help', messages: [{ role: 'user', content: 'x' }], log: 'refresh_token=abcdefghijklmnop' }).error, 'secret');
   assert.strictEqual(W.readBody({ id, mode: 'help', messages: [{ role: 'user', content: 'x' }], log: '--session abcdefghijklmnop' }).error, 'secret');
   // También con «=» (--session=token, --accessToken="token"), y en el chat normal.
-  for (const log of ['--session=abcdefghijklmnop', '--accessToken="abcdefghijklmnop"', 'args --idToken=abc123 x']) {
+  for (const log of ['--session=abcdefghijklmnop', '--accessToken="abcdefghijklmnop"', 'args --idToken=abc123 x', '--session=<oculto>abcdefghijklmnop', '--session <oculto>abcdefgh x', '--accessToken=<oculto>x']) {
     assert.strictEqual(W.readBody({ id, mode: 'help', messages: [{ role: 'user', content: 'x' }], log }).error, 'secret', log);
   }
   assert.strictEqual(W.readBody({ id, mode: 'chat', messages: [{ role: 'user', content: 'mira --session=abcdefghijklmnop' }] }).error, 'secret');
