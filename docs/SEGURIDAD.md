@@ -95,6 +95,31 @@ Hay una **segunda llave Ed25519**, solo para lo que se publica en automático: `
 
 Si la privada se filtra: generar otra, cambiar los secretos y `config/nova-firma.pub.pem`, y publicar una versión del launcher.
 
+## Mods .px de eventos protegidos
+
+**Qué hace.** Cada mod del evento se guarda en `userData/pack-cache/<evento>/<huella>.px`. Ese archivo es la cabecera `NPXPX` (versión 1) más el mod cifrado con AES-256-GCM: la clave del modpack solo sale del sobre abierto con la contraseña (scrypt, `KDF_STRONG`), el nonce es aleatorio por archivo y el nombre real del mod va en el AAD, así que un `.px` no sirve como otro mod. Antes de usarlo se comprueba la autenticación GCM y la huella del mod: SHA-1 siempre, y además SHA-256 en los eventos publicados desde esta versión (`lib/admin.js`). Los eventos ya publicados siguen con SHA-1 y no se tocaron sus datos firmados. La caché antigua `.bin` se migra sola a `.px`. Si el evento se vuelve a publicar con una clave nueva, los `.px` viejos se vuelven a bajar.
+
+**Cuándo se descifran (Fabric).** Solo al pulsar Jugar, en una carpeta nueva de `%TEMP%` (`npx-run-<16 hex>`, con permisos 0700 donde el sistema los respeta; en Windows `%TEMP%` ya es solo del usuario), con nombres aleatorios (`m-<hex>.jar`) y una marca `.novapx-run`. Fabric los carga con `-Dfabric.addMods=<carpeta>`; la carpeta `mods/` del evento no recibe ningún `.jar` del evento. La carpeta se borra:
+- al cerrar Minecraft;
+- si el arranque falla (Java, loader, contraseña);
+- al abrir el launcher, por si se cerró a la fuerza o se apagó el PC, y cada 10 minutos mientras el launcher está abierto. Solo se borran las carpetas que ya nadie usa: al arrancar Minecraft se anota su proceso en la marca, así que si se cierra el launcher con el juego abierto y se vuelve a abrir, esos mods no se tocan hasta que el juego termine. Una carpeta sin juego anotado se conserva mientras viva el launcher que la creó. Si el sistema reutiliza el número de un proceso terminado, la carpeta se conserva de más hasta una limpieza posterior; nunca se borra una partida activa por eso;
+- al cerrar el launcher sin partida en curso.
+
+La limpieza solo borra carpetas `npx-run-*` que tengan la marca; nunca toca carpetas ajenas ni los mods del jugador.
+
+**Forge y NeoForge.** No tienen una opción estándar para cargar mods de otra carpeta. Siguen como antes: los mods se descifran en `mods/` con nombres neutros y se borran al cerrar; la copia cifrada queda como `.px`.
+
+**Límite (importante).** Ningún loader (Fabric, Forge, NeoForge) puede cargar un mod cifrado: necesitan el `.jar` normal. Mientras Minecraft corre, los mods descifrados existen en disco y en la memoria de Java. Quien controla su propio equipo puede copiarlos en ese momento, o sacarlos de la memoria del proceso. El modo `.px` hace que no queden en disco cuando no se juega, que no se vean en la carpeta del juego y que no revelen sus nombres, pero **no** los hace imposibles de copiar. Para eso habría que modificar el loader (descifrar en memoria), y aun así la memoria del proceso seguiría accesible. No se debe anunciar como protección absoluta.
+
+**Pruebas.** `test/mods-px.test.js` cubre:
+- cifrar y descifrar;
+- contraseña incorrecta, archivo alterado, `.px` usado como otro mod, y que `.px` no se acepta como `.jar`;
+- instalación y partida en Fabric, sin `.jar` en `mods/`;
+- limpieza normal y tras cierres inesperados (sin tocar carpetas ajenas);
+- SHA-256 incorrecta, eventos solo con SHA-1, migración `.bin`, evento republicado, Forge/NeoForge y modpacks normales.
+
+En un Windows 11 real se probó con Fabric API y Lithium para 1.21.1, bajados de Modrinth: caché solo `.px` cifrada, `mods/` vacío, dos `.jar` con nombre aleatorio en `%TEMP%`, 3 republicaciones seguidas y limpieza al abrir sin `.jar` restantes. Las pruebas pasaron también con el Node 20 del Electron del launcher. **Pendiente:** arrancar Fabric Loader 0.20.1 con Minecraft 1.21.1 de verdad con `-Dfabric.addMods`, también con una ruta con espacios. Los dos intentos de levantar un servidor Fabric de prueba (en el PC del dueño y en el entorno de Claude) quedaron bloqueados por los permisos del entorno y no se hicieron. No está aprobado.
+
 ## Loader Nova (1.0.190)
 - `data/nova-loader.json` lo arma una tarea de GitHub (`tools/nova-loader.js`) y no va firmado: el launcher solo acepta enlaces `https://cdn.modrinth.com/data/…`, nombres de archivo seguros y huella SHA-512 de cada `.jar`. SHA-512 comprueba el archivo descargado, pero no autentica el catálogo: alguien con capacidad de modificar el repositorio podría cambiar catálogo, URL y huella. Requiere firma asimétrica.
 - Si la huella no coincide no se instala nada. Al actualizar solo se tocan los archivos que puso Nova (y otras copias de esos mismos mods).
