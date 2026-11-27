@@ -86,7 +86,8 @@
   "overrides": {
     "request": {
       "form-data": "2.5.6",
-      "qs": "^6.15.5"
+      "qs": "^6.15.5",
+      "tough-cookie": "4.1.4"
     },
     "minecraft-launcher-core": {
       "adm-zip": "0.6.1"
