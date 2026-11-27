@@ -4030,3 +4030,49 @@ main { animation: px-page-in .28s ease-out; }
 .fr-face .head3d { margin: 7px 6px; }
 .fr-me-who { padding-top: 2px; }
 .fr-add button { width: auto; height: 38px; padding: 0 16px; font-size: 14px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- Acabado visual: controles y superficies más consistentes ---------- */
+:root:not([data-theme="xp"]):not([data-theme="win7"]) {
+  --r-lg: 18px;
+  --r-md: 12px;
+  --r-sm: 8px;
+}
+
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .sidebar .tab-btn.active {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .card,
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .stat,
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .continue-card,
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .side-card,
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .news-item {
+  box-shadow: 0 8px 24px -22px rgba(0, 0, 0, .72);
+}
+
+:root:not([data-theme="xp"]):not([data-theme="win7"]) button.primary,
+:root:not([data-theme="xp"]):not([data-theme="win7"]) .lp-play {
+  background-image: none;
+  box-shadow: 0 5px 16px -12px var(--accent);
+}
+
+:root:not([data-theme="xp"]):not([data-theme="win7"]) button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+:root:not([data-theme="xp"]):not([data-theme="win7"]) #page-home .launchpad .lp-hero {
+  border-radius: 18px;
+  border-color: var(--line);
+  box-shadow: 0 16px 36px -30px rgba(0, 0, 0, .8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
