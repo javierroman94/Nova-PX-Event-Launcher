@@ -105,7 +105,14 @@ if ! node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.e
   exit 1
 fi
 
-NOMBRE="nova-px-prueba-migracion-$(date +%s)"
+# 128 bits aleatorios además de la marca temporal: evita colisiones entre
+# ejecuciones simultáneas y no depende solo de la resolución de date +%s.
+SUFIJO="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+if [[ ! "$SUFIJO" =~ ^[a-fA-F0-9]{32}$ ]]; then
+  echo "No se pudo generar un identificador aleatorio seguro." >&2
+  exit 1
+fi
+NOMBRE="nova-px-prueba-migracion-$(date +%s)-${SUFIJO}"
 for w in "${PRODUCCION[@]}"; do
   if [[ "$NOMBRE" == "$w" ]]; then echo "Nombre prohibido" >&2; exit 1; fi
 done
