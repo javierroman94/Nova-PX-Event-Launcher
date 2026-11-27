@@ -16,6 +16,7 @@ if (process.platform === 'win32' || spawnSync('bash', ['-c', 'true']).status !==
 const script = path.join(__dirname, '..', 'tools', 'prueba-migracion-presence.sh');
 const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'mock-curl-'));
 const calls = path.join(bin, 'calls.log');
+const state = `${calls}.worker`;
 fs.writeFileSync(path.join(bin, 'curl'), `#!/usr/bin/env bash
 out=""; url=""; method=GET
 while [ $# -gt 0 ]; do case "$1" in --output) out="$2"; shift;; -X) method="$2"; shift;; https://*) url="$1";; esac; shift; done
@@ -25,13 +26,26 @@ case "\${MOCK:-ok}" in
   fail) echo '{"success":false,"errors":[{"message":"DATO-PRIVADO"}]}' > "$out"; exit 22;;
   false) echo '{"success":false,"errors":[]}' > "$out"; exit 0;;
 esac
+if [[ "$method" == "PUT" && "$url" == */workers/scripts/* ]]; then
+  name="\${url##*/}"
+  printf '%s' "$name" > "$state"
+fi
+if [[ "$method" == "DELETE" ]]; then rm -f "$state"; fi
 if [[ "$url" == */workers/scripts ]]; then
-  echo '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"}]}' > "$out"
+  extra=""
+  if [[ -s "$state" ]]; then extra=",{\\"id\\":\\"$(cat "$state")\\",\\"migration_tag\\":\\"v1\\"}"; fi
+  printf '{"success":true,"errors":[],"result":[{"id":"nova-px-event-launcher","migration_tag":"v1"},{"id":"nova-px-pet"}%s]}' "$extra" > "$out"
 else echo '{"success":true,"errors":[],"result":{}}' > "$out"; fi
+`, { mode: 0o755 });
+fs.writeFileSync(path.join(bin, 'npx'), `#!/usr/bin/env bash
+echo "$*" >> "${calls}.npx"
+exit 0
 `, { mode: 0o755 });
 
 function run(mock, args = []) {
   fs.rmSync(calls, { force: true });
+  fs.rmSync(state, { force: true });
+  fs.rmSync(`${calls}.npx`, { force: true });
   const r = spawnSync('bash', [script, ...args], {
     encoding: 'utf8',
     env: {
@@ -43,7 +57,8 @@ function run(mock, args = []) {
     },
   });
   const log = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n') : [];
-  return { status: r.status, out: r.stdout + r.stderr, log };
+  const npx = fs.existsSync(`${calls}.npx`) ? fs.readFileSync(`${calls}.npx`, 'utf8') : '';
+  return { status: r.status, out: r.stdout + r.stderr, log, npx };
 }
 
 // Solo lectura: GET de la lista y ninguna escritura.
@@ -81,6 +96,8 @@ for (const l of writes) {
   assert.ok(!/\/nova-px-(event-launcher|pet)\b/.test(l), `escribió en producción: ${l}`);
 }
 assert.ok(writes.some((l) => l.startsWith('DELETE ')), 'borra el Worker de prueba');
+assert.match(r.npx, /--yes wrangler@4\.168\.0 deploy --config wrangler\.jsonc/);
+assert.ok(!fs.existsSync(state), 'la limpieza elimina el Worker temporal simulado');
 
 assert.notStrictEqual(run('ok', ['--otra']).status, 0, 'rechaza opciones desconocidas');
 
