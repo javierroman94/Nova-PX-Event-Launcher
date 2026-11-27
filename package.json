@@ -87,6 +87,9 @@
     "request": {
       "form-data": "2.5.6",
       "qs": "^6.15.5"
+    },
+    "minecraft-launcher-core": {
+      "adm-zip": "0.6.1"
     }
   }
 }
