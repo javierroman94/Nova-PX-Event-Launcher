@@ -64,7 +64,16 @@ for (const m of ['fail', 'neterr', 'false']) {
 for (const m of ['ok', 'fail']) assert.ok(!run(m, ['--aislada']).out.includes('TOKEN-DE-PRUEBA'));
 
 // --aislada: solo escribe en el Worker desechable y lo borra aunque falle.
+// Con Node < 22.12 (lo pide wrangler) se detiene antes de escribir nada.
+const [maj, min] = process.versions.node.split('.').map(Number);
 r = run('ok', ['--aislada']);
+if (!(maj > 22 || (maj === 22 && min >= 12))) {
+  assert.notStrictEqual(r.status, 0);
+  assert.match(r.out, /Node 22\.12/);
+  assert.ok(r.log.every((l) => l.startsWith('GET ')), 'sin Node 22.12 no escribe nada');
+  console.log('prueba-migracion ok (sin Node 22.12: solo se probó que no escribe)');
+  process.exit(0);
+}
 const writes = r.log.filter((l) => !l.startsWith('GET '));
 assert.ok(writes.length >= 2, r.log.join('\n'));
 for (const l of writes) {
