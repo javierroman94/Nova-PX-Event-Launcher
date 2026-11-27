@@ -455,8 +455,9 @@ function createWindow() {
   // El launcher no necesita cámara, micrófono, ubicación ni notificaciones del navegador: se niegan todos los permisos.
   mainWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
   mainWindow.webContents.session.setPermissionCheckHandler(() => false);
+  // window.open y target=_blank pasan por la misma revisión que link:open (lib/links.js).
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+    openExternalLink(url, mainWindow).catch(() => {});
     return { action: 'deny' };
   });
   lockWindow(mainWindow.webContents);
@@ -2752,12 +2753,11 @@ ipcMain.handle('java:browse', async () => {
 });
 
 // Enlaces externos: solo https y, si el sitio no es de los conocidos, se confirma mostrando el dominio real (lib/links.js).
-ipcMain.handle('link:open', async (e, url) => {
+async function openExternalLink(url, win) {
   const c = require('./lib/links').checkLink(url);
   if (!c.ok) throw new Error(c.reason);
   if (!c.trusted) {
-    const win = BrowserWindow.fromWebContents(e.sender) || undefined;
-    const r = await dialog.showMessageBox(win, {
+    const r = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
       type: 'question', buttons: ['Abrir', 'Cancelar'], defaultId: 1, cancelId: 1, noLink: true,
       title: 'Enlace externo', message: `Vas a abrir ${c.host}`,
       detail: 'Es un sitio fuera de Nova PX. Nunca escribas tu contraseña de Microsoft en una página que llegó por un enlace.'
@@ -2766,7 +2766,8 @@ ipcMain.handle('link:open', async (e, url) => {
   }
   await shell.openExternal(c.href);
   return true;
-});
+}
+ipcMain.handle('link:open', async (e, url) => openExternalLink(url, BrowserWindow.fromWebContents(e.sender)));
 
 // Estado del servidor de un modpack: se lee de su servers.dat. Nunca se devuelve la dirección, solo si está activo.
 const packServerCache = new Map();
