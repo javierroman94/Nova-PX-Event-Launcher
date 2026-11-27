@@ -130,6 +130,24 @@ const dirs = (name) => { const g = path.join(tmp, name, 'juego'); const c = path
   assert.deepStrictEqual(fs.readdirSync(d.runRoot).filter((n) => n.startsWith('npx-run-') && n !== path.basename(ajena)), [], 'el fallo no deja carpeta temporal');
   fs.writeFileSync(pxFile, orig);
 
+  // Evento vuelto a publicar (clave nueva, mismos mods): la caché vieja no sirve y se vuelve a bajar.
+  {
+    const a = makeEvent();
+    const d8 = dirs('republicado');
+    const ks8 = keyStore();
+    await pi.installProtected({ prot: a.prot, password: PASS, gameDir: d8.gameDir, download: a.download, keyStore: ks8, cacheDir: d8.cacheDir, pxMode: true, runRoot: d8.runRoot });
+    const b = makeEvent(); // mismos mods (misma huella), clave del modpack nueva
+    const r8 = await pi.installProtected({ prot: b.prot, password: PASS, gameDir: d8.gameDir, download: b.download, keyStore: ks8, cacheDir: d8.cacheDir, pxMode: true, runRoot: d8.runRoot });
+    assert.strictEqual(jarsIn(r8.runDir).length, 2, 'la partida arranca con la publicación nueva');
+    assert.ok(b.downloads.filter((u) => u.endsWith('.jar.enc')).length === 2, 'vuelve a bajar los mods con la clave nueva');
+    // Lo mismo en Forge/NeoForge (modo mods/).
+    const d9 = dirs('republicado-forge');
+    await pi.installProtected({ prot: a.prot, password: PASS, gameDir: d9.gameDir, download: a.download, keyStore: keyStore(), cacheDir: d9.cacheDir });
+    pi.wipeProtected(d9.gameDir);
+    assert.deepStrictEqual(await pi.installProtected({ prot: b.prot, password: PASS, gameDir: d9.gameDir, download: b.download, keyStore: keyStore(), cacheDir: d9.cacheDir }), { status: 'ready' });
+    assert.strictEqual(jarsIn(path.join(d9.gameDir, 'mods')).length, 2);
+  }
+
   // SHA-256: si el evento la trae y no coincide, se rechaza.
   {
     const e2 = makeEvent();
