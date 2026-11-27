@@ -91,6 +91,7 @@ if (!(maj > 22 || (maj === 22 && min >= 12))) {
   console.log('prueba-migracion ok (sin Node 22.12: solo se probó que no escribe)');
   process.exit(0);
 }
+assert.strictEqual(r.status, 0, r.out);
 const writes = r.log.filter((l) => !l.startsWith('GET '));
 assert.ok(writes.length >= 2, r.log.join('\n'));
 for (const l of writes) {
