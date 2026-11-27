@@ -49,6 +49,13 @@ async function adminStatus(request, env) {
   const fk = `admfail:${ipOf(request)}`;
   if (limiter.count(fk, ADMIN_WINDOW) >= ADMIN_FAILS) return 'bloqueada';
   if (await checkAdmin(request, env)) return 'ok';
+  if (env.ADMIN_LIMITER && typeof env.ADMIN_LIMITER.limit === 'function') {
+    try {
+      if (!(await env.ADMIN_LIMITER.limit({ key: fk })).success) return 'bloqueada';
+    } catch {
+      return 'bloqueada';
+    }
+  }
   limiter.hit(fk, ADMIN_FAILS, ADMIN_WINDOW);
   return 'no';
 }

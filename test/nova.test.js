@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('assert');
+const crypto = require('crypto');
 const { NOVA_MODS, installNovaMods } = require('../lib/nova');
 const packs = require('../lib/packs');
 
@@ -23,21 +24,30 @@ const packs = require('../lib/packs');
   assert.deepStrictEqual(packs.releaseVersions(man, { snapshots: true }), ['1.21.1', '24w14a']);
   // Nova Client: elige el .jar de la versión pedida, ignora sources y enlaces de otros sitios.
   const base = 'https://github.com/javierroman94/Nova-Client/releases/download/v0.1.0/';
+  const jarBytes = Buffer.from('jar');
+  const digest = 'sha256:' + crypto.createHash('sha256').update(jarBytes).digest('hex');
   const rel = { assets: [
-    { name: 'nova-client-0.1.0+mc1.21.1-sources.jar', browser_download_url: base + 'a-sources.jar' },
-    { name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'nova-client-0.1.0%2Bmc1.21.1.jar' },
-    { name: 'nova-client-0.1.0+mc1.20.1.jar', browser_download_url: 'https://evil.example/x.jar' }
+    { name: 'nova-client-0.1.0+mc1.21.1-sources.jar', browser_download_url: base + 'a-sources.jar', digest },
+    { name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'nova-client-0.1.0%2Bmc1.21.1.jar', digest },
+    { name: 'nova-client-0.1.0+mc1.20.1.jar', browser_download_url: 'https://evil.example/x.jar', digest }
   ] };
   const nova = require('../lib/nova');
   assert.strictEqual(nova.pickClientAsset(rel, '1.21.1').name, 'nova-client-0.1.0+mc1.21.1.jar');
+  assert.strictEqual(nova.pickClientAsset(rel, '1.21.1').sha256, digest.slice(7));
+  assert.strictEqual(nova.pickClientAsset({ assets: [{ name: 'nova-client-0.1.0+mc1.21.1.jar', browser_download_url: base + 'a.jar' }] }, '1.21.1'), null);
   assert.strictEqual(nova.pickClientAsset(rel, '1.20.1'), null); // enlace fuera de GitHub
   assert.strictEqual(nova.pickClientAsset(rel, '1.8.9'), null);
   const os = require('os'); const fs = require('fs'); const path = require('path');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-'));
   fs.mkdirSync(path.join(dir, 'mods')); fs.writeFileSync(path.join(dir, 'mods', 'nova-client-0.0.1+mc1.21.1.jar'), 'old');
-  const got = await nova.installNovaClient({ request: async () => rel, download: async () => Buffer.from('jar'), dir, mc: '1.21.1' });
+  const got = await nova.installNovaClient({ request: async () => rel, download: async () => jarBytes, dir, mc: '1.21.1' });
   assert.strictEqual(got, 'nova-client-0.1.0+mc1.21.1.jar');
   assert.deepStrictEqual(fs.readdirSync(path.join(dir, 'mods')), ['nova-client-0.1.0+mc1.21.1.jar']);
+  const badDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nova-bad-'));
+  await assert.rejects(
+    nova.installNovaClient({ request: async () => rel, download: async () => Buffer.from('modificado'), dir: badDir, mc: '1.21.1' }),
+    /SHA-256/
+  );
 
   // Sodium + Iris: elige una pareja que no se rompa.
   {

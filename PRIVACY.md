@@ -7,7 +7,7 @@ Nova PX Event Launcher is an open-source Minecraft launcher. This page explains 
 - Microsoft sign-in tokens are encrypted with your operating system's secure storage. They are never sent to Nova PX.
 
 **Sent only if you allow it (Settings → share usage)**
-- An anonymous usage counter: a random installation id, launcher version and operating system. No IP address is stored.
+- An anonymous usage counter: a random installation id, launcher version, operating system and a boolean indicating whether the signed-in account is premium. No Microsoft, Xbox or Minecraft token is sent. No IP address is stored for this usage counter.
 - The player nickname, only if you sign in, so friends and online status work.
 
 **Content updates**

@@ -8,7 +8,8 @@ const MAX_MSG = 400;       // caracteres por mensaje
 const MAX_TURNS = 8;       // mensajes de contexto
 const MAX_MEMORY = 700;
 const MAX_LOG = 1800;
-const SECRET = /(sk-ant-[\w-]{10,}|accessToken|access_token|Bearer\s+[\w.-]{12,}|[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}|\b\d{13,19}\b)/i;
+const SECRET = /(sk-ant-[\w-]{10,}|(?:access|refresh|id|xsts|client)[_-]?token[\s"'=:]+[\w.-]{8,}|client[_-]?secret[\s"'=:]+[\w.-]{8,}|--(?:accessToken|refreshToken|idToken|session)\s+\S+|Bearer\s+[\w.-]{12,}|[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,}|\b\d{13,19}\b)/i;
+const SECRET_LOG = /(sk-ant-[\w-]{10,}|(?:access|refresh|id|xsts|client)[_-]?token[\s"'=:]+[\w.-]{8,}|client[_-]?secret[\s"'=:]+[\w.-]{8,}|--(?:accessToken|refreshToken|idToken|session)\s+\S+|Bearer\s+[\w.-]{12,}|[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{20,})/i;
 
 export const SYSTEM = `Eres PX, el panda mascota de Nova PX Event Launcher (un launcher de Minecraft). Hablas en español, cercano y con humor.
 PERSONALIDAD: bromista y cariñoso. Haces chistes cortos de Minecraft (creepers, lag, picos que se rompen, "casi diamantes"), te burlas con cariño de ti mismo, del lag y de los creepers, nunca del usuario ni de su origen, cuerpo, género o creencias. Puedes usar un emoji de vez en cuando.
@@ -50,6 +51,7 @@ export function readBody(b) {
   while (messages.length && messages[0].role !== 'user') messages.shift();
   if (!messages.length || messages[messages.length - 1].role !== 'user') return { error: 'bad_data' };
   const log = b.mode === 'help' ? clip(b.log, MAX_LOG) : '';
+  if (log && SECRET_LOG.test(log)) return { error: 'secret' };
   return { mode: b.mode, id: String(b.id), messages, memory: clip(b.memory, MAX_MEMORY), log };
 }
 

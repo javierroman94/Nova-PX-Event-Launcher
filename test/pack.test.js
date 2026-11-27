@@ -17,6 +17,7 @@ async function test(name, fn) {
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'novapx-'));
 const sha1 = (b) => crypto.createHash('sha1').update(b).digest('hex');
+const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
 // Mini "repositorio" con dos mods cifrados y un almacén de claves en memoria.
 // En eventos protegidos el archivo en disco lleva un nombre neutro (huella del contenido).
@@ -268,6 +269,29 @@ function makeKeyStore() {
     await assert.rejects(
       pi.syncMods({ modsDir, stateFile, mods: [{ url: 'https://x.com/b.jar', sha1: 'f'.repeat(40) }], download }),
       /sha1/
+    );
+  });
+
+  await test('syncMods prefiere SHA-256 y mantiene compatibilidad con SHA-1', async () => {
+    const dir = tmp();
+    const modsDir = path.join(dir, 'mods');
+    const stateFile = path.join(dir, 's.json');
+    const bytes = Buffer.from('mod con huella SHA-256');
+    await pi.syncMods({
+      modsDir,
+      stateFile,
+      mods: [{ url: 'https://x.com/sha256.jar', sha256: sha256(bytes), sha1: sha1(bytes) }],
+      download: async () => bytes
+    });
+    assert.deepStrictEqual(fs.readFileSync(path.join(modsDir, 'sha256.jar')), bytes);
+    await assert.rejects(
+      pi.syncMods({
+        modsDir: path.join(dir, 'mods-mal'),
+        stateFile: path.join(dir, 's-mal.json'),
+        mods: [{ url: 'https://x.com/sha256.jar', sha256: 'f'.repeat(64), sha1: sha1(bytes) }],
+        download: async () => bytes
+      }),
+      /sha256/
     );
   });
 

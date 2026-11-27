@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 // Los canales IPC solo se atienden desde las páginas del launcher; y safeStorage no cuenta si en Linux cae a la llave fija.
 const { makeSecureStorage } = require('./lib/secure-storage');
+const { makePresenceTokenStore } = require('./lib/presence-token');
 const { guardIpc, isTrustedUrl } = require('./lib/ipc-guard');
 const safeStorage = makeSecureStorage(electronSafeStorage);
 guardIpc(ipcMain, path.join(__dirname, 'renderer'));
@@ -411,7 +412,10 @@ const { readJavaVersionOutput, managedJavaPath, preferJavaw, resolveJava } = req
 
 // Una ventana del launcher solo puede mostrar páginas de renderer/: sin navegación, sin ventanas nuevas y sin <webview>.
 function lockWindow(wc) {
-  wc.on('will-navigate', (e, url) => { if (!isTrustedUrl(url, path.join(__dirname, 'renderer'))) e.preventDefault(); });
+  const rendererDir = path.join(__dirname, 'renderer');
+  const blockUntrusted = (e, url) => { if (!isTrustedUrl(url, rendererDir)) e.preventDefault(); };
+  wc.on('will-navigate', blockUntrusted);
+  wc.on('will-redirect', blockUntrusted);
   wc.on('will-attach-webview', (e) => e.preventDefault());
 }
 
@@ -429,6 +433,7 @@ function createWindow() {
     ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#0d0f16', symbolColor: '#e8eaf2', height: 52 } } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: true,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -1367,27 +1372,21 @@ ipcMain.handle('community:stats', async () => {
 /* ---------- amigos y estado en línea ---------- */
 
 const FRIENDS_FILE = path.join(app.getPath('userData'), 'friends.json');
-// Token secreto de esta instalación: el Worker lo usa para que nadie más pueda hablar como tu nick.
+// Credencial de presencia local: se cifra con el almacén seguro del sistema.
 const PRESENCE_TOKEN_FILE = path.join(app.getPath('userData'), 'presence.token');
-let presenceToken = null;
-function getPresenceToken() {
-  if (presenceToken) return presenceToken;
-  try { presenceToken = fs.readFileSync(PRESENCE_TOKEN_FILE, 'utf8').trim(); } catch {}
-  if (!/^[A-Za-z0-9_-]{16,64}$/.test(presenceToken || '')) {
-    presenceToken = require('crypto').randomBytes(24).toString('base64url');
-    try { fs.writeFileSync(PRESENCE_TOKEN_FILE, presenceToken, { mode: 0o600 }); } catch {}
-  }
-  return presenceToken;
-}
+const presenceTokenStore = makePresenceTokenStore({ fs, file: PRESENCE_TOKEN_FILE, safeStorage });
+const getPresenceToken = () => presenceTokenStore.get();
 const NICK_OK = /^[A-Za-z0-9_]{3,16}$/;
 // Llama al Worker como el jugador con sesión. Devuelve { ok, data } o { ok:false, error }.
 async function presenceCall(op, body = {}, ms = 6000) {
   if (!USAGE_URL) return { ok: false, error: 'disabled' };
   if (!session || !NICK_OK.test(session.name || '')) return { ok: false, error: 'no_session' };
+  const token = getPresenceToken();
+  if (!token) return { ok: false, error: 'secure_storage_unavailable' };
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token: getPresenceToken() }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
+    const r = await fetch(`${USAGE_URL}/presence/${op}`, { method: 'POST', body: JSON.stringify({ ...body, nick: session.name, token }), headers: { 'Content-Type': 'application/json' }, signal: ctl.signal });
     let data = {};
     try { data = await r.json(); } catch {}
     return r.ok ? { ok: true, data } : { ok: false, error: data.error || 'http_' + r.status };
@@ -1395,6 +1394,7 @@ async function presenceCall(op, body = {}, ms = 6000) {
 }
 const FRIEND_ERRORS = {
   disabled: 'La función de amigos no está activa en este launcher.',
+  secure_storage_unavailable: 'Activa el llavero seguro del sistema para usar amigos; el token no se guarda sin cifrado.',
   no_session: 'Inicia sesión para usar amigos.',
   network: 'No se pudo conectar. Revisa tu internet e inténtalo de nuevo.',
   auth: 'Ese nick ya lo usa otra instalación del launcher.',
@@ -2070,7 +2070,7 @@ function overlayShow(p) {
     const b = overlayLib.bounds(screen.getPrimaryDisplay().workArea);
     overlayWin = new BrowserWindow({
       ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, skipTaskbar: true, hasShadow: false, show: false, alwaysOnTop: true,
-      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
+      webPreferences: { preload: path.join(__dirname, 'renderer', 'overlay-preload.js'), webSecurity: true, contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false }
     });
     overlayWin.setAlwaysOnTop(true, 'screen-saver');
     overlayWin.setIgnoreMouseEvents(true, { forward: true }); // los clics pasan al juego
