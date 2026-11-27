@@ -53,10 +53,13 @@ const handlers = {};
 const ipc = { handle(ch, fn) { handlers[ch] = fn; } };
 guardIpc(ipc, dir);
 ipc.handle('x', (e, a) => a * 2);
-const mainFrame = { url: pathToFileURL(path.join(dir, 'index.html')).href };
+const mainFrame = { url: pathToFileURL(path.join(dir, 'index.html')).href, parent: null };
 assert.strictEqual(handlers.x({ senderFrame: mainFrame, sender: { mainFrame } }, 4), 8);
-assert.throws(() => handlers.x({ senderFrame: { url: 'https://evil.com' }, sender: { mainFrame } }, 4), /Origen/);
-assert.throws(() => handlers.x({ senderFrame: { url: mainFrame.url }, sender: { mainFrame: { url: mainFrame.url } } }, 4), /Origen/);
+// Electron puede dar otro objeto para el mismo marco principal: lo que cuenta es que no tenga padre.
+assert.strictEqual(handlers.x({ senderFrame: { url: mainFrame.url, parent: null }, sender: { mainFrame } }, 4), 8);
+assert.throws(() => handlers.x({ senderFrame: { url: 'https://evil.com', parent: null }, sender: { mainFrame } }, 4), /Origen/);
+// Un iframe, aunque cargue una página de renderer/, no habla por IPC.
+assert.throws(() => handlers.x({ senderFrame: { url: mainFrame.url, parent: mainFrame }, sender: { mainFrame } }, 4), /Origen/);
 assert.throws(() => handlers.x({ senderFrame: null, sender: { mainFrame } }, 4), /Origen/);
 
 // Electron: redirecciones bloqueadas, webSecurity explícito y CSP sin estilos inline.
@@ -78,3 +81,17 @@ assert.throws(() => unseal(blob, privateKey));
 const other = crypto.generateKeyPairSync('rsa', { modulusLength: 3072, privateKeyEncoding: { type: 'pkcs8', format: 'pem' }, publicKeyEncoding: { type: 'spki', format: 'pem' } });
 assert.throws(() => unseal(seal(msg, publicKey), other.privateKey));
 console.log('seguridad-lib.test.js ok');
+
+// Enlaces externos (lib/links.js)
+{
+  const { checkLink } = require('../lib/links');
+  assert.strictEqual(checkLink('http://x.com').ok, false);
+  assert.strictEqual(checkLink('javascript:alert(1)').ok, false);
+  assert.strictEqual(checkLink('https://user:pass@github.com/').ok, false);
+  assert.strictEqual(checkLink('https://github.com/javierroman94').trusted, true);
+  assert.strictEqual(checkLink('https://evilgithub.com/').trusted, false);
+  assert.strictEqual(checkLink('https://github.com.evil.io/').trusted, false);
+  const idn = checkLink('https://nоvapx.pages.dev/'); // «о» cirílica
+  assert.ok(idn.ok && !idn.trusted && idn.host.startsWith('xn--'), 'el dominio se muestra en punycode');
+  console.log('links ok');
+}
