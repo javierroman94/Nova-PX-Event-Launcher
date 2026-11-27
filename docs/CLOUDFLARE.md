@@ -26,7 +26,7 @@ Límites del plan gratis de Cloudflare: 100 000 peticiones al día y unas 1 000 
 
 ## Publicación automática desde GitHub (la que usa Nova PX)
 
-El archivo `wrangler.jsonc` de la raíz ya enlaza el Worker `nova-px-event-launcher` con el almacén KV `novapx-users` (variable `USERS`). Hoy el Worker **no** está conectado a este repositorio (no hay Workers Builds): unir a `main` no lo publica; se despliega a mano con `npx wrangler deploy` y solo con autorización del dueño. Lo único manual es el secreto `ADMIN_KEY` (Worker → Settings → Variables and Secrets → Secret) y copiar la dirección del Worker en `telemetryUrl`.
+El archivo `wrangler.jsonc` de la raíz ya enlaza el Worker `nova-px-event-launcher` con el almacén KV `novapx-users` (variable `USERS`). El Worker está conectado a este repositorio con Workers Builds, pero su rama de producción en Cloudflare es `novapx-check-1794018615182` (una rama vieja): un push a `main` solo crea un Preview y un push a esa rama despliega producción. Hay que corregirlo en el panel (ver `docs/SEGURIDAD.md`, punto 13). Lo único manual es el secreto `ADMIN_KEY` (Worker → Settings → Variables and Secrets → Secret) y copiar la dirección del Worker en `telemetryUrl`.
 
 
 ## Amigos y estado en línea

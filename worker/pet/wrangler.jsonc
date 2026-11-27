@@ -1,7 +1,7 @@
 {
   // PX con IA: intermediario con límites diarios. Sin clave usa Workers AI (binding AI); si existe el secreto
   // ANTHROPIC_KEY, usa Claude (wrangler secret put ANTHROPIC_KEY). Se despliega a mano:
-  // `npx wrangler deploy --config worker/pet/wrangler.jsonc` (unir a main no despliega nada).
+  // `npx wrangler deploy --config worker/pet/wrangler.jsonc` (este Worker no tiene Workers Builds: unir no lo despliega).
   "name": "nova-px-pet",
   "main": "index.mjs",
   "compatibility_date": "2025-01-01",
