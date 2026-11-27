@@ -57,7 +57,7 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 - Nada que escriba en KV sin límite ni sin validar el contenido. Los incrementos `get` + `put` en KV no son atómicos y no sirven como cuota estricta bajo concurrencia.
 
 ### Dependencias
-- Revisa `npm audit --omit=dev` antes de publicar. Con los `overrides` de `package.json` (`adm-zip@0.6.1`, `form-data@2.5.6`, `qs@6.17`, `tough-cookie@4.1.4`; probados en `test/dependencias.test.js`) quedan 3 moderadas sin arreglo compatible (`request`, su `uuid` y `minecraft-launcher-core` por depender de ellas). No quites esos overrides ni uses `npm audit fix --force`; para el resto hay que reemplazar `minecraft-launcher-core` y probar el juego completo.
+- Revisa `npm audit --omit=dev` antes de publicar (hoy: 0 vulnerabilidades). Los `overrides` de `package.json` hacen que `minecraft-launcher-core` use `@cypress/request@4.0.1` (fork mantenido de `request`, misma API), `uuid@11.1.1` y `adm-zip@0.6.1`; `test/dependencias.test.js` prueba descargas reales del Handler de MCLC y el login offline. No quites esos overrides ni uses `npm audit fix --force`; antes de publicar hay que probar la instalación y el arranque del juego en Windows.
 
 ## Trabajo diario
 
