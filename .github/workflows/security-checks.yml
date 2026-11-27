@@ -43,6 +43,11 @@ jobs:
       - name: Validar configuración del Worker PX
         run: npx --yes wrangler@4.168.0 deploy --dry-run --config worker/pet/wrangler.jsonc
 
+      - name: Probar migración aislada con API simulada
+        run: node test/prueba-migracion.test.js
+        env:
+          PRUEBA_MIGRACION_COMPLETA: '1'
+
       - name: Restaurar Node.js 20 para el launcher
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
@@ -54,9 +59,35 @@ jobs:
       - name: Ejecutar pruebas
         run: npm test
 
+      - name: Instalar Playwright para la prueba de arranque
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.65.1
+          npx --no-install playwright install --with-deps chromium
+
       - name: Probar arranque simulado
         run: npm run smoke
+        env:
+          SMOKE_OBLIGATORIO: '1'
 
       - name: Revisar vulnerabilidades de producción
         run: npm audit --omit=dev
-        continue-on-error: true
+
+  # Las pruebas también en Windows: ahí viven casi todos los jugadores.
+  # Encontró dos fallos que en Linux no se ven (finales de línea y named pipes).
+  pruebas-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias bloqueadas
+        run: npm ci
+
+      - name: Ejecutar pruebas
+        run: npm test
