@@ -332,6 +332,14 @@ function saveProtectedLog(lines) {
 }
 let protectedRun = false;
 let currentEventDir = null;
+let currentRunDir = null; // carpeta temporal con los mods .px descifrados de la partida (Fabric)
+const modsPx = require('./lib/mods-px');
+// Borra los mods descifrados de la partida: la carpeta temporal (.px) siempre y, si el evento oculta
+// sus mods, también los de mods/ (Forge/NeoForge) y su config.
+function cleanupProtected(wipeEventDir) {
+  if (currentRunDir) { modsPx.removeRunDir(currentRunDir, app.getPath('temp')); currentRunDir = null; }
+  if (wipeEventDir && currentEventDir) packInstall.wipeProtected(currentEventDir);
+}
 const rawLogBuffer = [];
 const MODLINE = /\.jar\b|\bmods?\b|mixin|fabric-|\bloading \d+|entrypoint|\[[A-Za-z0-9_.$]+\/(?:INFO|WARN|ERROR|DEBUG)\]: *(?:Loading|Found|Initializ|Registering)|modid|\bFML\b|\bforge\b|quilt/i;
 function pushLog(source, raw) {
@@ -604,6 +612,8 @@ app.whenReady().then(() => {
       if (packInstall.canRestoreFromCache({ prot: manifest.protected, gameDir, keyStore, cacheDir }) && !launching) packInstall.wipeProtected(gameDir);
     } catch {}
   }, 8000).unref();
+  // Carpetas temporales de mods .px que quedaron de un cierre inesperado (solo las que llevan la marca de Nova PX).
+  setTimeout(() => { try { if (!launching) modsPx.sweepRunDirs(app.getPath('temp')); } catch {} }, 3000).unref();
   setTimeout(() => backfillIcons().catch(() => {}), 6000);
   restoring = restoreSession();
   createWindow();
@@ -2090,6 +2100,9 @@ function overlayHide() { if (overlayWin && !overlayWin.isDestroyed()) overlayWin
 ipcMain.handle('overlay:show', (_e, p) => { overlayShow(p); return true; });
 ipcMain.handle('overlay:hide', () => { overlayHide(); return true; });
 app.on('before-quit', overlayHide);
+// Al cerrar el launcher sin partida en curso, no quedan mods .px descifrados. Con el juego abierto no se tocan
+// (en Windows están en uso); se borran al cerrar el juego o al abrir el launcher la próxima vez.
+app.on('will-quit', () => { try { if (!launching) modsPx.sweepRunDirs(app.getPath('temp')); } catch {} });
 /* ---------- avisos a Discord y atajo a X (solo administrador) ---------- */
 const HOOK_FILE = path.join(app.getPath('userData'), 'discord.hook');
 function readHook() {
@@ -3346,7 +3359,7 @@ ipcMain.handle('skin:texture', async (_e, nick, fresh) => {
 ipcMain.handle('event:needsPassword', async () => {
   try {
     const manifest = await loadData('manifest');
-    if (!manifest || !manifest.protected || !packInstall.needsInstall(manifest.protected, instanceDir(GAME_DIR, manifest))) return false;
+    if (!manifest || !manifest.protected || !packInstall.needsInstall(manifest.protected, instanceDir(GAME_DIR, manifest), path.join(app.getPath('userData'), 'pack-cache', instanceId(manifest)))) return false;
     if (packInstall.canRestoreFromCache({ prot: manifest.protected, gameDir: instanceDir(GAME_DIR, manifest), keyStore, cacheDir: path.join(app.getPath('userData'), 'pack-cache', instanceId(manifest)) })) return false;
     return true;
   } catch { return false; }
@@ -3442,7 +3455,8 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     protectedRun = !pack && !!manifest.protected && manifest.showMods !== true;
     currentEventDir = protectedRun ? eventDir : null;
     rawLogBuffer.length = 0;
-    if (!pack) await installMods(manifest, password, eventDir); // la contraseña se comprueba antes de descargar Java
+    currentRunDir = null;
+    if (!pack) currentRunDir = (await installMods(manifest, password, eventDir)) || null; // la contraseña se comprueba antes de descargar Java
     enforceLock();
     await ensureLocalSkinInGame(eventDir, manifest, loaderType);
     // Los ajustes propios del modpack (RAM, Java, argumentos, ventana) pesan más que los de Ajustes.
@@ -3492,6 +3506,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     const userArgs = st.jvmArgs.split(/\s+/).filter(Boolean);
     const customArgs = userArgs.length ? userArgs : jvmDefaults.defaultJvmArgs({ javaMajor: loaders.requiredJavaMajor(manifest.minecraftVersion) });
     if (customId && (loaderType === 'forge' || loaderType === 'neoforge')) customArgs.push(...installedJvmArgs(customId));
+    if (currentRunDir) customArgs.push(`-Dfabric.addMods=${currentRunDir}`);
     const launchOpts = {
       authorization: session.auth,
       root: GAME_DIR,
@@ -3585,7 +3600,7 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
         crashList = [{ id: 'protected', title: 'El juego se cerró con un error', advice: 'Se guardó un informe cifrado del error. Avisa a un administrador para que lo revise.' }];
       }
       pendingClose = { code, crash: crashList };
-      if (protectedRun && currentEventDir) packInstall.wipeProtected(currentEventDir);
+      cleanupProtected(protectedRun);
       protectedRun = false;
       leaveGameMode();
       if (windowWasOpen) {
@@ -3619,6 +3634,9 @@ ipcMain.handle('game:launch', async (_e, opts = {}) => {
     return true;
   } catch (err) {
     launching = false;
+    // Si falla antes de abrir Minecraft (Java, loader, contraseña), no se dejan mods descifrados.
+    try { cleanupProtected(protectedRun); } catch {}
+    protectedRun = false;
     throw err;
   }
 });
