@@ -134,9 +134,9 @@ cat > "$TMP/wrangler.jsonc" <<JSON
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Presence"] }]
 }
 JSON
-if (cd "$TMP" && npx --prefix "$RAIZ" wrangler deploy --dry-run --config wrangler.jsonc) > "$TMP/paso2.log" 2>&1; then
-  echo "RESULTADO: wrangler aceptó la configuración en dry-run."
-  echo "NOTA: dry-run valida el bundle; no aplica la migración ni confirma el estado remoto."
+if (cd "$TMP" && npx --prefix "$RAIZ" wrangler deploy --config wrangler.jsonc) > "$TMP/paso2.log" 2>&1; then
+  echo "RESULTADO: wrangler aplicó la migración v1 en el Worker desechable."
+  echo "Conclusión: la secuencia de migración funciona en el entorno aislado."
   exit 0
 fi
 echo "RESULTADO: wrangler rechazó el dry-run. Últimas líneas:"
@@ -156,7 +156,12 @@ api_request "Registrar etiqueta v1 en Worker desechable" -X PUT "${AUTH[@]}" "$A
   -F "index.mjs=@$TMP/index.mjs;type=application/javascript+module"
 echo "etiqueta: $(etiqueta)"
 
-echo "== 4. Resultado"
-echo "La etiqueta v1 se registró en el Worker desechable."
-echo "No se ha ejecutado un despliegue real de Wrangler ni se ha tocado producción."
-echo "La migración real debe validarse con un despliegue controlado y autorizado."
+echo "== 4. wrangler deploy después de registrar la etiqueta v1"
+if (cd "$TMP" && npx --prefix "$RAIZ" wrangler deploy --config wrangler.jsonc) > "$TMP/paso4.log" 2>&1; then
+  echo "RESULTADO: wrangler desplegó correctamente tras registrar la etiqueta v1."
+  echo "Conclusión: en producción se necesitaría registrar la etiqueta antes del despliegue, previa validación y autorización."
+else
+  echo "RESULTADO: también falló el despliegue después de registrar la etiqueta. Últimas líneas:"
+  tail -5 "$TMP/paso4.log" | sed -E 's/[A-Za-z0-9_-]{32,}/[oculto]/g'
+  echo "Conclusión: no desplegar producción; investigar el error en el entorno aislado."
+fi
