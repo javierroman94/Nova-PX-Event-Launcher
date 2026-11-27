@@ -55,7 +55,9 @@ assert.ok(/Javi/.test(ms) && /5 veces/.test(ms) && /usa Forge/.test(ms) && /segu
 const red = B2.redactLog([
   'java.lang.OutOfMemoryError: Java heap space at C:\\Users\\Francisco\\AppData\\x',
   'Launching with --accessToken eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnopqrstuvwxyz --uuid 123e4567-e89b-12d3-a456-426614174000 Exception',
-  'Caused by: java.io.IOException en /home/pedro/.minecraft de 192.168.1.20 mail@x.com', 'línea normal'
+  'Caused by: java.io.IOException en /home/pedro/.minecraft de 192.168.1.20 mail@x.com',
+  'Auth refresh_token=abcdefghijklmnop id_token=abcdefghijklmnop --session minecraft-session-token',
+  'línea normal'
 ]);
 assert.ok(!/Francisco|eyJ|123e4567|pedro|192\.168|mail@x/.test(red), red);
 assert.ok(/<usuario>/.test(red) && /OutOfMemory/.test(red));

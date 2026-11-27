@@ -71,6 +71,9 @@ assert.strictEqual(f.rutaFirma('data/manifest.json'), 'data/manifest.firma.json'
   const reader = (fs2) => async (n) => { if (!(n in fs2)) throw new Error('HTTP 404'); return fs2[n]; };
   const base = { pub: A.pub, obligatoria: true, wait: async () => {} };
   assert.deepStrictEqual((await leerFirmado({ ...base, name: 'manifest', getText: reader(files) })).data, { mods: [] });
+  // Llave pública ausente: no debe degradarse silenciosamente cuando la firma es obligatoria.
+  await assert.rejects(() => leerFirmado({ ...base, pub: null, name: 'manifest', getText: reader(files) }), /falta la llave pública/);
+  assert.deepStrictEqual((await leerFirmado({ ...base, pub: null, obligatoria: false, name: 'manifest', getText: reader(files) })).data, { mods: [] }, 'sin llave solo se permite cuando la firma es opcional');
   assert.deepStrictEqual((await leerFirmado({ ...base, name: 'news', getText: reader(files) })).data, [], 'lo no crítico no pide firma');
   const tampered = { ...files, 'manifest.json': '{"mods":[{"url":"https://malo"}]}\n' };
   await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader(tampered) }), /no válida/);
@@ -81,6 +84,26 @@ assert.strictEqual(f.rutaFirma('data/manifest.json'), 'data/manifest.firma.json'
   const other = gen();
   await assert.rejects(() => leerFirmado({ ...base, pub: other.pub, name: 'manifest', getText: reader(files) }), /no válida/);
   await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader(files), known: { firmadoEn: '2026-12-01T00:00:00.000Z' } }), /más vieja/);
+  // Lista del loader Nova: va con su propia llave; firmada con la de datos no vale.
+  {
+    const nova = gen();
+    const lt = '{"version":"1.0.0","mc":{}}\n';
+    const lf = { 'nova-loader.json': lt, 'nova-loader.firma.json': JSON.stringify(f.firmar('nova-loader', lt, nova.priv)) };
+    assert.ok(f.FIRMADOS_NOVA.includes('nova-loader') && !f.FIRMADOS.includes('nova-loader'), 'firmar-datos.js no toca la lista de Nova');
+    assert.strictEqual((await leerFirmado({ ...base, pub: nova.pub, name: 'nova-loader', getText: reader(lf) })).data.version, '1.0.0');
+    await assert.rejects(() => leerFirmado({ ...base, pub: A.pub, name: 'nova-loader', getText: reader(lf) }), /no válida/);
+    await assert.rejects(() => leerFirmado({ ...base, pub: nova.pub, name: 'nova-loader', getText: reader({ 'nova-loader.json': lt }) }), /no válida/);
+    assert.strictEqual((await leerFirmado({ ...base, pub: null, obligatoria: false, name: 'nova-loader', getText: reader({ 'nova-loader.json': lt }) })).data.version, '1.0.0', 'sin llave Nova en el launcher: como antes');
+  }
+  // Formato o algoritmo no permitidos
+  const goodSig = JSON.parse(files['manifest.firma.json']);
+  const withSig = (sig) => ({ ...files, 'manifest.firma.json': JSON.stringify(sig) });
+  await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader(withSig({ ...goodSig, v: 2 })) }), /formato desconocido/);
+  await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader(withSig({ ...goodSig, alg: 'rsa-sha256' })) }), /Algoritmo/);
+  await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader({ ...files, 'manifest.firma.json': 'no es json' }) }), /no válida/);
+  await assert.rejects(() => leerFirmado({ ...base, name: 'manifest', getText: reader(withSig({ ...goodSig, nombre: 'plugins' })) }), /otro archivo/);
+  const rsa = require('crypto').generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({ type: 'spki', format: 'pem' });
+  await assert.rejects(() => leerFirmado({ ...base, pub: rsa, name: 'manifest', getText: reader(files) }), /Algoritmo/);
   // Carrera entre archivo y firma: al reintentar ya coincide
   let calls = 0;
   const racing = async (n) => (n === 'manifest.json' ? (++calls === 1 ? '{"mods":["viejo"]}\n' : files[n]) : files[n]);

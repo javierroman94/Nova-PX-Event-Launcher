@@ -7,6 +7,7 @@
     "status": "ended",
     "image": "images/banner-proximamente-mwrboehp.png",
     "logo": "",
+    "titleSize": 100,
     "sponsors": [
       {
         "kind": "host",
@@ -25,7 +26,7 @@
     "lockPack": true,
     "publishedId": "",
     "instanceId": "",
-    "updatedAt": "2026-11-25T21:38:25.512Z"
+    "updatedAt": "2026-11-27T21:32:24.205Z"
   },
   {
     "id": "evento-mwu4xi5v",
@@ -35,6 +36,7 @@
     "status": "ended",
     "image": "images/banner-sweet-vacations-mwwn9qno.png",
     "logo": "images/logo-murder-mistery-mwwn4f4v.png",
+    "titleSize": 100,
     "sponsors": [
       {
         "kind": "sponsor",
@@ -48,6 +50,6 @@
     "lockPack": true,
     "publishedId": "murder-mistery-2026-11-24",
     "instanceId": "mp-backrooms-ezluiiz",
-    "updatedAt": "2026-11-25T21:38:25.512Z"
+    "updatedAt": "2026-11-27T21:32:24.205Z"
   }
 ]

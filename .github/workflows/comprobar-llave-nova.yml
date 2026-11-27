@@ -1,0 +1,25 @@
+# Comprueba, sin mostrarla, que el secreto NOVA_FIRMA_PRIVADA es una llave Ed25519 y que corresponde
+# a config/nova-firma.pub.pem de la rama elegida. Solo imprime el tipo, la huella de la pública y si coincide.
+# Se ejecuta a mano: Actions → «Comprobar llave Nova» → Run workflow (elige la rama con la pública).
+name: Comprobar llave Nova
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+      - name: Comprobar el secreto contra la pública
+        env:
+          NOVA_FIRMA_PRIVADA: ${{ secrets.NOVA_FIRMA_PRIVADA }}
+        run: |
+          if [ -z "$NOVA_FIRMA_PRIVADA" ]; then echo "El secreto NOVA_FIRMA_PRIVADA no existe en este repositorio."; exit 1; fi
+          node tools/verificar-llave-nova.js

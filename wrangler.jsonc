@@ -1,15 +1,34 @@
 {
-  // Contador de usuarios y estado en línea de Nova PX (ver docs/CLOUDFLARE.md). Cloudflare lo publica desde este repositorio.
+  // Contador de usuarios, amigos y estado en línea de Nova PX (ver docs/CLOUDFLARE.md y docs/SEGURIDAD.md).
+  // Workers Builds SÍ está conectado a este repositorio: cada push a una rama crea un Preview (URL aparte, sin el
+  // KV de producción). La rama de PRODUCCIÓN configurada en Cloudflare es «novapx-check-1794018615182» (rama vieja,
+  // sin proteger): un push ahí despliega producción con `npx wrangler deploy`. Unir a main hoy solo crea un Preview.
+  // Ver docs/SEGURIDAD.md, punto 13. El secreto ADMIN_KEY vive en Cloudflare.
+  // OJO migración: en Cloudflare el script tiene migration_tag vacío y la clase Presence (SQLite) ya existe;
+  // probar antes el primer `wrangler deploy` (ver docs/SEGURIDAD.md, punto 12).
   "name": "nova-px-event-launcher",
   "main": "worker/index.mjs",
   "compatibility_date": "2025-01-01",
   "workers_dev": true,
+  // Rate Limiting de Cloudflare: aproximado y por ubicación, no es un límite global estricto (ver docs/SEGURIDAD.md).
+  "ratelimits": [
+    {
+      "name": "LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 120, "period": 60 }
+    },
+    {
+      "name": "ADMIN_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 8, "period": 60 }
+    }
+  ],
   "kv_namespaces": [
     { "binding": "USERS", "id": "7a6ae0b0b55f45099bf81d1de39797f9" }
   ],
   "durable_objects": { "bindings": [{ "name": "PRESENCE", "class_name": "Presence" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Presence"] }],
-  // Las ramas que no son main se publican como Preview con `wrangler preview`, que exige este bloque.
-  // Vacío a propósito: los Previews no tocan el KV de producción (el contador de usuarios real).
+  // Bloque para `wrangler preview` (versiones de prueba de una rama). Vacío a propósito: un Preview no usa el
+  // KV de producción (el contador de usuarios real). Las previews viejas dejaron namespaces Presence sin uso.
   "previews": {}
 }
