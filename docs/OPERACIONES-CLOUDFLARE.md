@@ -1,4 +1,6 @@
-# Operaciones pendientes en Cloudflare
+# Operaciones en Cloudflare
+
+**Estado al 27-11-2026:** A hecho (rama de producción `main`, más la regla de GitHub que protege `main`); B confirmado en solo lectura (Presence ya en `v1`); C hecho (PetQuota desplegado y comprobado). Lo que queda: borrar las ramas `novapx-check-*` (PR #4).
 
 Estos pasos los hace el dueño a mano. Nada de esto se ejecutó durante la auditoría. Hazlos **en este orden** y uno a la vez.
 
