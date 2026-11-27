@@ -30,6 +30,7 @@ Este repositorio es **público**. Todo lo que se suba lo puede leer cualquiera, 
 ### Secretos y repositorio
 - Nunca se suben al repositorio: tokens, claves de API, webhooks, contraseñas, llaves privadas, `.env` ni `.dev.vars`. El `.gitignore` ya bloquea `*.PRIVADA.pem`, `*.key.pem`, `.env` y `.dev.vars`.
 - Los secretos del Worker viven en Cloudflare, nunca en `wrangler.jsonc` ni en el código: `ADMIN_KEY` es obligatorio y `ANTHROPIC_KEY` solo se configura si PX usa Anthropic en vez del binding Workers AI.
+- Fija las GitHub Actions a SHA completo e inmutable; no uses etiquetas movibles como `@v4` en workflows de publicación.
 - Antes de cada commit revisa el diff buscando claves, URLs privadas y datos personales.
 - `config/launcher.config.json` es público: solo configuración, jamás credenciales.
 
