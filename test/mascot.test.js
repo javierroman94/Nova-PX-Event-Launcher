@@ -61,4 +61,8 @@ const red = B2.redactLog([
 ]);
 assert.ok(!/Francisco|eyJ|123e4567|pedro|192\.168|mail@x/.test(red), red);
 assert.ok(/<usuario>/.test(red) && /OutOfMemory/.test(red));
+// Los argumentos secretos se ocultan con espacio o con «=».
+const red2 = B2.redactLog(['Exception --session=tok-secreto-1 --accessToken tok-secreto-2 --xuid=12345 --clientId="abc-secreto"']);
+assert.ok(!/tok-secreto|12345|abc-secreto/.test(red2), red2);
+assert.ok(/--session=<oculto>/.test(red2) && /--accessToken <oculto>/.test(red2), red2);
 console.log('mascot ia ok');
