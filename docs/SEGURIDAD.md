@@ -28,6 +28,7 @@ Revisión estática de seguridad y privacidad del repositorio público, actualiz
 | CSP de overlay permitía estilos inline | CSS movido a `overlay.css`; `style-src 'self'` sin `unsafe-inline` |
 | Nova Client se instalaba sin comprobar integridad | Verifica SHA-256 del asset de GitHub antes de escribirlo; falta firma para protegerse ante compromiso del repo |
 | La política omitía el indicador premium de telemetría | `PRIVACY.md` ahora explica que se envía un booleano premium, nunca tokens |
+| GitHub Actions usaba etiquetas de versión movibles | Los workflows fijan checkout, setup-node y upload-artifact a SHA completo |
 
 ## Loader Nova (1.0.190)
 - `data/nova-loader.json` lo arma una tarea de GitHub (`tools/nova-loader.js`) y no va firmado: el launcher solo acepta enlaces `https://cdn.modrinth.com/data/…`, nombres de archivo seguros y huella SHA-512 de cada `.jar`. SHA-512 comprueba el archivo descargado, pero no autentica el catálogo: alguien con capacidad de modificar el repositorio podría cambiar catálogo, URL y huella. Requiere firma asimétrica.
