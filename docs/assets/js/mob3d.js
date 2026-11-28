@@ -1,4 +1,3 @@
-/* global document, window */
 /* Mobs 3D de bloques (diseños propios) para acompañar a Pexy. Mini motor 3D en canvas 2D: cajas con sombreado plano,
    vista isométrica suave, caminan, giran hacia donde van y se mueven con animación de patas, alas y saltos. Sin librerías. */
 (function () {
@@ -160,7 +159,7 @@
         const pts = f.v.map(([vx, vy, vz]) => {
           let q = [part.p[0] + vx * hw, part.p[1] + vy * hh, part.p[2] + vz * hd];
           if (rot) { const pv = part.piv || part.p; q = [q[0] - pv[0], q[1] - pv[1], q[2] - pv[2]]; if (rot[2]) q = rotZ(q, rot[2]); if (rot[0]) q = rotX(q, rot[0]); if (rot[1]) q = rotYp(q, rot[1]); q = [q[0] + pv[0], q[1] + pv[1], q[2] + pv[2]]; }
-          q[1] *= sq; q = rotY(q, yaw);
+          q[1] *= sq; q = rotY(q, yaw); if (c.name === 'px') q[0] *= 1.65;
           return { x: q[0], y: q[1], z: q[2] };
         });
         let n = norms[i]; if (rot) { if (rot[2]) n = rotZ(n, rot[2]); if (rot[0]) n = rotX(n, rot[0]); if (rot[1]) n = rotYp(n, rot[1]); }
