@@ -43,8 +43,23 @@
     document.querySelectorAll('[data-px-action]').forEach(function(b){b.addEventListener('click',function(){pxAct(b.getAttribute('data-px-action'));});});
     document.getElementById('px-web-avatar').addEventListener('click',function(){pxAct('pet');});
     document.querySelectorAll('[data-px-acc]').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-px-acc'),lvl=pxLevel(),ok=(id==='bow'&&lvl>=2)||(id==='hat'&&lvl>=3)||(id==='scarf'&&pxState.streak>=3);var msg=document.getElementById('px-wardrobe-status');if(!ok){msg.textContent='Aún no está desbloqueado. Sigue cuidando a Pexy.';return;}pxState.acc=pxState.acc===id?'':id;msg.textContent=pxState.acc?'Accesorio equipado: '+b.textContent:'Accesorio retirado.';pxSave();});});
-    var pxTap=function(){if(pxState.energy<10){pxSay('Estoy cansado.');return;}var score=0,until=Date.now()+10000,box=document.getElementById('px-game-result');box.textContent='¡Toca el botón tantas veces como puedas durante 10 segundos!';var old=document.querySelector('[data-px-game="tap"]');var count=0;var tick=function(){if(Date.now()>=until){pxState.xp+=Math.min(15,count);pxState.energy=pxClamp(pxState.energy-8);pxState.best=Math.max(pxState.best,count);pxSave();pxRender();box.textContent='¡Conseguiste '+count+' puntos! Récord: '+pxState.best;pxSay('¡Buen trabajo! 🎋');old.textContent='🎋 Bambú veloz';return;}old.textContent='🎋 ¡TOCA! '+(++score);count++;setTimeout(tick,900);};old.textContent='🎋 ¡TOCA!';old.onclick=function(){count++;};tick();};
-    document.querySelector('[data-px-game="tap"]').addEventListener('click',pxTap);
+    var pxTap=function(){
+      if(pxState.energy<10){pxSay('Estoy cansado.');return;}
+      var dlg=document.createElement('dialog');dlg.className='px-game-dialog';
+      var title=document.createElement('h3');title.textContent='🎋 Bambú veloz';
+      var help=document.createElement('p');help.textContent='Pulsa el bambú tantas veces como puedas en 10 segundos.';
+      var tap=document.createElement('button');tap.type='button';tap.className='px-tap-target';tap.textContent='🎋 ¡TOCA!';
+      var status=document.createElement('p');status.textContent='0 puntos · 10 s';
+      var close=document.createElement('button');close.type='button';close.textContent='Salir';
+      dlg.append(title,help,tap,status,close);document.body.append(dlg);
+      var count=0,ended=false,until=Date.now()+10000;
+      var timer=setInterval(function(){var left=Math.max(0,Math.ceil((until-Date.now())/1000));status.textContent=count+' puntos · '+left+' s';if(!left)finish();},150);
+      function finish(){if(ended)return;ended=true;clearInterval(timer);tap.disabled=true;pxState.xp+=Math.min(15,count);pxState.energy=pxClamp(pxState.energy-8);pxState.best=Math.max(pxState.best,count);pxSave();pxRender();document.getElementById('px-game-result').textContent='¡Conseguiste '+count+' puntos! Récord: '+pxState.best;pxSay('¡Buen trabajo! 🎋');status.textContent='Resultado: '+count+' puntos';close.textContent='Cerrar';}
+      tap.addEventListener('click',function(){if(!ended){count++;tap.textContent='🎋 '+count;}});
+      close.addEventListener('click',function(){if(!ended)finish();dlg.close();dlg.remove();});
+      dlg.addEventListener('cancel',function(e){e.preventDefault();if(!ended)finish();dlg.close();dlg.remove();});
+      dlg.showModal();
+    };
     document.querySelector('[data-px-game="memory"]').addEventListener('click',function(){var seq=Array.from({length:4},function(){return Math.floor(Math.random()*4);}),names=['🍎','🍌','🍇','🍓'];var answer=window.prompt('Memoriza: '+seq.map(function(i){return names[i];}).join('  ')+'\nEscribe los emojis en el mismo orden:');if(answer===seq.map(function(i){return names[i];}).join('')){pxState.xp+=12;pxState.love=pxClamp(pxState.love+8);pxSay('¡Memoria perfecta! 🧠');document.getElementById('px-game-result').textContent='¡Ganaste 12 XP!';}else{pxSay('¡Casi! Practiquemos otra vez.');document.getElementById('px-game-result').textContent='La secuencia era '+seq.map(function(i){return names[i];}).join(' ');}pxSave();pxRender();});
     pxRender();
   }
