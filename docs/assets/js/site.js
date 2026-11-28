@@ -25,7 +25,7 @@
   var status = document.querySelector('[data-release-status]');
 
   function fallback() {
-    if (status) status.textContent = 'No pudimos consultar GitHub ahora; los botones te llevan a la página de la última versión ·';
+    if (status) status.textContent = 'No pudimos comprobar si hay una versión más nueva; el botón baja la 1.0.193 y luego se actualiza sola ·';
   }
   if (!window.fetch) return;
 
