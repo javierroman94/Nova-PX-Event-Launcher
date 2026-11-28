@@ -66,7 +66,7 @@ assert.throws(() => t.decidir({}, '1.0.193'), /estado/);
 // El flujo de publicación solo envía a la Store desde una etiqueta vX.Y.Z, con entorno protegido,
 // sin cancelar la publicación de GitHub si la Store falla, y con acciones fijadas a SHA.
 {
-  const wf = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release.yml'), 'utf8');
+  const wf = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release.yml'), 'utf8').replace(/\r\n/g, '\n');
   const job = wf.slice(wf.indexOf('\n  tienda:'));
   assert.ok(job.length > 20, 'falta el trabajo «tienda»');
   assert.match(job, /needs: \[etiquetar, release\]/);
@@ -76,7 +76,7 @@ assert.throws(() => t.decidir({}, '1.0.193'), /estado/);
   assert.match(job, /concurrency:/);
   assert.match(job, /steps\.decidir\.outputs\.accion == 'enviar'/);
   // Los secretos solo aparecen como variables de entorno, nunca dentro de un comando.
-  for (const linea of job.split('\n').filter((l) => l.includes('secrets.')))
+  for (const linea of job.split(/\r?\n/).filter((l) => l.includes('secrets.')))
     assert.match(linea, /^\s+STORE_[A-Z_]+: \$\{\{ secrets\.STORE_[A-Z_]+ \}\}$/, `secreto fuera de env: ${linea.trim()}`);
   for (const m of wf.matchAll(/uses:\s*([^\s#]+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/, `acción sin SHA: ${m[1]}`);
   // El paquete de la Store se compila después de publicar en GitHub y no puede tumbar esa publicación.
