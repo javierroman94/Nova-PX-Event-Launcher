@@ -31,6 +31,29 @@
       P(-4.2, 2.4, 0, 6, 0.7, 4.4, '#4d4a6e', { a: 'wingL', piv: [-2, 2.6, 0] }), P(4.2, 2.4, 0, 6, 0.7, 4.4, '#4d4a6e', { a: 'wingR', piv: [2, 2.6, 0] })] }
   };
 
+  // Pexy: panda blanco y negro con sudadera morada y estrella nova. Geometría articulada por pivotes.
+  MOBS.px = { h: 24, sc: 1.25, yaw: 0.72, parts: [
+    P(0, 9, 0, 9, 9, 6, '#713bb0'), P(0, 11.2, 3.12, 5.2, 2.2, 0.22, '#8f5bd0', { flat: true }),
+    P(0, 18, 0, 9, 8.2, 7.2, '#f4f1ed', { a: 'head', piv: [0, 17, 0] }),
+    P(-4.2, 22.1, 0, 2.8, 2.8, 2.8, '#17151d', { a: 'head', piv: [0, 17, 0] }),
+    P(4.2, 22.1, 0, 2.8, 2.8, 2.8, '#17151d', { a: 'head', piv: [0, 17, 0] }),
+    P(-2.1, 18.2, 3.7, 2.6, 3.2, 0.28, '#24212a', { a: 'head', piv: [0, 17, 0], flat: true }),
+    P(2.1, 18.2, 3.7, 2.6, 3.2, 0.28, '#24212a', { a: 'head', piv: [0, 17, 0], flat: true }),
+    P(-2.1, 18.5, 3.9, 0.9, 1, 0.12, '#ffffff', { a: 'head', piv: [0, 17, 0], flat: true }),
+    P(2.1, 18.5, 3.9, 0.9, 1, 0.12, '#ffffff', { a: 'head', piv: [0, 17, 0], flat: true }),
+    P(0, 16.3, 3.8, 3.5, 2.2, 0.4, '#ffffff', { a: 'head', piv: [0, 17, 0] }),
+    P(0, 17.4, 4.05, 1.25, 0.9, 0.3, '#17151d', { a: 'head', piv: [0, 17, 0], flat: true }),
+    P(0, 15.8, 4.05, 1.1, 0.35, 0.25, '#17151d', { a: 'head', piv: [0, 17, 0], flat: true }),
+    P(0, 8.7, 3.18, 1.2, 1.1, 0.22, '#ffffff', { flat: true }),
+    P(-1.1, 9.7, 3.18, 1.1, 1.1, 0.22, '#ffffff', { flat: true }),
+    P(1.1, 9.7, 3.18, 1.1, 1.1, 0.22, '#ffffff', { flat: true }),
+    P(-3.4, 9.5, 0, 2.6, 6.8, 3, '#713bb0', { a: 'armA', piv: [-3.4, 12.3, 0] }),
+    P(3.4, 9.5, 0, 2.6, 6.8, 3, '#713bb0', { a: 'armB', piv: [3.4, 12.3, 0] }),
+    P(-2.5, 2.2, 0, 3.2, 4.4, 3.8, '#17151d', { a: 'legA', piv: [-2.5, 4.2, 0] }),
+    P(2.5, 2.2, 0, 3.2, 4.4, 3.8, '#17151d', { a: 'legB', piv: [2.5, 4.2, 0] }),
+    P(-3.4, 1.5, 1.1, 3.4, 1.4, 4, '#24212a'), P(3.4, 1.5, 1.1, 3.4, 1.4, 4, '#24212a')
+  ] };
+
   // Hostiles (diseños propios, versión simpática): zombi lila, esqueleto de brillo verde, araña y bombito.
   const limb = (x, y, z, w, h, d, col, a, pv, rot) => P(x, y, z, w, h, d, col, { a, piv: pv, rot });
   MOBS.zombie = { h: 15, sc: 0.8, parts: [
@@ -118,7 +141,15 @@
     const sq = c.name === 'jelly' ? (c.vy && c.y < -1 ? 1.12 : 0.92 + 0.05 * Math.sin(t)) : 1;
     const polys = [];
     let pidx = 0;
-    for (const part of def.parts) {
+    const extra = [];
+    if (c.name === 'px') {
+      if (c.acc === 'hat') extra.push(P(0, 23.8, 0, 7.2, 1.5, 6.2, '#201a2b'), P(0, 25, 0, 4.8, 1.2, 4.8, '#3b2a55'));
+      if (c.acc === 'bow') extra.push(P(-4.2, 22.8, 0, 2.2, 1.7, 1.5, '#c36bff'), P(-2.8, 22.8, 0, 2.2, 1.7, 1.5, '#c36bff'), P(-3.5, 22.8, 0.9, 1, 1.4, 0.8, '#f4d9ff'));
+      if (c.acc === 'scarf') extra.push(P(0, 13.4, 0, 8.6, 2.2, 6.8, '#9b62dc'), P(2.4, 11.4, 3.35, 2, 3.8, 0.7, '#9b62dc'));
+      if (c.acc === 'glasses') extra.push(P(-2.1, 18.2, 4.05, 3.1, 2.7, 0.22, '#191721', { flat: true }), P(2.1, 18.2, 4.05, 3.1, 2.7, 0.22, '#191721', { flat: true }), P(0, 18.2, 4.05, 1.3, 0.5, 0.2, '#191721', { flat: true }));
+      if (c.acc === 'crown') extra.push(P(0, 24.1, 0, 6.5, 1.1, 4.5, '#e9b83f'), P(-2.2, 25.3, 0, 1.3, 1.8, 1.4, '#ffd96a'), P(0, 25.7, 0, 1.3, 2.4, 1.4, '#ffd96a'), P(2.2, 25.3, 0, 1.3, 1.8, 1.4, '#ffd96a'));
+    }
+    for (const part of def.parts.concat(extra)) {
       pidx++;
       const an = anim(part, t, moving, c.name); const br = part.rot || [0, 0, 0];
       const rot = (an.rx || an.ry || an.rz || br[0] || br[1] || br[2]) ? [(an.rx || 0) + br[0], (an.ry || 0) + br[1], (an.rz || 0) + br[2]] : null;
