@@ -1,3 +1,4 @@
+/* global document, window */
 (function () {
   'use strict';
   var toggle = document.querySelector('[data-menu-toggle]');
