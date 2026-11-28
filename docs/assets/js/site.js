@@ -15,6 +15,40 @@
       }
     });
   }
+
+  var pxRoot = document.getElementById('px-stage');
+  if (pxRoot) {
+    var pxKey = 'novapx.pexy.web.v1';
+    var pxDefault = { hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: Date.now(), acc: '', best: 0 };
+    var pxState = pxDefault;
+    try { pxState = Object.assign({}, pxDefault, JSON.parse(localStorage.getItem(pxKey) || '{}')); } catch (_) {}
+    var pxClamp = function (n) { return Math.max(0, Math.min(100, n)); };
+    var pxLevel = function () { return 1 + [30,80,160,280,450,700,1000].filter(function (n) { return pxState.xp >= n; }).length; };
+    var pxSay = function (s) { var b = document.getElementById('px-speech'); if (b) b.textContent = s; };
+    var pxSave = function () { pxState.last = Date.now(); try { localStorage.setItem(pxKey, JSON.stringify(pxState)); } catch (_) {} };
+    var pxRender = function () {
+      ['hunger','energy','love'].forEach(function (k) { var n = Math.round(pxState[k]); var bar = document.getElementById('px-'+k); var label = document.getElementById('px-'+k+'-label'); if(bar)bar.style.width=n+'%'; if(label)label.textContent=n+'%'; });
+      var level=pxLevel(), base=[0,30,80,160,280,450,700,1000][Math.min(level-1,7)], next=[30,80,160,280,450,700,1000,1400][Math.min(level-1,7)];
+      document.getElementById('px-name').textContent='Pexy'; document.getElementById('px-level').textContent='Nivel '+level+' · '+(pxState.hunger<20?'Hambriento':pxState.energy<20?'Cansado':pxState.love<20?'Triste':'Feliz');
+      document.getElementById('px-xp').textContent=pxState.xp+' XP'; document.getElementById('px-xp-fill').style.width=Math.min(100,((pxState.xp-base)/(next-base))*100)+'%';
+      document.getElementById('px-stage').dataset.mood=pxState.energy<20?'sueño':pxState.hunger<20?'hambre':'feliz';
+    };
+    var pxAct = function (action) {
+      if(action==='feed'){if(pxState.hunger>94){pxSay('¡Estoy lleno! 😋');return;}pxState.hunger=pxClamp(pxState.hunger+28);pxState.love=pxClamp(pxState.love+3);pxState.xp+=4;pxSay('¡Ñam! Gracias por la comida 🍎');}
+      if(action==='pet'){pxState.love=pxClamp(pxState.love+7);pxState.xp+=2;pxSay('¡Eso me hace cosquillas! 💜');}
+      if(action==='sleep'){if(pxState.energy>88){pxSay('Todavía tengo energía. ¡Vamos a jugar!');return;}pxState.energy=pxClamp(pxState.energy+35);pxState.xp+=3;pxSay('Zzz… ¡Qué buen descanso! 😴');}
+      if(action==='play'){if(pxState.energy<15){pxSay('Estoy cansado. Necesito dormir primero.');return;}pxState.energy=pxClamp(pxState.energy-12);pxState.hunger=pxClamp(pxState.hunger-5);pxState.love=pxClamp(pxState.love+10);pxState.xp+=5;pxSay('¡Eso estuvo genial! 🎮');}
+      pxSave();pxRender();
+    };
+    document.querySelectorAll('[data-px-action]').forEach(function(b){b.addEventListener('click',function(){pxAct(b.getAttribute('data-px-action'));});});
+    document.getElementById('px-web-avatar').addEventListener('click',function(){pxAct('pet');});
+    document.querySelectorAll('[data-px-acc]').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-px-acc'),lvl=pxLevel(),ok=(id==='bow'&&lvl>=2)||(id==='hat'&&lvl>=3)||(id==='scarf'&&pxState.streak>=3);var msg=document.getElementById('px-wardrobe-status');if(!ok){msg.textContent='Aún no está desbloqueado. Sigue cuidando a Pexy.';return;}pxState.acc=pxState.acc===id?'':id;msg.textContent=pxState.acc?'Accesorio equipado: '+b.textContent:'Accesorio retirado.';pxSave();});});
+    var pxTap=function(){if(pxState.energy<10){pxSay('Estoy cansado.');return;}var score=0,until=Date.now()+10000,box=document.getElementById('px-game-result');box.textContent='¡Toca el botón tantas veces como puedas durante 10 segundos!';var old=document.querySelector('[data-px-game="tap"]');var count=0;var tick=function(){if(Date.now()>=until){pxState.xp+=Math.min(15,count);pxState.energy=pxClamp(pxState.energy-8);pxState.best=Math.max(pxState.best,count);pxSave();pxRender();box.textContent='¡Conseguiste '+count+' puntos! Récord: '+pxState.best;pxSay('¡Buen trabajo! 🎋');old.textContent='🎋 Bambú veloz';return;}old.textContent='🎋 ¡TOCA! '+(++score);count++;setTimeout(tick,900);};old.textContent='🎋 ¡TOCA!';old.onclick=function(){count++;};tick();};
+    document.querySelector('[data-px-game="tap"]').addEventListener('click',pxTap);
+    document.querySelector('[data-px-game="memory"]').addEventListener('click',function(){var seq=Array.from({length:4},function(){return Math.floor(Math.random()*4);}),names=['🍎','🍌','🍇','🍓'];var answer=window.prompt('Memoriza: '+seq.map(function(i){return names[i];}).join('  ')+'\nEscribe los emojis en el mismo orden:');if(answer===seq.map(function(i){return names[i];}).join('')){pxState.xp+=12;pxState.love=pxClamp(pxState.love+8);pxSay('¡Memoria perfecta! 🧠');document.getElementById('px-game-result').textContent='¡Ganaste 12 XP!';}else{pxSay('¡Casi! Practiquemos otra vez.');document.getElementById('px-game-result').textContent='La secuencia era '+seq.map(function(i){return names[i];}).join(' ');}pxSave();pxRender();});
+    pxRender();
+  }
+
   var version = document.querySelector('[data-version]');
   var win = document.querySelector('[data-download="windows"]');
   var linux = document.querySelector('[data-download="linux"]');
