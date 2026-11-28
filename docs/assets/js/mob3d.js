@@ -1,3 +1,4 @@
+/* global document, window */
 /* Mobs 3D de bloques (diseños propios) para acompañar a Pexy. Mini motor 3D en canvas 2D: cajas con sombreado plano,
    vista isométrica suave, caminan, giran hacia donde van y se mueven con animación de patas, alas y saltos. Sin librerías. */
 (function () {
