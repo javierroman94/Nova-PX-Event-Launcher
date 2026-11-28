@@ -18,6 +18,22 @@
 
   var pxRoot = document.getElementById('px-stage');
   if (pxRoot) {
+    var pxCanvas = document.getElementById('px-web-model');
+    var pxCtx = pxCanvas && pxCanvas.getContext('2d');
+    var pxMesh = window.NovaMob3D;
+    var pxAnim = 0, pxFrame = 0, pxLast = 0;
+    if (pxCanvas && pxCtx && pxMesh && pxMesh.names.includes('px')) {
+      var pxReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function drawPexy(now) {
+        var dt = Math.min(0.05, (now - (pxLast || now)) / 1000); pxLast = now;
+        pxAnim += pxReduced ? 0 : dt * 2.2;
+        pxCtx.clearRect(0, 0, pxCanvas.width, pxCanvas.height);
+        pxMesh.draw(pxCtx, { name: 'px', dir: 1, ph: pxAnim, moving: false, acc: window.__novaPexyAccessory || '' }, 240, 385);
+        pxFrame = window.requestAnimationFrame(drawPexy);
+      }
+      pxFrame = window.requestAnimationFrame(drawPexy);
+    }
+
     var pxKey = 'novapx.pexy.web.v1';
     var pxDefault = { hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: Date.now(), acc: '', best: 0 };
     var pxState = pxDefault;
@@ -37,6 +53,7 @@
       document.getElementById('px-xp').textContent=pxState.xp+' XP'; document.getElementById('px-xp-fill').style.width=Math.min(100,((pxState.xp-base)/(next-base))*100)+'%';
       document.getElementById('px-stage').dataset.mood=pxState.energy<20?'sueño':pxState.hunger<20?'hambre':'feliz';
       var equipped=document.getElementById('px-equipped');if(equipped){equipped.textContent=({bow:'🎀',hat:'🎩',scarf:'🧣'})[pxState.acc]||'';equipped.hidden=!pxState.acc;}
+      window.__novaPexyAccessory=pxState.acc;
     };
     var pxAct = function (action) {
       pxMarkDay();
