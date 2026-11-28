@@ -60,6 +60,8 @@
       dlg.addEventListener('cancel',function(e){e.preventDefault();if(!ended)finish();dlg.close();dlg.remove();});
       dlg.showModal();
     };
+    var tapGame = document.querySelector('[data-px-game="tap"]');
+    if (tapGame) tapGame.addEventListener('click', pxTap);
     document.querySelector('[data-px-game="memory"]').addEventListener('click',function(){var seq=Array.from({length:4},function(){return Math.floor(Math.random()*4);}),names=['🍎','🍌','🍇','🍓'];var answer=window.prompt('Memoriza: '+seq.map(function(i){return names[i];}).join('  ')+'\nEscribe los emojis en el mismo orden:');if(answer===seq.map(function(i){return names[i];}).join('')){pxState.xp+=12;pxState.love=pxClamp(pxState.love+8);pxSay('¡Memoria perfecta! 🧠');document.getElementById('px-game-result').textContent='¡Ganaste 12 XP!';}else{pxSay('¡Casi! Practiquemos otra vez.');document.getElementById('px-game-result').textContent='La secuencia era '+seq.map(function(i){return names[i];}).join(' ');}pxSave();pxRender();});
     pxRender();
   }
