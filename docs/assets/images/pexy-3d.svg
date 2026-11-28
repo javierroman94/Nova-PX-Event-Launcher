@@ -1,1 +1,90 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 560" role="img" aria-labelledby="title desc"><title id="title">Pexy, mascota de Nova PX</title><desc id="desc">Panda tridimensional de estilo voxel con sudadera morada y una estrella Nova.</desc><defs><linearGradient id="fur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".55" stop-color="#eeeaf7"/><stop offset="1" stop-color="#bdb5ce"/></linearGradient><linearGradient id="hood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c18aff"/><stop offset=".55" stop-color="#8438e8"/><stop offset="1" stop-color="#42138c"/></linearGradient><linearGradient id="black" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#393345"/><stop offset="1" stop-color="#08070f"/></linearGradient><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter></defs><ellipse cx="260" cy="510" rx="170" ry="24" fill="#05030b" opacity=".5" filter="url(#shadow)"/><g stroke="#090711" stroke-width="13" stroke-linejoin="round"><path fill="url(#black)" d="M116 386 88 480l44 36 90-14 17-81z"/><path fill="url(#black)" d="m404 382 33 95-41 39-91-15-18-81z"/><path fill="url(#fur)" d="M174 260 119 299l-20 93 46 91 112 20 113-20 45-91-20-93-60-39z"/><path fill="url(#black)" d="m152 292-65-20-34 43 30 94 57 28 38-72z"/><path fill="url(#black)" d="m368 292 65-20 34 43-30 94-57 28-38-72z"/><path fill="url(#fur)" d="M151 90 119 32 77 45 58 100l31 75 55 3z"/><path fill="url(#fur)" d="m369 90 32-58 42 13 19 55-31 75-55 3z"/><path fill="url(#fur)" d="M115 138 154 76l106-30 106 30 39 62-18 116-58 62-103 23-103-23-58-62z"/><path fill="url(#black)" d="m152 152 37-17 35 17 2 53-30 36-40-12-18-39z"/><path fill="url(#black)" d="m368 152-37-17-35 17-2 53 30 36 40-12 18-39z"/><path fill="#fff" d="m190 179 14-5 12 8-2 15-14 7-12-10z"/><path fill="#fff" d="m310 179 14-5 12 8-2 15-14 7-12-10z"/><path fill="#14101d" d="m236 232 24-15 24 15-5 19-19 13-19-13z"/><path fill="#f18aab" d="M226 267q34 39 68 0l-9 36-25 12-25-12z"/><path fill="url(#hood)" d="m145 309 115-31 115 31 30 141-145 47-145-47z"/><path fill="#a969f4" d="m196 316 64 30 64-30-12 54-52 29-52-29z"/><path fill="#f7efff" d="m260 379 9 22 23 2-18 15 6 22-20-12-20 12 6-22-18-15 23-2z" stroke-width="5"/></g><path fill="#fff" opacity=".16" d="m150 101 24-30 76-23-40 42-28 50-42 18z"/><path fill="#fff" opacity=".15" d="m340 311 35 13 19 91-28-28z"/><path fill="#fff" opacity=".12" d="m181 336 44 16-20 66-42-40z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 680" role="img" aria-labelledby="title desc">
+  <title id="title">Pexy, mascota virtual de Nova PX</title>
+  <desc id="desc">Panda original de aspecto tridimensional, con pelaje blanco y negro, ojos grandes y sudadera morada Nova PX.</desc>
+  <defs>
+    <radialGradient id="fur" cx="34%" cy="23%" r="82%"><stop stop-color="#fff"/><stop offset=".52" stop-color="#f2eff8"/><stop offset="1" stop-color="#bdb5cd"/></radialGradient>
+    <linearGradient id="furSide" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#aaa2b8"/></linearGradient>
+    <linearGradient id="blackFur" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#454052"/><stop offset=".45" stop-color="#211d2b"/><stop offset="1" stop-color="#090810"/></linearGradient>
+    <linearGradient id="hoodie" x1=".12" y1="0" x2=".9" y2="1"><stop stop-color="#d0a0ff"/><stop offset=".28" stop-color="#a75cff"/><stop offset=".7" stop-color="#762de0"/><stop offset="1" stop-color="#42117f"/></linearGradient>
+    <linearGradient id="hoodLight" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f0dfff"/><stop offset="1" stop-color="#9b53e8"/></linearGradient>
+    <radialGradient id="eye" cx="35%" cy="25%"><stop stop-color="#fff"/><stop offset=".2" stop-color="#d9d4e2"/><stop offset=".45" stop-color="#625a70"/><stop offset="1" stop-color="#08070d"/></radialGradient>
+    <linearGradient id="nose" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#393141"/><stop offset="1" stop-color="#09070e"/></linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="180%"><feGaussianBlur stdDeviation="16"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>
+    <style>
+      .pexy{transform-origin:320px 590px;animation:bob 3.8s ease-in-out infinite}
+      .head{transform-origin:320px 300px;animation:head 5.8s ease-in-out infinite}
+      .blink{transform-origin:center;animation:blink 5.2s infinite}
+      .wave{transform-origin:175px 465px;animation:wave 4.6s ease-in-out infinite}
+      .spark{transform-origin:center;animation:twinkle 2.4s ease-in-out infinite}
+      @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+      @keyframes head{0%,100%{transform:rotate(0)}38%{transform:rotate(-1.5deg)}65%{transform:rotate(1deg)}}
+      @keyframes blink{0%,43%,47%,79%,83%,100%{transform:scaleY(1)}45%,81%{transform:scaleY(.08)}}
+      @keyframes wave{0%,12%,100%{transform:rotate(0)}5%,9%{transform:rotate(-13deg)}7%{transform:rotate(-23deg)}}
+      @keyframes twinkle{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+      @media(prefers-reduced-motion:reduce){.pexy,.head,.blink,.wave,.spark{animation:none}}
+    </style>
+  </defs>
+  <ellipse cx="320" cy="622" rx="190" ry="25" fill="#05030a" opacity=".58" filter="url(#shadow)"/>
+  <g class="pexy">
+    <!-- cuerpo y sudadera -->
+    <path d="M185 420c-48 19-76 74-69 132l19 58c9 25 35 37 60 29l125-28 125 28c25 8 51-4 60-29l19-58c7-58-21-113-69-132z" fill="url(#hoodie)" stroke="#21132f" stroke-width="10"/>
+    <path d="M188 442c34-24 78-36 132-36s98 12 132 36l-21 64c-35 25-72 37-111 37s-76-12-111-37z" fill="#c28aff" opacity=".42"/>
+    <path d="M230 429c16 40 46 62 90 67 44-5 74-27 90-67-18-22-48-36-90-36s-72 14-90 36z" fill="url(#hoodLight)" stroke="#5d269e" stroke-width="7"/>
+    <path d="M262 467c15 20 34 31 58 34 24-3 43-14 58-34" fill="none" stroke="#f4e8ff" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+    <path d="M320 510v83" stroke="#4a1a80" stroke-width="5" opacity=".55"/>
+    <path d="m320 530 10 22 24 3-18 16 5 24-21-12-21 12 5-24-18-16 24-3z" fill="#fff" stroke="#6d36ad" stroke-width="4"/>
+    <path d="M222 518c-17 31-17 69-6 98" fill="none" stroke="#e4caff" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+    <path d="M418 518c17 31 17 69 6 98" fill="none" stroke="#4c1a86" stroke-width="8" stroke-linecap="round" opacity=".55"/>
+    <!-- brazos -->
+    <g class="wave">
+      <path d="M184 452c-35 8-59 34-66 69-6 28 8 50 31 53 23 2 39-19 45-48l19-47z" fill="url(#blackFur)" stroke="#090810" stroke-width="9"/>
+      <path d="M150 550c-12-13-11-34-2-48 9-14 24-17 35-8 10 9 9 26 1 39-8 13-22 24-34 17z" fill="url(#fur)" stroke="#090810" stroke-width="7"/>
+      <path d="M145 523c-7-9-5-19 2-25 7-6 16-3 20 5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".65"/>
+    </g>
+    <path d="M456 452c35 8 59 34 66 69 6 28-8 50-31 53-23 2-39-19-45-48l-19-47z" fill="url(#blackFur)" stroke="#090810" stroke-width="9"/>
+    <path d="M490 550c12-13 11-34 2-48-9-14-24-17-35-8-10 9-9 26-1 39 8 13 22 24 34 17z" fill="url(#fur)" stroke="#090810" stroke-width="7"/>
+    <!-- piernas -->
+    <path d="M211 571c-10 34-8 65 12 83 21 19 59 17 83-1l14-35-14-44z" fill="url(#blackFur)" stroke="#090810" stroke-width="9"/>
+    <path d="M429 571c10 34 8 65-12 83-21 19-59 17-83-1l-14-35 14-44z" fill="url(#blackFur)" stroke="#090810" stroke-width="9"/>
+    <path d="M222 625c20-13 46-12 67 0" fill="none" stroke="#5b5367" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+    <path d="M418 625c-20-13-46-12-67 0" fill="none" stroke="#5b5367" stroke-width="7" stroke-linecap="round" opacity=".7"/>
+    <!-- cabeza -->
+    <g class="head">
+      <path d="M191 141c-14-46-57-69-91-46-34 23-32 76 5 108 27 23 61 17 87-7z" fill="url(#blackFur)" stroke="#090810" stroke-width="11"/>
+      <path d="M449 141c14-46 57-69 91-46 34 23 32 76-5 108-27 23-61 17-87-7z" fill="url(#blackFur)" stroke="#090810" stroke-width="11"/>
+      <path d="M320 91c-119 0-204 77-204 190 0 116 86 197 204 197s204-81 204-197c0-113-85-190-204-190z" fill="url(#fur)" stroke="#17131f" stroke-width="11"/>
+      <path d="M133 259c-5-65 30-119 85-147-32 46-43 92-38 142 4 42 18 77 39 108-48-14-81-52-86-103z" fill="#fff" opacity=".42"/>
+      <path d="M507 259c5-65-30-119-85-147 32 46 43 92 38 142-4 42-18 77-39 108 48-14 81-52 86-103z" fill="#8c8499" opacity=".25"/>
+      <!-- parches -->
+      <path d="M164 222c10-45 42-68 78-61 39 8 57 45 48 88-8 39-40 72-78 69-39-3-58-50-48-96z" fill="url(#blackFur)"/>
+      <path d="M476 222c-10-45-42-68-78-61-39 8-57 45-48 88 8 39 40 72 78 69 39-3 58-50 48-96z" fill="url(#blackFur)"/>
+      <path d="M189 193c20-20 45-24 67-13" fill="none" stroke="#777080" stroke-width="8" stroke-linecap="round" opacity=".45"/>
+      <path d="M451 193c-20-20-45-24-67-13" fill="none" stroke="#777080" stroke-width="8" stroke-linecap="round" opacity=".45"/>
+      <!-- ojos grandes -->
+      <g class="blink">
+        <ellipse cx="230" cy="254" rx="23" ry="29" fill="url(#eye)"/>
+        <ellipse cx="410" cy="254" rx="23" ry="29" fill="url(#eye)"/>
+        <ellipse cx="223" cy="244" rx="7" ry="9" fill="#fff"/>
+        <ellipse cx="403" cy="244" rx="7" ry="9" fill="#fff"/>
+        <circle cx="239" cy="266" r="4" fill="#b9a9ce" opacity=".8"/>
+        <circle cx="419" cy="266" r="4" fill="#b9a9ce" opacity=".8"/>
+      </g>
+      <!-- hocico y sonrisa -->
+      <ellipse cx="320" cy="328" rx="88" ry="66" fill="url(#furSide)"/>
+      <ellipse cx="320" cy="309" rx="23" ry="16" fill="url(#nose)"/>
+      <path d="M320 324v18c-17 20-39 19-52 3m52-3c17 20 39 19 52 3" fill="none" stroke="#302a38" stroke-width="8" stroke-linecap="round"/>
+      <path d="M280 357c11 10 24 14 40 14s29-4 40-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+      <ellipse cx="194" cy="332" rx="23" ry="12" fill="#f2a5ba" opacity=".32"/>
+      <ellipse cx="446" cy="332" rx="23" ry="12" fill="#f2a5ba" opacity=".32"/>
+      <!-- sudadera capucha -->
+      <path d="M164 393c25-43 75-65 156-65s131 22 156 65c-30 34-83 55-156 55s-126-21-156-55z" fill="url(#hoodie)" stroke="#4d1d81" stroke-width="9"/>
+      <path d="M229 381c23 22 53 34 91 34s68-12 91-34" fill="none" stroke="#e2c6ff" stroke-width="8" stroke-linecap="round" opacity=".7"/>
+      <path d="M280 420v38m80-38v38" stroke="#e7d4ff" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="280" cy="461" r="7" fill="#f6eaff"/><circle cx="360" cy="461" r="7" fill="#f6eaff"/>
+      <path d="m320 380 8 18 19 2-14 12 4 19-17-10-17 10 4-19-14-12 19-2z" fill="#fff" stroke="#6e2bb8" stroke-width="3"/>
+    </g>
+  </g>
+  <g class="spark" fill="#e8d5ff"><path d="m82 280 8 20 20 8-20 8-8 20-8-20-20-8 20-8z"/><path d="m552 365 6 15 15 6-15 6-6 15-6-15-15-6 15-6z"/></g>
+  <circle cx="103" cy="390" r="5" fill="#bd8cff" opacity=".75"/><circle cx="537" cy="205" r="7" fill="#bd8cff" opacity=".65"/>
+</svg>
