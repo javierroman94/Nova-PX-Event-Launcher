@@ -141,7 +141,7 @@
   const PAL = { W: '#f6f1ea', P: '#ffb6c9', K: '#1b1b24', Y: '#ffd84a', O: '#ff9a2e', R: '#e8742a', D: '#6b3a1e', G: '#3f8f3a', L: '#dff1ff', B: '#8fb8ff', M: '#d95bcf', Q: '#a232a0', H: '#ec82e0', N: '#23232d', p: '#e58aa6', e: '#c9b8a6', J: '#3fa84a', j: '#7ee07a', S: '#3b3b48', V: '#07070b', E: '#ff3b3b', X: '#e8334a', Z: '#8f1d2c' };
   const SPRITES = {
     // Mascota de NovaPX (panda rosa de bloques, diseño de @DekerModMaker). Va siempre en el elenco.
-    px: { scale: 4, rows: ['MM.......MM', 'MQM.....MQM', '.MMMMMMMMM.', '.MWWWWWWWM.', '.MQQWWWQQM.', '.MWKWWWKWM.', '.MWWWMWWWM.', '.MWWWWWWWM.', '..MQQQQQM..', 'HM.MWWWWM.MH', 'MM.MWWWWM.MM', 'MQ.MWWWWM.QM', '...MWWWWM...'], legs: ['..MWMQMWM..', '..MWM.MWM..'] },
+    px: { mob3d: true, scale: 4, rows: ['...........'], feet: null },
     // Skin secreta de PX: «Sombra» (encapuchado oscuro con ojos rojos). Solo se activa en modo administrador.
     shadow: { scale: 4, rows: ['..NNNNNNN..', '.NSSNNNSSN.', '.NNNNNNNNN.', 'NNVVVVVVVNN', 'NVVEEVEEVVN', 'NVVEEVEEVVN', 'NVVVVVVVVVN', '.NNVVVVVNN.', '.NNNNNNNNN.', 'XXNNXNXNNXX', 'NSNNNXNNNSN', 'XXNNXNXNNXX', 'NSNZNNNZNSN'], feet: 'X' },
     // Mobs de bloques, minimalistas y de diseño propio (acompañan a Pexy, la mascota oficial).
@@ -205,14 +205,17 @@
     rosterNow().forEach((name, i) => {
       const fly = !!SPRITES[name].fly;
       crits.push({
-        name, fly, x: rnd(lb + 40, Math.max(lb + 60, w - 60)), y: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, state: 'walk', t: rnd(1, 4),
+        name, fly, x: name === 'px' && SPRITES.px.mob3d && petCtl.skin !== 'shadow' ? rnd(lb + 60, Math.max(lb + 61, w - 60)) : rnd(lb + 40, Math.max(lb + 60, w - 60)), y: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, state: 'walk', t: rnd(1, 4),
         base: rnd(h * 0.5, h - 70), tx: 0, ty: 0, ph: rnd(0, TAU), seed: i
       });
     });
   }
 
   // Control externo del panda PX (lo usa mascot.js): dormir, saltar, alegrarse.
-  const petCtl = { skin: '', acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; },
+  const petCtl = { skin: '', acc: '', design: 'rosa', mood: 'normal', sleep: false, joy: 0, act: '', actT: 0,
+    // Animación puntual (comer, caricia, celebrar, bailar…) durante unos segundos.
+    play(act, sec) { this.act = String(act || ''); this.actT = Math.max(0, Math.min(8, +sec || 2)); wake(); },
+    hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; },
     // Agarrar con el mouse: sigue el cursor; al soltar sale lanzado con la velocidad del gesto.
     grab(px, py) {
       const c = crits.find((k) => k.name === 'px'); if (!c) return false;
@@ -220,19 +223,33 @@
     },
     move(px, py) {
       const c = crits.find((k) => k.name === 'px'); if (!c || !c.held) return;
-      const sh = sheet(c.name, 0, '#fff').height;
+      const sh = petSize().height;
       const lb = leftBound();
-      c.x = Math.min(w - 24, Math.max(lb, px));
+      c.x = Math.min(w - petSize().width / 2, Math.max(lb + petSize().width / 2, px));
       c.y = Math.max(-(h - 4 - sh), Math.min(0, py - sh / 2 - (h - 4 - sh))); // el cursor queda en el centro del panda
     },
     release(vx, vy) {
       const c = crits.find((k) => k.name === 'px'); if (!c || !c.held) return;
       c.held = false; c.vx = Math.max(-900, Math.min(900, vx || 0)); c.vy = Math.max(-1100, Math.min(900, vy || 0)); c.thrown = Math.hypot(c.vx, c.vy) > 220 || c.y < -2;
     } };
+  // Tamaño de Pexy 3D en el launcher: unos 100 px de alto, para que acompañe sin tapar la interfaz.
+  const PET_SCALE = 0.68;
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const petSize = () => (SPRITES.px.mob3d && petCtl.skin !== 'shadow' ? { width: Math.round(16 * 5 * PET_SCALE), height: Math.round(28 * 5 * PET_SCALE) } : { width: sheet('px', 0, '#fff').width, height: sheet('px', 0, '#fff').height });
+  // Qué animación toca ahora según lo que hace y cómo se siente.
+  function petAct(c) {
+    if (c.held) return 'held';
+    if (c.thrown || c.vx || c.y < -1) return 'jump';
+    if (petCtl.sleep) return 'sleep';
+    if (petCtl.actT > 0 && petCtl.act) return petCtl.act;
+    if (c.moving) return c.run ? 'run' : 'walk';
+    if (petCtl.joy > 0) return 'happy';
+    return { hambre: 'hungry', 'sueño': 'tired', triste: 'sad', feliz: c.dance ? 'dance' : 'happy' }[petCtl.mood] || 'idle';
+  }
   function getPet() {
     const c = crits.find((k) => k.name === 'px');
     if (!c || !opt.critters || root.classList.contains('no-fx')) return null;
-    const sp = sheet(c.name, 0, '#fff');
+    const sp = petSize();
     return { x: c.x, top: h - 4 - sp.height + c.y, w: sp.width, h: sp.height, dir: c.dir };
   }
 
@@ -268,16 +285,17 @@
   // PX es amistoso: no huye del cursor. Lo mira, se duerme si se lo pide mascot.js y salta de alegría.
   function updatePet(c, dt, lb) {
     const ground = h - 4;
-    c.t -= dt; c.ph += dt * 9;
+    c.t -= dt; c.ph += dt * 9; c.secs = (c.secs || 0) + dt;
+    if (petCtl.actT > 0) petCtl.actT -= dt;
     if (petCtl.joy > 0) { petCtl.joy -= dt; if (!c.vy && c.y === 0) c.vy = -150; }
     if (c.held) { c.moving = false; c.state = 'idle'; return; }
     const near = Math.abs(mx - c.x) < 150 && my > h - 190;
     c.moving = false;
     if (c.vx || c.thrown) {
       // Lanzado: vuela, rebota en los bordes y en el suelo, y se va frenando.
-      const sh2 = sheet(c.name, 0, '#fff').height;
+      const sh2 = petSize().height;
       c.vy += 900 * dt; c.x += c.vx * dt; c.y += c.vy * dt;
-      if (c.x < lb) { c.x = lb; c.vx = Math.abs(c.vx) * 0.6; } else if (c.x > w - 24) { c.x = w - 24; c.vx = -Math.abs(c.vx) * 0.6; }
+      if (c.x < lb + petSize().width / 2) { c.x = lb + petSize().width / 2; c.vx = Math.abs(c.vx) * 0.6; } else if (c.x > w - petSize().width / 2) { c.x = w - petSize().width / 2; c.vx = -Math.abs(c.vx) * 0.6; }
       const top = -(h - 4 - sh2);
       if (c.y < top) { c.y = top; c.vy = Math.abs(c.vy) * 0.5; }
       if (c.y >= 0) {
@@ -290,10 +308,17 @@
     }
     if (petCtl.sleep) { c.state = 'idle'; }
     else if (near) { c.dir = mx < c.x ? -1 : 1; c.state = 'idle'; }
-    else if (c.t <= 0) { c.state = Math.random() < 0.3 ? 'idle' : 'walk'; c.dir = Math.random() < 0.5 ? -1 : 1; c.t = rnd(1.2, 4); }
-    const speed = c.state === 'walk' ? 26 : 0;
+    else if (petCtl.actT > 0 || reduceMotion()) { c.state = 'idle'; } // con movimiento reducido no pasea
+    else if (c.t <= 0) {
+      // Con hambre o sueño camina poco; feliz a veces corre o baila un rato.
+      const lazy = petCtl.mood === 'hambre' || petCtl.mood === 'sueño' || petCtl.mood === 'triste';
+      c.state = Math.random() < (lazy ? 0.7 : 0.3) ? 'idle' : 'walk'; c.dir = Math.random() < 0.5 ? -1 : 1; c.t = rnd(1.2, 4);
+      c.run = c.state === 'walk' && !lazy && Math.random() < 0.25;
+      c.dance = c.state === 'idle' && petCtl.mood === 'feliz' && Math.random() < 0.35;
+    }
+    const speed = c.state === 'walk' ? (c.run ? 60 : 26) : 0;
     c.x += c.dir * speed * dt;
-    if (c.x < lb) { c.x = lb; c.dir = 1; } else if (c.x > w - 24) { c.x = w - 24; c.dir = -1; }
+    if (c.x < lb + petSize().width / 2) { c.x = lb + petSize().width / 2; c.dir = 1; } else if (c.x > w - petSize().width / 2) { c.x = w - petSize().width / 2; c.dir = -1; }
     if (c.vy || c.y < 0) { c.vy += 520 * dt; c.y += c.vy * dt; if (c.y >= 0) { c.y = 0; c.vy = 0; } }
     c.moving = speed > 0;
     if (c.moving && SPRITES[c.name].hop && c.y === 0 && !c.vy) c.vy = -150; // el cubo de gelatina avanza a saltitos
@@ -322,8 +347,9 @@
   }
 
   function drawCritter(c) {
-    if (SPRITES[c.name] && SPRITES[c.name].mob3d && window.NovaMob3D && window.NovaMob3D.names.includes(c.name)) {
+    if (SPRITES[c.name] && SPRITES[c.name].mob3d && window.NovaMob3D && window.NovaMob3D.names.includes(c.name) && !(c.name === 'px' && petCtl.skin === 'shadow')) {
       c.groundY = h - 4;
+      if (c.name === 'px') { c.acc = petCtl.acc; c.design = petCtl.design; c.act = petAct(c); c.scale = PET_SCALE; c.still = reduceMotion(); }
       const by = c.fly ? c.y + Math.sin(c.ph) * 3 : h - 4 + c.y;
       window.NovaMob3D.draw(ctx, c, Math.round(c.x), Math.round(by));
       return;

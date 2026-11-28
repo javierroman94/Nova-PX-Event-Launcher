@@ -59,4 +59,39 @@ assert.ok(L.canWear({ ...s, streak: 3 }, 'scarf') && !L.canWear(s, 'scarf'));
 assert.strictEqual(L.equip({ ...s, acc: 'bow' }, '').acc, '');
 assert.strictEqual(L.sanitize({ acc: 'hackeo' }, T).acc, '');
 assert.strictEqual(L.sanitize({ acc: 'hat' }, T).acc, 'hat');
+// Autoclic: repetir la misma acción enseguida no cuenta.
+const p1 = L.act({ ...s, love: 50 }, 'pet', T); assert.ok(p1.ok);
+assert.ok(!L.act(p1.state, 'pet', T + 100).ok);
+assert.ok(L.act(p1.state, 'pet', T + 700).ok);
+// Tope diario de XP por cuidados: el bucle jugar/dormir ya no da XP infinita.
+let loop = { ...s, energy: 60 }; let tt = T;
+for (let i = 0; i < 200; i++) { tt += 2000; const a = L.act(loop, i % 2 ? 'sleep' : 'play', tt); if (a.ok) loop = a.state; }
+assert.ok(loop.xp - s.xp <= L.XP_CAP.care, 'los cuidados no pasan del tope diario');
+assert.strictEqual(L.xpLeft(loop, tt).care, 0);
+// Al día siguiente vuelve a haber XP.
+const next = L.act({ ...loop, hunger: 40 }, 'feed', T + 24 * H + 5000);
+assert.ok(next.ok && next.state.xp > loop.xp);
+// Tope diario de XP por minijuegos, y sin energía el resultado no cuenta.
+let mgS = { ...s, energy: 100 }; let gx = 0;
+for (let i = 0; i < 30; i++) { const m = L.minigame({ ...mgS, energy: 100 }, 40, T + i); gx += m.state.xp - mgS.xp; mgS = m.state; }
+assert.ok(gx <= L.XP_CAP.game);
+assert.ok(L.minigame({ ...s, energy: 5 }, 40, T).tired);
+assert.strictEqual(L.minigame({ ...s, energy: 5 }, 40, T).state.xp, s.xp);
+// Diseño de Pexy: rosa (oficial) o sudadera; cualquier otro valor vuelve al rosa.
+assert.strictEqual(L.fresh(T).design, 'rosa');
+assert.strictEqual(L.setDesign(s, 'sudadera').design, 'sudadera');
+assert.strictEqual(L.setDesign(s, 'dragon').design, 'rosa');
+assert.strictEqual(L.sanitize({ design: '<img>' }, T).design, 'rosa');
+assert.strictEqual(L.sanitize({ design: 'sudadera' }, T).design, 'sudadera');
+// Personalidad: se elige una vez y se conserva; la favorita le sienta mejor.
+const ps = L.withPersonality(s, 0.99); assert.ok(L.PERSONALITIES.some((x) => x.id === ps.pers));
+assert.strictEqual(L.withPersonality(ps, 0).pers, ps.pers);
+assert.strictEqual(L.sanitize({ pers: 'malvado' }, T).pers, '');
+const fav = L.act({ ...s, pers: 'carinoso', love: 50 }, 'pet', T); const plain = L.act({ ...s, pers: 'gloton', love: 50 }, 'pet', T);
+assert.ok(fav.fav && fav.state.love > plain.state.love);
+// Felicidad entre 0 y 100.
+assert.strictEqual(L.happiness({ hunger: 100, energy: 100, love: 100 }), 100);
+assert.strictEqual(L.happiness({ hunger: 0, energy: 0, love: 0 }), 0);
+// Contadores diarios manipulados se limpian.
+assert.ok(L.sanitize({ xpd: { day: '2026-11-19', care: 9999, game: -5 } }, T).xpd.care <= L.XP_CAP.care);
 console.log('pet-life.test OK');
