@@ -21,7 +21,7 @@
     var pxCanvas = document.getElementById('px-web-model');
     var pxCtx = pxCanvas && pxCanvas.getContext('2d');
     var pxMesh = window.NovaMob3D;
-    var pxAnim = 0, pxFrame = 0, pxLast = 0;
+    var pxAnim = 0, pxLast = 0;
     if (pxCanvas && pxCtx && pxMesh && pxMesh.names.includes('px')) {
       var pxReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       function drawPexy(now) {
@@ -29,9 +29,9 @@
         pxAnim += pxReduced ? 0 : dt * 2.2;
         pxCtx.clearRect(0, 0, pxCanvas.width, pxCanvas.height);
         pxMesh.draw(pxCtx, { name: 'px', dir: 1, ph: pxAnim, moving: false, acc: window.__novaPexyAccessory || '' }, 240, 385);
-        pxFrame = window.requestAnimationFrame(drawPexy);
+        window.requestAnimationFrame(drawPexy);
       }
-      pxFrame = window.requestAnimationFrame(drawPexy);
+      window.requestAnimationFrame(drawPexy);
     }
 
     var pxKey = 'novapx.pexy.web.v1';
@@ -40,7 +40,7 @@
     try { pxState = Object.assign({}, pxDefault, JSON.parse(localStorage.getItem(pxKey) || '{}')); } catch (_) { pxState = Object.assign({}, pxDefault); }
     ['hunger','energy','love'].forEach(function(k){var n=Number(pxState[k]);pxState[k]=Number.isFinite(n)?Math.max(0,Math.min(100,n)):pxDefault[k];});
     ['xp','streak','best'].forEach(function(k){var n=Number(pxState[k]);pxState[k]=Number.isFinite(n)?Math.max(0,Math.min(100000,Math.floor(n))):0;});
-    if(!['','bow','hat','scarf'].includes(pxState.acc))pxState.acc='';
+    if(!['','bow','hat','scarf','glasses','crown'].includes(pxState.acc))pxState.acc='';
     var pxClamp = function (n) { return Math.max(0, Math.min(100, n)); };
     var pxLevel = function () { return 1 + [30,80,160,280,450,700,1000].filter(function (n) { return pxState.xp >= n; }).length; };
     var pxSay = function (s) { var b = document.getElementById('px-speech'); if (b) b.textContent = s; };
@@ -52,7 +52,7 @@
       document.getElementById('px-name').textContent='Pexy'; document.getElementById('px-level').textContent='Nivel '+level+' · '+(pxState.hunger<20?'Hambriento':pxState.energy<20?'Cansado':pxState.love<20?'Triste':'Feliz');
       document.getElementById('px-xp').textContent=pxState.xp+' XP'; document.getElementById('px-xp-fill').style.width=Math.min(100,((pxState.xp-base)/(next-base))*100)+'%';
       document.getElementById('px-stage').dataset.mood=pxState.energy<20?'sueño':pxState.hunger<20?'hambre':'feliz';
-      var equipped=document.getElementById('px-equipped');if(equipped){equipped.textContent=({bow:'🎀',hat:'🎩',scarf:'🧣'})[pxState.acc]||'';equipped.hidden=!pxState.acc;}
+      var equipped=document.getElementById('px-equipped');if(equipped){equipped.textContent=({bow:'🎀',hat:'🎩',scarf:'🧣',glasses:'🕶️',crown:'👑'})[pxState.acc]||'';equipped.hidden=!pxState.acc;}
       window.__novaPexyAccessory=pxState.acc;
     };
     var pxAct = function (action) {
@@ -65,7 +65,7 @@
     };
     document.querySelectorAll('[data-px-action]').forEach(function(b){b.addEventListener('click',function(){pxAct(b.getAttribute('data-px-action'));});});
     document.getElementById('px-web-avatar').addEventListener('click',function(){pxAct('pet');});
-    document.querySelectorAll('[data-px-acc]').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-px-acc'),lvl=pxLevel(),ok=(id==='bow'&&lvl>=2)||(id==='hat'&&lvl>=3)||(id==='scarf'&&pxState.streak>=3);var msg=document.getElementById('px-wardrobe-status');if(!ok){msg.textContent='Aún no está desbloqueado. Sigue cuidando a Pexy.';return;}pxState.acc=pxState.acc===id?'':id;msg.textContent=pxState.acc?'Accesorio equipado: '+b.textContent:'Accesorio retirado.';pxSave();});});
+    document.querySelectorAll('[data-px-acc]').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-px-acc'),lvl=pxLevel(),ok=(id==='bow'&&lvl>=2)||(id==='hat'&&lvl>=3)||(id==='scarf'&&pxState.streak>=3)||(id==='glasses'&&lvl>=5)||(id==='crown'&&lvl>=8);var msg=document.getElementById('px-wardrobe-status');if(!ok){msg.textContent='Aún no está desbloqueado. Sigue cuidando a Pexy.';return;}pxState.acc=pxState.acc===id?'':id;msg.textContent=pxState.acc?'Accesorio equipado: '+b.textContent:'Accesorio retirado.';pxSave();});});
     var pxTap=function(){
       if(pxState.energy<10){pxSay('Estoy cansado.');return;}
       var dlg=document.createElement('dialog');dlg.className='px-game-dialog';
