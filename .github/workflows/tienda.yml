@@ -1,6 +1,7 @@
 # Genera el paquete MSIX para Microsoft Store (Partner Center).
-# Se ejecuta a mano: Actions → "Paquete para Microsoft Store" → Run workflow.
-# Los tres datos de identidad salen de Partner Center → tu app → Gestión de productos → Identidad del producto.
+# Se ejecuta a mano: Actions → "Paquete para Microsoft Store" → Run workflow. No envía nada a la Store.
+# La identidad está en build/microsoft-store.json; los campos de abajo solo hacen falta para probar otra.
+# El envío automático de cada versión lo hace el trabajo «tienda» de release.yml (ver docs/TIENDA.md).
 name: Paquete para Microsoft Store
 
 on:
@@ -8,13 +9,13 @@ on:
     inputs:
       identity_name:
         description: 'Package/Identity/Name (ej. 12345Nombre.NovaPXEventLauncher)'
-        required: true
+        required: false
       publisher:
         description: 'Package/Identity/Publisher (ej. CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX)'
-        required: true
+        required: false
       publisher_display_name:
         description: 'Package/Properties/PublisherDisplayName'
-        required: true
+        required: false
 
 # Solo lee el código y sube el paquete como artefacto: el token no necesita escribir nada.
 permissions:
@@ -35,6 +36,17 @@ jobs:
           STORE_IDENTITY_NAME: ${{ inputs.identity_name }}
           STORE_PUBLISHER: ${{ inputs.publisher }}
           STORE_PUBLISHER_DISPLAY_NAME: ${{ inputs.publisher_display_name }}
+      - name: Validar identidad, versión y arquitectura
+        shell: bash
+        env:
+          PERSONALIZADA: ${{ inputs.identity_name }}${{ inputs.publisher }}${{ inputs.publisher_display_name }}
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          if [ -z "$PERSONALIZADA" ]; then
+            node tools/tienda.js validar "dist/Nova PX Event Launcher $v.appx" "$v"
+          else
+            echo "Identidad personalizada: se omite la comparación con build/microsoft-store.json."
+          fi
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: nova-px-msix
