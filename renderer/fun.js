@@ -205,7 +205,7 @@
     rosterNow().forEach((name, i) => {
       const fly = !!SPRITES[name].fly;
       crits.push({
-        name, fly, x: rnd(lb + 40, Math.max(lb + 60, w - 60)), y: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, state: 'walk', t: rnd(1, 4),
+        name, fly, x: name === 'px' && SPRITES.px.mob3d && petCtl.skin !== 'shadow' ? rnd(lb + 60, Math.max(lb + 61, w - 60)) : rnd(lb + 40, Math.max(lb + 60, w - 60)), y: 0, vy: 0, dir: Math.random() < 0.5 ? -1 : 1, state: 'walk', t: rnd(1, 4),
         base: rnd(h * 0.5, h - 70), tx: 0, ty: 0, ph: rnd(0, TAU), seed: i
       });
     });
