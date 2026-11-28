@@ -29,7 +29,9 @@
         var dt = Math.min(0.05, (now - (pxLast || now)) / 1000); pxLast = now;
         pxAnim += pxReduced ? 0 : dt * 2.2;
         pxCtx.clearRect(0, 0, pxCanvas.width, pxCanvas.height);
-        pxMesh.draw(pxCtx, { name: 'px', dir: 1, ph: pxAnim, moving: false, acc: window.__novaPexyAccessory || '' }, 240, 385);
+        pxCtx.save(); pxCtx.translate(240, 385); pxCtx.scale(1.35, 1.35);
+        pxMesh.draw(pxCtx, { name: 'px', dir: 1, ph: pxAnim, moving: false, acc: window.__novaPexyAccessory || '' }, 0, 0);
+        pxCtx.restore();
         window.requestAnimationFrame(drawPexy);
       }
       window.requestAnimationFrame(drawPexy);
