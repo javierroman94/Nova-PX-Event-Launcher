@@ -99,3 +99,154 @@ jobs:
         run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Paquete de Microsoft Store: reutiliza la app ya compilada (no se vuelve a empaquetar
+      # Electron) con la identidad de build/microsoft-store.json. Va después de publicar en
+      # GitHub y, si falla, no tumba esa publicación: solo se queda sin enviar a la Store.
+      - name: Paquete de Microsoft Store
+        id: msix
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        shell: bash
+        env:
+          TAG: ${{ needs.etiquetar.outputs.tag }}
+        run: |
+          v="${TAG#v}"
+          npx electron-builder --win appx --publish never --config electron-builder.store.js --prepackaged dist/win-unpacked
+          mkdir -p tienda
+          mv "dist/Nova PX Event Launcher $v.appx" "tienda/Nova-PX-Event-Launcher-$v.msix"
+          node tools/tienda.js validar "tienda/Nova-PX-Event-Launcher-$v.msix" "$v"
+
+      - name: Guardar el paquete de Microsoft Store
+        if: matrix.os == 'windows-latest' && steps.msix.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: nova-px-msix
+          path: tienda/*.msix
+          if-no-files-found: error
+          retention-days: 30
+
+  # Envía el paquete a Microsoft Store. Solo corre cuando:
+  #   - acaba de publicarse en GitHub una etiqueta vX.Y.Z nueva (este flujo solo se dispara
+  #     desde main o una etiqueta: nunca desde una rama de revisión),
+  #   - la variable del repositorio STORE_AUTO_PUBLISH vale "true" (interruptor de encendido),
+  #   - alguien aprueba el entorno «microsoft-store», que solo admite main y etiquetas v*.
+  # La publicación de GitHub Releases ya terminó antes: un fallo aquí no la deshace.
+  # Una versión que la Store ya tiene no se vuelve a enviar (tools/tienda.js decidir).
+  tienda:
+    needs: [etiquetar, release]
+    if: needs.etiquetar.outputs.tag != '' && startsWith(needs.etiquetar.outputs.tag, 'v') && vars.STORE_AUTO_PUBLISH == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    environment:
+      name: microsoft-store
+      url: https://apps.microsoft.com/detail/9mvjl4gf5wj8
+    concurrency:
+      group: microsoft-store
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ needs.etiquetar.outputs.tag }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.etiquetar.outputs.tag }}
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 20
+
+      # Solo hace falta adm-zip para revisar el paquete; no se instala todo el launcher.
+      - name: Preparar la revisión del paquete
+        shell: bash
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund adm-zip@0.6.1
+
+      - name: Descargar el paquete
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: nova-px-msix
+          path: tienda
+
+      - name: Validar identidad, versión y arquitectura
+        id: paquete
+        shell: bash
+        run: |
+          v="${TAG#v}"
+          f="tienda/Nova-PX-Event-Launcher-$v.msix"
+          [ -f "$f" ] || { echo "::error::No está el paquete $f"; exit 1; }
+          [ "$(ls tienda | wc -l)" -eq 1 ] || { echo "::error::Se esperaba un solo paquete"; exit 1; }
+          node tools/tienda.js validar "$f" "$v"
+          echo "archivo=$f" >> "$GITHUB_OUTPUT"
+          echo "producto=$(node -p "require('./build/microsoft-store.json').productId")" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar Microsoft Store Developer CLI
+        uses: microsoft/microsoft-store-apppublisher@cc9910a8d59f2eb55cbb83df0a3800cf3b5300e0 # v1.4
+        with:
+          version: v0.4.4
+
+      # Las credenciales van por variables de entorno (GitHub las enmascara) y la salida se descarta.
+      - name: Conectar con Partner Center
+        shell: pwsh
+        env:
+          STORE_TENANT_ID: ${{ secrets.STORE_TENANT_ID }}
+          STORE_SELLER_ID: ${{ secrets.STORE_SELLER_ID }}
+          STORE_CLIENT_ID: ${{ secrets.STORE_CLIENT_ID }}
+          STORE_CLIENT_SECRET: ${{ secrets.STORE_CLIENT_SECRET }}
+        run: |
+          foreach ($n in 'STORE_TENANT_ID','STORE_SELLER_ID','STORE_CLIENT_ID','STORE_CLIENT_SECRET') {
+            if (-not [Environment]::GetEnvironmentVariable($n)) { Write-Output "::error::Falta el secreto $n en el entorno microsoft-store"; exit 1 }
+          }
+          msstore reconfigure --tenantId $env:STORE_TENANT_ID --sellerId $env:STORE_SELLER_ID --clientId $env:STORE_CLIENT_ID --clientSecret $env:STORE_CLIENT_SECRET *> $null
+          if ($LASTEXITCODE -ne 0) { Write-Output "::error::Partner Center rechazó las credenciales (código $LASTEXITCODE)"; exit 1 }
+
+      # Mira el último envío de la Store antes de tocar nada: si ya tiene esta versión no se
+      # repite, y si hay otro envío abierto en Partner Center no se borra (msstore publish lo haría).
+      - name: Revisar qué tiene la Store
+        id: decidir
+        shell: bash
+        run: |
+          msstore submission get "${{ steps.paquete.outputs.producto }}" > envio.json
+          node tools/tienda.js decidir envio.json "${TAG#v}"
+
+      - name: Enviar a Microsoft Store
+        id: enviar
+        if: steps.decidir.outputs.accion == 'enviar'
+        shell: bash
+        env:
+          SOLO_BORRADOR: ${{ vars.STORE_SOLO_BORRADOR }}
+        run: |
+          extra=()
+          [ "$SOLO_BORRADOR" = "true" ] && extra+=(--noCommit)
+          msstore publish "${{ steps.paquete.outputs.archivo }}" -id "${{ steps.paquete.outputs.producto }}" "${extra[@]}"
+
+      - name: Resultado
+        if: always() && steps.paquete.outcome == 'success' && steps.decidir.outcome == 'success'
+        shell: bash
+        env:
+          ACCION: ${{ steps.decidir.outputs.accion }}
+          ESTADO_ANTES: ${{ steps.decidir.outputs.estado }}
+          ENVIO: ${{ steps.enviar.outcome }}
+          SOLO_BORRADOR: ${{ vars.STORE_SOLO_BORRADOR }}
+        run: |
+          {
+            echo "## Microsoft Store — ${TAG}"
+            echo ""
+            echo "- Estado de la Store antes de enviar: \`${ESTADO_ANTES}\`"
+            case "$ACCION" in
+              enviar)
+                if [ "$ENVIO" = "success" ]; then
+                  if [ "$SOLO_BORRADOR" = "true" ]; then echo "- Paquete subido como **borrador** en Partner Center (no se envió a certificación)."
+                  else echo "- Microsoft **recibió** el paquete y lo envió a certificación. Publicará solo al aprobarlo."; fi
+                else echo "- ❌ El envío falló. Revisa el paso «Enviar a Microsoft Store»."; fi ;;
+              ya-enviado) echo "- Esta versión ya estaba enviada a la Store: no se repitió." ;;
+              version-vieja) echo "- La Store ya tiene una versión más nueva: no se envió." ;;
+              en-curso) echo "- ⚠️ Hay otro envío abierto en Partner Center. No se tocó: termínalo o bórralo y vuelve a ejecutar este trabajo." ;;
+            esac
+            echo ""
+            echo '```'
+            msstore submission status "${{ steps.paquete.outputs.producto }}" 2>&1 | tail -n 40 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$ACCION" != "en-curso" ]
