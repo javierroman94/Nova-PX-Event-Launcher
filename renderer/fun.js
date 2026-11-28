@@ -278,7 +278,7 @@
       // Lanzado: vuela, rebota en los bordes y en el suelo, y se va frenando.
       const sh2 = petSize().height;
       c.vy += 900 * dt; c.x += c.vx * dt; c.y += c.vy * dt;
-      if (c.x < lb) { c.x = lb; c.vx = Math.abs(c.vx) * 0.6; } else if (c.x > w - 24) { c.x = w - 24; c.vx = -Math.abs(c.vx) * 0.6; }
+      if (c.x < lb + petSize().width / 2) { c.x = lb + petSize().width / 2; c.vx = Math.abs(c.vx) * 0.6; } else if (c.x > w - petSize().width / 2) { c.x = w - petSize().width / 2; c.vx = -Math.abs(c.vx) * 0.6; }
       const top = -(h - 4 - sh2);
       if (c.y < top) { c.y = top; c.vy = Math.abs(c.vy) * 0.5; }
       if (c.y >= 0) {
