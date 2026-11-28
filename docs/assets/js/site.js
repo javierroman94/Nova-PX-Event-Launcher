@@ -65,7 +65,8 @@
       pxSave();pxRender();
     };
     document.querySelectorAll('[data-px-action]').forEach(function(b){b.addEventListener('click',function(){pxAct(b.getAttribute('data-px-action'));});});
-    document.getElementById('px-web-avatar').addEventListener('click',function(){pxAct('pet');});
+    var pxAvatar = document.getElementById('px-web-model');
+    if (pxAvatar) pxAvatar.addEventListener('click',function(){pxAct('pet');});
     document.querySelectorAll('[data-px-acc]').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-px-acc'),lvl=pxLevel(),ok=(id==='bow'&&lvl>=2)||(id==='hat'&&lvl>=3)||(id==='scarf'&&pxState.streak>=3)||(id==='glasses'&&lvl>=5)||(id==='crown'&&lvl>=8);var msg=document.getElementById('px-wardrobe-status');if(!ok){msg.textContent='Aún no está desbloqueado. Sigue cuidando a Pexy.';return;}pxState.acc=pxState.acc===id?'':id;msg.textContent=pxState.acc?'Accesorio equipado: '+b.textContent:'Accesorio retirado.';pxSave();});});
     var pxTap=function(){
       if(pxState.energy<10){pxSay('Estoy cansado.');return;}
