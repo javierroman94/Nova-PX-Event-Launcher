@@ -9,12 +9,24 @@
   const clamp = (v, a = 0, b = 100) => Math.min(b, Math.max(a, Number.isFinite(+v) ? +v : a));
   // Puntos por hora que se pierden. Con el launcher cerrado se pierde menos (tope de 12 h) para que nadie vuelva a una mascota "perdida".
   const DECAY = { hunger: 5, energy: 3, love: 2.5 };
-  const CD = { feed: 0, play: 0, pet: 0, sleep: 0, game: 0 }; // sin esperas, como Talking Tom: lo que limita es la barra (lleno = no quiere más)
+  // Sin esperas largas, como Talking Tom: lo que limita es la barra (lleno = no quiere más). Solo una pausa corta para que
+  // un autoclic no cuente cien veces, y un tope diario de XP por cuidados y por minijuegos.
+  const CD = { feed: 800, play: 800, pet: 600, sleep: 800, game: 0 };
+  const XP_CAP = { care: 60, game: 72 };
+  const DESIGNS = ['rosa', 'sudadera'];
+  // Personalidad: se elige una vez al nacer y cambia sus frases y un poco cómo le sientan los cuidados.
+  const PERSONALITIES = [
+    { id: 'jugueton', name: 'Juguetón', likes: 'play' },
+    { id: 'gloton', name: 'Glotón', likes: 'feed' },
+    { id: 'dormilon', name: 'Dormilón', likes: 'sleep' },
+    { id: 'carinoso', name: 'Cariñoso', likes: 'pet' }
+  ];
+  const PERS_IDS = PERSONALITIES.map((p) => p.id);
   const LEVELS = [0, 30, 80, 160, 280, 450, 700, 1000, 1400, 1900];
 
   const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
-  function fresh(now) { return { name: 'Pexy', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '', skin: '' }; }
+  function fresh(now) { return { name: 'Pexy', hunger: 80, energy: 90, love: 70, xp: 0, streak: 0, day: '', last: now, cd: {}, played: 0, best: 0, acc: '', skin: '', design: 'rosa', pers: '', xpd: { day: '', care: 0, game: 0 } }; }
 
   function sanitize(raw, now) {
     const s = fresh(now);
@@ -28,6 +40,11 @@
     s.played = Math.max(0, Math.floor(+raw.played || 0));
     s.skin = raw.skin === 'shadow' ? 'shadow' : '';
     s.acc = ACC_IDS.includes(raw.acc) ? raw.acc : '';
+    s.design = DESIGNS.includes(raw.design) ? raw.design : 'rosa';
+    s.pers = PERS_IDS.includes(raw.pers) ? raw.pers : '';
+    if (raw.xpd && typeof raw.xpd === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(raw.xpd.day)) {
+      s.xpd = { day: raw.xpd.day, care: Math.max(0, Math.min(XP_CAP.care, Math.floor(+raw.xpd.care || 0))), game: Math.max(0, Math.min(XP_CAP.game, Math.floor(+raw.xpd.game || 0))) };
+    }
     s.best = Math.max(0, Math.min(40, Math.floor(+raw.best || 0)));
     if (raw.cd && typeof raw.cd === 'object') for (const k of Object.keys(CD)) s.cd[k] = Math.min(+raw.cd[k] || 0, now + CD[k]);
     return s;
@@ -35,7 +52,7 @@
 
   function tick(s, now) {
     const hours = Math.min(12, Math.max(0, (now - s.last) / HOUR));
-    const out = { ...s, cd: { ...s.cd }, last: now };
+    const out = { ...s, cd: { ...s.cd }, xpd: { ...(s.xpd || { day: '', care: 0, game: 0 }) }, last: now };
     out.hunger = clamp(s.hunger - DECAY.hunger * hours);
     out.energy = clamp(s.energy - DECAY.energy * hours);
     out.love = clamp(s.love - DECAY.love * hours * (s.hunger < 20 ? 1.6 : 1));
@@ -48,6 +65,17 @@
     return b == null ? { level: l, pct: 100, next: null } : { level: l, pct: Math.round(((xp - a) / (b - a)) * 100), next: b - xp };
   }
 
+  // Felicidad: resume cómo está (comida, energía y sobre todo cariño). De 0 a 100.
+  const happiness = (s) => Math.round(clamp(0.45 * clamp(s.love) + 0.3 * clamp(s.hunger) + 0.25 * clamp(s.energy)));
+  // Suma XP respetando el tope diario de cada tipo (care = cuidados, game = minijuegos).
+  function addXp(s, kind, amount, now) {
+    const today = dayKey(now);
+    const d = s.xpd && s.xpd.day === today ? { ...s.xpd } : { day: today, care: 0, game: 0 };
+    const room = Math.max(0, XP_CAP[kind] - (d[kind] || 0));
+    const got = Math.max(0, Math.min(room, Math.floor(amount)));
+    d[kind] = (d[kind] || 0) + got;
+    return { ...s, xp: s.xp + got, xpd: d };
+  }
   function mood(s) {
     const worst = Math.min(s.hunger, s.energy, s.love);
     if (s.hunger < 20) return 'hambre';
@@ -57,11 +85,12 @@
   }
 
   // Acciones. Devuelven { state, ok, wait } (wait en ms si aún no se puede repetir).
+  // Cada acción: efecto en las barras y XP base. Si es lo que más le gusta según su personalidad, le sienta un poco mejor.
   const EFFECT = {
-    feed: (s) => ({ ...s, hunger: clamp(s.hunger + 35), love: clamp(s.love + 3), xp: s.xp + 4 }),
-    play: (s) => ({ ...s, love: clamp(s.love + 12), energy: clamp(s.energy - 12), hunger: clamp(s.hunger - 6), xp: s.xp + 8, played: s.played + 1 }),
-    pet: (s) => ({ ...s, love: clamp(s.love + 6), xp: s.xp + (s.love >= 95 ? 0 : 2) }),
-    sleep: (s) => ({ ...s, energy: clamp(s.energy + 40), xp: s.xp + 3 })
+    feed: (s, fav) => ({ s: { ...s, hunger: clamp(s.hunger + 35), love: clamp(s.love + 3 + (fav ? 2 : 0)) }, xp: 4 }),
+    play: (s, fav) => ({ s: { ...s, love: clamp(s.love + 12 + (fav ? 3 : 0)), energy: clamp(s.energy - 12), hunger: clamp(s.hunger - 6), played: s.played + 1 }, xp: 8 }),
+    pet: (s, fav) => ({ s: { ...s, love: clamp(s.love + 6 + (fav ? 2 : 0)) }, xp: s.love >= 95 ? 0 : 2 }),
+    sleep: (s, fav) => ({ s: { ...s, energy: clamp(s.energy + 40 + (fav ? 10 : 0)) }, xp: 3 })
   };
   function act(s0, action, now) {
     const s = tick(s0, now);
@@ -71,9 +100,11 @@
     const until = s.cd[action] || 0;
     if (now < until) return { state: s, ok: false, wait: until - now };
     if (action === 'play' && s.energy < 10) return { state: s, ok: false, wait: 0, tired: true };
-    const n = EFFECT[action](s);
+    const fav = (PERSONALITIES.find((p) => p.id === s.pers) || {}).likes === action;
+    const e = EFFECT[action](s, fav);
+    const n = addXp(e.s, 'care', e.xp, now);
     n.cd = { ...s.cd, [action]: now + CD[action] };
-    return { state: n, ok: true, wait: 0, levelUp: level(n.xp) > level(s.xp) };
+    return { state: n, ok: true, wait: 0, levelUp: level(n.xp) > level(s.xp), capped: e.xp > 0 && n.xp - s.xp < e.xp, fav };
   }
 
   // Visita diaria: suma racha si vienes en días seguidos y da puntos extra.
@@ -90,8 +121,12 @@
   function minigame(s0, score, now) {
     const s = tick(s0, now);
     const pts = Math.max(0, Math.min(40, Math.floor(+score || 0)));
-    const n = { ...s, love: clamp(s.love + Math.min(15, pts / 2)), energy: clamp(s.energy - 8), hunger: clamp(s.hunger - 4), xp: s.xp + Math.min(12, Math.ceil(pts / 3)), played: s.played + 1, best: Math.max(s.best || 0, pts) };
-    return { state: n, record: pts > (s.best || 0), levelUp: level(n.xp) > level(s.xp) };
+    // Sin energía no se puede jugar: el resultado no cuenta.
+    if (s.energy < 10) return { state: s, record: false, levelUp: false, tired: true };
+    const base = { ...s, love: clamp(s.love + Math.min(15, pts / 2)), energy: clamp(s.energy - 8), hunger: clamp(s.hunger - 4), played: s.played + 1, best: Math.max(s.best || 0, pts) };
+    const want = Math.min(12, Math.ceil(pts / 3));
+    const n = addXp(base, 'game', want, now);
+    return { state: n, record: pts > (s.best || 0), levelUp: level(n.xp) > level(s.xp), capped: n.xp - s.xp < want };
   }
 
   // Tiempo jugando a Minecraft: la mascota "acompaña" y gana puntos (tope por sesión).
@@ -110,8 +145,12 @@
   ];
   const canWear = (s, id) => { const a = ACCESSORIES.find((x) => x.id === id); return !!a && a.ok(s); };
   function equip(s, id) { return id === '' || canWear(s, id) ? { ...s, acc: id } : s; }
+  const setDesign = (s, id) => (DESIGNS.includes(id) ? { ...s, design: id } : s);
+  // Personalidad al nacer (rnd: número entre 0 y 1). Si ya tiene, se queda con la suya.
+  const withPersonality = (s, rnd) => (s.pers ? s : { ...s, pers: PERS_IDS[Math.min(PERS_IDS.length - 1, Math.floor((+rnd || 0) * PERS_IDS.length))] });
+  const xpLeft = (s, now) => { const today = dayKey(now); const d = s.xpd && s.xpd.day === today ? s.xpd : { care: 0, game: 0 }; return { care: XP_CAP.care - d.care, game: XP_CAP.game - d.game }; };
 
-  return { ACCESSORIES, canWear, equip, sanitize, fresh, tick, act, visit, minigame, gameTime, level, progress, mood, dayKey, CD, LEVELS };
+  return { ACCESSORIES, DESIGNS, PERSONALITIES, XP_CAP, canWear, equip, setDesign, withPersonality, xpLeft, happiness, sanitize, fresh, tick, act, visit, minigame, gameTime, level, progress, mood, dayKey, CD, LEVELS };
 }));
 
 (function () {
@@ -122,10 +161,14 @@
   const load = () => { try { return L.sanitize(JSON.parse(localStorage.getItem(KEY) || 'null'), Date.now()); } catch { return L.fresh(Date.now()); } };
   const store = (s) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
   let st = L.tick(load(), Date.now());
-  const v0 = L.visit(st, Date.now()); st = v0.state; if (st.acc && !L.canWear(st, st.acc)) st = { ...st, acc: '' }; store(st);
+  const v0 = L.visit(st, Date.now()); st = L.withPersonality(v0.state, Math.random()); if (st.acc && !L.canWear(st, st.acc)) st = { ...st, acc: '' }; store(st);
   let adminOn = false;
-  const applyAcc = () => { const c = window.NovaFun && window.NovaFun.petCtl; if (c) { c.acc = st.acc || ''; c.skin = adminOn ? st.skin || '' : ''; } };
-  applyAcc(); setTimeout(applyAcc, 1500);
+  const ctlNow = () => window.NovaFun && window.NovaFun.petCtl;
+  const applyAcc = () => { const c = ctlNow(); if (c) { c.acc = st.acc || ''; c.skin = adminOn ? st.skin || '' : ''; c.design = st.design || 'rosa'; c.mood = L.mood(L.tick(st, Date.now())); } };
+  applyAcc(); setTimeout(applyAcc, 1500); setInterval(applyAcc, 60000);
+  // Animación de Pexy para cada cuidado (comer, caricia, baile, siesta) y fiesta al subir de nivel.
+  const ANIM = { feed: ['eat', 2.6], play: ['dance', 2.6], pet: ['pet', 2.2], sleep: ['sleep', 4], level: ['celebrate', 3.2], game: ['happy', 2.4] };
+  const animate = (k) => { const c = ctlNow(); const a = ANIM[k]; if (c && c.play && a) c.play(a[0], a[1]); applyAcc(); };
 
   const LINES = {
     feed: ['¡Ñam! Qué rico 😋', '¡Gracias, tenía hambre!', 'Mmm, mi comida favorita 🎋'],
@@ -136,11 +179,14 @@
     hambre: ['¡Tengo hambre! Ábreme el panel y dame de comer 🎋', 'Mi pancita hace ruidos…'],
     sueño: ['Tengo mucho sueño… 😪'],
     triste: ['Me siento solito… ¿jugamos?'],
-    level: ['¡Subí de nivel! 🎉']
+    level: ['¡Subí de nivel! 🎉'],
+    capped: ['¡Gracias! Hoy ya gané toda la XP de cuidados, pero me encanta igual 💜']
   };
+  // Frases según su personalidad cuando le das lo que más le gusta.
+  const FAV_LINES = { jugueton: '¡Jugar es lo mejor del mundo! 🎾', gloton: '¡Comida! ¡Mi cosa favorita! 😋', dormilon: 'Una siesta… mi plan favorito 😴', carinoso: '¡Me encantan los mimos! 💗' };
   const FULL = { feed: 'No tengo hambre, ¡estoy lleno! 😅', sleep: 'No tengo sueño, ¡estoy lleno de energía! ⚡' };
   const pick = (k) => { const a = LINES[k]; return a[Math.floor(Math.random() * a.length)]; };
-  const fmtWait = (ms) => { const m = Math.ceil(ms / 60000); return m <= 1 ? 'un minuto' : `${m} minutos`; };
+  const fmtWait = (ms) => { if (ms < 60000) return 'un momento'; const m = Math.ceil(ms / 60000); return m <= 1 ? 'un minuto' : `${m} minutos`; };
 
   /* ---------- panel «Cuidar a PX» ---------- */
   let dlg = null; let timer = 0;
@@ -157,11 +203,30 @@
     const nameRow = el('div', 'pl-name'); const nameIn = el('input'); nameIn.maxLength = 16; nameIn.value = st.name; nameIn.setAttribute('aria-label', 'Nombre de tu mascota');
     const lvl = el('small', 'pl-lvl'); nameRow.append(nameIn, lvl);
     const portrait = el('div', 'pl-portrait'); const pEmo = el('span', 'pl-panda', '🐼'); const pAcc = el('span', 'pl-pacc'); const pMood = el('span', 'pl-pmood'); portrait.append(pAcc, pEmo, pMood);
+    // Retrato con el modelo 3D de Pexy (mismo motor que en la pantalla y en la web). Sin motor, queda el emoji.
+    let pCv = null, pRaf = 0;
+    if (window.NovaMob3D && window.NovaMob3D.names.includes('px')) {
+      pCv = el('canvas', 'pl-3d'); pCv.width = 168; pCv.height = 176; pCv.setAttribute('aria-hidden', 'true');
+      pEmo.hidden = true; pAcc.hidden = true; portrait.prepend(pCv);
+      const still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      const pc = pCv.getContext('2d'); let ph = 0, lastT = 0;
+      const MOOD_ACT = { hambre: 'hungry', 'sueño': 'tired', triste: 'sad', feliz: 'happy' };
+      const drawP = (now) => {
+        if (!pCv.isConnected) { pRaf = 0; return; }
+        const dt = lastT ? Math.min(0.1, (now - lastT) / 1000) : 0; lastT = now; ph += dt * 6;
+        const c = ctlNow(); const act = c && c.actT > 0 && c.act ? c.act : MOOD_ACT[L.mood(st)] || 'idle';
+        pc.clearRect(0, 0, pCv.width, pCv.height);
+        window.NovaMob3D.draw(pc, { name: 'px', design: st.design, acc: st.acc, act, dir: 1, ph: still ? 0 : ph, secs: now / 1000, scale: 0.9, still }, 84, 168);
+        pRaf = still ? 0 : requestAnimationFrame(drawP);
+      };
+      pRaf = requestAnimationFrame(drawP);
+      pCv.addEventListener('redraw', () => { if (!pRaf) pRaf = requestAnimationFrame(drawP); });
+    }
     const hero = el('div', 'pl-hero'); const heroInfo = el('div', 'pl-hero-info');
     const xpBar = el('div', 'pl-bar pl-xp'); const xpFill = el('i'); xpBar.append(xpFill);
     const moodEl = el('p', 'pl-mood');
     const coach = el('p', 'pl-coach'); coach.setAttribute('role', 'status');
-    const b1 = bar('🍖 Hambre'); const b2 = bar('⚡ Energía'); const b3 = bar('💗 Cariño');
+    const b1 = bar('🍖 Hambre'); const b2 = bar('⚡ Energía'); const b3 = bar('💗 Cariño'); const b4 = bar('😊 Felicidad');
     const care = el('div', 'pl-tiles'); const games = el('div', 'pl-tiles pl-games'); const foot = el('div', 'pl-foot');
     const tile = (b, text, sub) => { const i = text.indexOf(' '); b.textContent = ''; const t = el('span', 'pl-txt'); t.append(el('span', 'pl-lbl', text.slice(i + 1))); if (sub) { const s = el('span', 'pl-sub', sub); t.append(s); b._sub = s; b._subText = sub; } b.append(el('span', 'pl-ico', text.slice(0, i)), t); return b; };
     const defs = [['feed', '🍖 Dar de comer', 'Sube el hambre'], ['play', '🎾 Jugar', 'Sube cariño, gasta energía'], ['pet', '🤗 Acariciar', 'Sube el cariño'], ['sleep', '😴 Dormir', 'Recarga la energía']];
@@ -176,16 +241,22 @@
       return { hint: '', text: `${n} está bien 😊. Juega un minijuego para ganar XP${lock ? ` y desbloquear ${lock.emoji} ${lock.name} (${lock.need})` : ''}.` };
     };
     const note = el('small', 'muted pl-note');
+    const xpNote = el('small', 'muted pl-xpnote');
     const refresh = () => {
       st = L.tick(st, Date.now());
       const p = L.progress(st.xp);
       paintWard();
-      lvl.textContent = `Nivel ${p.level}${st.streak > 1 ? ` · racha de ${st.streak} días 🔥` : ''}`;
+      const per = L.PERSONALITIES.find((x) => x.id === st.pers);
+      lvl.textContent = `Nivel ${p.level}${per ? ` · ${per.name}` : ''}${st.streak > 1 ? ` · racha de ${st.streak} días 🔥` : ''}`;
+      const hp = L.happiness(st); b4.fill.style.width = hp + '%'; b4.row.dataset.v = hp + '%'; b4.row.classList.toggle('low', hp < 25);
+      b4.row.title = 'Felicidad: resume cómo está. Sube con cariño, comida y descanso.';
+      const left = L.xpLeft(st, Date.now()); xpNote.textContent = `XP de hoy: cuidados ${L.XP_CAP.care - left.care}/${L.XP_CAP.care} · minijuegos ${L.XP_CAP.game - left.game}/${L.XP_CAP.game}`;
+      if (pCv && !pRaf) pCv.dispatchEvent(new Event('redraw'));
       xpFill.style.width = p.pct + '%';
       b1.fill.style.width = st.hunger + '%'; b2.fill.style.width = st.energy + '%'; b3.fill.style.width = st.love + '%';
       [[b1, st.hunger], [b2, st.energy], [b3, st.love]].forEach(([b, v]) => { b.row.dataset.v = Math.round(v) + '%'; b.row.classList.toggle('low', v < 25); });
       const nd = need(); coach.textContent = nd.text;
-      Object.keys(tiles).forEach((a) => { const b = tiles[a]; const wait = Math.max(0, ((st.cd || {})[a] || 0) - Date.now()); b.classList.toggle('pl-hint', nd.hint === a && !wait); b.classList.toggle('pl-wait', wait > 0); if (b._sub) b._sub.textContent = wait > 0 ? `Listo en ${fmtWait(wait)}` : b._subText; });
+      Object.keys(tiles).forEach((a) => { const b = tiles[a]; const wait0 = Math.max(0, ((st.cd || {})[a] || 0) - Date.now()); const wait = wait0 > 5000 ? wait0 : 0; b.classList.toggle('pl-hint', nd.hint === a && !wait); b.classList.toggle('pl-wait', wait > 0); if (b._sub) b._sub.textContent = wait > 0 ? `Listo en ${fmtWait(wait)}` : b._subText; });
       [[b1, 'Hambre: baja con el tiempo. Dale de comer para subirla.'], [b2, 'Energía: se gasta al jugar. Déjalo dormir para recargarla.'], [b3, 'Cariño: sube al acariciarlo y jugar.']].forEach(([b, t]) => { b.row.title = t; });
       const mo = L.mood(st); portrait.dataset.mood = mo; pMood.textContent = { feliz: '😄', normal: '🙂', hambre: '😢', sueño: '😪', triste: '🥺' }[mo] || '';
       const ac = L.ACCESSORIES.find((a) => a.id === st.acc); pAcc.textContent = ac ? ac.emoji : '';
@@ -198,33 +269,25 @@
         const r = L.act(st, a, Date.now()); st = r.state;
         if (!r.ok) { note.textContent = r.tired ? 'Está muy cansado para jugar.' : r.full ? FULL[a] : r.wait ? `Espera ${fmtWait(r.wait)} para repetirlo.` : ''; M.say(r.tired ? pick('tired') : r.full ? FULL[a] : '', 3500); refresh(); return; }
         note.textContent = '';
-        store(st); M.say(r.levelUp ? pick('level') : pick(a), 4500); refresh();
-        const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2); if (c.hop) c.hop(); }
+        store(st); M.say(r.levelUp ? pick('level') : r.fav ? FAV_LINES[st.pers] : r.capped ? pick('capped') : pick(a), 4500); refresh();
+        animate(r.levelUp ? 'level' : a);
       });
       care.append(b);
     });
     const trayBtn = tile(el('button', 'pl-tile'), '🧺 Bandeja', 'Sácala para usarla fuera de aquí'); trayBtn.type = 'button'; trayBtn.title = 'Arrastra la comida o el jabón hasta Pexy';
     trayBtn.addEventListener('click', () => { done(); showTray(); });
     care.append(trayBtn);
-    const gb = tile(el('button', 'pl-tile'), '⭐ Atrapar estrellas'); gb.type = 'button';
-    gb.addEventListener('click', () => {
-      if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
-      playStars((score) => {
-        const r = L.minigame(st, score, Date.now()); st = r.state; store(st);
-        M.say(r.levelUp ? pick('level') : r.record ? `¡Récord nuevo: ${score} estrellas! 🏆` : `${score} estrellas, ¡qué divertido! ⭐`, 5000);
-        note.textContent = `Atrapaste ${score}. Tu récord: ${st.best}.`; refresh();
-      });
-    });
-    games.append(gb);
     ((window.NovaPetGames && window.NovaPetGames.list) || []).forEach((g) => {
       const gx = tile(el('button', 'pl-tile'), g.label); gx.type = 'button';
       gx.addEventListener('click', () => {
-        if (st.energy < 10) { note.textContent = 'Está muy cansado para jugar.'; return; }
+        if (L.tick(st, Date.now()).energy < 10) { note.textContent = 'Está muy cansado para jugar. Déjalo dormir un rato.'; M.say(pick('tired'), 3500); return; }
         g.run((score) => {
           const r = L.minigame(st, score, Date.now()); st = r.state; store(st);
-          M.say(r.levelUp ? pick('level') : `${g.label}: ${score} ${g.unit}, ¡qué divertido! 🎉`, 5000);
-          note.textContent = `${g.label}: ${score} ${g.unit}. Tu récord general: ${st.best}.`; refresh();
-        });
+          if (r.tired) { note.textContent = 'Está muy cansado: esta partida no cuenta.'; refresh(); return; }
+          M.say(r.levelUp ? pick('level') : r.record ? `¡Récord nuevo: ${score} ${g.unit}! 🏆` : `${g.label.replace(/^\S+\s/, '')}: ${score} ${g.unit}, ¡qué divertido! 🎉`, 5000);
+          note.textContent = `${score} ${g.unit}. Tu récord: ${st.best}.${r.capped ? ' Hoy ya ganaste toda la XP de minijuegos.' : ''}`; refresh();
+          animate(r.levelUp ? 'level' : 'game');
+        }, { design: st.design, acc: st.acc });
       });
       games.append(gx);
     });
@@ -240,6 +303,14 @@
       };
       mk('', '🚫', 'Sin accesorio', false);
       L.ACCESSORIES.forEach((a) => mk(a.id, a.emoji, a.name, !a.ok(st), a.need));
+      // Diseño de Pexy: el rosa original o el de sudadera. Lo elige cada jugador.
+      const look = el('div', 'pl-look'); look.setAttribute('role', 'group'); look.setAttribute('aria-label', 'Diseño de Pexy');
+      [['rosa', 'Rosa (original)'], ['sudadera', 'Sudadera']].forEach(([id, label]) => {
+        const b = el('button', 'pl-look-btn' + (st.design === id ? ' on' : ''), label); b.type = 'button'; b.setAttribute('aria-pressed', String(st.design === id));
+        b.addEventListener('click', () => { st = L.setDesign(st, id); store(st); applyAcc(); paintWard(); });
+        look.append(b);
+      });
+      wardrobe.append(look);
     };
     paintWard();
     if (adminOn) {
@@ -283,7 +354,7 @@
     const help = el('button', 'pl-help', '?'); help.type = 'button'; help.title = '¿Cómo se juega?'; help.setAttribute('aria-label', '¿Cómo se juega?');
     help.addEventListener('click', () => { tour.hidden = !tour.hidden; });
     title.append(help);
-    const stats = el('div', 'pl-stats'); stats.append(b1.row, b2.row, b3.row);
+    const stats = el('div', 'pl-stats'); stats.append(b1.row, b2.row, b3.row, b4.row, xpNote);
     const sec = (t) => el('h4', 'pl-sec', t);
     const left = el('div', 'pl-col'); left.append(hero, coach, table, stats, sec('Armario'), wardrobe, ...(extra ? [extra] : []));
     const right = el('div', 'pl-col'); right.append(sec('Cuidados'), care, sec('Minijuegos'), games, note);
@@ -301,7 +372,7 @@
     if (!r.ok) { M.say(r.tired ? pick('tired') : r.full ? FULL.feed : r.wait ? `Todavía no… espera ${fmtWait(r.wait)} 😅` : 'Ahora no, gracias.', 3500); return false; }
     st = r.state; store(st);
     M.say(r.levelUp ? pick('level') : kind === 'pet-touch' ? pick('pet') : rnd(kind === 'bath' ? T_BATH : T_EAT), 4500);
-    const c = window.NovaFun && window.NovaFun.petCtl; if (c) { if (c.happy) c.happy(2.4); if (c.hop) c.hop(); }
+    animate(r.levelUp ? 'level' : kind === 'food' ? 'feed' : 'pet');
     return true;
   }
   function burst(x, y, emoji, host) {
@@ -338,39 +409,6 @@
     });
     const x = el('button', 'pet-tray-x', '✕'); x.type = 'button'; x.title = 'Guardar la bandeja'; x.addEventListener('click', close); tray.append(x);
     document.body.append(tray);
-  }
-  /* Minijuego: mueve el ratón (o el dedo) para llevar a PX bajo las estrellas. 20 segundos. */
-  function playStars(onDone) {
-    const W = 360, H = 260, DUR = 20000;
-    const GOOD = ['⭐', '⭐', '🍎', '🍌', '🍇', '🍓', '🍉', '🍒']; // estrellas y frutas (sugerencia de la comunidad)
-    const d = document.createElement('dialog'); d.className = 'event-modal pl-modal';
-    const b = el('div', 'event-modal-body'); const hud = el('p', 'pl-mood', '⭐ 0 · 20 s');
-    const cv = el('canvas', 'crop-canvas'); cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px'; cv.style.cursor = 'none';
-    const x0 = el('button', 'ghost', 'Salir'); x0.type = 'button';
-    b.append(el('h3', '', '⭐ Atrapar estrellas'), el('small', 'muted', 'Mueve el cursor para mover a Pexy y atrapa las estrellas y las frutas. Esquiva las rocas 🪨.'), hud, cv, x0); d.append(b); document.body.append(d);
-    const x = cv.getContext('2d'); let px = W / 2, score = 0, over = false, last = 0; const t0 = performance.now(); const things = []; let spawn = 0;
-    const move = (e) => { const r = cv.getBoundingClientRect(); px = Math.min(W - 22, Math.max(22, (e.clientX - r.left) * (W / r.width))); };
-    cv.addEventListener('pointermove', move); cv.addEventListener('pointerdown', move);
-    const end = (report) => { if (over) return; over = true; try { d.close(); } catch {} d.remove(); if (report) onDone(Math.min(40, score)); };
-    x0.addEventListener('click', () => end(false)); d.addEventListener('cancel', (e) => { e.preventDefault(); end(false); });
-    function frame(now) {
-      if (over) return;
-      const dt = Math.min(50, now - (last || now)); last = now; const left = DUR - (now - t0);
-      if (left <= 0) { end(true); return; }
-      spawn -= dt; if (spawn <= 0) { spawn = 380 + Math.random() * 300; things.push({ x: 16 + Math.random() * (W - 32), y: -12, bad: Math.random() < 0.22, icon: GOOD[Math.floor(Math.random() * GOOD.length)], v: 0.09 + Math.random() * 0.07 + (1 - left / DUR) * 0.06 }); }
-      x.fillStyle = '#0c1226'; x.fillRect(0, 0, W, H);
-      x.font = '22px serif'; x.textAlign = 'center';
-      for (let i = things.length - 1; i >= 0; i--) {
-        const t = things[i]; t.y += t.v * dt;
-        x.fillText(t.bad ? '🪨' : t.icon, t.x, t.y);
-        if (t.y > H - 34 && t.y < H - 6 && Math.abs(t.x - px) < 26) { score = Math.max(0, score + (t.bad ? -2 : 1)); things.splice(i, 1); }
-        else if (t.y > H + 14) things.splice(i, 1);
-      }
-      x.font = '34px serif'; x.fillText('🐼', px, H - 8);
-      hud.textContent = `⭐ ${score} · ${Math.ceil(left / 1000)} s`;
-      requestAnimationFrame(frame);
-    }
-    d.showModal(); requestAnimationFrame(frame);
   }
   // La skin «Sombra» es secreta: solo aparece con el modo administrador activo.
   const prevAllowed = M.setAiAllowed;
