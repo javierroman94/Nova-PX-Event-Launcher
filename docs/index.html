@@ -84,9 +84,27 @@
     </section>
 
     <section class="section alt" id="pexy">
-      <div class="wrap split">
-        <div><span class="kicker">Tu compañero de aventuras</span><h2>Conoce a Pexy</h2><p>Un panda con personalidad propia que representa el lado más divertido del universo Nova PX.</p><ul class="bullet-list"><li>Identidad visual exclusiva de Nova PX.</li><li>Una mascota para acompañar la experiencia.</li><li>Diseño inspirado en el mundo de bloques de Minecraft.</li></ul></div>
-        <div class="art-card"><img src="assets/images/pexy-3d.svg" alt="Pexy, panda blanco y negro con sudadera morada y emblema Nova" loading="lazy" width="420" height="450"></div>
+      <div class="wrap">
+        <div class="section-head"><span class="kicker">Tu compañero de aventuras</span><h2>Cuida de Pexy</h2><p>Una mascota virtual con cuidados, emociones, accesorios y minijuegos. Tu progreso se guarda en este dispositivo.</p></div>
+        <div class="px-playground">
+          <div class="px-stage" id="px-stage" data-mood="feliz">
+            <div class="px-stage-orbit"></div><div class="px-stage-platform"></div>
+            <img id="px-web-avatar" class="px-web-avatar" src="assets/images/pexy-3d.svg" alt="Pexy, panda de Nova PX con sudadera morada">
+            <div class="px-speech" id="px-speech" aria-live="polite">¡Hola! Soy Pexy. ¿Jugamos?</div>
+          </div>
+          <div class="px-console">
+            <div class="px-profile"><div><span class="kicker">Mascota Nova PX</span><h3 id="px-name">Pexy</h3><p id="px-level">Nivel 1 · Feliz</p></div><div class="px-xp"><b id="px-xp">0 XP</b><div class="px-xp-track"><i id="px-xp-fill"></i></div></div></div>
+            <div class="px-stats">
+              <label>🍎 Hambre <span id="px-hunger-label">80%</span><i><b id="px-hunger" style="width:80%"></b></i></label>
+              <label>⚡ Energía <span id="px-energy-label">90%</span><i><b id="px-energy" style="width:90%"></b></i></label>
+              <label>💜 Cariño <span id="px-love-label">70%</span><i><b id="px-love" style="width:70%"></b></i></label>
+            </div>
+            <div class="px-actions"><button type="button" data-px-action="feed">🍎 Alimentar</button><button type="button" data-px-action="pet">💜 Acariciar</button><button type="button" data-px-action="sleep">😴 Dormir</button><button type="button" data-px-action="play">🎮 Jugar</button></div>
+            <div class="px-games"><h4>Minijuegos</h4><button type="button" data-px-game="memory">🧠 Memoria</button><button type="button" data-px-game="tap">🎋 Bambú veloz</button><p id="px-game-result" aria-live="polite">Gana XP para desbloquear accesorios.</p></div>
+            <div class="px-wardrobe"><h4>Armario</h4><button type="button" data-px-acc="bow">🎀 Moño · Nv. 2</button><button type="button" data-px-acc="hat">🎩 Sombrero · Nv. 3</button><button type="button" data-px-acc="scarf">🧣 Bufanda · 3 días</button><p id="px-wardrobe-status">Accesorios desbloqueables según tu progreso.</p></div>
+            <p class="px-local-note">El progreso de la web y el launcher se guarda localmente en cada dispositivo. La sincronización entre dispositivos requiere una cuenta y un servicio de sincronización, que no se activa en esta versión.</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -131,6 +149,6 @@
     </section>
   </main>
   <footer class="footer"><div class="wrap"><div class="footer-inner"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true">N</span><span>NOVA PX</span></a><div class="footer-links"><a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacidad</a><a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">Novedades</a><a href="https://discord.gg/VAfuFEQtjv" target="_blank" rel="noopener noreferrer">Soporte</a></div></div><p class="legal">Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</p></div></footer>
-  <script src="assets/js/site.js" defer></script>
+  <script src="assets/js/site.js" defer></script><script src="assets/js/pexy.js" defer></script>
 </body>
 </html>
