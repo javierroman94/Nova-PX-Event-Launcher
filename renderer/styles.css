@@ -4030,3 +4030,14 @@ main { animation: px-page-in .28s ease-out; }
 .fr-face .head3d { margin: 7px 6px; }
 .fr-me-who { padding-top: 2px; }
 .fr-add button { width: auto; height: 38px; padding: 0 16px; font-size: 14px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- Pexy 3D: retrato del panel, diseño elegible y juegos ---------- */
+.pl-portrait:has(.pl-3d) { width: 124px; height: 124px; overflow: hidden; }
+.pl-3d { width: 118px; height: 124px; margin-top: 6px; }
+.pl-look { display: flex; gap: 6px; flex-basis: 100%; margin-top: 6px; }
+.pl-look-btn { flex: 1; padding: 6px 10px; border-radius: 10px; font-size: 13px; }
+.pl-look-btn.on { outline: 2px solid var(--accent, #7c5cff); }
+.pl-xpnote { display: block; margin-top: 6px; }
+.pg-canvas { display: block; margin: 8px auto 0; border-radius: 12px; }
+.pl-stats .pl-row { grid-template-columns: 104px 1fr 38px; }
+.pl-stats .pl-row:nth-child(4) .pl-bar i { background: linear-gradient(90deg, #a78bfa, #e07ad6); }

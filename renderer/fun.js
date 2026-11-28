@@ -212,7 +212,10 @@
   }
 
   // Control externo del panda PX (lo usa mascot.js): dormir, saltar, alegrarse.
-  const petCtl = { skin: '', acc: '', sleep: false, joy: 0, hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; },
+  const petCtl = { skin: '', acc: '', design: 'rosa', mood: 'normal', sleep: false, joy: 0, act: '', actT: 0,
+    // Animación puntual (comer, caricia, celebrar, bailar…) durante unos segundos.
+    play(act, sec) { this.act = String(act || ''); this.actT = Math.max(0, Math.min(8, +sec || 2)); wake(); },
+    hop() { const c = crits.find((k) => k.name === 'px'); if (c && !c.vy && c.y === 0) c.vy = -190; }, happy(sec) { this.joy = sec || 2; },
     // Agarrar con el mouse: sigue el cursor; al soltar sale lanzado con la velocidad del gesto.
     grab(px, py) {
       const c = crits.find((k) => k.name === 'px'); if (!c) return false;
@@ -229,7 +232,20 @@
       const c = crits.find((k) => k.name === 'px'); if (!c || !c.held) return;
       c.held = false; c.vx = Math.max(-900, Math.min(900, vx || 0)); c.vy = Math.max(-1100, Math.min(900, vy || 0)); c.thrown = Math.hypot(c.vx, c.vy) > 220 || c.y < -2;
     } };
-  const petSize = () => (SPRITES.px.mob3d && petCtl.skin !== 'shadow' ? { width: 118, height: 174 } : { width: sheet('px', 0, '#fff').width, height: sheet('px', 0, '#fff').height });
+  // Tamaño de Pexy 3D en el launcher: unos 100 px de alto, para que acompañe sin tapar la interfaz.
+  const PET_SCALE = 0.68;
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const petSize = () => (SPRITES.px.mob3d && petCtl.skin !== 'shadow' ? { width: Math.round(16 * 5 * PET_SCALE), height: Math.round(28 * 5 * PET_SCALE) } : { width: sheet('px', 0, '#fff').width, height: sheet('px', 0, '#fff').height });
+  // Qué animación toca ahora según lo que hace y cómo se siente.
+  function petAct(c) {
+    if (c.held) return 'held';
+    if (c.thrown || c.vx || c.y < -1) return 'jump';
+    if (petCtl.sleep) return 'sleep';
+    if (petCtl.actT > 0 && petCtl.act) return petCtl.act;
+    if (c.moving) return c.run ? 'run' : 'walk';
+    if (petCtl.joy > 0) return 'happy';
+    return { hambre: 'hungry', 'sueño': 'tired', triste: 'sad', feliz: c.dance ? 'dance' : 'happy' }[petCtl.mood] || 'idle';
+  }
   function getPet() {
     const c = crits.find((k) => k.name === 'px');
     if (!c || !opt.critters || root.classList.contains('no-fx')) return null;
@@ -269,7 +285,8 @@
   // PX es amistoso: no huye del cursor. Lo mira, se duerme si se lo pide mascot.js y salta de alegría.
   function updatePet(c, dt, lb) {
     const ground = h - 4;
-    c.t -= dt; c.ph += dt * 9;
+    c.t -= dt; c.ph += dt * 9; c.secs = (c.secs || 0) + dt;
+    if (petCtl.actT > 0) petCtl.actT -= dt;
     if (petCtl.joy > 0) { petCtl.joy -= dt; if (!c.vy && c.y === 0) c.vy = -150; }
     if (c.held) { c.moving = false; c.state = 'idle'; return; }
     const near = Math.abs(mx - c.x) < 150 && my > h - 190;
@@ -291,8 +308,15 @@
     }
     if (petCtl.sleep) { c.state = 'idle'; }
     else if (near) { c.dir = mx < c.x ? -1 : 1; c.state = 'idle'; }
-    else if (c.t <= 0) { c.state = Math.random() < 0.3 ? 'idle' : 'walk'; c.dir = Math.random() < 0.5 ? -1 : 1; c.t = rnd(1.2, 4); }
-    const speed = c.state === 'walk' ? 26 : 0;
+    else if (petCtl.actT > 0 || reduceMotion()) { c.state = 'idle'; } // con movimiento reducido no pasea
+    else if (c.t <= 0) {
+      // Con hambre o sueño camina poco; feliz a veces corre o baila un rato.
+      const lazy = petCtl.mood === 'hambre' || petCtl.mood === 'sueño' || petCtl.mood === 'triste';
+      c.state = Math.random() < (lazy ? 0.7 : 0.3) ? 'idle' : 'walk'; c.dir = Math.random() < 0.5 ? -1 : 1; c.t = rnd(1.2, 4);
+      c.run = c.state === 'walk' && !lazy && Math.random() < 0.25;
+      c.dance = c.state === 'idle' && petCtl.mood === 'feliz' && Math.random() < 0.35;
+    }
+    const speed = c.state === 'walk' ? (c.run ? 60 : 26) : 0;
     c.x += c.dir * speed * dt;
     if (c.x < lb + petSize().width / 2) { c.x = lb + petSize().width / 2; c.dir = 1; } else if (c.x > w - petSize().width / 2) { c.x = w - petSize().width / 2; c.dir = -1; }
     if (c.vy || c.y < 0) { c.vy += 520 * dt; c.y += c.vy * dt; if (c.y >= 0) { c.y = 0; c.vy = 0; } }
@@ -325,7 +349,7 @@
   function drawCritter(c) {
     if (SPRITES[c.name] && SPRITES[c.name].mob3d && window.NovaMob3D && window.NovaMob3D.names.includes(c.name) && !(c.name === 'px' && petCtl.skin === 'shadow')) {
       c.groundY = h - 4;
-      if (c.name === 'px') c.acc = petCtl.acc;
+      if (c.name === 'px') { c.acc = petCtl.acc; c.design = petCtl.design; c.act = petAct(c); c.scale = PET_SCALE; c.still = reduceMotion(); }
       const by = c.fly ? c.y + Math.sin(c.ph) * 3 : h - 4 + c.y;
       window.NovaMob3D.draw(ctx, c, Math.round(c.x), Math.round(by));
       return;
