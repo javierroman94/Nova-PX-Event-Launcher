@@ -1574,9 +1574,27 @@ async function requireAdmin() {
   if (!(await adminEligible())) throw new Error('Tu cuenta no tiene permiso de administrador. Inicia sesión con tu cuenta premium autorizada.');
   const r = gh();
   r.byline = session && session.name ? session.name : ''; // el mensaje del cambio dice quién lo hizo
-  const c = await r.check();
+  const c = await checkAdminCached(r);
   if (!c.canPush) throw new Error('Ese token no tiene permiso de escritura en el repositorio.');
   return r;
+}
+// La comprobación de escritura crea y borra una rama temporal en GitHub: se hace una vez cada 10 minutos por token
+// (y las peticiones simultáneas comparten la misma), no en cada acción del administrador.
+let adminCheckCache = null;
+function checkAdminCached(r) {
+  const fresh = adminCheckCache && adminCheckCache.token === r.token && Date.now() - adminCheckCache.at < 10 * 60000;
+  if (!fresh) {
+    const entry = { token: r.token, at: Date.now(), promise: null };
+    entry.promise = r.check().then((c) => {
+      if (!c.canPush && adminCheckCache === entry) adminCheckCache = null;
+      return c;
+    }, (err) => {
+      if (adminCheckCache === entry) adminCheckCache = null;
+      throw err;
+    });
+    adminCheckCache = entry;
+  }
+  return adminCheckCache.promise;
 }
 
 // Invitar a otra persona como colaboradora de GitHub, para que publique con su propio token (sin compartir el tuyo).
@@ -1801,7 +1819,7 @@ ipcMain.handle('admin:status', async () => {
   if (!eligible) return { admin: false, eligible: false };
   if (!readAdminToken()) return { admin: false, eligible: true };
   try {
-    const c = await gh().check();
+    const c = await checkAdminCached(gh());
     adminChecked = c.canPush;
     const info = await adminPerms();
     return { admin: c.canPush, eligible: true, repo: c.fullName, rol: info ? info.rol : null, permisos: info ? [...info.permisos] : [] };

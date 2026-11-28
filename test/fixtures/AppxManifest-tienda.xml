@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--suppress XmlUnusedNamespaceDeclaration -->
+<Package
+   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  <!-- use single quotes to avoid double quotes escaping in the publisher value  -->
+  <Identity Name="NOVAPX.NovaPXEventLauncher"
+    ProcessorArchitecture="x64"
+    Publisher='CN=26F893CA-1915-4DC9-9234-2DBF2F6F192E'
+    Version="1.0.108.0" />
+  <Properties>
+    <DisplayName>Nova PX Event Launcher</DisplayName>
+    <PublisherDisplayName>NOVA PX</PublisherDisplayName>
+    <Description>Nova PX - Event Launcher: launcher de Minecraft para los eventos del equipo (premium y no premium)</Description>
+    <Logo>assets\StoreLogo.png</Logo>
+  </Properties>
+  <Resources>
+    <Resource Language="es-ES" />
+<Resource Language="en-US" />
+  </Resources>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14316.0" MaxVersionTested="10.0.14316.0" />
+  </Dependencies>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust"/>
+  </Capabilities>
+  <Applications>
+    <Application Id="NovaPXEventLauncher" Executable="app\Nova PX Event Launcher.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+       BackgroundColor="#0e1220"
+       DisplayName="Nova PX Event Launcher"
+       Square150x150Logo="assets\Square150x150Logo.png"
+       Square44x44Logo="assets\Square44x44Logo.png"
+       Description="Nova PX - Event Launcher: launcher de Minecraft para los eventos del equipo (premium y no premium)">
+        
+        <uap:DefaultTile Wide310x150Logo="assets\Wide310x150Logo.png" Square310x310Logo="assets\LargeTile.png" Square71x71Logo="assets\SmallTile.png" />
+        
+      </uap:VisualElements>
+      <Extensions>
+          <uap:Extension Category="windows.fileTypeAssociation">
+            <uap:FileTypeAssociation Name="novapx">
+              <uap:SupportedFileTypes>
+                <uap:FileType>.novapx</uap:FileType>
+              </uap:SupportedFileTypes>
+            </uap:FileTypeAssociation>
+          </uap:Extension></Extensions>
+    </Application>
+  </Applications>
+</Package>
