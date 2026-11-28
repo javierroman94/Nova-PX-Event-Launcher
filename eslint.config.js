@@ -71,6 +71,11 @@ module.exports = [
     languageOptions: { globals: { ...globals.browser } }
   },
   {
+    // Web pública (docs/): scripts de navegador. Los que se comparten con el launcher son copias exactas de renderer/.
+    files: ['docs/assets/js/**/*.js'],
+    languageOptions: { sourceType: 'script', globals: { ...globals.browser, module: 'readonly' } }
+  },
+  {
     files: ['worker/**/*.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.serviceworker, ...globals.browser, WebSocketPair: 'readonly' } }
   }
