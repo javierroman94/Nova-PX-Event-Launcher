@@ -1,156 +1,340 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Nova PX es un launcher de Minecraft con gestión de versiones, amigos, eventos y Pexy. Descarga la versión oficial para Windows o Linux.">
-  <meta name="theme-color" content="#08070f">
+  <title>Nova PX — Launcher de Minecraft para los eventos de la comunidad</title>
+  <meta name="description" content="Nova PX es un launcher de Minecraft gratuito y de código abierto: entra a los eventos de la comunidad con un clic, gestiona modpacks y versiones, juega con tus amigos y conoce a Pexy.">
+  <meta name="theme-color" content="#07060c">
+  <meta name="color-scheme" content="dark">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://novapx.pages.dev/">
-  <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/images/favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+  <link rel="preload" href="assets/fonts/oxanium-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/images/mundo-voxel.webp" as="image" type="image/webp" media="(min-width: 761px)">
   <link rel="stylesheet" href="assets/css/site.css">
   <meta property="og:type" content="website">
-  <meta property="og:locale" content="es_EC">
+  <meta property="og:locale" content="es_ES">
   <meta property="og:site_name" content="Nova PX">
-  <meta property="og:title" content="Nova PX — Tu mundo. Tus reglas. Tu Nova.">
-  <meta property="og:description" content="Descubre Nova PX, el launcher de Minecraft con eventos, amigos y Pexy.">
+  <meta property="og:title" content="Nova PX — Launcher de Minecraft para los eventos de la comunidad">
+  <meta property="og:description" content="Entra a los eventos de Nova PX con un clic. Modpacks, versiones, amigos y Pexy, el panda de la comunidad. Gratis y de código abierto.">
   <meta property="og:url" content="https://novapx.pages.dev/">
-  <meta property="og:image" content="https://novapx.pages.dev/assets/images/pexy-3d.svg">
+  <meta property="og:image" content="https://novapx.pages.dev/assets/images/nova-px-social.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Logo de Nova PX y Pexy, el panda rosa de bloques, en un mundo voxel de noche">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@NovaPX_">
-  <meta name="twitter:title" content="Nova PX — Tu mundo. Tus reglas. Tu Nova.">
-  <meta name="twitter:description" content="Un launcher de Minecraft con eventos, amigos y Pexy.">
-  <meta name="twitter:image" content="https://novapx.pages.dev/assets/images/pexy-3d.svg">
-  <title>Nova PX — Launcher de Minecraft</title>
+  <meta name="twitter:title" content="Nova PX — Launcher de Minecraft para los eventos de la comunidad">
+  <meta name="twitter:description" content="Entra a los eventos de Nova PX con un clic. Modpacks, versiones, amigos y Pexy.">
+  <meta name="twitter:image" content="https://novapx.pages.dev/assets/images/nova-px-social.jpg">
+  <meta name="twitter:image:alt" content="Logo de Nova PX y Pexy, el panda rosa de bloques, en un mundo voxel de noche">
+  <script src="assets/js/site.js" defer></script>
 </head>
-<body id="inicio">
+<body>
   <a class="skip" href="#contenido">Saltar al contenido</a>
+
   <header class="site-header">
     <div class="wrap nav">
-      <a class="brand" href="#inicio" aria-label="Nova PX, inicio"><span class="brand-mark" aria-hidden="true">N</span><span>NOVA PX</span></a>
-      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-principal">Menú</button>
+      <a class="brand" href="#inicio" aria-label="Nova PX, ir al inicio">
+        <img src="assets/images/logo-np.png" alt="" width="34" height="34">
+        <span>Nova PX</span>
+      </a>
+      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-principal">
+        <span class="menu-icon" aria-hidden="true"></span><span>Menú</span>
+      </button>
       <nav class="nav-links" id="nav-principal" data-nav aria-label="Navegación principal">
-        <a href="#funciones">Funciones</a><a href="#eventos">Eventos</a><a href="#amigos">Amigos</a><a href="#pexy">Pexy</a><a href="#galeria">Galería</a><a href="#preguntas">FAQ</a>
+        <a href="#funciones">Funciones</a>
+        <a href="#eventos">Eventos</a>
+        <a href="#mods-px">Mods .px</a>
+        <a href="#amigos">Amigos</a>
+        <a href="#pexy">Pexy</a>
+        <a href="#galeria">Galería</a>
+        <a href="#preguntas">Preguntas</a>
+        <a class="nav-cta" href="#descargar">Descargar</a>
       </nav>
-      <a class="nav-cta" href="#descargar">Descargar <span aria-hidden="true">↓</span></a>
     </div>
   </header>
+
   <main id="contenido">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-glow" aria-hidden="true"></div>
-      <div class="wrap"><div class="hero-inner">
-        <span class="eyebrow">✦ La experiencia Nova PX</span>
-        <h1 id="hero-title">Tu mundo.<br> Tus reglas.<span>Tu Nova.</span></h1>
-        <p class="lead">Un launcher de Minecraft para organizar tus versiones, conectar con tus amigos y vivir los eventos de la comunidad Nova PX.</p>
-        <div class="hero-actions">
-          <a class="btn" href="https://apps.microsoft.com/detail/9mvjl4gf5wj8" target="_blank" rel="noopener noreferrer">Obtener en Microsoft Store</a>
-          <a class="btn secondary" href="#descargar">Ver todas las descargas</a>
+    <section class="hero" id="inicio" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <img class="hero-mark" src="assets/images/nova-px-marca.webp" alt="Nova PX" width="900" height="317" fetchpriority="high">
+          <h1 id="hero-title">Entra al evento. El launcher se encarga del resto.</h1>
+          <p class="lead">Nova PX descarga la versión, el loader y los mods de cada evento de la comunidad, los comprueba y abre Minecraft por ti. Además organiza tus modpacks, tus skins y tus amigos.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" data-download="windows" href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+              Descargar para Windows
+            </a>
+            <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9mvjl4gf5wj8" rel="noopener">Obtener en Microsoft Store</a>
+          </div>
+          <p class="hero-meta">Versión <strong data-version>1.0.193</strong> · Windows y Linux · Gratis y de código abierto (MIT) · <a href="#funciones">Ver lo que trae</a></p>
         </div>
-        <p class="hero-meta">Versión estable <strong data-version>1.0.193</strong> · Windows y Linux · Código abierto</p>
-      </div></div>
-      <img class="hero-art" src="assets/images/pexy-3d.svg" alt="Pexy, el panda de Nova PX, con una sudadera morada" width="520" height="560" fetchpriority="high">
+        <figure class="hero-pexy">
+          <picture>
+            <source media="(max-width: 760px)" srcset="assets/images/pexy-480.webp">
+            <img src="assets/images/pexy.webp" alt="Pexy, el panda rosa de bloques de Nova PX, renderizado en voxel" width="518" height="939">
+          </picture>
+          <figcaption>Pexy, la mascota oficial de Nova PX</figcaption>
+        </figure>
+      </div>
     </section>
 
-    <section class="section" id="funciones">
+    <section class="section" id="funciones" aria-labelledby="funciones-title">
       <div class="wrap">
-        <div class="section-head"><span class="kicker">Hecho para jugar</span><h2>Mucho más que un launcher</h2><p>Herramientas para que tengas tu experiencia Minecraft organizada y lista para jugar.</p></div>
+        <header class="section-head">
+          <h2 id="funciones-title">Todo lo de Minecraft en un solo lugar</h2>
+          <p>Lo instalas una vez. Después, los eventos, las noticias y el propio launcher se actualizan solos.</p>
+        </header>
         <div class="feature-grid">
-          <article class="feature"><div class="feature-icon" aria-hidden="true">▦</div><h3>Versiones e instalaciones</h3><p>Organiza tus perfiles y prepara las versiones de Minecraft desde un solo lugar.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">♧</div><h3>Sistema de amigos</h3><p>Conecta con otros jugadores de la comunidad y consulta su presencia desde Nova PX.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">◇</div><h3>Eventos de la comunidad</h3><p>Accede a los packs y configuraciones preparados para los eventos de Nova PX.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">⬡</div><h3>Mods protegidos</h3><p>Los mods de eventos se almacenan cifrados en formato .px y se preparan para el juego cuando corresponde.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">◈</div><h3>Importación de modpacks</h3><p>Importa perfiles compatibles y comparte packs mediante los flujos disponibles en el launcher.</p></article>
-          <article class="feature"><div class="feature-icon" aria-hidden="true">✦</div><h3>Pexy te acompaña</h3><p>Conoce a la mascota de Nova PX y descubre su experiencia interactiva.</p></article>
+          <article class="feature">
+            <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <h3>Jugar sin configurar nada</h3>
+            <p>El evento trae su versión y su loader (Vanilla, Fabric, Quilt, Forge o NeoForge). Si falta Java, el launcher lo instala. Cada evento va en su propia carpeta.</p>
+          </article>
+          <article class="feature">
+            <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4zM4 12l8 4 8-4M4 17l8 4 8-4"/></svg>
+            <h3>Modpacks e importación</h3>
+            <p>Biblioteca con Modrinth, archivos <code>.mrpack</code>, modpacks de CurseForge y el catálogo de FTB. Importa tus perfiles de Prism, MultiMC, ATLauncher, CurseForge y Modrinth App.</p>
+          </article>
+          <article class="feature">
+            <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>
+            <h3>Todas las versiones</h3>
+            <p>Vanilla desde la 1.0 hasta la última, con snapshots aparte. Puedes fijar la versión exacta del loader y elegir RAM, Java y cuenta para cada modpack.</p>
+          </article>
+          <article class="feature">
+            <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l1 4h3v4h-3v10H7V11H4V7h3z"/></svg>
+            <h3>Skins en 3D</h3>
+            <p>Mira tu skin en 3D y cambia la skin y la capa desde el launcher. Inicia sesión con Microsoft o con un nick local, y cambia entre varias cuentas.</p>
+          </article>
+          <article class="feature">
+            <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>
+            <h3>Avisos de cada evento</h3>
+            <p>Noticias, historial de eventos y equipo dentro del launcher, avisos en el escritorio antes de empezar y tu partida en Discord con Rich Presence.</p>
+          </article>
+          <article class="feature">
+            <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z"/></svg>
+            <h3>18 temas</h3>
+            <p>Del tema Nova con neón a estilos clásicos como Windows XP y Windows 7. Cambia el aspecto del launcher cuando quieras.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <section class="section alt" id="eventos">
+    <section class="section section-alt" id="eventos" aria-labelledby="eventos-title">
       <div class="wrap">
-        <div class="event-panel">
-          <div><span class="event-tag">EVENTOS NOVA PX</span><h3>Entra al evento con todo preparado</h3><p>El launcher descarga y verifica los archivos del pack. Los mods protegidos se conservan cifrados como .px en la caché; para jugar, el sistema prepara los archivos que necesita el cargador de Minecraft. Los archivos temporales pueden existir mientras el juego está abierto.</p></div>
-          <a class="btn secondary" href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/docs/SEGURIDAD.md" target="_blank" rel="noopener noreferrer">Conocer la seguridad</a>
-        </div>
+        <header class="section-head">
+          <h2 id="eventos-title">Eventos de la comunidad</h2>
+          <p>Nova PX organiza eventos de Minecraft con streamers y jugadores desde 2023. Estos son algunos de los últimos; el historial completo está en el launcher.</p>
+        </header>
+        <dl class="stats">
+          <div><dt>Eventos en el historial</dt><dd>14</dd></div>
+          <div><dt>Participaciones registradas</dt><dd>186</dd></div>
+          <div><dt>Desde</dt><dd>2023</dd></div>
+        </dl>
+        <ul class="event-grid">
+          <li class="event-card">
+            <img src="assets/images/eventos/evento-mwk2dg5m.webp" alt="Portada del evento RubroCraft: Nations" width="520" height="686" loading="lazy" decoding="async">
+            <div><h3>RubroCraft: Nations</h3><p class="event-meta"><time datetime="2026-10-03">Octubre de 2026</time> · 64 jugadores</p><p>Survival semi-vanilla de tres semanas, con cuatro equipos equilibrados y mecánicas propias.</p></div>
+          </li>
+          <li class="event-card">
+            <img src="assets/images/eventos/evento-mwinmmva.webp" alt="Portada del evento Cobblemon PX" width="520" height="292" loading="lazy" decoding="async">
+            <div><h3>Cobblemon PX</h3><p class="event-meta"><time datetime="2026-03-01">Marzo de 2026</time> · 40 jugadores</p><p>Cuatro semanas con streamers y jugadores, eventos semanales y progresión ambientada en Cobblemon.</p></div>
+          </li>
+          <li class="event-card">
+            <img src="assets/images/eventos/evento-mwk1dnnk.webp" alt="Portada del evento El agua sube" width="520" height="740" loading="lazy" decoding="async">
+            <div><h3>El agua sube</h3><p class="event-meta"><time datetime="2026-02-15">Febrero de 2026</time></p><p>Cien jugadores sobreviven mientras el agua sube cada minuto. Solo uno queda en pie.</p></div>
+          </li>
+          <li class="event-card">
+            <img src="assets/images/eventos/evento-mwinri46.webp" alt="Portada del evento La lava sube" width="520" height="720" loading="lazy" decoding="async">
+            <div><h3>La lava sube</h3><p class="event-meta"><time datetime="2026-01-30">Enero de 2026</time></p><p>Cien jugadores consiguen recursos mientras la lava sube hasta la capa máxima.</p></div>
+          </li>
+          <li class="event-card">
+            <img src="assets/images/eventos/betterchain.webp" alt="Portada del evento BetterChain" width="520" height="520" loading="lazy" decoding="async">
+            <div><h3>BetterChain</h3><p class="event-meta"><time datetime="2025-12-14">Diciembre de 2025</time></p><p>Evento organizado por Nova PX.</p></div>
+          </li>
+          <li class="event-card">
+            <img src="assets/images/eventos/oneblock-deathmatch-mwio62cc.webp" alt="Portada del evento OneBlock Deathmatch" width="520" height="686" loading="lazy" decoding="async">
+            <div><h3>OneBlock Deathmatch</h3><p class="event-meta"><time datetime="2025-02-01">Febrero de 2025</time> · 52 jugadores</p><p>Evento organizado por Nova PX.</p></div>
+          </li>
+        </ul>
       </div>
     </section>
 
-    <section class="section" id="amigos">
+    <section class="section" id="mods-px" aria-labelledby="mods-title">
       <div class="wrap split">
-        <div><span class="kicker">Juega en compañía</span><h2>Tu comunidad, más cerca</h2><p>El sistema de amigos de Nova PX te permite conectar con otros jugadores y consultar su presencia. La disponibilidad depende de que la función esté habilitada y de los requisitos de almacenamiento seguro del dispositivo.</p><ul class="bullet-list"><li>Conecta con jugadores de Nova PX.</li><li>Consulta la presencia disponible.</li><li>Gestiona tu experiencia social desde el launcher.</li></ul></div>
-        <div class="art-card" aria-label="Ilustración decorativa del universo Nova PX"><img src="assets/images/pexy-3d.svg" alt="" loading="lazy" width="360" height="390"></div>
-      </div>
-    </section>
-
-    <section class="section alt" id="pexy">
-      <div class="wrap">
-        <div class="section-head"><span class="kicker">Tu compañero de aventuras</span><h2>Cuida de Pexy</h2><p>Una mascota virtual con cuidados, emociones, accesorios y minijuegos. Tu progreso se guarda en este dispositivo.</p></div>
-        <div class="px-playground">
-          <div class="px-stage" id="px-stage" data-mood="feliz">
-            <div class="px-stage-orbit"></div><div class="px-stage-platform"></div>
-            <canvas id="px-web-model" class="px-web-model" width="480" height="460" role="img" aria-label="Pexy, panda 3D de Nova PX con sudadera morada y estrella blanca"></canvas>
-            <span class="px-equipped" id="px-equipped" aria-label="Accesorio equipado"></span>
-            <div class="px-speech" id="px-speech" aria-live="polite">¡Hola! Soy Pexy. ¿Jugamos?</div>
-          </div>
-          <div class="px-console">
-            <div class="px-profile"><div><span class="kicker">Mascota Nova PX</span><h3 id="px-name">Pexy</h3><p id="px-level">Nivel 1 · Feliz</p></div><div class="px-xp"><b id="px-xp">0 XP</b><div class="px-xp-track"><i id="px-xp-fill"></i></div></div></div>
-            <div class="px-stats">
-              <label>🍎 Hambre <span id="px-hunger-label">80%</span><i><b id="px-hunger" style="width:80%"></b></i></label>
-              <label>⚡ Energía <span id="px-energy-label">90%</span><i><b id="px-energy" style="width:90%"></b></i></label>
-              <label>💜 Cariño <span id="px-love-label">70%</span><i><b id="px-love" style="width:70%"></b></i></label>
-            </div>
-            <div class="px-actions"><button type="button" data-px-action="feed">🍎 Alimentar</button><button type="button" data-px-action="pet">💜 Acariciar</button><button type="button" data-px-action="sleep">😴 Dormir</button><button type="button" data-px-action="play">🎮 Jugar</button></div>
-            <div class="px-games"><h4>Minijuegos</h4><button type="button" data-px-game="memory">🧠 Memoria</button><button type="button" data-px-game="tap">🎋 Bambú veloz</button><p id="px-game-result" aria-live="polite">Gana XP para desbloquear accesorios.</p></div>
-            <div class="px-wardrobe"><h4>Armario</h4><button type="button" data-px-acc="bow">🎀 Moño · Nv. 2</button><button type="button" data-px-acc="hat">🎩 Sombrero · Nv. 3</button><button type="button" data-px-acc="scarf">🧣 Bufanda · 3 días</button><button type="button" data-px-acc="glasses">🕶️ Gafas · Nv. 5</button><button type="button" data-px-acc="crown">👑 Corona · Nv. 8</button><p id="px-wardrobe-status">Accesorios desbloqueables según tu progreso.</p></div>
-            <p class="px-local-note">El progreso de la web y el launcher se guarda localmente en cada dispositivo. La sincronización entre dispositivos requiere una cuenta y un servicio de sincronización, que no se activa en esta versión.</p>
-          </div>
+        <div>
+          <h2 id="mods-title">Mods de eventos protegidos con .px</h2>
+          <p>Algunos eventos usan mods propios. Para que no queden sueltos en tu carpeta, el launcher los guarda cifrados y solo los prepara cuando juegas.</p>
+          <ol class="steps">
+            <li><strong>Descarga comprobada.</strong> Cada archivo se verifica con su huella SHA-1 o SHA-256 y solo se aceptan enlaces <code>https</code>.</li>
+            <li><strong>Caché cifrada.</strong> Los mods se guardan como archivos <code>.px</code> cifrados con AES-256-GCM, con una llave derivada de la contraseña del evento.</li>
+            <li><strong>Solo al jugar.</strong> Con Fabric se descifran en una carpeta temporal propia; con Forge y NeoForge, en la carpeta <code>mods</code> del evento.</li>
+            <li><strong>Limpieza.</strong> Al cerrar el juego se borran los archivos descifrados. La carpeta temporal de Fabric también se limpia si falla el arranque y al abrir o cerrar el launcher.</li>
+          </ol>
+          <p class="note"><strong>Lo que no hace:</strong> mientras Minecraft está abierto, los mods descifrados existen en tu disco, porque el juego los necesita. El cifrado evita que queden a la vista, pero no hace imposible copiarlos. <a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/docs/SEGURIDAD.md" rel="noopener">Lee los detalles en SEGURIDAD.md</a>.</p>
+        </div>
+        <div class="px-diagram" aria-hidden="true">
+          <div class="px-file"><span>mod.jar</span></div>
+          <div class="px-arrow"></div>
+          <div class="px-file px-locked"><span>mod.px</span></div>
+          <div class="px-arrow"></div>
+          <div class="px-file px-temp"><span>Minecraft</span></div>
         </div>
       </div>
     </section>
 
-    <section class="section" id="galeria">
-      <div class="wrap">
-        <div class="section-head"><span class="kicker">Dentro de Nova PX</span><h2>Un vistazo al launcher</h2><p>Conoce las áreas principales de la experiencia Nova PX.</p></div>
-        <div class="gallery-grid"><div class="gallery-tile"><strong>Biblioteca</strong><span>Gestiona tus instalaciones y perfiles.</span></div><div class="gallery-tile"><strong>Eventos</strong><span>Prepara los packs de la comunidad.</span></div><div class="gallery-tile"><strong>Amigos</strong><span>Conecta con otros jugadores.</span></div></div>
-        <p class="download-note">Las capturas reales del launcher se incorporarán en la siguiente pasada visual.</p>
-      </div>
-    </section>
-
-    <section class="section alt" id="descargar">
-      <div class="wrap">
-        <div class="download-box">
-          <span class="kicker">Descarga oficial</span><h2>Empieza tu aventura con Nova PX</h2><p class="muted">Elige tu plataforma. Descarga siempre desde los canales oficiales.</p>
-          <div class="download-grid">
-            <a class="download-card primary" href="https://apps.microsoft.com/detail/9mvjl4gf5wj8" target="_blank" rel="noopener noreferrer"><strong>Microsoft Store</strong><span>Recomendado para Windows</span></a>
-            <a class="download-card" data-download="windows" href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest" target="_blank" rel="noopener noreferrer"><strong>Windows (.exe)</strong><span>Instalador directo</span></a>
-            <a class="download-card" data-download="linux" href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest" target="_blank" rel="noopener noreferrer"><strong>Linux (AppImage)</strong><span>Paquete portable</span></a>
-          </div>
-          <p class="download-note">Versión <strong data-version>1.0.193</strong> · <a data-release href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest" target="_blank" rel="noopener noreferrer">Ver todas las publicaciones en GitHub</a></p>
-          <p class="download-note">Windows puede mostrar SmartScreen al abrir el instalador descargado desde GitHub porque ese instalador no está firmado. Microsoft Store es la opción recomendada para Windows.</p>
+    <section class="section section-alt" id="amigos" aria-labelledby="amigos-title">
+      <div class="wrap split split-rev">
+        <figure class="shot">
+          <img src="assets/images/galeria/equipo-640.webp" srcset="assets/images/galeria/equipo-640.webp 640w, assets/images/galeria/equipo.webp 1280w" sizes="(max-width: 900px) 100vw, 560px" alt="Pantalla Equipo del launcher con las tarjetas de EzLuiiz, MegaDeker y javierroman94" width="1280" height="800" loading="lazy" decoding="async">
+        </figure>
+        <div>
+          <h2 id="amigos-title">Juega con tus amigos</h2>
+          <p>Agrega amigos por su nick, mira quién está en línea y, si ellos lo comparten, a qué juegan. Chatea con ellos sin salir del launcher.</p>
+          <ul class="checks">
+            <li>Lista de amigos con estado en línea.</li>
+            <li>Chat con cada amigo.</li>
+            <li>Tu partida en Discord con Rich Presence.</li>
+          </ul>
+          <p class="note">Por privacidad, la sesión de amigos se guarda cifrada con el almacén seguro de tu sistema. Si tu equipo no tiene uno, la función de amigos no se activa.</p>
         </div>
       </div>
     </section>
 
-    <section class="section" id="preguntas">
-      <div class="wrap"><div class="section-head"><span class="kicker">Ayuda rápida</span><h2>Preguntas frecuentes</h2></div>
+    <section class="section" id="pexy" aria-labelledby="pexy-title">
+      <div class="wrap split">
+        <div>
+          <h2 id="pexy-title">Pexy vive en tu launcher</h2>
+          <p>Pexy es el panda rosa de bloques de Nova PX, diseñado por <a href="https://x.com/DekerModMaker" rel="noopener">MegaDeker</a>. Pasea por el launcher, te avisa de lo que pasa y crece contigo.</p>
+          <ul class="checks">
+            <li>Dale de comer, juega con él y déjalo dormir: tiene hambre, energía y cariño.</li>
+            <li>Sube de nivel y desbloquea accesorios: moño, sombrero, gafas y corona; la bufanda llega con una racha de 3 días.</li>
+            <li>Tres minijuegos para jugar con él.</li>
+            <li>Agárralo y lánzalo por la pantalla.</li>
+          </ul>
+          <p class="note">Su progreso se guarda solo en tu PC.</p>
+        </div>
+        <div class="pexy-stage" aria-hidden="true">
+          <img src="assets/images/pexy-480.webp" alt="" width="259" height="469" loading="lazy" decoding="async">
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="galeria" aria-labelledby="galeria-title">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 id="galeria-title">Así se ve por dentro</h2>
+          <p>Capturas de la versión 1.0.193 con el tema Nova. Inicio, Evento y Modpacks usan perfiles de ejemplo; Historial y Equipo muestran los datos reales de la comunidad.</p>
+        </header>
+        <ul class="gallery">
+          <li><a href="assets/images/galeria/inicio.webp"><figure><img src="assets/images/galeria/inicio-640.webp" alt="Pantalla de Inicio del launcher con el último modpack y el botón Jugar" width="640" height="400" loading="lazy" decoding="async"><figcaption>Inicio</figcaption></figure></a></li>
+          <li><a href="assets/images/galeria/evento.webp"><figure><img src="assets/images/galeria/evento-640.webp" alt="Pantalla Evento actual con el botón Jugar y los datos del evento" width="640" height="400" loading="lazy" decoding="async"><figcaption>Evento</figcaption></figure></a></li>
+          <li><a href="assets/images/galeria/historial.webp"><figure><img src="assets/images/galeria/historial-640.webp" alt="Historial de eventos de Nova PX con las portadas de cada evento" width="640" height="400" loading="lazy" decoding="async"><figcaption>Historial</figcaption></figure></a></li>
+          <li><a href="assets/images/galeria/modpacks.webp"><figure><img src="assets/images/galeria/modpacks-640.webp" alt="Biblioteca de modpacks con filtros por loader" width="640" height="400" loading="lazy" decoding="async"><figcaption>Modpacks</figcaption></figure></a></li>
+          <li><a href="assets/images/galeria/equipo.webp"><figure><img src="assets/images/galeria/equipo-640.webp" alt="Pantalla Equipo con el homenaje a PandraxInLive y las tarjetas del equipo" width="640" height="400" loading="lazy" decoding="async"><figcaption>Equipo</figcaption></figure></a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="descargar" aria-labelledby="descargar-title">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 id="descargar-title">Descarga Nova PX</h2>
+          <p>Gratis y de código abierto. Descarga siempre desde estos enlaces oficiales.</p>
+        </header>
+        <div class="download-grid">
+          <a class="download-card is-recommended" href="https://apps.microsoft.com/detail/9mvjl4gf5wj8" rel="noopener">
+            <span class="badge">Recomendado</span>
+            <strong>Microsoft Store</strong>
+            <span>Para Windows. Se instala y se actualiza desde la Tienda, sin el aviso de SmartScreen.</span>
+          </a>
+          <a class="download-card" data-download="windows" href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest">
+            <strong>Windows (.exe)</strong>
+            <span data-file="windows">Instalador directo desde GitHub. Se actualiza solo.</span>
+          </a>
+          <a class="download-card" data-download="linux" href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest" hidden>
+            <strong>Linux (AppImage)</strong>
+            <span data-file="linux">Archivo portable desde GitHub.</span>
+          </a>
+        </div>
+        <p class="download-status" role="status"><span data-release-status>Versión <strong data-version>1.0.193</strong> ·</span> <a data-release href="https://github.com/javierroman94/Nova-PX-Event-Launcher/releases/latest" rel="noopener">Todas las publicaciones en GitHub</a></p>
+        <details class="smartscreen">
+          <summary>Windows dice «Windows protegió su PC» al abrir el .exe</summary>
+          <p>El instalador de GitHub todavía no está firmado digitalmente, así que Windows SmartScreen puede mostrar ese aviso. Si lo descargaste desde el enlace de arriba, pulsa <strong>Más información</strong> y luego <strong>Ejecutar de todas formas</strong>. Si prefieres no ver el aviso, instala desde Microsoft Store.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="empezar" aria-labelledby="empezar-title">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 id="empezar-title">Tres pasos y estás dentro</h2>
+        </header>
+        <ol class="howto">
+          <li><h3>Instala</h3><p>Desde Microsoft Store en Windows, o con el instalador de GitHub para Windows y Linux.</p></li>
+          <li><h3>Inicia sesión</h3><p>Con tu cuenta de Microsoft, o con un nick local si no tienes Minecraft premium.</p></li>
+          <li><h3>Juega</h3><p>Pulsa Jugar. El launcher descarga lo que falte y abre el evento por ti.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="preguntas" aria-labelledby="preguntas-title">
+      <div class="wrap narrow">
+        <header class="section-head">
+          <h2 id="preguntas-title">Preguntas frecuentes</h2>
+        </header>
         <div class="faq">
-          <details><summary>¿Nova PX es gratuito?</summary><p>Sí. El launcher es gratuito y de código abierto bajo licencia MIT. No incluye una copia de Minecraft.</p></details>
-          <details><summary>¿Necesito una cuenta premium?</summary><p>Puedes iniciar sesión con Microsoft o utilizar el modo de nick local disponible. Algunos servidores solo admiten cuentas premium.</p></details>
-          <details><summary>¿Cómo se actualiza?</summary><p>La edición de Microsoft Store se actualiza desde la Tienda. La edición descargada desde GitHub utiliza el mecanismo de actualización de esa distribución.</p></details>
-          <details><summary>¿Qué hago si Windows muestra SmartScreen?</summary><p>Comprueba que descargaste el instalador desde el repositorio oficial. El instalador directo de GitHub no está firmado actualmente. Si prefieres evitar ese aviso, utiliza Microsoft Store.</p></details>
+          <details><summary>¿Es gratis?</summary><p>Sí. El launcher es gratuito y de código abierto, con licencia MIT. No incluye Minecraft: para servidores premium necesitas tener el juego.</p></details>
+          <details><summary>¿Necesito Minecraft premium?</summary><p>Puedes iniciar sesión con tu cuenta de Microsoft o jugar con un nick local. Algunos servidores solo aceptan cuentas premium.</p></details>
+          <details><summary>¿Es seguro?</summary><p>El código está abierto en GitHub y el launcher también se distribuye en Microsoft Store. Tu sesión de Microsoft se guarda cifrada con el almacén seguro de tu sistema y nunca se envía a Nova PX.</p></details>
+          <details><summary>¿Cómo se actualiza?</summary><p>La versión de Microsoft Store se actualiza desde la Tienda. El instalador de GitHub busca versiones nuevas y se actualiza solo.</p></details>
+          <details><summary>¿Funciona en Mac?</summary><p>Por ahora hay versiones para Windows y Linux.</p></details>
           <details><summary>¿Está afiliado a Mojang o Microsoft?</summary><p>No. Nova PX es un proyecto independiente de la comunidad. Minecraft es una marca de Mojang Studios.</p></details>
-          <details><summary>¿Dónde encuentro ayuda?</summary><p>Visita nuestro Discord o abre una consulta en el repositorio oficial de GitHub.</p></details>
         </div>
       </div>
     </section>
 
-    <section class="section alt">
-      <div class="wrap"><div class="community"><span class="kicker">Forma parte de la comunidad</span><h2>Nos vemos dentro de Nova PX</h2><p class="muted">Noticias, soporte, código y comunidad en los canales oficiales.</p><div class="community-links"><a class="btn" href="https://discord.gg/VAfuFEQtjv" target="_blank" rel="noopener noreferrer">Discord</a><a class="btn secondary" href="https://github.com/javierroman94/Nova-PX-Event-Launcher" target="_blank" rel="noopener noreferrer">GitHub</a><a class="btn secondary" href="https://x.com/NovaPX_" target="_blank" rel="noopener noreferrer">X · @NovaPX_</a></div></div></div>
+    <section class="section section-alt" id="comunidad" aria-labelledby="comunidad-title">
+      <div class="wrap">
+        <header class="section-head">
+          <h2 id="comunidad-title">La comunidad detrás de Nova PX</h2>
+          <p>Avisamos los eventos y quiénes participan en X, y damos soporte en Discord.</p>
+        </header>
+        <div class="community-links">
+          <a class="btn btn-primary" href="https://discord.gg/VAfuFEQtjv" rel="noopener">Discord</a>
+          <a class="btn btn-ghost" href="https://x.com/NovaPX_" rel="noopener">X · @NovaPX_</a>
+          <a class="btn btn-ghost" href="https://github.com/javierroman94/Nova-PX-Event-Launcher" rel="noopener">GitHub</a>
+        </div>
+        <ul class="team">
+          <li><img src="assets/images/equipo/ezluiiz.webp" alt="" width="160" height="160" loading="lazy" decoding="async"><div><strong>EzLuiiz</strong><span>Lead Level Designer, CEO y Creative Director</span></div></li>
+          <li><img src="assets/images/equipo/megadeker.webp" alt="" width="160" height="160" loading="lazy" decoding="async"><div><strong>MegaDeker</strong><span>Co-Founder, Art &amp; Operations Director</span></div></li>
+          <li><img src="assets/images/equipo/javierroman94.webp" alt="" width="160" height="160" loading="lazy" decoding="async"><div><strong>javierroman94</strong><span>Lead Systems Architect &amp; Software Engineer</span></div></li>
+          <li><img src="assets/images/equipo/antonykmak.webp" alt="" width="160" height="160" loading="lazy" decoding="async"><div><strong>Antonykmak</strong><span>Admin-developer y moderador</span></div></li>
+          <li><span class="avatar" aria-hidden="true">K</span><div><strong>Kyoukster</strong><span>Lead Concept Artist &amp; Motion Designer</span></div></li>
+          <li><span class="avatar" aria-hidden="true">M</span><div><strong>MaurizioPG_</strong><span>Community Support y Level Designer</span></div></li>
+          <li><span class="avatar" aria-hidden="true">S</span><div><strong>Scueryo</strong><span>Moderador y beta tester</span></div></li>
+        </ul>
+        <p class="tribute"><img src="assets/images/equipo/pandraxinlive.webp" alt="" width="160" height="160" loading="lazy" decoding="async"><span><strong>PandraxInLive</strong>, exfundador y CEO. Gracias por todo lo que nos enseñaste. Cada evento lleva un poco de ti.</span></p>
+      </div>
     </section>
   </main>
-  <footer class="footer"><div class="wrap"><div class="footer-inner"><a class="brand" href="#inicio"><span class="brand-mark" aria-hidden="true">N</span><span>NOVA PX</span></a><div class="footer-links"><a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacidad</a><a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">Novedades</a><a href="https://discord.gg/VAfuFEQtjv" target="_blank" rel="noopener noreferrer">Soporte</a></div></div><p class="legal">Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</p></div></footer>
-  <script src="assets/js/mob3d.js" defer></script>
-  <script src="assets/js/site.js" defer></script>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="#inicio" aria-label="Nova PX, volver al inicio"><img src="assets/images/logo-np.png" alt="" width="28" height="28"><span>Nova PX</span></a>
+      <nav class="footer-links" aria-label="Enlaces legales">
+        <a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/PRIVACY.md" rel="noopener">Privacidad</a>
+        <a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/CHANGELOG.md" rel="noopener">Historial de cambios</a>
+        <a href="https://github.com/javierroman94/Nova-PX-Event-Launcher/blob/main/LICENSE" rel="noopener">Licencia MIT</a>
+      </nav>
+      <p class="legal">Nova PX Event Launcher no está afiliado a Mojang Studios ni a Microsoft. Minecraft es una marca de Mojang Studios.</p>
+    </div>
+  </footer>
 </body>
 </html>
