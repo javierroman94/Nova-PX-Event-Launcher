@@ -1,5 +1,4 @@
 /* Nova PX — web oficial: menú móvil y enlaces de descarga de la última versión publicada en GitHub. */
-/* global window, document */
 (function () {
   'use strict';
   document.documentElement.classList.add('js');

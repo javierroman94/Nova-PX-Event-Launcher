@@ -145,10 +145,45 @@ p { margin: 0 0 1em; }
 .gallery img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; }
 .gallery figcaption { padding: 12px 16px; font-weight: 600; }
 
-/* Pexy */
-.pexy-stage { position: relative; display: grid; place-items: center; min-height: 420px; border-radius: var(--radius); background: radial-gradient(ellipse at 50% 85%, rgb(224 122 214 / .25), transparent 55%), url('../images/mundo-voxel-960.webp') center / cover; border: 1px solid var(--line); overflow: hidden; }
-.pexy-stage::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(7 6 12 / .55), rgb(7 6 12 / .15) 60%, rgb(7 6 12 / .5)); }
-.pexy-stage img { position: relative; width: 210px; filter: drop-shadow(0 24px 30px rgb(0 0 0 / .6)); }
+/* Pexy interactivo */
+.pexy-split { max-width: 760px; margin-bottom: 28px; }
+.pexy-play { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.pexy-play[hidden] { display: none; }
+.pexy-stage { position: relative; min-height: 380px; border-radius: var(--radius); border: 1px solid var(--line-hi); overflow: hidden; background: linear-gradient(180deg, rgb(7 6 12 / .45), rgb(7 6 12 / .1) 55%, rgb(7 6 12 / .55)), url('../images/mundo-voxel-960.webp') center 70% / cover; }
+.pexy-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; touch-action: manipulation; }
+.pexy-say { position: absolute; left: 16px; right: 16px; top: 14px; margin: 0; padding: 10px 14px; border-radius: 12px; background: rgb(7 6 12 / .78); border: 1px solid var(--line-hi); font-size: .95rem; pointer-events: none; }
+.pexy-say:empty { display: none; }
+.pexy-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.pexy-level { margin: 0 0 8px; font-family: var(--font-display); font-size: 1.15rem; }
+.pexy-xptext { font: 400 .88rem var(--font-body); color: var(--muted); }
+.pexy-bar { position: relative; height: 10px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+.pexy-bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--purple), var(--pexy)); border-radius: 99px; transition: width .4s; }
+.pexy-bar.low i { background: #f97366; }
+.pexy-xp { margin-bottom: 16px; }
+.pexy-stats { display: grid; gap: 8px; }
+.pexy-stat { display: grid; grid-template-columns: 80px 1fr 44px; gap: 10px; align-items: center; font-size: .92rem; color: var(--muted); }
+.pexy-stat b { color: #fff; text-align: right; font-weight: 600; }
+.pexy-h { margin: 18px 0 8px; font-size: 1rem; }
+.pexy-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pexy-btn, .pexy-acc { min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line-hi); background: var(--panel-2); color: var(--text); font: 600 .92rem var(--font-body); cursor: pointer; }
+.pexy-btn:hover, .pexy-acc:hover:not(:disabled) { border-color: var(--purple-hi); }
+.pexy-btn[aria-pressed="true"], .pexy-acc[aria-pressed="true"] { background: #3b1a73; border-color: var(--purple-hi); }
+.pexy-ward { display: flex; flex-wrap: wrap; gap: 6px; }
+.pexy-acc { min-width: 48px; font-size: 1.2rem; }
+.pexy-acc:disabled { opacity: .4; filter: grayscale(1); cursor: not-allowed; }
+.pexy-look { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.pexy-note { min-height: 1.4em; margin: 12px 0 0; color: #fff; font-size: .92rem; }
+.pexy-fine { margin: 6px 0 0; color: var(--muted); font-size: .85rem; }
+
+/* Ventanas de los minijuegos (las mismas clases que en el launcher) */
+dialog.pl-modal { width: min(420px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; border: 1px solid var(--line-hi); border-radius: var(--radius); background: var(--panel); color: var(--text); }
+dialog.pl-modal::backdrop { background: rgb(7 6 12 / .75); }
+dialog.pl-modal .event-modal-body { padding: 18px; display: grid; gap: 8px; }
+dialog.pl-modal h3 { margin: 0; }
+dialog.pl-modal .muted { color: var(--muted); }
+dialog.pl-modal .pl-mood { margin: 0; font-weight: 600; }
+dialog.pl-modal button { min-height: 44px; border-radius: 10px; border: 1px solid var(--line-hi); background: var(--panel-2); color: var(--text); font: 600 1rem var(--font-body); cursor: pointer; }
+dialog.pl-modal canvas { width: 100%; border-radius: 10px; }
 
 /* Descargas */
 .download-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
@@ -203,6 +238,8 @@ details p { margin: 0; padding: 0 18px 18px; color: var(--muted); }
   .feature-grid, .event-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) {
+  .pexy-play { grid-template-columns: 1fr; }
+  .pexy-stage { min-height: 320px; }
   .js .menu-toggle { display: inline-flex; }
   .js .nav-links { display: none; position: absolute; top: var(--header-h); left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 2px; padding: 12px 20px 20px; background: rgb(7 6 12 / .97); border-bottom: 1px solid var(--line); }
   .js .nav-links.open { display: flex; }

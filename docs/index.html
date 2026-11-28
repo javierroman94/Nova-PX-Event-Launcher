@@ -32,6 +32,10 @@
   <meta name="twitter:image" content="https://novapx.pages.dev/assets/images/nova-px-social.jpg">
   <meta name="twitter:image:alt" content="Logo de Nova PX y Pexy, el panda rosa de bloques, en un mundo voxel de noche">
   <script src="assets/js/site.js" defer></script>
+  <script src="assets/js/mob3d.js" defer></script>
+  <script src="assets/js/pet-life.js" defer></script>
+  <script src="assets/js/pet-games.js" defer></script>
+  <script src="assets/js/pexy-web.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#contenido">Saltar al contenido</a>
@@ -208,20 +212,61 @@
     </section>
 
     <section class="section" id="pexy" aria-labelledby="pexy-title">
-      <div class="wrap split">
-        <div>
+      <div class="wrap">
+        <header class="section-head">
           <h2 id="pexy-title">Pexy vive en tu launcher</h2>
-          <p>Pexy es el panda rosa de bloques de Nova PX, diseñado por <a href="https://x.com/DekerModMaker" rel="noopener">MegaDeker</a>. Pasea por el launcher, te avisa de lo que pasa y crece contigo.</p>
+          <p>Pexy es el panda de bloques de Nova PX. El diseño original es el panda rosa de <a href="https://x.com/DekerModMaker" rel="noopener">MegaDeker</a>; en el armario también puedes ponerle la sudadera morada con la estrella nova. Pasea por el launcher, te avisa de lo que pasa y crece contigo.</p>
+        </header>
+        <div class="pexy-split">
           <ul class="checks">
-            <li>Dale de comer, juega con él y déjalo dormir: tiene hambre, energía y cariño.</li>
-            <li>Sube de nivel y desbloquea accesorios: moño, sombrero, gafas y corona; la bufanda llega con una racha de 3 días.</li>
-            <li>Tres minijuegos para jugar con él.</li>
-            <li>Agárralo y lánzalo por la pantalla.</li>
+            <li>Dale de comer, juega con él, acarícialo y déjalo dormir: tiene hambre, energía, cariño y felicidad.</li>
+            <li>Tiene su propia personalidad: juguetón, glotón, dormilón o cariñoso.</li>
+            <li>Sube de nivel y desbloquea accesorios: moño, sombrero, gafas, corona y una bufanda por tu racha de días.</li>
+            <li>Cuatro minijuegos: Atrapar estrellas, Bambú saltarín, Memoria de Pexy y Corre, Pexy.</li>
+            <li>En el launcher también puedes agarrarlo y lanzarlo por la pantalla.</li>
           </ul>
-          <p class="note">Su progreso se guarda solo en tu PC.</p>
+          <noscript><p class="note">Activa JavaScript para jugar con Pexy aquí.</p></noscript>
         </div>
-        <div class="pexy-stage" aria-hidden="true">
-          <img src="assets/images/pexy-480.webp" alt="" width="259" height="469" loading="lazy" decoding="async">
+
+        <div class="pexy-play" id="pexy-play" hidden>
+          <div class="pexy-stage">
+            <canvas data-pexy-canvas tabindex="0" role="img" aria-label="Pexy, el panda de Nova PX. Tócalo o pulsa Enter para acariciarlo."></canvas>
+            <p class="pexy-say" data-pexy-say aria-live="polite"></p>
+          </div>
+          <div class="pexy-panel">
+            <p class="pexy-level"><strong data-pexy-level>Nivel 1</strong> <span class="pexy-xptext" data-pexy-xptext></span></p>
+            <div class="pexy-bar pexy-xp" data-pexy-xp aria-hidden="true"><i></i></div>
+            <div class="pexy-stats">
+              <div class="pexy-stat"><span>Hambre</span><div class="pexy-bar" data-bar="hunger" aria-hidden="true"><i></i></div><b data-val="hunger"></b></div>
+              <div class="pexy-stat"><span>Energía</span><div class="pexy-bar" data-bar="energy" aria-hidden="true"><i></i></div><b data-val="energy"></b></div>
+              <div class="pexy-stat"><span>Cariño</span><div class="pexy-bar" data-bar="love" aria-hidden="true"><i></i></div><b data-val="love"></b></div>
+              <div class="pexy-stat"><span>Felicidad</span><div class="pexy-bar" data-bar="happy" aria-hidden="true"><i></i></div><b data-val="happy"></b></div>
+            </div>
+            <h3 class="pexy-h">Cuidados</h3>
+            <div class="pexy-actions">
+              <button class="pexy-btn" type="button" data-act="feed">🍖 Dar de comer</button>
+              <button class="pexy-btn" type="button" data-act="pet">🤗 Acariciar</button>
+              <button class="pexy-btn" type="button" data-act="play">🎾 Jugar</button>
+              <button class="pexy-btn" type="button" data-act="sleep">😴 Dormir</button>
+            </div>
+            <h3 class="pexy-h">Minijuegos</h3>
+            <div class="pexy-actions" data-pexy-games></div>
+            <h3 class="pexy-h">Armario</h3>
+            <div class="pexy-ward" role="group" aria-label="Accesorios">
+              <button class="pexy-acc" type="button" data-acc="" aria-label="Sin accesorio">🚫</button>
+              <button class="pexy-acc" type="button" data-acc="bow" aria-label="Moño">🎀</button>
+              <button class="pexy-acc" type="button" data-acc="hat" aria-label="Sombrero">🎩</button>
+              <button class="pexy-acc" type="button" data-acc="scarf" aria-label="Bufanda">🧣</button>
+              <button class="pexy-acc" type="button" data-acc="glasses" aria-label="Gafas">🕶️</button>
+              <button class="pexy-acc" type="button" data-acc="crown" aria-label="Corona">👑</button>
+            </div>
+            <div class="pexy-look" role="group" aria-label="Diseño de Pexy">
+              <button class="pexy-btn" type="button" data-design="rosa">Rosa (original)</button>
+              <button class="pexy-btn" type="button" data-design="sudadera">Sudadera</button>
+            </div>
+            <p class="pexy-note" data-pexy-note role="status"></p>
+            <p class="pexy-fine"><span data-pexy-xpday></span><br>Este Pexy se guarda solo en este navegador. Todavía no se sincroniza con el Pexy de tu launcher.</p>
+          </div>
         </div>
       </div>
     </section>
